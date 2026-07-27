@@ -34,7 +34,8 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
             long distanceFromRouteMeters,
             ComparisonSummary comparisonSummary,
             List<RecommendationTag> recommendationTags,
-            String listImageUrl) {
+            String listImageUrl,
+            NearbyTraffic nearbyTraffic) {
 
         public RouteRestStopItem(
                 String serviceAreaCode,
@@ -54,6 +55,7 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
                     distanceFromRouteMeters,
                     ComparisonSummary.empty(),
                     List.of(),
+                    null,
                     null);
         }
 
@@ -75,6 +77,7 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
                     distanceFromRouteMeters,
                     ComparisonSummary.empty(),
                     List.of(),
+                    null,
                     null);
         }
 
@@ -90,7 +93,8 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
                     distanceFromRouteMeters,
                     comparisonSummary,
                     recommendationTags,
-                    listImageUrl);
+                    listImageUrl,
+                    nearbyTraffic);
         }
 
         public RouteRestStopItem withComparison(
@@ -106,7 +110,8 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
                     distanceFromRouteMeters,
                     comparisonSummary,
                     List.copyOf(recommendationTags),
-                    listImageUrl);
+                    listImageUrl,
+                    nearbyTraffic);
         }
 
         public RouteRestStopItem withEvCharger(boolean hasEvCharger) {
@@ -121,7 +126,8 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
                     distanceFromRouteMeters,
                     comparisonSummary,
                     recommendationTags,
-                    listImageUrl);
+                    listImageUrl,
+                    nearbyTraffic);
         }
 
         public RouteRestStopItem withListImageUrl(String listImageUrl) {
@@ -136,7 +142,24 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
                     distanceFromRouteMeters,
                     comparisonSummary,
                     recommendationTags,
-                    listImageUrl);
+                    listImageUrl,
+                    nearbyTraffic);
+        }
+
+        public RouteRestStopItem withNearbyTraffic(NearbyTraffic nearbyTraffic) {
+            return new RouteRestStopItem(
+                    serviceAreaCode,
+                    unitName,
+                    routeName,
+                    latitude,
+                    longitude,
+                    hasDirectionAlternative,
+                    hasEvCharger,
+                    distanceFromRouteMeters,
+                    comparisonSummary,
+                    recommendationTags,
+                    listImageUrl,
+                    nearbyTraffic);
         }
     }
 
@@ -198,6 +221,13 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
 
         public static RecommendationTag of(String key, String label) {
             return new RecommendationTag(key, label);
+        }
+    }
+
+    public record NearbyTraffic(String key, String label) {
+
+        public static NearbyTraffic of(String key, String label) {
+            return new NearbyTraffic(key, label);
         }
     }
 }

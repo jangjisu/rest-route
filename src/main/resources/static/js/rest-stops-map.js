@@ -1928,6 +1928,14 @@ export function routeRecommendationLabels(restStop) {
         .filter((label) => label !== '');
 }
 
+export function routeNearbyTrafficBadge(restStop) {
+    const traffic = restStop?.nearbyTraffic;
+    if (!traffic || typeof traffic !== 'object' || !traffic.key || !traffic.label) {
+        return null;
+    }
+    return { key: traffic.key, label: traffic.label };
+}
+
 export function formatOilPriceComparison(price, diffFromAverage) {
     if (isMissingValue(price)) {
         return '';
@@ -2186,6 +2194,14 @@ function createRouteResultItem(restStop, index) {
         badge.className = 'route-direction-alternative-badge';
         badge.textContent = '상·하행 후보';
         appendTarget.appendChild(badge);
+    }
+
+    const nearbyTraffic = routeNearbyTrafficBadge(restStop);
+    if (nearbyTraffic) {
+        const trafficBadge = document.createElement('span');
+        trafficBadge.className = `route-result-traffic route-result-traffic-${nearbyTraffic.key}`;
+        trafficBadge.textContent = `인근 ${nearbyTraffic.label}`;
+        appendTarget.appendChild(trafficBadge);
     }
 
     const recommendationLabels = routeRecommendationLabels(restStop);

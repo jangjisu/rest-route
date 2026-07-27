@@ -28,5 +28,16 @@ public record KakaoDirectionsResponse(List<Route> routes) {
     public record Section(List<Road> roads) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Road(List<Double> vertexes) {}
+    public record Road(
+            String name,
+            Long distance,
+            Long duration,
+            @JsonProperty("traffic_speed") Integer trafficSpeed,
+            @JsonProperty("traffic_state") Integer trafficState,
+            List<Double> vertexes) {
+
+        public Road(List<Double> vertexes) {
+            this(null, null, null, null, null, vertexes);
+        }
+    }
 }

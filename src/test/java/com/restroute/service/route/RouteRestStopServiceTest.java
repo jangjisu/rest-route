@@ -380,6 +380,31 @@ class RouteRestStopServiceTest {
     }
 
     @Test
+    @DisplayName("가장 가까운 도로 구간의 traffic_state로 인근 소통 상황을 채우고, 0이면 배지를 비운다")
+    void success_addsNearbyTrafficFromNearestRoadSegment() {
+        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역", null));
+        Road jamRoad = new Road("경부선", 10L, 5L, 10, 1, List.of(127.0, 37.0));
+        Road smoothRoad = new Road("경부선", 10L, 5L, 90, 4, List.of(127.5, 37.5));
+        Road noInfoRoad = new Road("경부선", 10L, 5L, null, 0, List.of(128.0, 38.0));
+        Route route =
+                new Route(0, new Summary(100L, 200L), List.of(new Section(List.of(jamRoad, smoothRoad, noInfoRoad))));
+        when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
+                .thenReturn(new KakaoDirectionsResponse(List.of(route)));
+
+        RestStopEntity near0 = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
+        RestStopEntity near1 = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
+        RestStopEntity near2 = restStop("C", "C휴게소", "경부선", "128.0001", "38.0001");
+        when(restStopRepository.findAll()).thenReturn(List.of(near0, near1, near2));
+
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+
+        assertThat(response.restStops().get(0).nearbyTraffic().key()).isEqualTo("jam");
+        assertThat(response.restStops().get(0).nearbyTraffic().label()).isEqualTo("정체");
+        assertThat(response.restStops().get(1).nearbyTraffic().key()).isEqualTo("smooth");
+        assertThat(response.restStops().get(2).nearbyTraffic()).isNull();
+    }
+
+    @Test
     @DisplayName("상세 편의시설과 운영 flag를 시설 개수에 포함한다")
     void success_countsDetailConveniencesAndOperationFlagsAsFacilities() {
         when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역", null));

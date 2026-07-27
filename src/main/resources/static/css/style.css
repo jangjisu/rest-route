@@ -993,6 +993,36 @@ body.global-loading-open {
     font-weight: 700;
 }
 
+.route-result-traffic {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.3rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.route-result-traffic-smooth {
+    background-color: #e6f7e9;
+    color: #2b8a3e;
+}
+
+.route-result-traffic-slow {
+    background-color: #fff3cd;
+    color: #7a5200;
+}
+
+.route-result-traffic-jam {
+    background-color: #fbe1e1;
+    color: #e03131;
+}
+
+.route-result-traffic-accident {
+    background-color: #f3d3d3;
+    color: #7a1f1f;
+}
+
 .route-rest-stop-marker {
     width: 14px;
     height: 14px;
