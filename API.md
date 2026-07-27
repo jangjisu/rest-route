@@ -578,6 +578,53 @@ HTTP 200과 빈 배열을 반환하며 에러로 취급하지 않는다.
 
 해당 `serviceAreaCode`가 없으면 HTTP 404와 `NOT_FOUND`를 반환한다.
 
+### GET /api/rest-stops/compare?serviceAreaCodeA={code}&serviceAreaCodeB={code}
+
+이름으로 고른 휴게소 두 곳을 비교한다. `RestStopRelatedInfoQueryService`가 이미 조회하는 데이터만
+사용하며(새 외부 API 호출 없음), 유가 3종·주차 대수·부대시설을 항목별로 비교해 승자와 종합 추천
+side를 함께 내려준다.
+
+```json
+{
+  "data": {
+    "sideA": {
+      "serviceAreaCode": "A00004",
+      "unitName": "안성(서울)휴게소",
+      "routeName": "경부선",
+      "listImageUrl": null,
+      "gasolinePrice": "1,864원",
+      "dieselPrice": "1,853원",
+      "lpgPrice": "1,236원",
+      "parkingCount": 766,
+      "facilities": ["수유실", "수면실", "샤워실", "세탁실", "농산물판매장", "쉼터"]
+    },
+    "sideB": { "...": "sideA와 동일한 필드 구조" },
+    "result": {
+      "gasolineWinner": "A",
+      "dieselWinner": "B",
+      "lpgWinner": null,
+      "parkingWinner": "A",
+      "facilityWinner": "A",
+      "recommendedSide": "A"
+    }
+  }
+}
+```
+
+- `sideA`/`sideB`의 가격 필드는 `RestOilPriceEntity`의 원시 문자열을 그대로 내려준다(예: `"1,864원"`,
+  판매하지 않는 유종은 원본 API 값 그대로 `"X"`). 프론트엔드는 이 값을 그대로 표시하거나(기존
+  `formatOilPrice()` 재사용) 숫자로 파싱할 수 없으면 승자 계산에서 제외한다.
+- `parkingCount`는 `HighwayServiceAreaInfoEntity`의 차종별 주차 수 합산이며, 합이 0이면 `null`이다.
+- `facilities`는 `RestStopDetailEntity.convenience`를 `|`로 분리한 목록이다. 주유소 자체의 부대시설
+  (`RestOilEntity.convenienceName`)은 포함하지 않는다 — 두 데이터가 의미상 다른 시설이라 섞으면
+  비교 의미가 흐려지기 때문이다.
+- `result`의 각 `*Winner`/`recommendedSide` 값은 `"A"`/`"B"`/`null`이다. 두 side 모두 값이 없거나
+  동률이면 `null`이다. 가격·주차는 더 낮거나/많은 쪽이 승자, 부대시설은 개수가 더 많은 쪽이 승자다.
+  `recommendedSide`는 5개 항목 중 더 많이 이긴 쪽이며, 동률이면 `null`이다.
+- `serviceAreaCodeA`와 `serviceAreaCodeB`가 같으면 HTTP 400과 `INVALID_PARAMETER`를 반환한다.
+  둘 중 하나라도 존재하지 않는 휴게소면 HTTP 404와 `NOT_FOUND`를 반환한다.
+- "이름으로 검색"은 이 API가 아니라 기존 `GET /api/rest-stops/search?name=`을 그대로 재사용한다.
+
 ### 휴게소 대표 이미지 API
 
 `GET /api/rest-stops/{serviceAreaCode}/basic-info`의 `data.detailImageUrl`과

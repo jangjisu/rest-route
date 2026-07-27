@@ -9,6 +9,7 @@ import {
     formatOilPrice,
     formatOperationTime,
     formatParkingBreakdown,
+    formatParkingCount,
     formatRefreshedAt,
     formatTotalParkingCount,
     formatSalesRankingMonth,
@@ -27,6 +28,7 @@ import { createRouteRestStopRequest } from './route-rest-stop-request.js';
 import { createNationalOilPriceRequest } from './national-oil-price-request.js';
 import { createPlaceSearchRequest } from './place-search-request.js';
 import { createRestStopNameSearchRequest } from './rest-stop-name-search-request.js';
+import { createRestStopCompareRequest } from './rest-stop-compare-request.js';
 import { createRouteRestStopImage, renderDetailImage } from './rest-stop-images.js';
 import {
     ROUTE_POINT_TARGET,
@@ -67,6 +69,11 @@ let currentFoodSections = [];
 let routeRequest;
 let placeSearchRequest;
 let restStopNameSearchRequest;
+let restStopCompareSearchRequestA;
+let restStopCompareSearchRequestB;
+let restStopCompareRequest;
+let restStopCompareSelectionA;
+let restStopCompareSelectionB;
 let routePolyline;
 let routeMarkers = [];
 let allRestStopMarkers = [];
@@ -101,6 +108,13 @@ export async function initRestStopMap() {
     nationalOilPriceRequest = createNationalOilPriceRequest({ onState: renderNationalOilPriceState });
     placeSearchRequest = createPlaceSearchRequest({ onState: renderPlaceSearchState });
     restStopNameSearchRequest = createRestStopNameSearchRequest({ onState: renderRestStopNameSearchState });
+    restStopCompareSearchRequestA = createRestStopNameSearchRequest({
+        onState: (state) => renderRestStopCompareCandidates('A', state)
+    });
+    restStopCompareSearchRequestB = createRestStopNameSearchRequest({
+        onState: (state) => renderRestStopCompareCandidates('B', state)
+    });
+    restStopCompareRequest = createRestStopCompareRequest({ onState: renderRestStopCompareState });
     bindDetailPanelEvents();
     bindDetailSheetPresentation();
 
@@ -136,6 +150,7 @@ export async function initRestStopMap() {
         bindLocateControl();
         bindRouteSearch();
         bindRestStopNameSearch();
+        bindRestStopCompare();
         bindRouteMapClick();
         bindMarkerModeToggle();
         initializeMobileCurrentLocationOrigin();
@@ -1226,6 +1241,336 @@ function openRestStopSearchModal() {
 
 function closeRestStopSearchModal() {
     const modal = document.getElementById('restStopSearchModal');
+    if (modal?.open) {
+        modal.close();
+    }
+}
+
+function bindRestStopCompare() {
+    if (!detailPanelEventController) {
+        return;
+    }
+
+    const signal = detailPanelEventController.signal;
+    document.getElementById('restStopCompareOpen')?.addEventListener('click', openRestStopCompareModal, { signal });
+    document.getElementById('restStopCompareModalClose')?.addEventListener('click', closeRestStopCompareModal, {
+        signal
+    });
+    document.getElementById('restStopCompareModal')?.addEventListener('click', (event) => {
+        if (event.target === event.currentTarget) {
+            closeRestStopCompareModal();
+        }
+    }, { signal });
+    ['A', 'B'].forEach((side) => {
+        document.getElementById(`restStopCompareInput${side}`)?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                searchRestStopCompareSide(side);
+            }
+        }, { signal });
+    });
+}
+
+function searchRestStopCompareSide(side) {
+    const query = document.getElementById(`restStopCompareInput${side}`)?.value.trim() ?? '';
+    if (query === '') {
+        return;
+    }
+    const request = side === 'A' ? restStopCompareSearchRequestA : restStopCompareSearchRequestB;
+    request?.load(query);
+}
+
+function renderRestStopCompareCandidates(side, state) {
+    const list = document.getElementById(`restStopCompareCandidates${side}`);
+    if (!list) {
+        return;
+    }
+    list.replaceChildren();
+    if (state.status !== 'success') {
+        return;
+    }
+    state.restStops.forEach((restStop) => list.appendChild(createRestStopCompareCandidateItem(side, restStop)));
+}
+
+function createRestStopCompareCandidateItem(side, restStop) {
+    const item = document.createElement('li');
+    item.className = 'rest-stop-compare-picker-candidate';
+
+    const button = document.createElement('button');
+    button.className = 'rest-stop-compare-picker-candidate-button';
+    button.type = 'button';
+    button.textContent = `${formatText(restStop?.unitName, '이름 정보 없음')} (${formatText(restStop?.routeName, '노선 정보 없음')})`;
+    button.addEventListener('click', () => selectRestStopCompareSide(side, restStop));
+
+    item.appendChild(button);
+    return item;
+}
+
+function selectRestStopCompareSide(side, restStop) {
+    if (side === 'A') {
+        restStopCompareSelectionA = restStop;
+    } else {
+        restStopCompareSelectionB = restStop;
+    }
+
+    const input = document.getElementById(`restStopCompareInput${side}`);
+    if (input) {
+        input.value = '';
+    }
+    document.getElementById(`restStopCompareCandidates${side}`)?.replaceChildren();
+
+    const selected = document.getElementById(`restStopCompareSelected${side}`);
+    if (selected) {
+        selected.hidden = false;
+        selected.textContent = `${formatText(restStop?.unitName, '이름 정보 없음')} · ${formatText(restStop?.routeName, '노선 정보 없음')}`;
+    }
+
+    runRestStopCompareIfReady();
+}
+
+function runRestStopCompareIfReady() {
+    if (!restStopCompareSelectionA || !restStopCompareSelectionB) {
+        return;
+    }
+
+    if (restStopCompareSelectionA.serviceAreaCode === restStopCompareSelectionB.serviceAreaCode) {
+        setRestStopCompareStatus('같은 휴게소는 비교할 수 없습니다. 다른 휴게소를 선택해주세요.');
+        return;
+    }
+
+    restStopCompareRequest?.load(
+        restStopCompareSelectionA.serviceAreaCode,
+        restStopCompareSelectionB.serviceAreaCode
+    );
+}
+
+function setRestStopCompareStatus(message) {
+    const status = document.getElementById('restStopCompareStatus');
+    if (!status) {
+        return;
+    }
+    status.hidden = message === '';
+    status.textContent = message;
+}
+
+function renderRestStopCompareState(state) {
+    if (state.status === 'loading') {
+        setRestStopCompareStatus('비교하는 중입니다...');
+        return;
+    }
+
+    if (state.status === 'success') {
+        setRestStopCompareStatus('');
+        renderRestStopCompareResult(state.comparison);
+        return;
+    }
+
+    setRestStopCompareStatus(formatText(state.message, '비교 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'));
+}
+
+export function buildRestStopCompareRows(response) {
+    if (!response) {
+        return [];
+    }
+
+    const sideA = response.sideA ?? {};
+    const sideB = response.sideB ?? {};
+    const result = response.result ?? {};
+
+    return [
+        compareTextRow('휘발유', formatOilPrice(sideA.gasolinePrice), formatOilPrice(sideB.gasolinePrice), result.gasolineWinner),
+        compareTextRow('경유', formatOilPrice(sideA.dieselPrice), formatOilPrice(sideB.dieselPrice), result.dieselWinner),
+        compareTextRow('LPG', formatOilPrice(sideA.lpgPrice), formatOilPrice(sideB.lpgPrice), result.lpgWinner),
+        compareTextRow('주차', formatParkingCount(sideA.parkingCount), formatParkingCount(sideB.parkingCount), result.parkingWinner),
+        compareChipsRow('부대시설', sideA.facilities, sideB.facilities, result.facilityWinner)
+    ];
+}
+
+function compareTextRow(label, textA, textB, winner) {
+    return {
+        label,
+        type: 'text',
+        a: { text: textA, isWinner: winner === 'A' },
+        b: { text: textB, isWinner: winner === 'B' }
+    };
+}
+
+function compareChipsRow(label, chipsA, chipsB, winner) {
+    return {
+        label,
+        type: 'chips',
+        a: { chips: Array.isArray(chipsA) ? chipsA : [], isWinner: winner === 'A' },
+        b: { chips: Array.isArray(chipsB) ? chipsB : [], isWinner: winner === 'B' }
+    };
+}
+
+function renderRestStopCompareResult(response) {
+    const container = document.getElementById('restStopCompareResult');
+    const picker = document.getElementById('restStopComparePicker');
+    if (!container || !response) {
+        return;
+    }
+
+    container.replaceChildren();
+    picker.hidden = true;
+    container.hidden = false;
+
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'btn btn-sm btn-outline-secondary rest-stop-compare-reset';
+    resetButton.textContent = '다시 선택';
+    resetButton.addEventListener('click', resetRestStopCompareModal);
+    container.appendChild(resetButton);
+
+    container.appendChild(createRestStopCompareHeader(response));
+    container.appendChild(createRestStopCompareTable(response));
+}
+
+function createRestStopCompareHeader(response) {
+    const recommendedSide = response.result?.recommendedSide ?? null;
+    const header = document.createElement('div');
+    header.className = 'rest-stop-compare-header';
+    header.appendChild(createRestStopCompareHeaderSide(response.sideA, recommendedSide === 'A'));
+
+    const mark = document.createElement('span');
+    mark.className = 'rest-stop-compare-vs-mark';
+    mark.textContent = 'VS';
+    header.appendChild(mark);
+
+    header.appendChild(createRestStopCompareHeaderSide(response.sideB, recommendedSide === 'B'));
+    return header;
+}
+
+function createRestStopCompareHeaderSide(side, isRecommended) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'rest-stop-compare-header-side';
+
+    const photo = document.createElement('div');
+    photo.className = `rest-stop-compare-photo${isRecommended ? ' rest-stop-compare-photo-pick' : ''}`;
+    if (side?.listImageUrl) {
+        const image = document.createElement('img');
+        image.src = side.listImageUrl;
+        image.alt = '';
+        photo.appendChild(image);
+    } else {
+        photo.textContent = '없음';
+    }
+    wrapper.appendChild(photo);
+
+    const text = document.createElement('div');
+    text.className = 'rest-stop-compare-header-text';
+    if (isRecommended) {
+        const badge = document.createElement('span');
+        badge.className = 'rest-stop-compare-pick-badge';
+        badge.textContent = '추천';
+        text.appendChild(badge);
+    }
+
+    const name = document.createElement('p');
+    name.className = `rest-stop-compare-name${isRecommended ? ' rest-stop-compare-name-pick' : ''}`;
+    name.textContent = formatText(side?.unitName, '이름 정보 없음');
+    text.appendChild(name);
+
+    const route = document.createElement('p');
+    route.className = 'rest-stop-compare-route';
+    route.textContent = formatText(side?.routeName, '노선 정보 없음');
+    text.appendChild(route);
+
+    wrapper.appendChild(text);
+    return wrapper;
+}
+
+function createRestStopCompareTable(response) {
+    const table = document.createElement('div');
+    table.className = 'rest-stop-compare-table';
+    buildRestStopCompareRows(response).forEach((row) => table.appendChild(createRestStopCompareRowElement(row)));
+    return table;
+}
+
+function createRestStopCompareRowElement(row) {
+    const rowElement = document.createElement('div');
+    rowElement.className = 'rest-stop-compare-row';
+    rowElement.appendChild(createRestStopCompareValueElement(row, 'a'));
+
+    const label = document.createElement('div');
+    label.className = 'rest-stop-compare-label';
+    label.textContent = row.label;
+    rowElement.appendChild(label);
+
+    rowElement.appendChild(createRestStopCompareValueElement(row, 'b'));
+    return rowElement;
+}
+
+function createRestStopCompareValueElement(row, side) {
+    const value = row[side];
+    const valueElement = document.createElement('div');
+    valueElement.className =
+        `rest-stop-compare-value rest-stop-compare-value-${side}${value.isWinner ? ' rest-stop-compare-value-win' : ''}`;
+
+    if (row.type === 'chips') {
+        valueElement.classList.add('rest-stop-compare-value-chips');
+        value.chips.forEach((chip) => valueElement.appendChild(createRestStopCompareChip(chip, value.isWinner)));
+        return valueElement;
+    }
+
+    if (value.isWinner) {
+        const check = document.createElement('span');
+        check.className = 'rest-stop-compare-check';
+        check.textContent = '✓';
+        valueElement.appendChild(check);
+    }
+    valueElement.appendChild(document.createTextNode(value.text));
+    return valueElement;
+}
+
+function createRestStopCompareChip(label, isWinner) {
+    const chip = document.createElement('span');
+    chip.className = `rest-stop-compare-chip${isWinner ? ' rest-stop-compare-chip-win' : ''}`;
+    chip.textContent = label;
+    return chip;
+}
+
+function resetRestStopCompareModal() {
+    restStopCompareSelectionA = undefined;
+    restStopCompareSelectionB = undefined;
+    restStopCompareRequest?.invalidate();
+    restStopCompareSearchRequestA?.invalidate();
+    restStopCompareSearchRequestB?.invalidate();
+
+    ['A', 'B'].forEach((side) => {
+        const input = document.getElementById(`restStopCompareInput${side}`);
+        if (input) {
+            input.value = '';
+        }
+        document.getElementById(`restStopCompareCandidates${side}`)?.replaceChildren();
+        const selected = document.getElementById(`restStopCompareSelected${side}`);
+        if (selected) {
+            selected.hidden = true;
+            selected.textContent = '';
+        }
+    });
+    setRestStopCompareStatus('');
+
+    const picker = document.getElementById('restStopComparePicker');
+    const result = document.getElementById('restStopCompareResult');
+    if (picker) {
+        picker.hidden = false;
+    }
+    if (result) {
+        result.hidden = true;
+        result.replaceChildren();
+    }
+}
+
+function openRestStopCompareModal() {
+    resetRestStopCompareModal();
+    const modal = document.getElementById('restStopCompareModal');
+    if (modal && !modal.open) {
+        modal.showModal();
+    }
+}
+
+function closeRestStopCompareModal() {
+    const modal = document.getElementById('restStopCompareModal');
     if (modal?.open) {
         modal.close();
     }

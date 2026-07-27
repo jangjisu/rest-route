@@ -2,9 +2,11 @@ package com.restroute.controller;
 
 import com.restroute.common.ApiResponse;
 import com.restroute.common.ResponseCode;
+import com.restroute.controller.response.RestStopCompareResponse;
 import com.restroute.controller.response.RestStopDetailViewResponse;
 import com.restroute.controller.response.RestStopItemResponse;
 import com.restroute.service.RestStopQueryService;
+import com.restroute.service.compare.RestStopCompareService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RestStopController {
 
     private final RestStopQueryService restStopQueryService;
+    private final RestStopCompareService restStopCompareService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<RestStopItemResponse>>> getRestStops() {
@@ -37,6 +40,13 @@ public class RestStopController {
                 .toList();
 
         return ResponseEntity.ok(ApiResponse.success(restStops));
+    }
+
+    @GetMapping("/compare")
+    public ResponseEntity<ApiResponse<RestStopCompareResponse>> compareRestStops(
+            @RequestParam String serviceAreaCodeA, @RequestParam String serviceAreaCodeB) {
+        RestStopCompareResponse response = restStopCompareService.compare(serviceAreaCodeA, serviceAreaCodeB);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{serviceAreaCode}")

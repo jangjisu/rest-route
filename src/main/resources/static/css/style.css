@@ -9,6 +9,8 @@
     --rr-color-text-secondary: oklch(50% 0.02 60);
     --rr-color-primary: oklch(52% 0.11 220);
     --rr-color-accent: oklch(72% 0.14 55);
+    --rr-color-success: oklch(58% 0.14 145);
+    --rr-color-success-bg: oklch(94% 0.05 145);
     --rr-radius-card: 16px;
     --rr-radius-pill: 99px;
     --rr-radius-button: 9px;
@@ -1030,6 +1032,241 @@ body.global-loading-open {
     background-color: var(--rr-color-primary);
     border: 2.5px solid #fff;
     box-shadow: 0 2px 6px oklch(30% 0.02 60 / 0.3);
+}
+
+.rest-stop-compare-modal {
+    width: min(92vw, 30rem);
+}
+
+.rest-stop-compare-picker {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 1.25rem;
+    overflow-y: auto;
+}
+
+.rest-stop-compare-picker-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--rr-color-text-secondary);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.rest-stop-compare-picker-selected {
+    margin: 0.4rem 0 0;
+    color: var(--rr-color-text);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.rest-stop-compare-picker-candidates {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0.4rem 0 0;
+    list-style: none;
+    padding-left: 0;
+}
+
+.rest-stop-compare-picker-candidate-button {
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid oklch(92% 0.01 75);
+    border-radius: 8px;
+    background-color: var(--rr-color-surface);
+    color: var(--rr-color-text);
+    text-align: left;
+    font-size: 0.8rem;
+}
+
+.rest-stop-compare-picker-candidate-button:hover,
+.rest-stop-compare-picker-candidate-button:focus-visible {
+    border-color: var(--rr-color-primary);
+    outline: none;
+}
+
+.rest-stop-compare-status {
+    margin: 0 1.25rem 1rem;
+    color: var(--rr-color-text-secondary);
+    font-size: 0.8rem;
+}
+
+.rest-stop-compare-result {
+    padding: 0.5rem 1.25rem 1.25rem;
+    overflow-y: auto;
+}
+
+.rest-stop-compare-reset {
+    margin-bottom: 0.75rem;
+}
+
+.rest-stop-compare-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+}
+
+.rest-stop-compare-header-side {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.rest-stop-compare-photo {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    overflow: hidden;
+    border-radius: 10px;
+    background-color: oklch(90% 0.03 220);
+    color: var(--rr-color-text-secondary);
+    font-size: 0.62rem;
+}
+
+.rest-stop-compare-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rest-stop-compare-photo-pick {
+    box-shadow: 0 0 0 2px var(--rr-color-success);
+}
+
+.rest-stop-compare-header-text {
+    min-width: 0;
+}
+
+.rest-stop-compare-pick-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0.2rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: var(--rr-radius-pill);
+    background-color: var(--rr-color-success);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+}
+
+.rest-stop-compare-name {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    color: var(--rr-color-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.3;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.rest-stop-compare-name-pick {
+    color: var(--rr-color-success);
+    font-weight: 800;
+}
+
+.rest-stop-compare-route {
+    margin: 0.15rem 0 0;
+    color: var(--rr-color-text-secondary);
+    font-size: 0.7rem;
+}
+
+.rest-stop-compare-vs-mark {
+    flex: 0 0 auto;
+    width: 1.5rem;
+    padding-top: 0.85rem;
+    color: var(--rr-color-text-secondary);
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.rest-stop-compare-table {
+    border-top: 1px solid oklch(91% 0.01 75);
+}
+
+.rest-stop-compare-row {
+    display: grid;
+    grid-template-columns: 1fr 2.4rem 1fr;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid oklch(91% 0.01 75);
+}
+
+.rest-stop-compare-value {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    color: var(--rr-color-text-secondary);
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+.rest-stop-compare-value-a {
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+    text-align: right;
+}
+
+.rest-stop-compare-value-b {
+    justify-content: flex-start;
+    padding-left: 0.5rem;
+    text-align: left;
+}
+
+.rest-stop-compare-value-win {
+    color: var(--rr-color-success);
+    font-size: 0.88rem;
+    font-weight: 800;
+}
+
+.rest-stop-compare-check {
+    font-size: 0.72rem;
+}
+
+.rest-stop-compare-value-chips {
+    flex-wrap: wrap;
+}
+
+.rest-stop-compare-label {
+    color: var(--rr-color-text-secondary);
+    text-align: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.rest-stop-compare-chip {
+    padding: 0.1rem 0.4rem;
+    border: 1px solid oklch(91% 0.01 75);
+    border-radius: var(--rr-radius-pill);
+    background-color: oklch(97% 0.01 75);
+    color: var(--rr-color-text-secondary);
+    font-size: 0.62rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rest-stop-compare-chip-win {
+    border-color: transparent;
+    background-color: var(--rr-color-success);
+    color: #fff;
+}
+
+@media (max-width: 575.98px) {
+    .rest-stop-compare-picker {
+        grid-template-columns: 1fr;
+    }
 }
 
 .rest-stop-detail-panel {
