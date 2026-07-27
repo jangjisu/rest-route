@@ -68,7 +68,8 @@ class AdminRestOilLinkControllerTest {
     @DisplayName("GET /api/admin/oil-stations/search는 이름으로 주유소를 검색한다")
     void search_returnsOk() throws Exception {
         when(adminRestOilLinkService.search("마장"))
-                .thenReturn(List.of(new AdminOilStationSearchResponse(1L, "SK에너지 마장주유소", "중부내륙선", null)));
+                .thenReturn(
+                        List.of(new AdminOilStationSearchResponse(1L, "SK에너지 마장주유소", "중부내륙선", "충북 음성군", "서울", null)));
 
         mockMvc.perform(get("/api/admin/oil-stations/search").param("name", "마장"))
                 .andExpect(status().isOk())

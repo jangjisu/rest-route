@@ -663,27 +663,27 @@ JSON 바디로 기존 메뉴(동기화 메뉴 포함) 값을 수정한다. 저�
 
 ### 관리자 휴게소 주유소 연결 관리 API
 
-관리자 인증(`ROLE_ADMIN`)이 필요한 API로, `rest_stop`↔`rest_oil` 자동 매칭이 놓치거나 잘못 연결한 항목을 점검·수정한다.
+관리자 인증(`ROLE_ADMIN`)이 필요한 API로, `rest_stop`↔`rest_oil_price` 자동 매칭이 놓치거나 잘못 연결한 항목을 점검·수정한다. 사용자에게 실제로 보이는 주유소 정보(업체·가격·전화번호)는 `rest_oil_price`에서만 나오고 휴게소당 정확히 0~1건이므로, 이 API의 "주유소" 단위는 `rest_oil_price` 행 하나다. `rest_oil`(휴게소 부대 편의시설 목록, 물리적 주유소 하나당 여러 행)은 화면에 노출하지 않지만, 연결/해제/잠금해제 시 같은 물리적 주유소(자연키 `standardRestCode`/`serviceAreaCode2`)의 `rest_oil` 행 전체에도 동일한 조작을 함께 반영해 두 테이블의 연결 상태가 어긋나지 않게 한다.
 
 #### GET /api/admin/rest-stops/oil-links
 
-전체 휴게소와 각 휴게소에 현재 연결된 주유소 목록을 한 번에 반환한다(페이지네이션 없음). 응답은 `ApiResponse<List<T>>`이며 각 항목은 `serviceAreaCode`, `unitName`, `routeName`, `oilStations`(연결된 주유소 배열, 각각 `id`/`standardRestName`/`adminOverridden`)로 구성된다.
+전체 휴게소와 각 휴게소에 현재 연결된 주유소(0~1건)를 한 번에 반환한다(페이지네이션 없음). 응답은 `ApiResponse<List<T>>`이며 각 항목은 `serviceAreaCode`, `unitName`, `routeName`, `linkedOilStation`(연결된 주유소, 없으면 `null`)로 구성된다. `linkedOilStation`은 `id`/`standardRestName`/`routeName`/`serviceAreaAddress`/`direction`/`adminOverridden`을 담는다.
 
 #### GET /api/admin/oil-stations/search?name=
 
-주유소 이름으로 전체 `rest_oil`을 검색한다. 응답 각 항목은 `id`/`standardRestName`/`routeName`/`linkedRestStopName`(이미 다른 휴게소에 연결돼 있으면 그 휴게소명, 아니면 `null`)로 구성된다. `name`이 비어 있으면 빈 배열을 반환한다.
+주유소 이름으로 `rest_oil_price`를 검색한다. 응답 각 항목은 `id`/`standardRestName`/`routeName`/`serviceAreaAddress`/`direction`/`linkedRestStopName`(이미 다른 휴게소에 연결돼 있으면 그 휴게소명, 아니면 `null`)로 구성된다. `name`이 비어 있으면 빈 배열을 반환한다.
 
 #### PUT /api/admin/oil-stations/{oilId}/link
 
-JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연결한다(기존 연결이 있었다면 교체). 성공 시 `adminOverridden=true`로 바뀌어 이후 자동 매칭 배치가 이 행을 건드리지 않는다. 주유소 또는 휴게소가 없으면 `404 Not Found`.
+JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연결한다(기존 연결이 있었다면 교체). 성공 시 `adminOverridden=true`로 바뀌어 이후 자동 매칭 배치가 이 행을 건드리지 않는다. 같은 물리적 주유소의 `rest_oil` 행 전체도 함께 연결·잠금된다. 주유소 또는 휴게소가 없으면 `404 Not Found`.
 
 #### DELETE /api/admin/oil-stations/{oilId}/link
 
-연결을 해제한다(`restStopServiceAreaCode`를 `null`로). 이 경우도 `adminOverridden=true`로 잠겨 다음 배치가 같은 자동 매칭 결과로 다시 연결하지 않는다. 주유소가 없으면 `404 Not Found`.
+연결을 해제한다(`restStopServiceAreaCode`를 `null`로). 이 경우도 `adminOverridden=true`로 잠겨 다음 배치가 같은 자동 매칭 결과로 다시 연결하지 않으며, 같은 물리적 주유소의 `rest_oil` 행 전체도 함께 해제·잠금된다. 주유소가 없으면 `404 Not Found`.
 
 #### DELETE /api/admin/oil-stations/{oilId}/override
 
-잠금을 해제해 다음 자동 매칭 배치부터 다시 갱신 대상이 되게 한다(연결 값 자체는 즉시 바뀌지 않고 다음 배치 실행 시 재계산된다). 주유소가 없으면 `404 Not Found`.
+잠금을 해제해 다음 자동 매칭 배치부터 다시 갱신 대상이 되게 한다(연결 값 자체는 즉시 바뀌지 않고 다음 배치 실행 시 재계산된다). 같은 물리적 주유소의 `rest_oil` 행 전체도 함께 잠금 해제된다. 주유소가 없으면 `404 Not Found`.
 
 ### POST /api/rest-stops/{serviceAreaCode}/oil-price/refresh
 

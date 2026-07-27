@@ -178,6 +178,7 @@ test('관리 버튼을 누르면 모달이 열리고 현재 연결 목록을 보
     const currentList = document.elements.get('oilLinkCurrentList');
     assert.equal(currentList.children.length, 1);
     assert.equal(currentList.children[0].children[0].textContent, 'SK에너지 마장주유소');
+    assert.equal(currentList.children[0].children[1].textContent, '중부내륙선 · 충북 음성군 · 서울 방향');
 });
 
 test('연결이 없으면 모달에 빈 상태 문구를 보여준다', async () => {
@@ -203,7 +204,7 @@ test('관리자가 잠근 연결에만 자동 매칭으로 되돌리기 버튼�
     await row.children[4].children[0].handlers.click();
 
     const item = document.elements.get('oilLinkCurrentList').children[0];
-    assert.equal(item.children.length, 3);
+    assert.equal(item.children.length, 4);
 });
 
 test('모달 닫기 버튼은 그냥 닫는다', async () => {
@@ -238,7 +239,7 @@ test('연결 해제 버튼을 누르면 해제하고 목록과 모달을 새로�
     await initAndLoad(document, fetchImpl, (message, type) => notices.push({ message, type }));
     const row = document.elements.get('oilLinkTableBody').children[0];
     await row.children[4].children[0].handlers.click();
-    const unlinkButton = document.elements.get('oilLinkCurrentList').children[0].children[1];
+    const unlinkButton = document.elements.get('oilLinkCurrentList').children[0].children[2];
     await unlinkButton.handlers.click();
 
     assert.equal(unlinkedUrl, '/api/admin/oil-stations/1/link');
@@ -258,7 +259,14 @@ test('검색어를 입력하면 검색 후 결과에 연결 버튼을 보여준�
                 ok: true,
                 json: async () => ({
                     code: 'SUCCESS',
-                    data: [{ id: 5, standardRestName: 'SK에너지 마장주유소', linkedRestStopName: null }]
+                    data: [{
+                        id: 5,
+                        standardRestName: 'SK에너지 마장주유소',
+                        routeName: '중부내륙선',
+                        serviceAreaAddress: '충북 음성군',
+                        direction: '서울',
+                        linkedRestStopName: null
+                    }]
                 })
             };
         }
@@ -276,6 +284,7 @@ test('검색어를 입력하면 검색 후 결과에 연결 버튼을 보여준�
     const results = document.elements.get('oilLinkSearchResults');
     assert.equal(results.children.length, 1);
     assert.equal(results.children[0].children[0].textContent, 'SK에너지 마장주유소');
+    assert.equal(results.children[0].children[1].textContent, '중부내륙선 · 충북 음성군 · 서울 방향');
 });
 
 test('검색 결과에 연결 버튼을 누르면 연결하고 모달을 새로고침한다', async () => {
@@ -317,7 +326,7 @@ test('검색 결과에 연결 버튼을 누르면 연결하고 모달을 새로�
     queryInput.value = '마장';
     await queryInput.handlers.input();
     await flushPromises();
-    const linkButton = document.elements.get('oilLinkSearchResults').children[0].children[1];
+    const linkButton = document.elements.get('oilLinkSearchResults').children[0].children[2];
     await linkButton.handlers.click();
 
     assert.deepEqual(linkedBody, { serviceAreaCode: 'A00099' });
@@ -352,5 +361,5 @@ test('이미 다른 휴게소에 연결된 검색 결과는 안내 문구를 함
     await flushPromises();
 
     const result = document.elements.get('oilLinkSearchResults').children[0];
-    assert.match(result.children[1].textContent, /현풍\(대구\)휴게소/);
+    assert.match(result.children[2].textContent, /현풍\(대구\)휴게소/);
 });

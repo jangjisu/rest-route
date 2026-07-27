@@ -69,6 +69,9 @@ class AdminRestOilLinkServiceTest {
         assertThat(first.serviceAreaCode()).isEqualTo("A00001");
         assertThat(first.linkedOilStation()).isNotNull();
         assertThat(first.linkedOilStation().standardRestName()).isEqualTo("서울만남(부산)주유소");
+        assertThat(first.linkedOilStation().routeName()).isEqualTo("경부선");
+        assertThat(first.linkedOilStation().serviceAreaAddress()).isEqualTo("서울시 서초구 원지동10-16");
+        assertThat(first.linkedOilStation().direction()).isEqualTo("부산");
         assertThat(first.linkedOilStation().adminOverridden()).isTrue();
         AdminRestOilLinkSummaryResponse second = result.get(1);
         assertThat(second.serviceAreaCode()).isEqualTo("A00099");

@@ -138,11 +138,23 @@ export function initializeAdminRestOilLink(document, {
         renderCurrentLink(updated.linkedOilStation);
     }
 
-    function createCurrentLinkItem(oil) {
-        const item = document.createElement('li');
+    function appendOilStationDetail(item, oil) {
         const name = document.createElement('span');
+        name.className = 'oil-link-detail-name';
         name.textContent = oil.standardRestName;
         item.appendChild(name);
+
+        const detail = document.createElement('span');
+        detail.className = 'oil-link-detail-meta';
+        detail.textContent = [oil.routeName, oil.serviceAreaAddress, oil.direction ? `${oil.direction} 방향` : null]
+            .filter((value) => value)
+            .join(' · ');
+        item.appendChild(detail);
+    }
+
+    function createCurrentLinkItem(oil) {
+        const item = document.createElement('li');
+        appendOilStationDetail(item, oil);
 
         const unlinkButton = document.createElement('button');
         unlinkButton.type = 'button';
@@ -193,9 +205,7 @@ export function initializeAdminRestOilLink(document, {
 
     function createSearchResultItem(oil) {
         const item = document.createElement('li');
-        const name = document.createElement('span');
-        name.textContent = oil.standardRestName;
-        item.appendChild(name);
+        appendOilStationDetail(item, oil);
 
         if (oil.linkedRestStopName) {
             const linkedText = document.createElement('span');
