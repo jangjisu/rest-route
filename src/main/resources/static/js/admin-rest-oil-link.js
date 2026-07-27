@@ -33,9 +33,10 @@ export function initializeAdminRestOilLink(document, {
     const modalTitle = document.getElementById('oilLinkModalTitle');
     const currentList = document.getElementById('oilLinkCurrentList');
     const searchQuery = document.getElementById('oilLinkSearchQuery');
+    const searchRoute = document.getElementById('oilLinkSearchRoute');
     const searchResults = document.getElementById('oilLinkSearchResults');
     if (!csrfSource || !status || !totalCount || !missingCount || !searchInput || !missingOnlyButton || !tableBody
-        || !modal || !modalClose || !modalTitle || !currentList || !searchQuery || !searchResults) {
+        || !modal || !modalClose || !modalTitle || !currentList || !searchQuery || !searchRoute || !searchResults) {
         return;
     }
 
@@ -109,6 +110,26 @@ export function initializeAdminRestOilLink(document, {
         );
     }
 
+    function populateRouteOptions() {
+        const previousValue = searchRoute.value;
+        const routeNames = [...new Set(allRestStops.map((restStop) => restStop.routeName).filter(Boolean))].sort(
+            (a, b) => a.localeCompare(b, 'ko')
+        );
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '전체 노선';
+        const routeOptions = routeNames.map((routeName) => {
+            const option = document.createElement('option');
+            option.value = routeName;
+            option.textContent = routeName;
+            return option;
+        });
+        searchRoute.replaceChildren(defaultOption, ...routeOptions);
+        if (routeNames.includes(previousValue)) {
+            searchRoute.value = previousValue;
+        }
+    }
+
     async function loadOilLinks() {
         status.textContent = '불러오는 중입니다.';
         const result = await fetchOilLinks(fetchImpl);
@@ -120,6 +141,7 @@ export function initializeAdminRestOilLink(document, {
         status.textContent = '';
         renderSummary();
         renderTable();
+        populateRouteOptions();
     }
 
     async function reloadAndRefreshModal() {
@@ -235,13 +257,14 @@ export function initializeAdminRestOilLink(document, {
         return item;
     }
 
-    async function runSearch(name) {
-        const trimmed = name.trim();
-        if (trimmed === '') {
+    async function runSearch() {
+        const name = searchQuery.value.trim();
+        const routeName = searchRoute.value;
+        if (name === '' && routeName === '') {
             searchResults.replaceChildren();
             return;
         }
-        const result = await searchOilStations(trimmed, fetchImpl);
+        const result = await searchOilStations(name, routeName, fetchImpl);
         if (result.status !== 'success') {
             searchResults.replaceChildren();
             return;
@@ -260,8 +283,9 @@ export function initializeAdminRestOilLink(document, {
         modalTitle.textContent = restStop.unitName;
         renderCurrentLink(restStop.linkedOilStation);
         searchQuery.value = '';
-        searchResults.replaceChildren();
+        searchRoute.value = restStop.routeName ?? '';
         modal.showModal();
+        runSearch();
     }
 
     searchInput.addEventListener('input', renderTable);
@@ -279,12 +303,15 @@ export function initializeAdminRestOilLink(document, {
 
     searchQuery.addEventListener('input', () => {
         clearTimeout(searchDebounceTimer);
-        const value = searchQuery.value;
         if (debounceMs === 0) {
-            runSearch(value);
+            runSearch();
             return;
         }
-        searchDebounceTimer = setTimeout(() => runSearch(value), debounceMs);
+        searchDebounceTimer = setTimeout(() => runSearch(), debounceMs);
+    });
+
+    searchRoute.addEventListener('change', () => {
+        runSearch();
     });
 
     loadOilLinks();

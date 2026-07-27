@@ -72,9 +72,15 @@
     </div>
     <h4 class="form-section-title">현재 연결된 주유소</h4>
     <ul id="oilLinkCurrentList" class="oil-link-current-list"></ul>
-    <h4 class="form-section-title">주유소 이름으로 검색해서 연결</h4>
-    <label class="visually-hidden" for="oilLinkSearchQuery">주유소명 검색</label>
-    <input id="oilLinkSearchQuery" class="oil-link-input" type="text" placeholder="예: 마장">
+    <h4 class="form-section-title">주유소 검색해서 연결</h4>
+    <div class="oil-link-search-filters">
+        <label class="visually-hidden" for="oilLinkSearchRoute">노선 선택</label>
+        <select id="oilLinkSearchRoute" class="oil-link-input oil-link-route-select">
+            <option value="">전체 노선</option>
+        </select>
+        <label class="visually-hidden" for="oilLinkSearchQuery">주유소명 검색</label>
+        <input id="oilLinkSearchQuery" class="oil-link-input" type="text" placeholder="예: 마장">
+    </div>
     <ul id="oilLinkSearchResults" class="oil-link-search-results"></ul>
 </dialog>
 <th:block th:replace="~{fragments/admin-shell :: chrome}"></th:block>

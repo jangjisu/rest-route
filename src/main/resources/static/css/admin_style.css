@@ -185,3 +185,5 @@ h1 { margin: 0; font-size: 28px; letter-spacing: -.7px; }
 .oil-link-search-linked { font-size: 11px; color: var(--accent); }
 .oil-link-detail-name { font-weight: 700; }
 .oil-link-detail-meta { flex-basis: 100%; font-size: 11.5px; color: var(--muted); }
+.oil-link-search-filters { display: flex; gap: 8px; }
+.oil-link-route-select { flex: 0 0 130px; }

@@ -44,13 +44,26 @@ public class AdminRestOilLinkService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminOilStationSearchResponse> search(String name) {
-        if (!StringUtils.hasText(name)) {
-            return List.of();
-        }
-        return restOilPriceRepository.findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc(name).stream()
+    public List<AdminOilStationSearchResponse> search(String name, String routeName) {
+        return findMatches(name, routeName).stream()
                 .map(oilPrice -> AdminOilStationSearchResponse.from(oilPrice, linkedRestStopName(oilPrice)))
                 .toList();
+    }
+
+    private List<RestOilPriceEntity> findMatches(String name, String routeName) {
+        boolean hasName = StringUtils.hasText(name);
+        boolean hasRoute = StringUtils.hasText(routeName);
+        if (hasName && hasRoute) {
+            return restOilPriceRepository.findAllByRouteNameAndServiceAreaNameContainingIgnoreCaseOrderByIdAsc(
+                    routeName, name);
+        }
+        if (hasRoute) {
+            return restOilPriceRepository.findAllByRouteNameOrderByIdAsc(routeName);
+        }
+        if (hasName) {
+            return restOilPriceRepository.findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc(name);
+        }
+        return List.of();
     }
 
     @Transactional

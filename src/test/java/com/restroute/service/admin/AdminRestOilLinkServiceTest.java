@@ -89,7 +89,7 @@ class AdminRestOilLinkServiceTest {
         when(restStopRepository.findByServiceAreaCode("A00099"))
                 .thenReturn(Optional.of(RestStopEntity.from(restStopItem("002", "마장휴게소", "A00099"))));
 
-        List<AdminOilStationSearchResponse> result = service.search("마장");
+        List<AdminOilStationSearchResponse> result = service.search("마장", null);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).linkedRestStopName()).isEqualTo("마장휴게소");
@@ -97,9 +97,33 @@ class AdminRestOilLinkServiceTest {
     }
 
     @Test
-    @DisplayName("검색어가 비어 있으면 조회하지 않고 빈 목록을 반환한다")
-    void search_returnsEmptyForBlankName() {
-        List<AdminOilStationSearchResponse> result = service.search(" ");
+    @DisplayName("노선만 선택하면 해당 노선 전체를 조회한다")
+    void search_returnsAllForRouteOnly() {
+        RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
+        when(restOilPriceRepository.findAllByRouteNameOrderByIdAsc("경부선")).thenReturn(List.of(oilPrice));
+
+        List<AdminOilStationSearchResponse> result = service.search(null, "경부선");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).standardRestName()).isEqualTo("SK에너지 마장주유소");
+    }
+
+    @Test
+    @DisplayName("이름과 노선을 함께 지정하면 둘 다 만족하는 항목만 조회한다")
+    void search_returnsMatchesForNameAndRoute() {
+        RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
+        when(restOilPriceRepository.findAllByRouteNameAndServiceAreaNameContainingIgnoreCaseOrderByIdAsc("경부선", "마장"))
+                .thenReturn(List.of(oilPrice));
+
+        List<AdminOilStationSearchResponse> result = service.search("마장", "경부선");
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("이름과 노선이 모두 비어 있으면 조회하지 않고 빈 목록을 반환한다")
+    void search_returnsEmptyWhenBothBlank() {
+        List<AdminOilStationSearchResponse> result = service.search(" ", " ");
 
         assertThat(result).isEmpty();
     }

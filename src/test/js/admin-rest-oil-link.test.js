@@ -56,6 +56,7 @@ function oilLinkDocument() {
         ['oilLinkModalTitle', interactiveElement()],
         ['oilLinkCurrentList', interactiveElement()],
         ['oilLinkSearchQuery', interactiveElement()],
+        ['oilLinkSearchRoute', interactiveElement()],
         ['oilLinkSearchResults', interactiveElement()]
     ]);
     return {
@@ -332,6 +333,100 @@ test('검색 결과에 연결 버튼을 누르면 연결하고 모달을 새로�
     assert.deepEqual(linkedBody, { serviceAreaCode: 'A00099' });
     assert.deepEqual(notices.at(-1), { message: '연결했습니다.', type: undefined });
     assert.equal(document.elements.get('oilLinkCurrentList').children.length, 1);
+});
+
+test('노선 select에 전체 휴게소의 노선명이 중복 없이 채워진다', async () => {
+    const document = oilLinkDocument();
+    const fetchImpl = async () =>
+        linksResponse([
+            restStop({ routeName: '경부선' }),
+            restStop({ serviceAreaCode: 'A00001', routeName: '중부내륙선' }),
+            restStop({ serviceAreaCode: 'A00002', routeName: '경부선' })
+        ]);
+
+    await initAndLoad(document, fetchImpl);
+
+    const routeSelect = document.elements.get('oilLinkSearchRoute');
+    assert.deepEqual(
+        routeSelect.children.map((option) => option.value),
+        ['', '경부선', '중부내륙선']
+    );
+});
+
+test('관리 버튼을 누르면 해당 휴게소의 노선이 검색 select에 미리 선택되고 자동으로 검색한다', async () => {
+    const document = oilLinkDocument();
+    let requestedUrl;
+    const fetchImpl = async (url) => {
+        if (url === '/api/admin/rest-stops/oil-links') {
+            return linksResponse([restStop({ routeName: '경부선' })]);
+        }
+        if (url.startsWith('/api/admin/oil-stations/search')) {
+            requestedUrl = url;
+            return { ok: true, json: async () => ({ code: 'SUCCESS', data: [] }) };
+        }
+        throw new Error(`Unexpected request: ${url}`);
+    };
+
+    await initAndLoad(document, fetchImpl);
+    const row = document.elements.get('oilLinkTableBody').children[0];
+    await row.children[4].children[0].handlers.click();
+    await flushPromises();
+
+    assert.equal(document.elements.get('oilLinkSearchRoute').value, '경부선');
+    assert.equal(requestedUrl, '/api/admin/oil-stations/search?routeName=%EA%B2%BD%EB%B6%80%EC%84%A0');
+});
+
+test('노선을 바꾸면 이름 없이도 그 노선 기준으로 다시 검색한다', async () => {
+    const document = oilLinkDocument();
+    let requestedUrl;
+    const fetchImpl = async (url) => {
+        if (url === '/api/admin/rest-stops/oil-links') {
+            return linksResponse([restStop({ routeName: '경부선' })]);
+        }
+        if (url.startsWith('/api/admin/oil-stations/search')) {
+            requestedUrl = url;
+            return { ok: true, json: async () => ({ code: 'SUCCESS', data: [] }) };
+        }
+        throw new Error(`Unexpected request: ${url}`);
+    };
+
+    await initAndLoad(document, fetchImpl);
+    const row = document.elements.get('oilLinkTableBody').children[0];
+    await row.children[4].children[0].handlers.click();
+    await flushPromises();
+    const routeSelect = document.elements.get('oilLinkSearchRoute');
+    routeSelect.value = '중부내륙선';
+    await routeSelect.handlers.change();
+
+    assert.equal(requestedUrl, '/api/admin/oil-stations/search?routeName=%EC%A4%91%EB%B6%80%EB%82%B4%EB%A5%99%EC%84%A0');
+});
+
+test('이름과 노선을 함께 지정하면 검색 요청에 둘 다 포함된다', async () => {
+    const document = oilLinkDocument();
+    let requestedUrl;
+    const fetchImpl = async (url) => {
+        if (url === '/api/admin/rest-stops/oil-links') {
+            return linksResponse([restStop({ routeName: '경부선' })]);
+        }
+        if (url.startsWith('/api/admin/oil-stations/search')) {
+            requestedUrl = url;
+            return { ok: true, json: async () => ({ code: 'SUCCESS', data: [] }) };
+        }
+        throw new Error(`Unexpected request: ${url}`);
+    };
+
+    await initAndLoad(document, fetchImpl);
+    const row = document.elements.get('oilLinkTableBody').children[0];
+    await row.children[4].children[0].handlers.click();
+    await flushPromises();
+    const queryInput = document.elements.get('oilLinkSearchQuery');
+    queryInput.value = '마장';
+    await queryInput.handlers.input();
+
+    assert.equal(
+        requestedUrl,
+        '/api/admin/oil-stations/search?name=%EB%A7%88%EC%9E%A5&routeName=%EA%B2%BD%EB%B6%80%EC%84%A0'
+    );
 });
 
 test('이미 다른 휴게소에 연결된 검색 결과는 안내 문구를 함께 보여준다', async () => {

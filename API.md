@@ -669,9 +669,9 @@ JSON 바디로 기존 메뉴(동기화 메뉴 포함) 값을 수정한다. 저�
 
 전체 휴게소와 각 휴게소에 현재 연결된 주유소(0~1건)를 한 번에 반환한다(페이지네이션 없음). 응답은 `ApiResponse<List<T>>`이며 각 항목은 `serviceAreaCode`, `unitName`, `routeName`, `linkedOilStation`(연결된 주유소, 없으면 `null`)로 구성된다. `linkedOilStation`은 `id`/`standardRestName`/`routeName`/`serviceAreaAddress`/`direction`/`adminOverridden`을 담는다.
 
-#### GET /api/admin/oil-stations/search?name=
+#### GET /api/admin/oil-stations/search?name=&routeName=
 
-주유소 이름으로 `rest_oil_price`를 검색한다. 응답 각 항목은 `id`/`standardRestName`/`routeName`/`serviceAreaAddress`/`direction`/`linkedRestStopName`(이미 다른 휴게소에 연결돼 있으면 그 휴게소명, 아니면 `null`)로 구성된다. `name`이 비어 있으면 빈 배열을 반환한다.
+`rest_oil_price`를 이름(`name`, 부분·대소문자 무관 일치)과 노선명(`routeName`, 정확히 일치) 조건으로 검색한다. 둘 다 선택 파라미터이며 하나만 줘도 그 조건만으로 조회하고, 둘 다 주면 두 조건을 모두 만족하는 행만 반환한다. 응답 각 항목은 `id`/`standardRestName`/`routeName`/`serviceAreaAddress`/`direction`/`linkedRestStopName`(이미 다른 휴게소에 연결돼 있으면 그 휴게소명, 아니면 `null`)로 구성된다. `name`과 `routeName`이 모두 비어 있으면 빈 배열을 반환한다.
 
 #### PUT /api/admin/oil-stations/{oilId}/link
 

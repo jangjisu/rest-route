@@ -20,9 +20,16 @@ export async function fetchOilLinks(fetchImpl = fetch) {
     }
 }
 
-export async function searchOilStations(name, fetchImpl = fetch) {
+export async function searchOilStations(name, routeName, fetchImpl = fetch) {
     try {
-        const response = await fetchImpl(`${OIL_STATIONS_SEARCH_ENDPOINT}?name=${encodeURIComponent(name)}`, {
+        const params = new globalThis.URLSearchParams();
+        if (name) {
+            params.set('name', name);
+        }
+        if (routeName) {
+            params.set('routeName', routeName);
+        }
+        const response = await fetchImpl(`${OIL_STATIONS_SEARCH_ENDPOINT}?${params.toString()}`, {
             headers: { Accept: 'application/json' }
         });
         const body = await response.json();

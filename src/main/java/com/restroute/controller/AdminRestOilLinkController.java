@@ -33,8 +33,8 @@ public class AdminRestOilLinkController {
 
     @GetMapping("/api/admin/oil-stations/search")
     public ResponseEntity<ApiResponse<List<AdminOilStationSearchResponse>>> search(
-            @RequestParam(required = false) String name) {
-        return ResponseEntity.ok(ApiResponse.success(adminRestOilLinkService.search(name)));
+            @RequestParam(required = false) String name, @RequestParam(required = false) String routeName) {
+        return ResponseEntity.ok(ApiResponse.success(adminRestOilLinkService.search(name, routeName)));
     }
 
     @PutMapping("/api/admin/oil-stations/{oilId}/link")

@@ -47,4 +47,34 @@ class RestOilPriceRepositoryTest {
 
         assertThat(result).containsExactly(matching);
     }
+
+    @Test
+    @DisplayName("노선명으로 전체를 조회한다")
+    void findAllByRouteNameOrderByIdAsc_returnsMatchingRows() {
+        RestOilPriceEntity matching = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
+        RestOilPriceItem otherRouteItem = restOilPriceItem("000006", "기흥(부산)주유소");
+        ReflectionTestUtils.setField(otherRouteItem, "routeName", "중부내륙선");
+        restOilPriceRepository.saveAll(List.of(matching, RestOilPriceEntity.from(otherRouteItem)));
+
+        List<RestOilPriceEntity> result = restOilPriceRepository.findAllByRouteNameOrderByIdAsc("경부선");
+
+        assertThat(result).containsExactly(matching);
+    }
+
+    @Test
+    @DisplayName("노선명과 주유소명으로 함께 조회한다")
+    void findAllByRouteNameAndServiceAreaNameContainingIgnoreCaseOrderByIdAsc_returnsMatchingRows() {
+        RestOilPriceEntity matching = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
+        RestOilPriceEntity sameRouteDifferentName = RestOilPriceEntity.from(restOilPriceItem("000006", "기흥(부산)주유소"));
+        RestOilPriceItem otherRouteSameNameItem = restOilPriceItem("000009", "서울만남(부산)주유소");
+        ReflectionTestUtils.setField(otherRouteSameNameItem, "routeName", "중부내륙선");
+        restOilPriceRepository.saveAll(
+                List.of(matching, sameRouteDifferentName, RestOilPriceEntity.from(otherRouteSameNameItem)));
+
+        List<RestOilPriceEntity> result =
+                restOilPriceRepository.findAllByRouteNameAndServiceAreaNameContainingIgnoreCaseOrderByIdAsc(
+                        "경부선", "만남");
+
+        assertThat(result).containsExactly(matching);
+    }
 }

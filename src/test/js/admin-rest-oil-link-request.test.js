@@ -38,7 +38,7 @@ test('fetchOilLinks는 네트워크 실패 시 error 상태를 낸다', async ()
 test('searchOilStations는 이름으로 검색해 주유소 배열을 반환한다', async () => {
     const oilStations = [{ id: 1, standardRestName: 'SK에너지 마장주유소', linkedRestStopName: null }];
     let requestedUrl;
-    const result = await searchOilStations('마장', async (url) => {
+    const result = await searchOilStations('마장', null, async (url) => {
         requestedUrl = url;
         return jsonResponse(200, { code: 'SUCCESS', data: oilStations });
     });
@@ -47,8 +47,29 @@ test('searchOilStations는 이름으로 검색해 주유소 배열을 반환한�
     assert.deepEqual(result, { status: 'success', oilStations });
 });
 
+test('searchOilStations는 노선명을 함께 지정하면 두 조건 모두 쿼리에 포함한다', async () => {
+    let requestedUrl;
+    const result = await searchOilStations('마장', '경부선', async (url) => {
+        requestedUrl = url;
+        return jsonResponse(200, { code: 'SUCCESS', data: [] });
+    });
+
+    assert.equal(requestedUrl, '/api/admin/oil-stations/search?name=%EB%A7%88%EC%9E%A5&routeName=%EA%B2%BD%EB%B6%80%EC%84%A0');
+    assert.equal(result.status, 'success');
+});
+
+test('searchOilStations는 이름 없이 노선만으로도 검색할 수 있다', async () => {
+    let requestedUrl;
+    await searchOilStations(null, '경부선', async (url) => {
+        requestedUrl = url;
+        return jsonResponse(200, { code: 'SUCCESS', data: [] });
+    });
+
+    assert.equal(requestedUrl, '/api/admin/oil-stations/search?routeName=%EA%B2%BD%EB%B6%80%EC%84%A0');
+});
+
 test('searchOilStations는 네트워크 실패 시 error 상태를 낸다', async () => {
-    const result = await searchOilStations('마장', async () => {
+    const result = await searchOilStations('마장', null, async () => {
         throw new Error('down');
     });
 
