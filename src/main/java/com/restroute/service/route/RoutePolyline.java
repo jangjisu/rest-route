@@ -40,13 +40,14 @@ public final class RoutePolyline {
             return;
         }
         List<Double> vertexes = road.vertexes();
+        Integer trafficState = road.trafficState();
         for (int i = 0; i + 1 < vertexes.size(); i += 2) {
             Double longitude = vertexes.get(i);
             Double latitude = vertexes.get(i + 1);
             if (longitude == null || latitude == null) {
                 continue;
             }
-            points.add(new Coordinate(longitude, latitude));
+            points.add(new Coordinate(longitude, latitude, trafficState));
         }
     }
 
@@ -108,7 +109,7 @@ public final class RoutePolyline {
         return EARTH_RADIUS_METERS * c;
     }
 
-    public record Coordinate(double longitude, double latitude) {}
+    public record Coordinate(double longitude, double latitude, Integer trafficState) {}
 
     public record Nearest(double distanceMeters, int index) {}
 }

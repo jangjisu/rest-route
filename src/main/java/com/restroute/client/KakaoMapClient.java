@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 public class KakaoMapClient {
 
     private static final String DEFAULT_PRIORITY = "RECOMMEND";
+    private static final boolean ROAD_DETAILS = true;
     private static final String API_NAME = "KAKAO";
 
     private final KakaoNaviFeignClient kakaoNaviFeignClient;
@@ -35,7 +36,8 @@ public class KakaoMapClient {
     public KakaoDirectionsResponse getDirections(String origin, String destination) {
         return fetch(
                 "directions",
-                () -> kakaoNaviFeignClient.getDirections(authorization(), origin, destination, DEFAULT_PRIORITY));
+                () -> kakaoNaviFeignClient.getDirections(
+                        authorization(), origin, destination, DEFAULT_PRIORITY, ROAD_DETAILS));
     }
 
     private String authorization() {

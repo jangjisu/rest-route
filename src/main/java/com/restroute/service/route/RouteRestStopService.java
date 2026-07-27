@@ -124,7 +124,8 @@ public class RouteRestStopService {
                     latitude,
                     longitude,
                     Math.round(nearest.distanceMeters()));
-            candidates.add(RouteRestStopCandidate.of(restStop, item, nearest.index()));
+            Integer trafficState = polyline.coordinates().get(nearest.index()).trafficState();
+            candidates.add(RouteRestStopCandidate.of(restStop, item, nearest.index(), trafficState));
         }
 
         Map<String, Long> groupCounts = candidates.stream()
@@ -159,8 +160,15 @@ public class RouteRestStopService {
                                 groupCounts.getOrDefault(comparison.candidate().groupKey(), 0L) > 1)
                         .withComparison(
                                 comparison.summary(),
-                                routeRestStopRecommendationTagService.create(comparison, recommendationStandards)))
+                                routeRestStopRecommendationTagService.create(comparison, recommendationStandards))
+                        .withNearbyTraffic(nearbyTraffic(comparison.candidate().trafficState())))
                 .toList();
+    }
+
+    private RouteRestStopResponse.NearbyTraffic nearbyTraffic(Integer trafficState) {
+        return NearbyTrafficStatus.from(trafficState)
+                .map(status -> RouteRestStopResponse.NearbyTraffic.of(status.key(), status.label()))
+                .orElse(null);
     }
 
     private String listImageUrl(String serviceAreaCode, Set<String> imageServiceAreaCodes) {

@@ -14,6 +14,7 @@ import {
     renderNationalOilPriceState,
     renderOilInfo,
     routeMapSelectionMessage,
+    routeNearbyTrafficBadge,
     routePointLabel,
     routeRecommendationLabels,
     shouldRequestRouteAutomatically,
@@ -194,6 +195,19 @@ test('routeRecommendationLabels returns comparison badge labels in response orde
     }), ['휘발유 최저가', '주차장 큼']);
     assert.deepEqual(routeRecommendationLabels({ recommendationTags: [] }), []);
     assert.deepEqual(routeRecommendationLabels({}), []);
+});
+
+test('routeNearbyTrafficBadge returns the key/label pair when present', () => {
+    assert.deepEqual(
+        routeNearbyTrafficBadge({ nearbyTraffic: { key: 'jam', label: '정체' } }),
+        { key: 'jam', label: '정체' }
+    );
+});
+
+test('routeNearbyTrafficBadge returns null when there is no traffic info', () => {
+    assert.equal(routeNearbyTrafficBadge({ nearbyTraffic: null }), null);
+    assert.equal(routeNearbyTrafficBadge({}), null);
+    assert.equal(routeNearbyTrafficBadge(undefined), null);
 });
 
 test('formatRouteComparisonSummary renders prices, parking, food and facility counts compactly', () => {

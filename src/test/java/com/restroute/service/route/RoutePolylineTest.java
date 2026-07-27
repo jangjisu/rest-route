@@ -80,6 +80,28 @@ class RoutePolylineTest {
     }
 
     @Test
+    @DisplayName("fromRoute는 각 좌표에 그 좌표가 속한 도로의 traffic_state를 채운다")
+    void fromRoute_fillsTrafficStatePerRoad() {
+        Road jamRoad = new Road("테헤란로", 24L, 9L, 9, 1, List.of(127.0, 37.0, 127.1, 37.1));
+        Road smoothRoad = new Road("경부선", 500L, 20L, 90, 4, List.of(128.0, 38.0));
+        Route route = new Route(0, null, List.of(new Section(List.of(jamRoad, smoothRoad))));
+
+        RoutePolyline polyline = RoutePolyline.fromRoute(route);
+
+        assertThat(polyline.coordinates().get(0).trafficState()).isEqualTo(1);
+        assertThat(polyline.coordinates().get(1).trafficState()).isEqualTo(1);
+        assertThat(polyline.coordinates().get(2).trafficState()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("도로에 traffic_state가 없으면 좌표의 trafficState도 null이다")
+    void fromRoute_leavesTrafficStateNullWhenRoadHasNone() {
+        RoutePolyline polyline = RoutePolyline.fromRoute(route(List.of(127.0, 37.0)));
+
+        assertThat(polyline.coordinates().get(0).trafficState()).isNull();
+    }
+
+    @Test
     @DisplayName("nearest는 최단거리(m)와 가장 가까운 정점 인덱스를 반환한다")
     void nearest_returnsClosest() {
         RoutePolyline polyline = RoutePolyline.fromRoute(route(List.of(127.0, 37.0, 128.0, 38.0)));
