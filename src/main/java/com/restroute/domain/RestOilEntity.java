@@ -53,6 +53,9 @@ public class RestOilEntity {
 
     private String restStopServiceAreaCode;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean adminOverridden;
+
     private RestOilEntity(RestOilItem item) {
         this.standardRestCode = item.getStandardRestCode();
         this.standardRestName = item.getStandardRestName();
@@ -89,6 +92,20 @@ public class RestOilEntity {
 
     public void updateRestStopServiceAreaCode(String restStopServiceAreaCode) {
         this.restStopServiceAreaCode = restStopServiceAreaCode;
+    }
+
+    public void applyAdminLink(String serviceAreaCode) {
+        this.restStopServiceAreaCode = serviceAreaCode;
+        this.adminOverridden = true;
+    }
+
+    public void clearAdminLink() {
+        this.restStopServiceAreaCode = null;
+        this.adminOverridden = true;
+    }
+
+    public void releaseToAutoMatching() {
+        this.adminOverridden = false;
     }
 
     public static RestOilEntity from(RestOilItem item) {

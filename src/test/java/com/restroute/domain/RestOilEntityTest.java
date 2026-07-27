@@ -44,4 +44,39 @@ class RestOilEntityTest {
         assertThat(RestOilEntity.normalizeStationName("서울만남 (부산) 휴게소")).isEqualTo("서울만남(부산)");
         assertThat(RestOilEntity.normalizeStationName("서울만남(부산)주유소")).isEqualTo("서울만남(부산)");
     }
+
+    @Test
+    @DisplayName("applyAdminLink는 연결 대상 휴게소를 설정하고 잠금 플래그를 켠다")
+    void applyAdminLink_setsRestStopAndLocksRow() {
+        RestOilEntity entity = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+
+        entity.applyAdminLink("A00001");
+
+        assertThat(entity.getRestStopServiceAreaCode()).isEqualTo("A00001");
+        assertThat(entity.isAdminOverridden()).isTrue();
+    }
+
+    @Test
+    @DisplayName("clearAdminLink는 연결을 비우고 잠금 플래그를 켠다")
+    void clearAdminLink_clearsRestStopAndLocksRow() {
+        RestOilEntity entity = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+        entity.applyAdminLink("A00001");
+
+        entity.clearAdminLink();
+
+        assertThat(entity.getRestStopServiceAreaCode()).isNull();
+        assertThat(entity.isAdminOverridden()).isTrue();
+    }
+
+    @Test
+    @DisplayName("releaseToAutoMatching은 잠금만 풀고 현재 연결 값은 그대로 둔다")
+    void releaseToAutoMatching_unlocksRowWithoutChangingLink() {
+        RestOilEntity entity = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+        entity.applyAdminLink("A00001");
+
+        entity.releaseToAutoMatching();
+
+        assertThat(entity.getRestStopServiceAreaCode()).isEqualTo("A00001");
+        assertThat(entity.isAdminOverridden()).isFalse();
+    }
 }

@@ -172,6 +172,36 @@ class AdminActivityLogServiceTest {
     }
 
     @Test
+    @DisplayName("주유소 연결을 기록한다")
+    void logOilStationLinked_savesEntryWithStationAndRestStopName() {
+        when(authentication.getName()).thenReturn("admin");
+        adminActivityLogService.logOilStationLinked(authentication, "SK에너지 마장주유소", "마장휴게소");
+
+        AdminActivityLogEntity saved = captureSavedEntity();
+        assertThat(saved.getMessage()).isEqualTo("SK에너지 마장주유소 주유소를 마장휴게소에 연결했습니다.");
+    }
+
+    @Test
+    @DisplayName("주유소 연결 해제를 기록한다")
+    void logOilStationUnlinked_savesEntryWithStationName() {
+        when(authentication.getName()).thenReturn("admin");
+        adminActivityLogService.logOilStationUnlinked(authentication, "SK에너지 마장주유소");
+
+        AdminActivityLogEntity saved = captureSavedEntity();
+        assertThat(saved.getMessage()).isEqualTo("SK에너지 마장주유소 주유소의 연결을 해제했습니다.");
+    }
+
+    @Test
+    @DisplayName("주유소 잠금 해제를 기록한다")
+    void logOilStationOverrideCleared_savesEntryWithStationName() {
+        when(authentication.getName()).thenReturn("admin");
+        adminActivityLogService.logOilStationOverrideCleared(authentication, "SK에너지 마장주유소");
+
+        AdminActivityLogEntity saved = captureSavedEntity();
+        assertThat(saved.getMessage()).isEqualTo("SK에너지 마장주유소 주유소를 자동 매칭으로 되돌렸습니다.");
+    }
+
+    @Test
     @DisplayName("최근 활동 로그를 레포지토리에서 그대로 반환한다")
     void findRecent_delegatesToRepository() {
         AdminActivityLogEntity entity = AdminActivityLogEntity.of("admin", "메시지", java.time.LocalDateTime.now());

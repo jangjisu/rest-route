@@ -3,6 +3,7 @@ package com.restroute.common;
 import com.restroute.client.exception.KakaoApiException;
 import com.restroute.service.admin.InvalidRestFoodEditException;
 import com.restroute.service.admin.InvalidRestStopEditException;
+import com.restroute.service.admin.RestOilNotFoundException;
 import com.restroute.service.image.InvalidRestStopImageException;
 import com.restroute.service.image.RestFoodNotFoundException;
 import com.restroute.service.image.RestStopNotFoundException;
@@ -65,6 +66,13 @@ public class GlobalExceptionHandler {
         log.warn("Invalid rest food edit: {}", e.getMessage());
         return ResponseEntity.status(ResponseCode.INVALID_PARAMETER.getHttpStatus())
                 .body(ApiResponse.error(ResponseCode.INVALID_PARAMETER, e.getMessage()));
+    }
+
+    @ExceptionHandler(RestOilNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRestOilNotFound(RestOilNotFoundException e) {
+        log.warn("Rest oil not found: {}", e.getMessage());
+        return ResponseEntity.status(ResponseCode.NOT_FOUND.getHttpStatus())
+                .body(ApiResponse.error(ResponseCode.NOT_FOUND, e.getMessage()));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

@@ -176,6 +176,39 @@ class RestStopServiceAreaCodeBackfillServiceTest {
     }
 
     @Test
+    @DisplayName("관리자가 연결을 잠근 주유소는 배치가 다시 자동 매칭해도 값을 바꾸지 않는다")
+    void backfill_skipsRestOilRowsLockedByAdmin() {
+        restStopRepository.save(RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001")));
+        restStopRepository.save(RestStopEntity.from(restStopItem("002", "다른휴게소", "A00099")));
+        RestOilEntity oil = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+        oil.applyAdminLink("A00099");
+        restOilRepository.save(oil);
+
+        backfillService.backfill();
+
+        RestOilEntity reloaded = restOilRepository.findAll().get(0);
+        assertThat(reloaded.getRestStopServiceAreaCode()).isEqualTo("A00099");
+        assertThat(reloaded.isAdminOverridden()).isTrue();
+    }
+
+    @Test
+    @DisplayName("관리자가 연결을 잠근 주유소 가격 정보는 배치가 다시 자동 매칭해도 값을 바꾸지 않는다")
+    void backfill_skipsRestOilPriceRowsLockedByAdmin() {
+        restStopRepository.save(RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001")));
+        restStopRepository.save(RestStopEntity.from(restStopItem("002", "다른휴게소", "A00099")));
+        restOilRepository.save(RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소")));
+        RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
+        oilPrice.applyAdminLink("A00099");
+        restOilPriceRepository.save(oilPrice);
+
+        backfillService.backfill();
+
+        RestOilPriceEntity reloaded = restOilPriceRepository.findAll().get(0);
+        assertThat(reloaded.getRestStopServiceAreaCode()).isEqualTo("A00099");
+        assertThat(reloaded.isAdminOverridden()).isTrue();
+    }
+
+    @Test
     @DisplayName("조회 키 기준 repository 메서드는 기존 조회 전환 전에도 사용할 수 있다")
     void repositories_findByRestStopServiceAreaCode() throws Exception {
         restStopRepository.save(RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001")));

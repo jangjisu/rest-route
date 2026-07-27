@@ -44,6 +44,11 @@ public class AdminController {
         return "admin-rest-stop-foods";
     }
 
+    @GetMapping("/admin/rest-stops/oil-links")
+    public String restStopOilLinks() {
+        return "admin-rest-stop-oil-links";
+    }
+
     @GetMapping("/api/admin/dashboard")
     @ResponseBody
     public ApiResponse<AdminDashboardSummary> dashboard() {

@@ -34,4 +34,17 @@ class RestOilPriceRepositoryTest {
         assertThat(result).isEqualTo(matching);
         assertThat(result.getGasolinePrice()).isEqualTo("1,999원");
     }
+
+    @Test
+    @DisplayName("주유소명으로 대소문자 구분 없이 부분 검색한다")
+    void findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc_returnsMatchingRows() {
+        RestOilPriceEntity matching = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
+        RestOilPriceEntity notMatching = RestOilPriceEntity.from(restOilPriceItem("000006", "기흥(부산)주유소"));
+        restOilPriceRepository.saveAll(List.of(matching, notMatching));
+
+        List<RestOilPriceEntity> result =
+                restOilPriceRepository.findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc("만남");
+
+        assertThat(result).containsExactly(matching);
+    }
 }

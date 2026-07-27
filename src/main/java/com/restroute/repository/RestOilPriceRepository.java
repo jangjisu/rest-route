@@ -10,4 +10,6 @@ public interface RestOilPriceRepository extends JpaRepository<RestOilPriceEntity
     Optional<RestOilPriceEntity> findByServiceAreaCode2(String serviceAreaCode2);
 
     List<RestOilPriceEntity> findAllByRestStopServiceAreaCodeOrderByIdAsc(String restStopServiceAreaCode);
+
+    List<RestOilPriceEntity> findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc(String serviceAreaName);
 }

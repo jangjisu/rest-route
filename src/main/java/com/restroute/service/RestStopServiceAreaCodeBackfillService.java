@@ -196,6 +196,9 @@ public class RestStopServiceAreaCodeBackfillService {
     private int backfillRestOils(Map<String, String> serviceAreaCodeByOilKey) {
         int mappedCount = 0;
         for (RestOilEntity oil : restOilRepository.findAll()) {
+            if (oil.isAdminOverridden()) {
+                continue;
+            }
             String key = oilRestStopKey(oil.getRouteCode(), oil.getNormalizedStationName());
             String restStopServiceAreaCode = serviceAreaCodeByOilKey.get(key);
             oil.updateRestStopServiceAreaCode(restStopServiceAreaCode);
@@ -209,6 +212,9 @@ public class RestStopServiceAreaCodeBackfillService {
     private int backfillRestOilPrices(Map<String, String> serviceAreaCodeByOilStandardRestCode) {
         int mappedCount = 0;
         for (RestOilPriceEntity oilPrice : restOilPriceRepository.findAll()) {
+            if (oilPrice.isAdminOverridden()) {
+                continue;
+            }
             String restStopServiceAreaCode = serviceAreaCodeByOilStandardRestCode.get(oilPrice.getServiceAreaCode2());
             oilPrice.updateRestStopServiceAreaCode(restStopServiceAreaCode);
             if (restStopServiceAreaCode != null) {

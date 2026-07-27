@@ -1,0 +1,195 @@
+package com.restroute.service.admin;
+
+import static com.restroute.support.RestStopTestFixtures.restOilItem;
+import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
+import static com.restroute.support.RestStopTestFixtures.restStopItem;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
+
+import com.restroute.controller.response.AdminOilStationSearchResponse;
+import com.restroute.controller.response.AdminRestOilLinkSummaryResponse;
+import com.restroute.domain.RestOilEntity;
+import com.restroute.domain.RestOilPriceEntity;
+import com.restroute.domain.RestStopEntity;
+import com.restroute.repository.RestOilPriceRepository;
+import com.restroute.repository.RestOilRepository;
+import com.restroute.repository.RestStopRepository;
+import com.restroute.service.image.RestStopNotFoundException;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+class AdminRestOilLinkServiceTest {
+
+    @Mock
+    private RestStopRepository restStopRepository;
+
+    @Mock
+    private RestOilRepository restOilRepository;
+
+    @Mock
+    private RestOilPriceRepository restOilPriceRepository;
+
+    private AdminRestOilLinkService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new AdminRestOilLinkService(restStopRepository, restOilRepository, restOilPriceRepository);
+    }
+
+    private RestOilPriceEntity oilPriceWithId(Long id, String serviceAreaCode2, String serviceAreaName) {
+        RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem(serviceAreaCode2, serviceAreaName));
+        ReflectionTestUtils.setField(oilPrice, "id", id);
+        return oilPrice;
+    }
+
+    @Test
+    @DisplayName("전체 휴게소마다 연결된 주유소를 함께 반환하고, 연결이 없으면 null이다")
+    void findAll_returnsLinkedOilStationPerRestStop() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001"));
+        RestStopEntity unlinkedRestStop = RestStopEntity.from(restStopItem("002", "마장휴게소", "A00099"));
+        RestOilPriceEntity linkedOilPrice = oilPriceWithId(1L, "000002", "서울만남(부산)주유소");
+        linkedOilPrice.applyAdminLink("A00001");
+        RestOilPriceEntity unmatchedOilPrice = oilPriceWithId(2L, "000006", "미매칭주유소");
+        when(restStopRepository.findAll()).thenReturn(List.of(restStop, unlinkedRestStop));
+        when(restOilPriceRepository.findAll()).thenReturn(List.of(linkedOilPrice, unmatchedOilPrice));
+
+        List<AdminRestOilLinkSummaryResponse> result = service.findAll();
+
+        assertThat(result).hasSize(2);
+        AdminRestOilLinkSummaryResponse first = result.get(0);
+        assertThat(first.serviceAreaCode()).isEqualTo("A00001");
+        assertThat(first.linkedOilStation()).isNotNull();
+        assertThat(first.linkedOilStation().standardRestName()).isEqualTo("서울만남(부산)주유소");
+        assertThat(first.linkedOilStation().adminOverridden()).isTrue();
+        AdminRestOilLinkSummaryResponse second = result.get(1);
+        assertThat(second.serviceAreaCode()).isEqualTo("A00099");
+        assertThat(second.linkedOilStation()).isNull();
+    }
+
+    @Test
+    @DisplayName("이름으로 주유소를 검색하면 이미 연결된 휴게소명을 함께 반환한다")
+    void search_returnsMatchesWithLinkedRestStopName() {
+        RestOilPriceEntity linkedOilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
+        linkedOilPrice.applyAdminLink("A00099");
+        RestOilPriceEntity unlinkedOilPrice = oilPriceWithId(2L, "000006", "SK에너지 마장주유소(하행)");
+        when(restOilPriceRepository.findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc("마장"))
+                .thenReturn(List.of(linkedOilPrice, unlinkedOilPrice));
+        when(restStopRepository.findByServiceAreaCode("A00099"))
+                .thenReturn(Optional.of(RestStopEntity.from(restStopItem("002", "마장휴게소", "A00099"))));
+
+        List<AdminOilStationSearchResponse> result = service.search("마장");
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).linkedRestStopName()).isEqualTo("마장휴게소");
+        assertThat(result.get(1).linkedRestStopName()).isNull();
+    }
+
+    @Test
+    @DisplayName("검색어가 비어 있으면 조회하지 않고 빈 목록을 반환한다")
+    void search_returnsEmptyForBlankName() {
+        List<AdminOilStationSearchResponse> result = service.search(" ");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("주유소를 휴게소에 연결하면 잠금 상태가 되고, 같은 물리적 주유소의 rest_oil 편의시설 행도 함께 연결된다")
+    void link_setsRestStopAndLocksRowAndCascadesToRestOil() {
+        RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
+        when(restOilPriceRepository.findById(1L)).thenReturn(Optional.of(oilPrice));
+        when(restStopRepository.findByServiceAreaCode("A00099"))
+                .thenReturn(Optional.of(RestStopEntity.from(restStopItem("002", "마장휴게소", "A00099"))));
+        RestOilEntity siblingOil = RestOilEntity.from(restOilItem("000002", "SK에너지 마장주유소"));
+        when(restOilRepository.findAllByStandardRestCodeOrderByIdAsc("000002")).thenReturn(List.of(siblingOil));
+
+        var result = service.link(1L, "A00099");
+
+        assertThat(result.restStopServiceAreaCode()).isEqualTo("A00099");
+        assertThat(result.adminOverridden()).isTrue();
+        assertThat(siblingOil.getRestStopServiceAreaCode()).isEqualTo("A00099");
+        assertThat(siblingOil.isAdminOverridden()).isTrue();
+    }
+
+    @Test
+    @DisplayName("표준 주유소 코드가 없는 주유소 가격 정보는 rest_oil로 전파하지 않고 연결만 반영한다")
+    void link_skipsCascadeWhenServiceAreaCode2Missing() {
+        RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
+        ReflectionTestUtils.setField(oilPrice, "serviceAreaCode2", null);
+        when(restOilPriceRepository.findById(1L)).thenReturn(Optional.of(oilPrice));
+        when(restStopRepository.findByServiceAreaCode("A00099"))
+                .thenReturn(Optional.of(RestStopEntity.from(restStopItem("002", "마장휴게소", "A00099"))));
+
+        var result = service.link(1L, "A00099");
+
+        assertThat(result.restStopServiceAreaCode()).isEqualTo("A00099");
+    }
+
+    @Test
+    @DisplayName("연결 대상 휴게소가 없으면 RestStopNotFoundException을 던진다")
+    void link_throwsWhenRestStopMissing() {
+        RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
+        when(restOilPriceRepository.findById(1L)).thenReturn(Optional.of(oilPrice));
+        when(restStopRepository.findByServiceAreaCode("UNKNOWN")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.link(1L, "UNKNOWN")).isInstanceOf(RestStopNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("주유소가 없으면 연결 시 RestOilNotFoundException을 던진다")
+    void link_throwsWhenOilMissing() {
+        when(restOilPriceRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.link(99L, "A00001")).isInstanceOf(RestOilNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("연결 해제하면 대상 휴게소가 비워지고 잠금 상태가 되며, rest_oil 편의시설 행도 함께 해제된다")
+    void unlink_clearsRestStopAndLocksRowAndCascadesToRestOil() {
+        RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
+        oilPrice.applyAdminLink("A00099");
+        when(restOilPriceRepository.findById(1L)).thenReturn(Optional.of(oilPrice));
+        RestOilEntity siblingOil = RestOilEntity.from(restOilItem("000002", "SK에너지 마장주유소"));
+        siblingOil.applyAdminLink("A00099");
+        when(restOilRepository.findAllByStandardRestCodeOrderByIdAsc("000002")).thenReturn(List.of(siblingOil));
+
+        var result = service.unlink(1L);
+
+        assertThat(result.restStopServiceAreaCode()).isNull();
+        assertThat(result.adminOverridden()).isTrue();
+        assertThat(siblingOil.getRestStopServiceAreaCode()).isNull();
+        assertThat(siblingOil.isAdminOverridden()).isTrue();
+    }
+
+    @Test
+    @DisplayName("잠금을 해제하면 자동 매칭 대상으로 돌아가며, rest_oil 편의시설 행도 함께 풀린다")
+    void clearOverride_unlocksRowAndCascadesToRestOil() {
+        RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
+        oilPrice.applyAdminLink("A00099");
+        when(restOilPriceRepository.findById(1L)).thenReturn(Optional.of(oilPrice));
+        RestOilEntity siblingOil = RestOilEntity.from(restOilItem("000002", "SK에너지 마장주유소"));
+        siblingOil.applyAdminLink("A00099");
+        when(restOilRepository.findAllByStandardRestCodeOrderByIdAsc("000002")).thenReturn(List.of(siblingOil));
+
+        var result = service.clearOverride(1L);
+
+        assertThat(result.adminOverridden()).isFalse();
+        assertThat(siblingOil.isAdminOverridden()).isFalse();
+    }
+
+    @Test
+    @DisplayName("없는 주유소의 잠금 해제는 예외를 던진다")
+    void clearOverride_throwsWhenOilMissing() {
+        when(restOilPriceRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.clearOverride(99L)).isInstanceOf(RestOilNotFoundException.class);
+    }
+}

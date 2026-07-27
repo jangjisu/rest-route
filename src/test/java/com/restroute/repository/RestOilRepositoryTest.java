@@ -36,4 +36,18 @@ class RestOilRepositoryTest {
 
         assertThat(result).containsExactly(first, second);
     }
+
+    @Test
+    @DisplayName("표준 주유소 코드 기준으로 같은 물리적 주유소의 편의시설 행 전체를 조회한다")
+    void findAllByStandardRestCode_returnsAllFacilityRowsForStation() {
+        RestOilEntity first = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+        RestOilItem secondItem = restOilItem("000002", "서울만남(부산)주유소");
+        ReflectionTestUtils.setField(secondItem, "convenienceName", "세차장");
+        RestOilEntity second = RestOilEntity.from(secondItem);
+        restOilRepository.saveAll(List.of(first, second, RestOilEntity.from(restOilItem("000006", "기흥(부산)주유소"))));
+
+        List<RestOilEntity> result = restOilRepository.findAllByStandardRestCodeOrderByIdAsc("000002");
+
+        assertThat(result).containsExactly(first, second);
+    }
 }
