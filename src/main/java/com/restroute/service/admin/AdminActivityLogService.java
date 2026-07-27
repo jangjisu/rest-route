@@ -26,6 +26,9 @@ public class AdminActivityLogService {
     private static final String CUSTOM_FOOD_DELETED_MESSAGE = "메뉴(%d)를 삭제했습니다.";
     private static final String CUSTOM_FOOD_IMAGE_SAVED_MESSAGE = "메뉴(%d) 이미지를 등록했습니다.";
     private static final String CUSTOM_FOOD_IMAGE_DELETED_MESSAGE = "메뉴(%d) 이미지를 삭제했습니다.";
+    private static final String OIL_STATION_LINKED_MESSAGE = "%s 주유소를 %s에 연결했습니다.";
+    private static final String OIL_STATION_UNLINKED_MESSAGE = "%s 주유소의 연결을 해제했습니다.";
+    private static final String OIL_STATION_OVERRIDE_CLEARED_MESSAGE = "%s 주유소를 자동 매칭으로 되돌렸습니다.";
 
     private final AdminActivityLogRepository adminActivityLogRepository;
 
@@ -92,6 +95,21 @@ public class AdminActivityLogService {
     @Transactional
     public void logCustomFoodImageDeleted(Authentication authentication, Long foodId) {
         record(authentication, String.format(CUSTOM_FOOD_IMAGE_DELETED_MESSAGE, foodId));
+    }
+
+    @Transactional
+    public void logOilStationLinked(Authentication authentication, String oilStationName, String restStopName) {
+        record(authentication, String.format(OIL_STATION_LINKED_MESSAGE, oilStationName, restStopName));
+    }
+
+    @Transactional
+    public void logOilStationUnlinked(Authentication authentication, String oilStationName) {
+        record(authentication, String.format(OIL_STATION_UNLINKED_MESSAGE, oilStationName));
+    }
+
+    @Transactional
+    public void logOilStationOverrideCleared(Authentication authentication, String oilStationName) {
+        record(authentication, String.format(OIL_STATION_OVERRIDE_CLEARED_MESSAGE, oilStationName));
     }
 
     @Transactional(readOnly = true)

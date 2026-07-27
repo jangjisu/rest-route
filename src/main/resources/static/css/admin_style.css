@@ -154,3 +154,36 @@ h1 { margin: 0; font-size: 28px; letter-spacing: -.7px; }
 .food-edit-modal[open] { display: flex; flex-direction: column; }
 .food-edit-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .food-edit-modal-header h3 { margin: 0; font-size: 15px; font-weight: 800; }
+
+/* ===== Admin rest-stop oil link ===== */
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.oil-link-summary { display: flex; gap: 10px; margin: 14px 0; }
+.oil-link-summary-card { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: var(--panel); }
+.oil-link-summary-card--warn { background: var(--warn-soft); }
+.oil-link-summary-label { font-size: 11px; color: var(--muted); }
+.oil-link-summary-value { font-size: 20px; font-weight: 800; }
+.oil-link-filters { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.oil-link-input { flex: 1; min-width: 0; padding: 9px 11px; color: var(--ink); background: #fbfcfd; border: 1px solid var(--line); border-radius: 5px; font-size: 13px; }
+.oil-link-input:focus { outline: 2px solid #9fd4c4; outline-offset: 1px; border-color: var(--accent); }
+.oil-link-filters button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.oil-link-table-wrap { overflow-x: auto; }
+.oil-link-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.oil-link-table th { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--line); font-size: 11.5px; color: var(--muted); }
+.oil-link-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.oil-link-table tbody tr:last-child td { border-bottom: none; }
+.oil-link-badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.oil-link-badge[data-state="linked"] { color: var(--accent); background: var(--soft); }
+.oil-link-badge[data-state="missing"] { color: var(--warn); background: var(--warn-soft); }
+.oil-link-manage { padding: 6px 12px; font-size: 11.5px; border-radius: 5px; }
+.oil-link-current-list { list-style: none; margin: 8px 0 18px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.oil-link-current-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; }
+.oil-link-current-list li button { padding: 5px 10px; font-size: 11.5px; border-radius: 5px; }
+.oil-link-current-empty { color: var(--muted); font-size: 12.5px; border: 1px dashed var(--line); border-radius: 8px; padding: 12px; text-align: center; }
+.oil-link-search-results { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
+.oil-link-search-results li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; }
+.oil-link-search-results li button { padding: 5px 10px; font-size: 11.5px; border-radius: 5px; margin-left: auto; }
+.oil-link-search-linked { font-size: 11px; color: var(--accent); }
+.oil-link-detail-name { font-weight: 700; }
+.oil-link-detail-meta { flex-basis: 100%; font-size: 11.5px; color: var(--muted); }
+.oil-link-search-filters { display: flex; gap: 8px; }
+.oil-link-route-select { flex: 0 0 130px; }
