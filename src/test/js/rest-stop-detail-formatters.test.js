@@ -15,10 +15,12 @@ import {
     formatSalesRankingMonth,
     normalizeSalesRankingStoreName,
     formatText,
+    hasEvents,
     hasFoodMenu,
     hasFoodSections,
     hasOilInfo,
     hasParkingInfo,
+    hasThemes,
     isMissingValue,
     orderFoodMenus,
     sortSalesRankingProducts,
@@ -210,14 +212,30 @@ test('hasParkingInfo detects any non-missing parking count', () => {
     assert.equal(hasParkingInfo(null), false);
 });
 
+test('hasThemes is true only when there is at least one theme', () => {
+    assert.equal(hasThemes([{ name: '4계절 꽃이 있는 휴게소' }]), true);
+    assert.equal(hasThemes([]), false);
+    assert.equal(hasThemes(null), false);
+    assert.equal(hasThemes(undefined), false);
+});
+
+test('hasEvents is true only when there is at least one event', () => {
+    assert.equal(hasEvents([{ name: 'TEN+1 이벤트' }]), true);
+    assert.equal(hasEvents([]), false);
+    assert.equal(hasEvents(null), false);
+    assert.equal(hasEvents(undefined), false);
+});
+
 test('availableDataTags returns present categories in fixed order', () => {
     const tags = availableDataTags({
         foodMenu: { menus: [{ menuName: '한우국밥' }] },
         compactCarParkingCount: 20,
-        oilInfo: { gasolinePrice: '1700' }
+        oilInfo: { gasolinePrice: '1700' },
+        themes: [{ name: '4계절 꽃이 있는 휴게소' }],
+        events: [{ name: 'TEN+1 이벤트' }]
     });
-    assert.deepEqual(tags.map((tag) => tag.key), ['food', 'parking', 'oil']);
-    assert.deepEqual(tags.map((tag) => tag.label), ['먹거리', '주차', '주유']);
+    assert.deepEqual(tags.map((tag) => tag.key), ['food', 'parking', 'oil', 'theme', 'event']);
+    assert.deepEqual(tags.map((tag) => tag.label), ['먹거리', '주차', '주유', '테마', '이벤트']);
 });
 
 test('availableDataTags omits categories without data', () => {
@@ -226,7 +244,9 @@ test('availableDataTags omits categories without data', () => {
         compactCarParkingCount: null,
         fullSizeCarParkingCount: null,
         disabledParkingCount: null,
-        oilInfo: { gasolinePrice: '1700' }
+        oilInfo: { gasolinePrice: '1700' },
+        themes: [],
+        events: []
     });
     assert.deepEqual(tags.map((tag) => tag.key), ['oil']);
 });

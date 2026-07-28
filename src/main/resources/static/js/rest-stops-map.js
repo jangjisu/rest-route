@@ -2274,6 +2274,20 @@ function createRouteResultItem(restStop, index) {
         appendTarget.appendChild(badge);
     }
 
+    if (restStop?.hasTheme === true) {
+        const themeBadge = document.createElement('span');
+        themeBadge.className = 'route-result-theme-badge';
+        themeBadge.textContent = '테마';
+        appendTarget.appendChild(themeBadge);
+    }
+
+    if (restStop?.hasEvent === true) {
+        const eventBadge = document.createElement('span');
+        eventBadge.className = 'route-result-event-badge';
+        eventBadge.textContent = '이벤트 진행중';
+        appendTarget.appendChild(eventBadge);
+    }
+
     const nearbyTraffic = routeNearbyTrafficBadge(restStop);
     if (nearbyTraffic) {
         const trafficBadge = document.createElement('span');

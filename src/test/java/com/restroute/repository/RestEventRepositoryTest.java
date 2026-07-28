@@ -45,4 +45,19 @@ class RestEventRepositoryTest {
 
         assertThat(result).isEmpty();
     }
+
+    @Test
+    @DisplayName("휴게소 코드 목록으로 이벤트를 한 번에 조회한다")
+    void findAllByRestStopServiceAreaCodeIn_returnsMatchingRows() {
+        RestEventEntity matching = RestEventEntity.from(restEventItem("000001", "1665"));
+        matching.updateRestStopServiceAreaCode("A00001");
+        RestEventEntity other = RestEventEntity.from(restEventItem("000099", "1"));
+        other.updateRestStopServiceAreaCode("A00099");
+        restEventRepository.saveAll(List.of(matching, other));
+
+        List<RestEventEntity> result =
+                restEventRepository.findAllByRestStopServiceAreaCodeIn(List.of("A00001", "A00050"));
+
+        assertThat(result).containsExactly(matching);
+    }
 }

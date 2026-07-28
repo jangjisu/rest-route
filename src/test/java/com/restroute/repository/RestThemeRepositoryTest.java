@@ -45,4 +45,19 @@ class RestThemeRepositoryTest {
 
         assertThat(result).isEmpty();
     }
+
+    @Test
+    @DisplayName("휴게소 코드 목록으로 테마를 한 번에 조회한다")
+    void findAllByRestStopServiceAreaCodeIn_returnsMatchingRows() {
+        RestThemeEntity matching = RestThemeEntity.from(restThemeItem("000001", "4계절 꽃이 있는 휴게소"));
+        matching.updateRestStopServiceAreaCode("A00001");
+        RestThemeEntity other = RestThemeEntity.from(restThemeItem("000099", "체육공원"));
+        other.updateRestStopServiceAreaCode("A00099");
+        restThemeRepository.saveAll(List.of(matching, other));
+
+        List<RestThemeEntity> result =
+                restThemeRepository.findAllByRestStopServiceAreaCodeIn(List.of("A00001", "A00050"));
+
+        assertThat(result).containsExactly(matching);
+    }
 }

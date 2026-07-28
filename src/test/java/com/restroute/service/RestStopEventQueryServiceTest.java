@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.restroute.controller.response.RestStopEventResponse;
 import com.restroute.domain.RestEventEntity;
 import com.restroute.domain.RestStopEntity;
+import com.restroute.repository.RestEventRepository;
 import com.restroute.repository.RestStopRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -36,12 +37,15 @@ class RestStopEventQueryServiceTest {
     @Mock
     private RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
 
+    @Mock
+    private RestEventRepository restEventRepository;
+
     private RestStopEventQueryService restStopEventQueryService;
 
     @BeforeEach
     void setUp() {
-        restStopEventQueryService =
-                new RestStopEventQueryService(restStopRepository, restStopRelatedInfoQueryService, CLOCK);
+        restStopEventQueryService = new RestStopEventQueryService(
+                restStopRepository, restStopRelatedInfoQueryService, restEventRepository, CLOCK);
     }
 
     @Test
@@ -147,6 +151,43 @@ class RestStopEventQueryServiceTest {
 
         assertThat(result).isPresent();
         assertThat(result.get().events()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("오늘 진행 중인 이벤트가 있는 휴게소 코드를 일괄 조회한다")
+    void findActiveEventMappedServiceAreaCodes_returnsOnlyCodesWithActiveEvents() {
+        RestEventEntity ongoing = eventWithPeriod("1", "2026-01-01", "2026-12-31");
+        ongoing.updateRestStopServiceAreaCode("A00001");
+        RestEventEntity ended = eventWithPeriod("2", "2020-01-01", "2021-01-01");
+        ended.updateRestStopServiceAreaCode("A00002");
+        when(restEventRepository.findAllByRestStopServiceAreaCodeIn(List.of("A00001", "A00002")))
+                .thenReturn(List.of(ongoing, ended));
+
+        List<String> result =
+                restStopEventQueryService.findActiveEventMappedServiceAreaCodes(List.of("A00001", "A00002"));
+
+        assertThat(result).containsExactly("A00001");
+    }
+
+    @Test
+    @DisplayName("한 휴게소에 진행 중인 이벤트가 여러 개여도 휴게소 코드는 중복하지 않는다")
+    void findActiveEventMappedServiceAreaCodes_removesDuplicateRestStops() {
+        RestEventEntity first = eventWithPeriod("1", "2026-01-01", "2026-12-31");
+        first.updateRestStopServiceAreaCode("A00001");
+        RestEventEntity second = eventWithPeriod("2", "2026-01-01", "2026-12-31");
+        second.updateRestStopServiceAreaCode("A00001");
+        when(restEventRepository.findAllByRestStopServiceAreaCodeIn(List.of("A00001")))
+                .thenReturn(List.of(first, second));
+
+        assertThat(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(List.of("A00001")))
+                .containsExactly("A00001");
+    }
+
+    @Test
+    @DisplayName("휴게소 코드가 없으면 진행 중인 이벤트를 조회하지 않는다")
+    void findActiveEventMappedServiceAreaCodes_returnsEmptyForBlankInput() {
+        assertThat(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(List.of("", " ")))
+                .isEmpty();
     }
 
     private RestEventEntity eventWithPeriod(String eventSeq, String stime, String etime) {

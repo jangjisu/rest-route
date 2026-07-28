@@ -35,4 +35,30 @@ class RouteRestStopResponseTest {
 
         assertThat(item.listImageUrl()).isEqualTo("/api/rest-stops/A/images/list");
     }
+
+    @Test
+    @DisplayName("테마/이벤트 배지 여부를 다른 필드를 보존하며 갱신한다")
+    void routeRestStopItem_withThemeAndWithEvent_preservesOtherFields() {
+        RouteRestStopResponse.RouteRestStopItem item = RouteRestStopResponse.RouteRestStopItem.of(
+                        "A", "A휴게소", "경부선", 37.0, 127.0, 12L)
+                .withListImageUrl("/api/rest-stops/A/images/list")
+                .withEvCharger(true)
+                .withTheme(true)
+                .withEvent(true);
+
+        assertThat(item.hasTheme()).isTrue();
+        assertThat(item.hasEvent()).isTrue();
+        assertThat(item.hasEvCharger()).isTrue();
+        assertThat(item.listImageUrl()).isEqualTo("/api/rest-stops/A/images/list");
+    }
+
+    @Test
+    @DisplayName("테마/이벤트 배지 기본값은 false다")
+    void routeRestStopItem_defaultsThemeAndEventToFalse() {
+        RouteRestStopResponse.RouteRestStopItem item =
+                RouteRestStopResponse.RouteRestStopItem.of("A", "A휴게소", "경부선", 37.0, 127.0, 12L);
+
+        assertThat(item.hasTheme()).isFalse();
+        assertThat(item.hasEvent()).isFalse();
+    }
 }
