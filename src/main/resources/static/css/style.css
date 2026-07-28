@@ -183,7 +183,7 @@ body.global-loading-open {
 .rest-stop-map-popup-card {
     position: relative;
     min-width: 190px;
-    max-width: 240px;
+    max-width: 300px;
     padding: 0.85rem 0.95rem;
     border: 1px solid oklch(91% 0.01 75);
     border-radius: 14px;
