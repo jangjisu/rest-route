@@ -21,6 +21,14 @@ public class RestThemeSyncService {
     private final RestThemeRepository restThemeRepository;
     private final TransactionTemplate transactionTemplate;
 
+    public int initializeRestThemesIfEmpty() {
+        if (restThemeRepository.count() > 0) {
+            return 0;
+        }
+
+        return refreshRestThemes();
+    }
+
     public int refreshRestThemes() {
         List<RestThemeItem> items = fetchRestThemes();
         transactionTemplate.executeWithoutResult(status -> upsertRestThemes(items));

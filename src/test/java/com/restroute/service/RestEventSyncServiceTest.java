@@ -50,6 +50,31 @@ class RestEventSyncServiceTest {
     }
 
     @Test
+    @DisplayName("테이블이 비어 있으면 이벤트를 초기 적재한다")
+    void initializeRestEventsIfEmpty_refreshesWhenTableIsEmpty() {
+        runTransactionCallback();
+        when(restEventRepository.count()).thenReturn(0L);
+        when(restEventRepository.findAll()).thenReturn(List.of());
+        RestEventItem item = restEventItem("000001", "1665");
+        when(exApiClient.getRestEventList()).thenReturn(restEventResponse("SUCCESS", List.of(item)));
+
+        int savedCount = restEventSyncService.initializeRestEventsIfEmpty();
+
+        assertThat(savedCount).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("테이블에 데이터가 있으면 이벤트 초기 적재를 생략한다")
+    void initializeRestEventsIfEmpty_skipsWhenTableHasData() {
+        when(restEventRepository.count()).thenReturn(1L);
+
+        int savedCount = restEventSyncService.initializeRestEventsIfEmpty();
+
+        assertThat(savedCount).isZero();
+        verify(exApiClient, never()).getRestEventList();
+    }
+
+    @Test
     @DisplayName("기존 DB에 없는 자연키(stdRestCd+eventSeq)의 이벤트는 새로 삽입한다")
     void refreshRestEvents_insertsNewRows() {
         runTransactionCallback();

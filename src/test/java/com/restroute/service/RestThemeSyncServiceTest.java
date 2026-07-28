@@ -50,6 +50,34 @@ class RestThemeSyncServiceTest {
     }
 
     @Test
+    @DisplayName("테이블이 비어 있으면 테마를 초기 적재한다")
+    void initializeRestThemesIfEmpty_refreshesWhenTableIsEmpty() {
+        runTransactionCallback();
+        when(restThemeRepository.count()).thenReturn(0L);
+        when(restThemeRepository.findAll()).thenReturn(List.of());
+        RestThemeItem item = restThemeItem("000001", "4계절 꽃이 있는 휴게소");
+        when(exApiClient.getRestThemeList()).thenReturn(restThemeResponse("SUCCESS", List.of(item)));
+
+        int savedCount = restThemeSyncService.initializeRestThemesIfEmpty();
+
+        assertThat(savedCount).isEqualTo(1);
+        assertThat(captureSavedEntities())
+                .extracting(RestThemeEntity::getItemNm)
+                .containsExactly("4계절 꽃이 있는 휴게소");
+    }
+
+    @Test
+    @DisplayName("테이블에 데이터가 있으면 테마 초기 적재를 생략한다")
+    void initializeRestThemesIfEmpty_skipsWhenTableHasData() {
+        when(restThemeRepository.count()).thenReturn(1L);
+
+        int savedCount = restThemeSyncService.initializeRestThemesIfEmpty();
+
+        assertThat(savedCount).isZero();
+        verify(exApiClient, never()).getRestThemeList();
+    }
+
+    @Test
     @DisplayName("기존 DB에 없는 자연키(stdRestCd+itemNm)의 테마는 새로 삽입한다")
     void refreshRestThemes_insertsNewRows() {
         runTransactionCallback();

@@ -21,6 +21,14 @@ public class RestEventSyncService {
     private final RestEventRepository restEventRepository;
     private final TransactionTemplate transactionTemplate;
 
+    public int initializeRestEventsIfEmpty() {
+        if (restEventRepository.count() > 0) {
+            return 0;
+        }
+
+        return refreshRestEvents();
+    }
+
     public int refreshRestEvents() {
         List<RestEventItem> items = fetchRestEvents();
         transactionTemplate.executeWithoutResult(status -> upsertRestEvents(items));
