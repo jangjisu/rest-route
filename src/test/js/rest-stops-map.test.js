@@ -11,8 +11,10 @@ import {
     formatOilPriceComparison,
     formatRouteComparisonSummary,
     isRouteGlobalLoadingState,
+    renderEventSection,
     renderNationalOilPriceState,
     renderOilInfo,
+    renderThemeBadges,
     routeMapSelectionMessage,
     routeNearbyTrafficBadge,
     routePointLabel,
@@ -87,6 +89,115 @@ function withFakeOilInfoDocument(callback) {
         globalThis.document = previousDocument;
     }
 }
+
+function withFakeThemeDocument(callback) {
+    const previousDocument = globalThis.document;
+    const elements = new Map([['restStopDetailThemes', createFakeElement(['d-none'])]]);
+
+    globalThis.document = {
+        createElement: () => createFakeElement(),
+        getElementById: (id) => elements.get(id) ?? null
+    };
+
+    try {
+        return callback(elements);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+}
+
+test('renderThemeBadges renders one badge per theme and reveals the list', () => {
+    withFakeThemeDocument((elements) => {
+        renderThemeBadges([
+            { name: '4계절 꽃이 있는 휴게소', detail: '365일 꽃향기가 나는 휴게소입니다' },
+            { name: '포토존', detail: '' }
+        ]);
+
+        const list = elements.get('restStopDetailThemes');
+        assert.equal(list.children.length, 2);
+        assert.equal(list.children[0].textContent, '4계절 꽃이 있는 휴게소');
+        assert.equal(list.children[0].title, '365일 꽃향기가 나는 휴게소입니다');
+        assert.equal(list.children[1].textContent, '포토존');
+        assert.equal(list.children[1].title, undefined);
+        assert.equal(list.classList.contains('d-none'), false);
+    });
+});
+
+test('renderThemeBadges hides the list when there are no themes', () => {
+    withFakeThemeDocument((elements) => {
+        renderThemeBadges([]);
+
+        assert.equal(elements.get('restStopDetailThemes').children.length, 0);
+        assert.equal(elements.get('restStopDetailThemes').classList.contains('d-none'), true);
+    });
+});
+
+test('renderThemeBadges tolerates missing or malformed input without throwing', () => {
+    withFakeThemeDocument((elements) => {
+        assert.doesNotThrow(() => renderThemeBadges(undefined));
+        assert.doesNotThrow(() => renderThemeBadges(null));
+        renderThemeBadges([{ name: '   ' }, { name: null }, 'not-an-object']);
+
+        assert.equal(elements.get('restStopDetailThemes').children.length, 0);
+        assert.equal(elements.get('restStopDetailThemes').classList.contains('d-none'), true);
+    });
+});
+
+function withFakeEventDocument(callback) {
+    const previousDocument = globalThis.document;
+    const elements = new Map([
+        ['restStopDetailEventSection', createFakeElement(['d-none'])],
+        ['restStopDetailEventList', createFakeElement()]
+    ]);
+
+    globalThis.document = {
+        createElement: () => createFakeElement(),
+        getElementById: (id) => elements.get(id) ?? null
+    };
+
+    try {
+        return callback(elements);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+}
+
+test('renderEventSection renders one item per event and reveals the section', () => {
+    withFakeEventDocument((elements) => {
+        renderEventSection([
+            { name: 'TEN+1 이벤트', detail: '한식당 식사 10번 이용 시 1번 무료', period: '2026.01.01 ~ 2026.12.31' },
+            { name: '포토존 이벤트', detail: '', period: '2026.03.01 ~ 2026.03.31' }
+        ]);
+
+        const list = elements.get('restStopDetailEventList');
+        assert.equal(list.children.length, 2);
+        assert.equal(list.children[0].children[0].textContent, 'TEN+1 이벤트');
+        assert.equal(list.children[0].children[1].textContent, '2026.01.01 ~ 2026.12.31');
+        assert.equal(list.children[0].children[2].textContent, '한식당 식사 10번 이용 시 1번 무료');
+        assert.equal(list.children[1].children.length, 2);
+        assert.equal(elements.get('restStopDetailEventSection').classList.contains('d-none'), false);
+    });
+});
+
+test('renderEventSection hides the section when there are no active events', () => {
+    withFakeEventDocument((elements) => {
+        renderEventSection([]);
+
+        assert.equal(elements.get('restStopDetailEventList').children.length, 0);
+        assert.equal(elements.get('restStopDetailEventSection').classList.contains('d-none'), true);
+    });
+});
+
+test('renderEventSection tolerates missing or malformed input without throwing', () => {
+    withFakeEventDocument((elements) => {
+        assert.doesNotThrow(() => renderEventSection(undefined));
+        assert.doesNotThrow(() => renderEventSection(null));
+        renderEventSection([{ name: '   ' }, { name: null }, 'not-an-object']);
+
+        assert.equal(elements.get('restStopDetailEventList').children.length, 0);
+        assert.equal(elements.get('restStopDetailEventSection').classList.contains('d-none'), true);
+    });
+});
 
 test('createPopupContent renders rest stop popup as a small summary card', () => {
     const content = createPopupContent({

@@ -2,6 +2,7 @@ package com.restroute.service;
 
 import com.restroute.domain.EvChargerStationMappingEntity;
 import com.restroute.domain.HighwayServiceAreaInfoEntity;
+import com.restroute.domain.RestEventEntity;
 import com.restroute.domain.RestFoodEntity;
 import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestOilPriceEntity;
@@ -9,9 +10,11 @@ import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.domain.RestStopProductSalesRankEntity;
 import com.restroute.domain.RestStopStoreSalesRankEntity;
+import com.restroute.domain.RestThemeEntity;
 import com.restroute.repository.EvChargerRepository;
 import com.restroute.repository.EvChargerStationMappingRepository;
 import com.restroute.repository.HighwayServiceAreaInfoRepository;
+import com.restroute.repository.RestEventRepository;
 import com.restroute.repository.RestFoodRepository;
 import com.restroute.repository.RestOilPriceRepository;
 import com.restroute.repository.RestOilRepository;
@@ -19,6 +22,7 @@ import com.restroute.repository.RestStopDetailRepository;
 import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
+import com.restroute.repository.RestThemeRepository;
 import com.restroute.service.evcharger.mapping.EvChargerStationMappingCalculator;
 import com.restroute.service.salesranking.SalesRankingRestStopNameNormalizer;
 import java.util.List;
@@ -43,6 +47,8 @@ public class RestStopServiceAreaCodeBackfillService {
     public static final String EV_CHARGER_MAPPED_COUNT = "evChargerMappedCount";
     public static final String PRODUCT_SALES_RANK_MAPPED_COUNT = "productSalesRankMappedCount";
     public static final String STORE_SALES_RANK_MAPPED_COUNT = "storeSalesRankMappedCount";
+    public static final String REST_THEME_MAPPED_COUNT = "restThemeMappedCount";
+    public static final String REST_EVENT_MAPPED_COUNT = "restEventMappedCount";
 
     private final RestStopRepository restStopRepository;
     private final RestStopDetailRepository restStopDetailRepository;
@@ -55,6 +61,8 @@ public class RestStopServiceAreaCodeBackfillService {
     private final EvChargerStationMappingCalculator evChargerStationMappingCalculator;
     private final RestStopProductSalesRankRepository productSalesRankRepository;
     private final RestStopStoreSalesRankRepository storeSalesRankRepository;
+    private final RestThemeRepository restThemeRepository;
+    private final RestEventRepository restEventRepository;
 
     @Transactional
     public Map<String, Integer> backfill() {
@@ -71,6 +79,8 @@ public class RestStopServiceAreaCodeBackfillService {
         int evChargerMappedCount = backfillEvChargerMappings(restStops);
         int productSalesRankMappedCount = backfillProductSalesRanks(restStops);
         int storeSalesRankMappedCount = backfillStoreSalesRanks(restStops);
+        int restThemeMappedCount = backfillRestThemes(serviceAreaCodeByStdRestCd);
+        int restEventMappedCount = backfillRestEvents(serviceAreaCodeByStdRestCd);
 
         Map<String, Integer> result = Map.of(
                 REST_STOP_DETAIL_MAPPED_COUNT,
@@ -88,12 +98,16 @@ public class RestStopServiceAreaCodeBackfillService {
                 PRODUCT_SALES_RANK_MAPPED_COUNT,
                 productSalesRankMappedCount,
                 STORE_SALES_RANK_MAPPED_COUNT,
-                storeSalesRankMappedCount);
+                storeSalesRankMappedCount,
+                REST_THEME_MAPPED_COUNT,
+                restThemeMappedCount,
+                REST_EVENT_MAPPED_COUNT,
+                restEventMappedCount);
         log.info(
                 "Rest stop service area code backfill completed. restStopDetailMappedCount={}, "
                         + "highwayServiceAreaInfoMappedCount={}, restFoodMappedCount={}, restOilMappedCount={}, "
                         + "restOilPriceMappedCount={}, evChargerMappedCount={}, productSalesRankMappedCount={}, "
-                        + "storeSalesRankMappedCount={}",
+                        + "storeSalesRankMappedCount={}, restThemeMappedCount={}, restEventMappedCount={}",
                 result.get(REST_STOP_DETAIL_MAPPED_COUNT),
                 result.get(HIGHWAY_SERVICE_AREA_INFO_MAPPED_COUNT),
                 result.get(REST_FOOD_MAPPED_COUNT),
@@ -101,7 +115,9 @@ public class RestStopServiceAreaCodeBackfillService {
                 result.get(REST_OIL_PRICE_MAPPED_COUNT),
                 result.get(EV_CHARGER_MAPPED_COUNT),
                 result.get(PRODUCT_SALES_RANK_MAPPED_COUNT),
-                result.get(STORE_SALES_RANK_MAPPED_COUNT));
+                result.get(STORE_SALES_RANK_MAPPED_COUNT),
+                result.get(REST_THEME_MAPPED_COUNT),
+                result.get(REST_EVENT_MAPPED_COUNT));
         return result;
     }
 
@@ -186,6 +202,30 @@ public class RestStopServiceAreaCodeBackfillService {
         for (RestFoodEntity food : restFoodRepository.findAll()) {
             String restStopServiceAreaCode = serviceAreaCodeByStdRestCd.get(food.getStdRestCd());
             food.updateRestStopServiceAreaCode(restStopServiceAreaCode);
+            if (restStopServiceAreaCode != null) {
+                mappedCount++;
+            }
+        }
+        return mappedCount;
+    }
+
+    private int backfillRestThemes(Map<String, String> serviceAreaCodeByStdRestCd) {
+        int mappedCount = 0;
+        for (RestThemeEntity theme : restThemeRepository.findAll()) {
+            String restStopServiceAreaCode = serviceAreaCodeByStdRestCd.get(theme.getStdRestCd());
+            theme.updateRestStopServiceAreaCode(restStopServiceAreaCode);
+            if (restStopServiceAreaCode != null) {
+                mappedCount++;
+            }
+        }
+        return mappedCount;
+    }
+
+    private int backfillRestEvents(Map<String, String> serviceAreaCodeByStdRestCd) {
+        int mappedCount = 0;
+        for (RestEventEntity event : restEventRepository.findAll()) {
+            String restStopServiceAreaCode = serviceAreaCodeByStdRestCd.get(event.getStdRestCd());
+            event.updateRestStopServiceAreaCode(restStopServiceAreaCode);
             if (restStopServiceAreaCode != null) {
                 mappedCount++;
             }

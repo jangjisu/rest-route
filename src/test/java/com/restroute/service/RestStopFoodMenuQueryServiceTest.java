@@ -51,7 +51,9 @@ class RestStopFoodMenuQueryServiceTest {
                         List.of(),
                         Optional.empty(),
                         Optional.empty(),
-                        List.of(recommendedFood)));
+                        List.of(recommendedFood),
+                        List.of(),
+                        List.of()));
 
         Optional<FoodMenuResponse> result = restStopFoodMenuQueryService.findByServiceAreaCode("A00001");
 
@@ -80,7 +82,14 @@ class RestStopFoodMenuQueryServiceTest {
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
         when(restStopRelatedInfoQueryService.findByRestStop(restStop))
                 .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(), List.of(), List.of(), Optional.empty(), Optional.empty(), List.of()));
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
 
         Optional<FoodMenuResponse> result = restStopFoodMenuQueryService.findByServiceAreaCode("A00001");
 

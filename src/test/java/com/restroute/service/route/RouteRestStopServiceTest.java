@@ -29,8 +29,10 @@ import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.service.NationalOilPriceService;
+import com.restroute.service.RestStopEventQueryService;
 import com.restroute.service.RestStopRelatedInfo;
 import com.restroute.service.RestStopRelatedInfoQueryService;
+import com.restroute.service.RestThemeQueryService;
 import com.restroute.service.evcharger.EvChargerQueryService;
 import com.restroute.service.image.RestStopImageQueryService;
 import java.util.List;
@@ -70,6 +72,12 @@ class RouteRestStopServiceTest {
     @Mock
     private RestStopImageQueryService restStopImageQueryService;
 
+    @Mock
+    private RestThemeQueryService restThemeQueryService;
+
+    @Mock
+    private RestStopEventQueryService restStopEventQueryService;
+
     private RouteRestStopService service;
 
     @BeforeEach
@@ -81,6 +89,12 @@ class RouteRestStopServiceTest {
         lenient()
                 .when(restStopImageQueryService.findExistingServiceAreaCodes(any()))
                 .thenReturn(Set.of());
+        lenient()
+                .when(restThemeQueryService.findThemeMappedServiceAreaCodes(any()))
+                .thenReturn(List.of());
+        lenient()
+                .when(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(any()))
+                .thenReturn(List.of());
         lenient()
                 .when(restStopRelatedInfoQueryService.findByRestStop(any(RestStopEntity.class)))
                 .thenReturn(emptyRelatedInfo());
@@ -94,7 +108,9 @@ class RouteRestStopServiceTest {
                 routeRestStopRecommendationTagService,
                 nationalOilPriceService,
                 evChargerQueryService,
-                restStopImageQueryService);
+                restStopImageQueryService,
+                restThemeQueryService,
+                restStopEventQueryService);
     }
 
     private KakaoLocalSearchResponse searchResult(String x, String y, String placeName, String addressName) {
@@ -265,6 +281,27 @@ class RouteRestStopServiceTest {
                 .singleElement()
                 .extracting(RouteRestStopResponse.RouteRestStopItem::hasEvCharger)
                 .isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("경로 휴게소는 매핑된 휴게소 코드로 hasTheme/hasEvent를 반환한다")
+    void success_includesThemeAndEventFlagsFromMappedCodes() {
+        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역", null));
+        when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
+                .thenReturn(directions(0, new Summary(100L, 200L), VERTEXES));
+        RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
+        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        when(restThemeQueryService.findThemeMappedServiceAreaCodes(List.of("A")))
+                .thenReturn(List.of("A"));
+        when(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(List.of("A")))
+                .thenReturn(List.of("A"));
+
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+
+        assertThat(response.restStops()).singleElement().satisfies(item -> {
+            assertThat(item.hasTheme()).isTrue();
+            assertThat(item.hasEvent()).isTrue();
+        });
     }
 
     @Test
@@ -635,6 +672,7 @@ class RouteRestStopServiceTest {
             List<RestOilEntity> oilConveniences,
             Optional<RestOilPriceEntity> oilPrice,
             List<RestFoodEntity> foods) {
-        return RestStopRelatedInfo.of(detail, infos, oilConveniences, Optional.empty(), oilPrice, foods);
+        return RestStopRelatedInfo.of(
+                detail, infos, oilConveniences, Optional.empty(), oilPrice, foods, List.of(), List.of());
     }
 }

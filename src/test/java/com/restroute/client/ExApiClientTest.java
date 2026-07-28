@@ -1,8 +1,10 @@
 package com.restroute.client;
 
 import static com.restroute.support.RestStopTestFixtures.highwayServiceAreaInfoResponse;
+import static com.restroute.support.RestStopTestFixtures.restEventResponse;
 import static com.restroute.support.RestStopTestFixtures.restStopDetailResponse;
 import static com.restroute.support.RestStopTestFixtures.restStopResponse;
+import static com.restroute.support.RestStopTestFixtures.restThemeResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -11,10 +13,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.client.exception.ExApiException;
 import com.restroute.client.response.HighwayServiceAreaInfoResponse;
 import com.restroute.client.response.RestBestfoodResponse;
+import com.restroute.client.response.RestEventResponse;
 import com.restroute.client.response.RestOilPriceResponse;
 import com.restroute.client.response.RestOilResponse;
 import com.restroute.client.response.RestStopDetailResponse;
 import com.restroute.client.response.RestStopResponse;
+import com.restroute.client.response.RestThemeResponse;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -70,6 +74,28 @@ class ExApiClientTest {
         when(exApiFeignClient.getHighwayServiceAreaInfoList("test-key", "json")).thenReturn(response);
 
         HighwayServiceAreaInfoResponse result = exApiClient.getHighwayServiceAreaInfoList();
+
+        assertThat(result).isSameAs(response);
+    }
+
+    @Test
+    @DisplayName("테마휴게소 API 호출 시 공통 인증키와 JSON 포맷을 적용한다")
+    void getRestThemeList_appliesDefaultParameters() {
+        RestThemeResponse response = restThemeResponse("SUCCESS", List.of());
+        when(exApiFeignClient.getRestThemeList("test-key", "json")).thenReturn(response);
+
+        RestThemeResponse result = exApiClient.getRestThemeList();
+
+        assertThat(result).isSameAs(response);
+    }
+
+    @Test
+    @DisplayName("휴게소 이벤트 API 호출 시 공통 인증키와 JSON 포맷을 적용한다")
+    void getRestEventList_appliesDefaultParameters() {
+        RestEventResponse response = restEventResponse("SUCCESS", List.of());
+        when(exApiFeignClient.getRestEventList("test-key", "json")).thenReturn(response);
+
+        RestEventResponse result = exApiClient.getRestEventList();
 
         assertThat(result).isSameAs(response);
     }

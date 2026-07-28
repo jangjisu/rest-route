@@ -56,6 +56,8 @@ class RestStopFacilityQueryServiceTest {
                         List.of(),
                         Optional.empty(),
                         Optional.empty(),
+                        List.of(),
+                        List.of(),
                         List.of()));
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
@@ -88,7 +90,14 @@ class RestStopFacilityQueryServiceTest {
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
         when(restStopRelatedInfoQueryService.findByRestStop(restStop))
                 .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(), List.of(), List.of(), Optional.empty(), Optional.empty(), List.of()));
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
@@ -111,7 +120,14 @@ class RestStopFacilityQueryServiceTest {
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
         when(restStopRelatedInfoQueryService.findByRestStop(restStop))
                 .thenReturn(RestStopRelatedInfo.of(
-                        Optional.of(detail), List.of(info), List.of(), Optional.empty(), Optional.empty(), List.of()));
+                        Optional.of(detail),
+                        List.of(info),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 

@@ -4,7 +4,8 @@ const DETAIL_SECTION_REQUESTS = [
     { key: 'facilities', path: 'facilities', required: false },
     { key: 'oilInfo', path: 'oil-info', required: false },
     { key: 'foodMenu', path: 'foods', required: false },
-    { key: 'salesRanking', path: 'sales-rankings', required: false }
+    { key: 'salesRanking', path: 'sales-rankings', required: false },
+    { key: 'events', path: 'events', required: false }
 ];
 
 export function createRestStopDetailRequest({
@@ -188,12 +189,14 @@ function buildDetailData(sectionResults) {
     const oilInfo = optionalSectionData(sectionResults, 'oilInfo', null);
     const foodMenu = optionalSectionData(sectionResults, 'foodMenu', emptyFoodMenu());
     const salesRanking = optionalSectionData(sectionResults, 'salesRanking', null);
+    const events = optionalSectionData(sectionResults, 'events', emptyEvents()).events ?? [];
 
     const detail = {
         ...basicInfo,
         ...facilities,
         oilInfo,
-        foodMenu
+        foodMenu,
+        events
     };
 
     if (salesRanking !== null) {
@@ -210,6 +213,10 @@ function optionalSectionData(sectionResults, key, fallback) {
 
 function emptyFoodMenu() {
     return { menus: [], sections: [] };
+}
+
+function emptyEvents() {
+    return { events: [] };
 }
 
 function hasExternalUnavailableSection(sectionResults) {

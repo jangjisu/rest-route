@@ -1,12 +1,14 @@
 package com.restroute.scheduler;
 
 import com.restroute.service.HighwayServiceAreaInfoSyncService;
+import com.restroute.service.RestEventSyncService;
 import com.restroute.service.RestFoodSyncService;
 import com.restroute.service.RestOilPriceSyncService;
 import com.restroute.service.RestOilSyncService;
 import com.restroute.service.RestStopDetailSyncService;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
 import com.restroute.service.RestStopSyncService;
+import com.restroute.service.RestThemeSyncService;
 import com.restroute.service.evcharger.EvChargerSyncResult;
 import com.restroute.service.evcharger.EvChargerSyncService;
 import java.util.Map;
@@ -26,6 +28,8 @@ public class RestStopScheduler {
     private final RestOilSyncService restOilSyncService;
     private final RestOilPriceSyncService restOilPriceSyncService;
     private final RestFoodSyncService restFoodSyncService;
+    private final RestThemeSyncService restThemeSyncService;
+    private final RestEventSyncService restEventSyncService;
     private final RestStopServiceAreaCodeBackfillService restStopServiceAreaCodeBackfillService;
     private final EvChargerSyncService evChargerSyncService;
 
@@ -36,6 +40,8 @@ public class RestStopScheduler {
         refreshHighwayServiceAreaInfos();
         refreshRestOils();
         refreshRestFoods();
+        refreshRestThemes();
+        refreshRestEvents();
         refreshEvChargers();
         backfillRestStopServiceAreaCodes();
     }
@@ -97,6 +103,24 @@ public class RestStopScheduler {
             log.info("Scheduled rest food sync completed. savedCount={}", savedCount);
         } catch (RuntimeException e) {
             log.error("Scheduled rest food sync failed. cause={}", e.getMessage(), e);
+        }
+    }
+
+    private void refreshRestThemes() {
+        try {
+            int savedCount = restThemeSyncService.refreshRestThemes();
+            log.info("Scheduled rest theme sync completed. savedCount={}", savedCount);
+        } catch (RuntimeException e) {
+            log.error("Scheduled rest theme sync failed. cause={}", e.getMessage(), e);
+        }
+    }
+
+    private void refreshRestEvents() {
+        try {
+            int savedCount = restEventSyncService.refreshRestEvents();
+            log.info("Scheduled rest event sync completed. savedCount={}", savedCount);
+        } catch (RuntimeException e) {
+            log.error("Scheduled rest event sync failed. cause={}", e.getMessage(), e);
         }
     }
 

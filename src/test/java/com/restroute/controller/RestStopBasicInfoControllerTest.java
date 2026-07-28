@@ -7,7 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.restroute.controller.response.RestStopBasicInfoResponse;
+import com.restroute.controller.response.RestStopBasicInfoResponse.ThemeInfo;
 import com.restroute.service.RestStopBasicInfoQueryService;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,7 +50,8 @@ class RestStopBasicInfoControllerTest {
                 "02-573-7430",
                 "투썸플레이스",
                 2,
-                "/api/rest-stops/A00001/images/detail");
+                "/api/rest-stops/A00001/images/detail",
+                List.of(new ThemeInfo("4계절 꽃이 있는 휴게소", "365일 꽃향기가 나는 휴게소입니다")));
         when(restStopBasicInfoQueryService.findByServiceAreaCode("A00001")).thenReturn(Optional.of(response));
 
         mockMvc.perform(get("/api/rest-stops/A00001/basic-info"))
@@ -67,7 +70,9 @@ class RestStopBasicInfoControllerTest {
                 .andExpect(jsonPath("$.data.telNo").value("02-573-7430"))
                 .andExpect(jsonPath("$.data.brand").value("투썸플레이스"))
                 .andExpect(jsonPath("$.data.evChargerCount").value(2))
-                .andExpect(jsonPath("$.data.detailImageUrl").value("/api/rest-stops/A00001/images/detail"));
+                .andExpect(jsonPath("$.data.detailImageUrl").value("/api/rest-stops/A00001/images/detail"))
+                .andExpect(jsonPath("$.data.themes[0].name").value("4계절 꽃이 있는 휴게소"))
+                .andExpect(jsonPath("$.data.themes[0].detail").value("365일 꽃향기가 나는 휴게소입니다"));
     }
 
     @Test
@@ -86,7 +91,8 @@ class RestStopBasicInfoControllerTest {
                 "02-573-7430",
                 "투썸플레이스",
                 2,
-                null);
+                null,
+                List.of());
         when(restStopBasicInfoQueryService.findByServiceAreaCode("A00001")).thenReturn(Optional.of(response));
 
         mockMvc.perform(get("/api/rest-stops/A00001/basic-info"))

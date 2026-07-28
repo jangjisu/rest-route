@@ -7,12 +7,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.restroute.service.HighwayServiceAreaInfoSyncService;
+import com.restroute.service.RestEventSyncService;
 import com.restroute.service.RestFoodSyncService;
 import com.restroute.service.RestOilPriceSyncService;
 import com.restroute.service.RestOilSyncService;
 import com.restroute.service.RestStopDetailSyncService;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
 import com.restroute.service.RestStopSyncService;
+import com.restroute.service.RestThemeSyncService;
 import com.restroute.service.evcharger.EvChargerSyncResult;
 import com.restroute.service.evcharger.EvChargerSyncService;
 import org.junit.jupiter.api.DisplayName;
@@ -47,6 +49,12 @@ class RestStopSchedulerTest {
     private RestFoodSyncService restFoodSyncService;
 
     @Mock
+    private RestThemeSyncService restThemeSyncService;
+
+    @Mock
+    private RestEventSyncService restEventSyncService;
+
+    @Mock
     private RestStopServiceAreaCodeBackfillService restStopServiceAreaCodeBackfillService;
 
     @Mock
@@ -63,6 +71,8 @@ class RestStopSchedulerTest {
         when(highwayServiceAreaInfoSyncService.refreshHighwayServiceAreaInfos()).thenReturn(581);
         when(restOilSyncService.refreshRestOils()).thenReturn(429);
         when(restFoodSyncService.refreshRestFoods()).thenReturn(7214);
+        when(restThemeSyncService.refreshRestThemes()).thenReturn(144);
+        when(restEventSyncService.refreshRestEvents()).thenReturn(898);
         when(evChargerSyncService.refreshEvChargers()).thenReturn(successfulEvChargerSync());
 
         restStopScheduler.syncRestStopsDaily();
@@ -72,6 +82,8 @@ class RestStopSchedulerTest {
         verify(highwayServiceAreaInfoSyncService).refreshHighwayServiceAreaInfos();
         verify(restOilSyncService).refreshRestOils();
         verify(restFoodSyncService).refreshRestFoods();
+        verify(restThemeSyncService).refreshRestThemes();
+        verify(restEventSyncService).refreshRestEvents();
         verify(evChargerSyncService).refreshEvChargers();
         InOrder inOrder = inOrder(
                 restStopSyncService,
@@ -79,6 +91,8 @@ class RestStopSchedulerTest {
                 highwayServiceAreaInfoSyncService,
                 restOilSyncService,
                 restFoodSyncService,
+                restThemeSyncService,
+                restEventSyncService,
                 restStopServiceAreaCodeBackfillService,
                 evChargerSyncService);
         inOrder.verify(restStopSyncService).refreshRestStops();
@@ -86,8 +100,33 @@ class RestStopSchedulerTest {
         inOrder.verify(highwayServiceAreaInfoSyncService).refreshHighwayServiceAreaInfos();
         inOrder.verify(restOilSyncService).refreshRestOils();
         inOrder.verify(restFoodSyncService).refreshRestFoods();
+        inOrder.verify(restThemeSyncService).refreshRestThemes();
+        inOrder.verify(restEventSyncService).refreshRestEvents();
         inOrder.verify(evChargerSyncService).refreshEvChargers();
         inOrder.verify(restStopServiceAreaCodeBackfillService).backfill();
+    }
+
+    @Test
+    @DisplayName("테마휴게소 동기화 실패를 로그로 기록하고 전파하지 않는다")
+    void syncRestStopsDaily_doesNotPropagateRestThemeFailure(CapturedOutput output) {
+        when(restThemeSyncService.refreshRestThemes()).thenThrow(new IllegalStateException("rest theme API failed"));
+
+        assertThatCode(restStopScheduler::syncRestStopsDaily).doesNotThrowAnyException();
+
+        assertThat(output).contains("Scheduled rest theme sync failed.").contains("rest theme API failed");
+        verify(restEventSyncService).refreshRestEvents();
+        verify(restStopServiceAreaCodeBackfillService).backfill();
+    }
+
+    @Test
+    @DisplayName("휴게소 이벤트 동기화 실패를 로그로 기록하고 전파하지 않는다")
+    void syncRestStopsDaily_doesNotPropagateRestEventFailure(CapturedOutput output) {
+        when(restEventSyncService.refreshRestEvents()).thenThrow(new IllegalStateException("rest event API failed"));
+
+        assertThatCode(restStopScheduler::syncRestStopsDaily).doesNotThrowAnyException();
+
+        assertThat(output).contains("Scheduled rest event sync failed.").contains("rest event API failed");
+        verify(restStopServiceAreaCodeBackfillService).backfill();
     }
 
     @Test

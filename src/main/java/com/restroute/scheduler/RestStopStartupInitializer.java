@@ -1,11 +1,13 @@
 package com.restroute.scheduler;
 
+import com.restroute.service.RestEventSyncService;
 import com.restroute.service.RestFoodSyncService;
 import com.restroute.service.RestOilPriceSyncService;
 import com.restroute.service.RestOilSyncService;
 import com.restroute.service.RestStopDetailSyncService;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
 import com.restroute.service.RestStopSyncService;
+import com.restroute.service.RestThemeSyncService;
 import com.restroute.service.evcharger.EvChargerSyncResult;
 import com.restroute.service.evcharger.EvChargerSyncService;
 import java.util.Map;
@@ -29,6 +31,8 @@ public class RestStopStartupInitializer implements ApplicationRunner {
     private final RestFoodSyncService restFoodSyncService;
     private final RestStopServiceAreaCodeBackfillService restStopServiceAreaCodeBackfillService;
     private final EvChargerSyncService evChargerSyncService;
+    private final RestThemeSyncService restThemeSyncService;
+    private final RestEventSyncService restEventSyncService;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -38,6 +42,8 @@ public class RestStopStartupInitializer implements ApplicationRunner {
         initializeRestOilPrices();
         initializeRestFoods();
         initializeEvChargers();
+        initializeRestThemes();
+        initializeRestEvents();
         backfillRestStopServiceAreaCodes();
     }
 
@@ -108,6 +114,34 @@ public class RestStopStartupInitializer implements ApplicationRunner {
             log.info("Initial rest food sync skipped because rest_food table already has data.");
         } catch (RuntimeException e) {
             log.error("Initial rest food sync failed. cause={}", e.getMessage(), e);
+        }
+    }
+
+    private void initializeRestThemes() {
+        try {
+            int savedCount = restThemeSyncService.initializeRestThemesIfEmpty();
+            if (savedCount > 0) {
+                log.info("Initial rest theme sync completed. savedCount={}", savedCount);
+                return;
+            }
+
+            log.info("Initial rest theme sync skipped because rest_theme table already has data.");
+        } catch (RuntimeException e) {
+            log.error("Initial rest theme sync failed. cause={}", e.getMessage(), e);
+        }
+    }
+
+    private void initializeRestEvents() {
+        try {
+            int savedCount = restEventSyncService.initializeRestEventsIfEmpty();
+            if (savedCount > 0) {
+                log.info("Initial rest event sync completed. savedCount={}", savedCount);
+                return;
+            }
+
+            log.info("Initial rest event sync skipped because rest_event table already has data.");
+        } catch (RuntimeException e) {
+            log.error("Initial rest event sync failed. cause={}", e.getMessage(), e);
         }
     }
 

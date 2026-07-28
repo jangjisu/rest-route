@@ -11,6 +11,8 @@ import com.restroute.controller.response.RouteRestStopResponse.RouteSummary;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.service.NationalOilPriceService;
+import com.restroute.service.RestStopEventQueryService;
+import com.restroute.service.RestThemeQueryService;
 import com.restroute.service.evcharger.EvChargerQueryService;
 import com.restroute.service.image.RestStopImageQueryService;
 import java.util.ArrayList;
@@ -38,6 +40,8 @@ public class RouteRestStopService {
     private final NationalOilPriceService nationalOilPriceService;
     private final EvChargerQueryService evChargerQueryService;
     private final RestStopImageQueryService restStopImageQueryService;
+    private final RestThemeQueryService restThemeQueryService;
+    private final RestStopEventQueryService restStopEventQueryService;
 
     public RouteRestStopResponse findRouteRestStops(
             double originLatitude,
@@ -139,6 +143,13 @@ public class RouteRestStopService {
         Set<String> imageServiceAreaCodes = restStopImageQueryService.findExistingServiceAreaCodes(candidates.stream()
                 .map(candidate -> candidate.restStop().getServiceAreaCode())
                 .toList());
+        List<String> candidateServiceAreaCodes = candidates.stream()
+                .map(candidate -> candidate.restStop().getServiceAreaCode())
+                .toList();
+        List<String> themeServiceAreaCodes =
+                restThemeQueryService.findThemeMappedServiceAreaCodes(candidateServiceAreaCodes);
+        List<String> activeEventServiceAreaCodes =
+                restStopEventQueryService.findActiveEventMappedServiceAreaCodes(candidateServiceAreaCodes);
         List<RouteRestStopComparison> comparisons = candidates.stream()
                 .map(candidate -> RouteRestStopComparison.of(
                         candidate,
@@ -155,6 +166,10 @@ public class RouteRestStopService {
                         .withListImageUrl(listImageUrl(
                                 comparison.candidate().restStop().getServiceAreaCode(), imageServiceAreaCodes))
                         .withEvCharger(mappedServiceAreaCodes.contains(
+                                comparison.candidate().restStop().getServiceAreaCode()))
+                        .withTheme(themeServiceAreaCodes.contains(
+                                comparison.candidate().restStop().getServiceAreaCode()))
+                        .withEvent(activeEventServiceAreaCodes.contains(
                                 comparison.candidate().restStop().getServiceAreaCode()))
                         .withDirectionAlternative(
                                 groupCounts.getOrDefault(comparison.candidate().groupKey(), 0L) > 1)

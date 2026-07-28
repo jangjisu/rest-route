@@ -183,7 +183,7 @@ body.global-loading-open {
 .rest-stop-map-popup-card {
     position: relative;
     min-width: 190px;
-    max-width: 240px;
+    max-width: 300px;
     padding: 0.85rem 0.95rem;
     border: 1px solid oklch(91% 0.01 75);
     border-radius: 14px;
@@ -993,6 +993,20 @@ body.global-loading-open {
     font-weight: 700;
 }
 
+.route-result-theme-badge,
+.route-result-event-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.3rem;
+    margin-right: 0.3rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    background-color: oklch(95% 0.04 55);
+    color: oklch(40% 0.12 55);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
 .route-result-traffic {
     display: inline-flex;
     align-items: center;
@@ -1156,6 +1170,30 @@ body.global-loading-open {
 
 .rest-stop-detail-ev-charger i {
     flex: 0 0 auto;
+}
+
+.rest-stop-detail-theme-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rest-stop-detail-theme-badge {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid oklch(85% 0.06 55);
+    border-radius: var(--rr-radius-pill);
+    background-color: oklch(95% 0.04 55);
+    color: oklch(40% 0.12 55);
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
 }
 
 .rest-stop-detail-status {
@@ -1443,6 +1481,41 @@ body.global-loading-open {
 }
 
 .rest-stop-food-description {
+    margin: 0.3rem 0 0;
+    color: var(--rr-color-text-secondary);
+    font-size: 0.8rem;
+}
+
+.rest-stop-detail-event-list {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rest-stop-detail-event-item {
+    padding: 0.7rem 0.75rem;
+    border: 1px solid oklch(90% 0.05 55);
+    border-radius: 10px;
+    background-color: oklch(97% 0.02 55);
+}
+
+.rest-stop-detail-event-name {
+    margin: 0;
+    color: var(--rr-color-text);
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.rest-stop-detail-event-period {
+    margin: 0.3rem 0 0;
+    color: oklch(40% 0.12 55);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.rest-stop-detail-event-detail {
     margin: 0.3rem 0 0;
     color: var(--rr-color-text-secondary);
     font-size: 0.8rem;

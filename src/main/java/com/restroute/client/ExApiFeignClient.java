@@ -2,10 +2,12 @@ package com.restroute.client;
 
 import com.restroute.client.response.HighwayServiceAreaInfoResponse;
 import com.restroute.client.response.RestBestfoodResponse;
+import com.restroute.client.response.RestEventResponse;
 import com.restroute.client.response.RestOilPriceResponse;
 import com.restroute.client.response.RestOilResponse;
 import com.restroute.client.response.RestStopDetailResponse;
 import com.restroute.client.response.RestStopResponse;
+import com.restroute.client.response.RestThemeResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,6 +24,8 @@ public interface ExApiFeignClient {
     String REST_OIL_LIST_PATH = "/openapi/restinfo/restOilList";
     String CUR_STATE_STATION_PATH = "/openapi/business/curStateStation";
     String REST_BESTFOOD_LIST_PATH = "/openapi/restinfo/restBestfoodList";
+    String REST_THEME_LIST_PATH = "/openapi/restinfo/restThemeList";
+    String REST_EVENT_LIST_PATH = "/openapi/restinfo/restEventList";
 
     String KEY_PARAMETER = "key";
     String TYPE_PARAMETER = "type";
@@ -73,4 +77,12 @@ public interface ExApiFeignClient {
             @RequestParam(TYPE_PARAMETER) String type,
             @RequestParam(value = NUM_OF_ROWS_PARAMETER, required = false) String numOfRows,
             @RequestParam(value = PAGE_NO_PARAMETER, required = false) String pageNo);
+
+    @GetMapping(REST_THEME_LIST_PATH)
+    RestThemeResponse getRestThemeList(
+            @RequestParam(KEY_PARAMETER) String key, @RequestParam(TYPE_PARAMETER) String type);
+
+    @GetMapping(REST_EVENT_LIST_PATH)
+    RestEventResponse getRestEventList(
+            @RequestParam(KEY_PARAMETER) String key, @RequestParam(TYPE_PARAMETER) String type);
 }

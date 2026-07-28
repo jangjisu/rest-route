@@ -609,6 +609,8 @@ function renderDetail(detail) {
     setDetailValue('restStopDetailFreight', detail.truckSaYn, '알 수 없음', formatFreightOperation);
     renderParkingInfo(detail.compactCarParkingCount, detail.fullSizeCarParkingCount, detail.disabledParkingCount);
     renderEvChargerInfo(detail.evChargerCount);
+    renderThemeBadges(detail.themes);
+    renderEventSection(detail.events);
     renderSalesRanking(detail.salesRanking);
     renderOilInfo(detail.oilInfo);
     renderFoodMenu(detail.foodMenu);
@@ -2126,6 +2128,82 @@ export function formatEvChargerCount(count) {
     return `${numericCount.toLocaleString()}대`;
 }
 
+export function renderThemeBadges(themes) {
+    const list = document.getElementById('restStopDetailThemes');
+    if (!list) {
+        return;
+    }
+
+    list.replaceChildren();
+    const items = Array.isArray(themes) ? themes : [];
+    items.forEach((theme) => {
+        const name = typeof theme?.name === 'string' ? theme.name.trim() : '';
+        if (name === '') {
+            return;
+        }
+
+        const badge = document.createElement('li');
+        badge.className = 'rest-stop-detail-theme-badge';
+        badge.textContent = name;
+        const detail = typeof theme?.detail === 'string' ? theme.detail.trim() : '';
+        if (detail !== '') {
+            badge.title = detail;
+        }
+        list.appendChild(badge);
+    });
+
+    list.classList.toggle('d-none', list.children.length === 0);
+}
+
+export function renderEventSection(events) {
+    const section = document.getElementById('restStopDetailEventSection');
+    const list = document.getElementById('restStopDetailEventList');
+    if (!section || !list) {
+        return;
+    }
+
+    list.replaceChildren();
+    const items = Array.isArray(events) ? events : [];
+    items.forEach((event) => {
+        const name = typeof event?.name === 'string' ? event.name.trim() : '';
+        if (name === '') {
+            return;
+        }
+
+        list.appendChild(createEventItem(event, name));
+    });
+
+    section.classList.toggle('d-none', list.children.length === 0);
+}
+
+function createEventItem(event, name) {
+    const item = document.createElement('li');
+    item.className = 'rest-stop-detail-event-item';
+
+    const nameElement = document.createElement('p');
+    nameElement.className = 'rest-stop-detail-event-name';
+    nameElement.textContent = name;
+    item.appendChild(nameElement);
+
+    const period = typeof event?.period === 'string' ? event.period.trim() : '';
+    if (period !== '') {
+        const periodElement = document.createElement('p');
+        periodElement.className = 'rest-stop-detail-event-period';
+        periodElement.textContent = period;
+        item.appendChild(periodElement);
+    }
+
+    const detail = typeof event?.detail === 'string' ? event.detail.trim() : '';
+    if (detail !== '') {
+        const detailElement = document.createElement('p');
+        detailElement.className = 'rest-stop-detail-event-detail';
+        detailElement.textContent = detail;
+        item.appendChild(detailElement);
+    }
+
+    return item;
+}
+
 function renderEvChargerInfo(count) {
     const badge = document.getElementById('restStopDetailEvCharger');
     const value = document.getElementById('restStopDetailEvChargerText');
@@ -2194,6 +2272,20 @@ function createRouteResultItem(restStop, index) {
         badge.className = 'route-direction-alternative-badge';
         badge.textContent = '상·하행 후보';
         appendTarget.appendChild(badge);
+    }
+
+    if (restStop?.hasTheme === true) {
+        const themeBadge = document.createElement('span');
+        themeBadge.className = 'route-result-theme-badge';
+        themeBadge.textContent = '테마';
+        appendTarget.appendChild(themeBadge);
+    }
+
+    if (restStop?.hasEvent === true) {
+        const eventBadge = document.createElement('span');
+        eventBadge.className = 'route-result-event-badge';
+        eventBadge.textContent = '이벤트 진행중';
+        appendTarget.appendChild(eventBadge);
     }
 
     const nearbyTraffic = routeNearbyTrafficBadge(restStop);

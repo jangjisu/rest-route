@@ -68,6 +68,10 @@ function sectionResponseFor(url, sections = {}) {
         });
     }
 
+    if (url.endsWith('/events')) {
+        return sections.events ?? successSectionResponse({ events: [] });
+    }
+
     return response({
         ok: false,
         status: 404,
@@ -110,12 +114,13 @@ test('a later selection ignores an earlier successful response', async () => {
                 unitName: '두 번째 상세',
                 evChargerCount: 4,
                 oilInfo: {},
-                foodMenu: { menus: [], sections: [] }
+                foodMenu: { menus: [], sections: [] },
+                events: []
             }
         }
     ]);
-    assert.equal(signals.slice(0, 5).every((signal) => signal.aborted), true);
-    assert.equal(signals.slice(5).every((signal) => !signal.aborted), true);
+    assert.equal(signals.slice(0, 6).every((signal) => signal.aborted), true);
+    assert.equal(signals.slice(6).every((signal) => !signal.aborted), true);
 });
 
 test('loads sales rankings as an optional detail feature', async () => {
@@ -140,6 +145,7 @@ test('loads sales rankings as an optional detail feature', async () => {
             unitName: '휴게소',
             oilInfo: {},
             foodMenu: { menus: [], sections: [] },
+            events: [],
             salesRanking: {
                 baseYearMonth: '2026-06',
                 storeRankings: [{ rank: 1, storeName: 'CU편의점' }],
@@ -175,7 +181,8 @@ test('a later selection ignores an earlier request error', async () => {
         data: {
             unitName: '두 번째 상세',
             oilInfo: {},
-            foodMenu: { menus: [], sections: [] }
+            foodMenu: { menus: [], sections: [] },
+            events: []
         }
     });
     assert.equal(states.some((state) => state.status === 'error'), false);
@@ -379,6 +386,9 @@ test('load fetches feature detail APIs with a trimmed serviceAreaCode', async ()
                 foodMenu: successSectionResponse({
                     menus: [{ foodName: '돈가스' }],
                     sections: []
+                }),
+                events: successSectionResponse({
+                    events: [{ name: 'TEN+1 이벤트', detail: '한식당 식사 10번 이용 시 1번 무료', period: '2026.01.01 ~ 2026.12.31' }]
                 })
             });
         },
@@ -392,7 +402,8 @@ test('load fetches feature detail APIs with a trimmed serviceAreaCode', async ()
         '/api/rest-stops/A00001/facilities',
         '/api/rest-stops/A00001/oil-info',
         '/api/rest-stops/A00001/foods',
-        '/api/rest-stops/A00001/sales-rankings'
+        '/api/rest-stops/A00001/sales-rankings',
+        '/api/rest-stops/A00001/events'
     ]);
     assert.deepEqual(states.at(-1), {
         status: 'success',
@@ -408,7 +419,8 @@ test('load fetches feature detail APIs with a trimmed serviceAreaCode', async ()
             foodMenu: {
                 menus: [{ foodName: '돈가스' }],
                 sections: []
-            }
+            },
+            events: [{ name: 'TEN+1 이벤트', detail: '한식당 식사 10번 이용 시 1번 무료', period: '2026.01.01 ~ 2026.12.31' }]
         }
     });
 });
@@ -440,7 +452,8 @@ test('optional feature API failures keep the basic detail response visible', asy
         data: {
             unitName: '휴게소',
             oilInfo: null,
-            foodMenu: { menus: [], sections: [] }
+            foodMenu: { menus: [], sections: [] },
+            events: []
         }
     });
 });
@@ -467,7 +480,8 @@ test('optional EXTERNAL_API_UNAVAILABLE is reported with the successful detail r
         data: {
             unitName: '휴게소',
             oilInfo: null,
-            foodMenu: { menus: [], sections: [] }
+            foodMenu: { menus: [], sections: [] },
+            events: []
         }
     });
 });

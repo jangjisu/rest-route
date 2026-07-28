@@ -6,12 +6,14 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.restroute.service.RestEventSyncService;
 import com.restroute.service.RestFoodSyncService;
 import com.restroute.service.RestOilPriceSyncService;
 import com.restroute.service.RestOilSyncService;
 import com.restroute.service.RestStopDetailSyncService;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
 import com.restroute.service.RestStopSyncService;
+import com.restroute.service.RestThemeSyncService;
 import com.restroute.service.evcharger.EvChargerSyncResult;
 import com.restroute.service.evcharger.EvChargerSyncService;
 import java.util.Map;
@@ -51,6 +53,12 @@ class RestStopStartupInitializerTest {
     private EvChargerSyncService evChargerSyncService;
 
     @Mock
+    private RestThemeSyncService restThemeSyncService;
+
+    @Mock
+    private RestEventSyncService restEventSyncService;
+
+    @Mock
     private ApplicationArguments applicationArguments;
 
     @InjectMocks
@@ -65,6 +73,8 @@ class RestStopStartupInitializerTest {
         when(restOilPriceSyncService.initializeRestOilPricesIfEmpty()).thenReturn(226);
         when(restFoodSyncService.initializeRestFoodsIfEmpty()).thenReturn(7214);
         when(evChargerSyncService.initializeEvChargersIfEmpty()).thenReturn(successfulEvChargerSync());
+        when(restThemeSyncService.initializeRestThemesIfEmpty()).thenReturn(144);
+        when(restEventSyncService.initializeRestEventsIfEmpty()).thenReturn(898);
         when(restStopServiceAreaCodeBackfillService.backfill())
                 .thenReturn(Map.of(
                         RestStopServiceAreaCodeBackfillService.REST_STOP_DETAIL_MAPPED_COUNT,
@@ -86,6 +96,8 @@ class RestStopStartupInitializerTest {
         verify(restOilPriceSyncService).initializeRestOilPricesIfEmpty();
         verify(restFoodSyncService).initializeRestFoodsIfEmpty();
         verify(evChargerSyncService).initializeEvChargersIfEmpty();
+        verify(restThemeSyncService).initializeRestThemesIfEmpty();
+        verify(restEventSyncService).initializeRestEventsIfEmpty();
         verify(restStopServiceAreaCodeBackfillService).backfill();
         InOrder inOrder = inOrder(
                 restStopSyncService,
@@ -93,6 +105,8 @@ class RestStopStartupInitializerTest {
                 restOilSyncService,
                 restOilPriceSyncService,
                 restFoodSyncService,
+                restThemeSyncService,
+                restEventSyncService,
                 restStopServiceAreaCodeBackfillService,
                 evChargerSyncService);
         inOrder.verify(restStopSyncService).initializeRestStopsIfEmpty();
@@ -101,6 +115,8 @@ class RestStopStartupInitializerTest {
         inOrder.verify(restOilPriceSyncService).initializeRestOilPricesIfEmpty();
         inOrder.verify(restFoodSyncService).initializeRestFoodsIfEmpty();
         inOrder.verify(evChargerSyncService).initializeEvChargersIfEmpty();
+        inOrder.verify(restThemeSyncService).initializeRestThemesIfEmpty();
+        inOrder.verify(restEventSyncService).initializeRestEventsIfEmpty();
         inOrder.verify(restStopServiceAreaCodeBackfillService).backfill();
     }
 
@@ -181,6 +197,8 @@ class RestStopStartupInitializerTest {
         when(restOilPriceSyncService.initializeRestOilPricesIfEmpty()).thenReturn(0);
         when(restFoodSyncService.initializeRestFoodsIfEmpty()).thenReturn(0);
         when(evChargerSyncService.initializeEvChargersIfEmpty()).thenReturn(new EvChargerSyncResult(0, 0, 0, 0, 0));
+        when(restThemeSyncService.initializeRestThemesIfEmpty()).thenReturn(0);
+        when(restEventSyncService.initializeRestEventsIfEmpty()).thenReturn(0);
 
         restStopStartupInitializer.run(applicationArguments);
 
@@ -189,7 +207,9 @@ class RestStopStartupInitializerTest {
                 .contains("Initial rest stop detail sync skipped because rest_stop_detail table already has data.")
                 .contains("Initial rest oil sync skipped because rest_oil table already has data.")
                 .contains("Initial rest oil price sync skipped because rest_oil_price table already has data.")
-                .contains("Initial rest food sync skipped because rest_food table already has data.");
+                .contains("Initial rest food sync skipped because rest_food table already has data.")
+                .contains("Initial rest theme sync skipped because rest_theme table already has data.")
+                .contains("Initial rest event sync skipped because rest_event table already has data.");
     }
 
     @Test
@@ -238,6 +258,33 @@ class RestStopStartupInitializerTest {
                 .doesNotThrowAnyException();
 
         assertThat(output).contains("Initial rest food sync failed.").contains("rest food API failed");
+    }
+
+    @Test
+    @DisplayName("테마휴게소 초기 동기화 실패가 앱 시작으로 전파되지 않는다")
+    void run_doesNotPropagateRestThemeSyncFailure(CapturedOutput output) {
+        when(restThemeSyncService.initializeRestThemesIfEmpty())
+                .thenThrow(new IllegalStateException("rest theme API failed"));
+
+        assertThatCode(() -> restStopStartupInitializer.run(applicationArguments))
+                .doesNotThrowAnyException();
+
+        assertThat(output).contains("Initial rest theme sync failed.").contains("rest theme API failed");
+        verify(restEventSyncService).initializeRestEventsIfEmpty();
+        verify(restStopServiceAreaCodeBackfillService).backfill();
+    }
+
+    @Test
+    @DisplayName("휴게소 이벤트 초기 동기화 실패가 앱 시작으로 전파되지 않는다")
+    void run_doesNotPropagateRestEventSyncFailure(CapturedOutput output) {
+        when(restEventSyncService.initializeRestEventsIfEmpty())
+                .thenThrow(new IllegalStateException("rest event API failed"));
+
+        assertThatCode(() -> restStopStartupInitializer.run(applicationArguments))
+                .doesNotThrowAnyException();
+
+        assertThat(output).contains("Initial rest event sync failed.").contains("rest event API failed");
+        verify(restStopServiceAreaCodeBackfillService).backfill();
     }
 
     @Test

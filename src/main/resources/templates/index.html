@@ -124,6 +124,7 @@
                             <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
                             <span id="restStopDetailEvChargerText"></span>
                         </span>
+                        <ul id="restStopDetailThemes" class="rest-stop-detail-theme-badges d-none"></ul>
                     </div>
                     <div class="rest-stop-detail-actions">
                         <button id="restStopFoodOpen" class="btn btn-primary rest-stop-food-open d-none"
@@ -233,6 +234,13 @@
                             <dt>화물휴게소</dt>
                             <dd id="restStopDetailFreight"></dd>
                         </dl>
+                    </section>
+                    <section id="restStopDetailEventSection" class="rest-stop-detail-section d-none"
+                             aria-labelledby="restStopDetailEventHeading">
+                        <h3 id="restStopDetailEventHeading" class="rest-stop-detail-section-title">
+                            <span class="rest-stop-detail-section-icon" aria-hidden="true">🎉</span>진행 중인 이벤트
+                        </h3>
+                        <ul id="restStopDetailEventList" class="rest-stop-detail-event-list"></ul>
                     </section>
                 </div>
                 <dialog id="restStopFoodModal" class="rest-stop-food-modal"

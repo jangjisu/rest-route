@@ -2,6 +2,8 @@ package com.restroute.support;
 
 import com.restroute.client.response.HighwayServiceAreaInfoItem;
 import com.restroute.client.response.HighwayServiceAreaInfoResponse;
+import com.restroute.client.response.RestEventItem;
+import com.restroute.client.response.RestEventResponse;
 import com.restroute.client.response.RestOilItem;
 import com.restroute.client.response.RestOilPriceItem;
 import com.restroute.client.response.RestOilPriceResponse;
@@ -10,6 +12,8 @@ import com.restroute.client.response.RestStopDetailItem;
 import com.restroute.client.response.RestStopDetailResponse;
 import com.restroute.client.response.RestStopItem;
 import com.restroute.client.response.RestStopResponse;
+import com.restroute.client.response.RestThemeItem;
+import com.restroute.client.response.RestThemeResponse;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -95,6 +99,60 @@ public final class RestStopTestFixtures {
         ReflectionTestUtils.setField(item, "businessFacilityCode", "A00282");
         ReflectionTestUtils.setField(item, "representativeTelNo", "0420000000");
         return item;
+    }
+
+    public static RestThemeItem restThemeItem(String stdRestCd, String itemNm) {
+        RestThemeItem item = instantiate(RestThemeItem.class);
+        ReflectionTestUtils.setField(item, "stdRestCd", stdRestCd);
+        ReflectionTestUtils.setField(item, "stdRestNm", "서울만남(부산)휴게소");
+        ReflectionTestUtils.setField(item, "itemNm", itemNm);
+        ReflectionTestUtils.setField(item, "detail", "365일 꽃향기가 나는 휴게소입니다");
+        ReflectionTestUtils.setField(item, "regId", "MANN003");
+        ReflectionTestUtils.setField(item, "regDtime", "07/12/2024 17:21:31.");
+        ReflectionTestUtils.setField(item, "lsttmAltrUser", "SYSTEM");
+        ReflectionTestUtils.setField(item, "lsttmAltrDttm", "2026-07-28");
+        ReflectionTestUtils.setField(item, "svarAddr", "서울 서초구 원지동10-16");
+        ReflectionTestUtils.setField(item, "routeCd", "0010");
+        ReflectionTestUtils.setField(item, "routeNm", "경부선");
+        return item;
+    }
+
+    public static RestThemeResponse restThemeResponse(String code, List<RestThemeItem> items) {
+        RestThemeResponse response = instantiate(RestThemeResponse.class);
+        ReflectionTestUtils.setField(response, "code", code);
+        ReflectionTestUtils.setField(response, "message", "인증키가 유효합니다.");
+        ReflectionTestUtils.setField(response, "count", String.valueOf(items.size()));
+        ReflectionTestUtils.setField(response, "list", items);
+        return response;
+    }
+
+    public static RestEventItem restEventItem(String stdRestCd, String eventSeq) {
+        RestEventItem item = instantiate(RestEventItem.class);
+        ReflectionTestUtils.setField(item, "stdRestCd", stdRestCd);
+        ReflectionTestUtils.setField(item, "stdRestNm", "서울만남(부산)휴게소");
+        ReflectionTestUtils.setField(item, "eventSeq", eventSeq);
+        ReflectionTestUtils.setField(item, "eventNm", "TEN+1 이벤트");
+        ReflectionTestUtils.setField(item, "eventDetail", "한식당 식사 10번 이용 시 1번 무료");
+        ReflectionTestUtils.setField(item, "stime", "2020-01-01");
+        ReflectionTestUtils.setField(item, "etime", "2027-12-31");
+        ReflectionTestUtils.setField(item, "stdRestGubun", "S");
+        ReflectionTestUtils.setField(item, "lastId", "dmsrud527");
+        ReflectionTestUtils.setField(item, "lastDtime", "20260621150549");
+        ReflectionTestUtils.setField(item, "lsttmAltrUser", "SYSTEM");
+        ReflectionTestUtils.setField(item, "lsttmAltrDttm", "2026-07-28");
+        ReflectionTestUtils.setField(item, "svarAddr", "서울 서초구 원지동10-16");
+        ReflectionTestUtils.setField(item, "routeCd", "0010");
+        ReflectionTestUtils.setField(item, "routeNm", "경부선");
+        return item;
+    }
+
+    public static RestEventResponse restEventResponse(String code, List<RestEventItem> items) {
+        RestEventResponse response = instantiate(RestEventResponse.class);
+        ReflectionTestUtils.setField(response, "code", code);
+        ReflectionTestUtils.setField(response, "message", "인증키가 유효합니다.");
+        ReflectionTestUtils.setField(response, "count", String.valueOf(items.size()));
+        ReflectionTestUtils.setField(response, "list", items);
+        return response;
     }
 
     public static HighwayServiceAreaInfoResponse highwayServiceAreaInfoResponse(

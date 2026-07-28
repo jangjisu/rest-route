@@ -58,6 +58,8 @@ class RouteRestStopControllerTest {
                         127.0,
                         false,
                         false,
+                        false,
+                        false,
                         12L,
                         RouteRestStopResponse.ComparisonSummary.empty(),
                         List.of(),

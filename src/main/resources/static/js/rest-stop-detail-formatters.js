@@ -182,8 +182,18 @@ function sortSalesRankingItems(items, nameKey) {
 export const DATA_TAG_DEFINITIONS = [
     { key: 'food', label: '먹거리' },
     { key: 'parking', label: '주차' },
-    { key: 'oil', label: '주유' }
+    { key: 'oil', label: '주유' },
+    { key: 'theme', label: '테마' },
+    { key: 'event', label: '이벤트' }
 ];
+
+export function hasThemes(themes) {
+    return Array.isArray(themes) && themes.length > 0;
+}
+
+export function hasEvents(events) {
+    return Array.isArray(events) && events.length > 0;
+}
 
 export function hasOilConveniences(conveniences) {
     return Array.isArray(conveniences) && conveniences.length > 0;
@@ -228,7 +238,9 @@ export function availableDataTags(detail) {
     const present = {
         food: hasFoodMenu(detail.foodMenu),
         parking: hasParkingInfo(detail),
-        oil: hasOilInfo(detail.oilInfo)
+        oil: hasOilInfo(detail.oilInfo),
+        theme: hasThemes(detail.themes),
+        event: hasEvents(detail.events)
     };
 
     return DATA_TAG_DEFINITIONS.filter((tag) => present[tag.key]);

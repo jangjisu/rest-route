@@ -8,8 +8,10 @@ import static com.restroute.client.ExApiFeignClient.LOCATION_INFO_REST_PATH;
 import static com.restroute.client.ExApiFeignClient.NUM_OF_ROWS_PARAMETER;
 import static com.restroute.client.ExApiFeignClient.PAGE_NO_PARAMETER;
 import static com.restroute.client.ExApiFeignClient.REST_BESTFOOD_LIST_PATH;
+import static com.restroute.client.ExApiFeignClient.REST_EVENT_LIST_PATH;
 import static com.restroute.client.ExApiFeignClient.REST_OIL_LIST_PATH;
 import static com.restroute.client.ExApiFeignClient.REST_STOP_NUM_OF_ROWS;
+import static com.restroute.client.ExApiFeignClient.REST_THEME_LIST_PATH;
 import static com.restroute.client.ExApiFeignClient.SERVICE_AREA_CODE2_PARAMETER;
 import static com.restroute.client.ExApiFeignClient.TYPE_PARAMETER;
 
@@ -17,10 +19,12 @@ import com.restroute.client.exception.ExApiException;
 import com.restroute.client.response.ExApiResponse;
 import com.restroute.client.response.HighwayServiceAreaInfoResponse;
 import com.restroute.client.response.RestBestfoodResponse;
+import com.restroute.client.response.RestEventResponse;
 import com.restroute.client.response.RestOilPriceResponse;
 import com.restroute.client.response.RestOilResponse;
 import com.restroute.client.response.RestStopDetailResponse;
 import com.restroute.client.response.RestStopResponse;
+import com.restroute.client.response.RestThemeResponse;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -135,6 +139,18 @@ public class ExApiClient {
                 requestUrl,
                 () -> exApiFeignClient.getRestBestfoodList(
                         apiKey, ExApiResponseFormat.JSON.value(), REST_STOP_NUM_OF_ROWS, pageNumber));
+    }
+
+    public RestThemeResponse getRestThemeList() {
+        String requestUrl = requestUrl(REST_THEME_LIST_PATH).build().encode().toUriString();
+
+        return fetch(requestUrl, () -> exApiFeignClient.getRestThemeList(apiKey, ExApiResponseFormat.JSON.value()));
+    }
+
+    public RestEventResponse getRestEventList() {
+        String requestUrl = requestUrl(REST_EVENT_LIST_PATH).build().encode().toUriString();
+
+        return fetch(requestUrl, () -> exApiFeignClient.getRestEventList(apiKey, ExApiResponseFormat.JSON.value()));
     }
 
     private UriComponentsBuilder requestUrl(String path) {

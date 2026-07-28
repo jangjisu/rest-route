@@ -88,6 +88,28 @@ class ExApiFeignClientContractTest {
         assertRequestParameterNames(method);
     }
 
+    @Test
+    @DisplayName("테마휴게소 API 명세는 인터페이스 공통 상수를 사용한다")
+    void getRestThemeList_usesInterfaceContractConstants() throws Exception {
+        Method method = ExApiFeignClient.class.getMethod("getRestThemeList", String.class, String.class);
+
+        assertThat(method.getAnnotation(GetMapping.class).value())
+                .containsExactly(ExApiFeignClient.REST_THEME_LIST_PATH);
+        assertThat(requestParameterName(method, 0)).isEqualTo(ExApiFeignClient.KEY_PARAMETER);
+        assertThat(requestParameterName(method, 1)).isEqualTo(ExApiFeignClient.TYPE_PARAMETER);
+    }
+
+    @Test
+    @DisplayName("휴게소 이벤트 API 명세는 인터페이스 공통 상수를 사용한다")
+    void getRestEventList_usesInterfaceContractConstants() throws Exception {
+        Method method = ExApiFeignClient.class.getMethod("getRestEventList", String.class, String.class);
+
+        assertThat(method.getAnnotation(GetMapping.class).value())
+                .containsExactly(ExApiFeignClient.REST_EVENT_LIST_PATH);
+        assertThat(requestParameterName(method, 0)).isEqualTo(ExApiFeignClient.KEY_PARAMETER);
+        assertThat(requestParameterName(method, 1)).isEqualTo(ExApiFeignClient.TYPE_PARAMETER);
+    }
+
     private void assertRequestParameterNames(Method method) {
         assertThat(requestParameterName(method, 0)).isEqualTo(ExApiFeignClient.KEY_PARAMETER);
         assertThat(requestParameterName(method, 1)).isEqualTo(ExApiFeignClient.TYPE_PARAMETER);
