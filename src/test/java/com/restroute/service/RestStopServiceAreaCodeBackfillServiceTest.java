@@ -1,10 +1,12 @@
 package com.restroute.service;
 
 import static com.restroute.support.RestStopTestFixtures.highwayServiceAreaInfoItem;
+import static com.restroute.support.RestStopTestFixtures.restEventItem;
 import static com.restroute.support.RestStopTestFixtures.restOilItem;
 import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
 import static com.restroute.support.RestStopTestFixtures.restStopDetailItem;
 import static com.restroute.support.RestStopTestFixtures.restStopItem;
+import static com.restroute.support.RestStopTestFixtures.restThemeItem;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +16,7 @@ import com.restroute.client.response.RestOilItem;
 import com.restroute.domain.EvChargerEntity;
 import com.restroute.domain.EvChargerStationMappingEntity;
 import com.restroute.domain.HighwayServiceAreaInfoEntity;
+import com.restroute.domain.RestEventEntity;
 import com.restroute.domain.RestFoodEntity;
 import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestOilPriceEntity;
@@ -21,9 +24,11 @@ import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.domain.RestStopProductSalesRankEntity;
 import com.restroute.domain.RestStopStoreSalesRankEntity;
+import com.restroute.domain.RestThemeEntity;
 import com.restroute.repository.EvChargerRepository;
 import com.restroute.repository.EvChargerStationMappingRepository;
 import com.restroute.repository.HighwayServiceAreaInfoRepository;
+import com.restroute.repository.RestEventRepository;
 import com.restroute.repository.RestFoodRepository;
 import com.restroute.repository.RestOilPriceRepository;
 import com.restroute.repository.RestOilRepository;
@@ -31,6 +36,7 @@ import com.restroute.repository.RestStopDetailRepository;
 import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
+import com.restroute.repository.RestThemeRepository;
 import com.restroute.service.evcharger.mapping.EvChargerStationMappingCalculator;
 import com.restroute.service.salesranking.SalesRankingProductRow;
 import com.restroute.service.salesranking.SalesRankingStoreRow;
@@ -82,6 +88,12 @@ class RestStopServiceAreaCodeBackfillServiceTest {
     @Autowired
     private RestStopStoreSalesRankRepository storeSalesRankRepository;
 
+    @Autowired
+    private RestThemeRepository restThemeRepository;
+
+    @Autowired
+    private RestEventRepository restEventRepository;
+
     @Test
     @DisplayName("기존 휴게소 관련 row에 rest_stop_service_area_code를 연결 규칙 순서대로 채운다")
     void backfill_mapsExistingRowsByRestStopServiceAreaCode() throws Exception {
@@ -95,6 +107,8 @@ class RestStopServiceAreaCodeBackfillServiceTest {
         restFoodRepository.save(foodEntity("000001", "한우국밥"));
         restOilRepository.save(RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소")));
         restOilPriceRepository.save(RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소")));
+        restThemeRepository.save(RestThemeEntity.from(restThemeItem("000001", "4계절 꽃이 있는 휴게소")));
+        restEventRepository.save(RestEventEntity.from(restEventItem("000001", "1665")));
 
         Map<String, Integer> result = backfillService.backfill();
 
@@ -108,6 +122,10 @@ class RestStopServiceAreaCodeBackfillServiceTest {
                 .isEqualTo(1);
         assertThat(result.get(RestStopServiceAreaCodeBackfillService.REST_OIL_PRICE_MAPPED_COUNT))
                 .isEqualTo(1);
+        assertThat(result.get(RestStopServiceAreaCodeBackfillService.REST_THEME_MAPPED_COUNT))
+                .isEqualTo(1);
+        assertThat(result.get(RestStopServiceAreaCodeBackfillService.REST_EVENT_MAPPED_COUNT))
+                .isEqualTo(1);
         assertThat(restStopDetailRepository.findAll().get(0).getRestStopServiceAreaCode())
                 .isEqualTo("A00001");
         assertThat(highwayServiceAreaInfoRepository.findAll().get(0).getRestStopServiceAreaCode())
@@ -117,6 +135,10 @@ class RestStopServiceAreaCodeBackfillServiceTest {
         assertThat(restOilRepository.findAll().get(0).getRestStopServiceAreaCode())
                 .isEqualTo("A00001");
         assertThat(restOilPriceRepository.findAll().get(0).getRestStopServiceAreaCode())
+                .isEqualTo("A00001");
+        assertThat(restThemeRepository.findAll().get(0).getRestStopServiceAreaCode())
+                .isEqualTo("A00001");
+        assertThat(restEventRepository.findAll().get(0).getRestStopServiceAreaCode())
                 .isEqualTo("A00001");
     }
 
@@ -134,6 +156,8 @@ class RestStopServiceAreaCodeBackfillServiceTest {
         ReflectionTestUtils.setField(unmatchedOil, "routeCode", "9999");
         restOilRepository.save(RestOilEntity.from(unmatchedOil));
         restOilPriceRepository.save(RestOilPriceEntity.from(restOilPriceItem("999999", "미매칭주유소")));
+        restThemeRepository.save(RestThemeEntity.from(restThemeItem("999999", "미매칭테마")));
+        restEventRepository.save(RestEventEntity.from(restEventItem("999999", "1")));
 
         Map<String, Integer> result = backfillService.backfill();
 
@@ -147,6 +171,10 @@ class RestStopServiceAreaCodeBackfillServiceTest {
                 .isZero();
         assertThat(result.get(RestStopServiceAreaCodeBackfillService.REST_OIL_PRICE_MAPPED_COUNT))
                 .isZero();
+        assertThat(result.get(RestStopServiceAreaCodeBackfillService.REST_THEME_MAPPED_COUNT))
+                .isZero();
+        assertThat(result.get(RestStopServiceAreaCodeBackfillService.REST_EVENT_MAPPED_COUNT))
+                .isZero();
         assertThat(restStopDetailRepository.count()).isEqualTo(1);
         assertThat(restStopDetailRepository.findAll().get(0).getRestStopServiceAreaCode())
                 .isNull();
@@ -157,6 +185,10 @@ class RestStopServiceAreaCodeBackfillServiceTest {
         assertThat(restOilRepository.findAll().get(0).getRestStopServiceAreaCode())
                 .isNull();
         assertThat(restOilPriceRepository.findAll().get(0).getRestStopServiceAreaCode())
+                .isNull();
+        assertThat(restThemeRepository.findAll().get(0).getRestStopServiceAreaCode())
+                .isNull();
+        assertThat(restEventRepository.findAll().get(0).getRestStopServiceAreaCode())
                 .isNull();
     }
 

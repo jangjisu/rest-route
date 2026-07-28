@@ -35,6 +35,8 @@
 | `rest_oil` | `rest_oil_price` | `standard_rest_code = service_area_code2` | 2026-06-16 실측 |
 | `rest_stop` | `rest_food` | `std_rest_cd = std_rest_cd` | 2026-06-16 실측 |
 | `rest_stop` | `rest_stop_image` | `service_area_code = service_area_code` (휴게소 1건당 이미지 0 또는 1건) | 코드 적용 |
+| `rest_stop` | `rest_theme` | `std_rest_cd = std_rest_cd` (휴게소 1건당 테마 0건 이상) | 2026-07-28 실측 |
+| `rest_stop` | `rest_event` | `std_rest_cd = std_rest_cd` (휴게소 1건당 이벤트 0건 이상) | 2026-07-28 실측 |
 
 `rest_stop.std_rest_cd`와 `rest_oil.standard_rest_code`는 같은 장소의 휴게소와 주유소에도
 서로 다른 시설 코드가 발급된다. 서울만남(부산)의 경우 각각 `000001`, `000002`이며,
@@ -76,6 +78,14 @@
 `rest_stop.std_rest_cd`와 직접 일치함을 확인했다. 서울만남(부산)휴게소가 양쪽 모두 `000001`이며,
 주유소(`rest_oil`)와 달리 정규화 이름 매칭 없이 `std_rest_cd`로 바로 조인한다.
 음식 API 전용 코드 `restCd`(`S000001`)는 연결에 사용하지 않는다.
+
+테마휴게소(`restThemeList`)·휴게소 이벤트(`restEventList`) 연결은 `rest_food`와 동일하게
+`std_rest_cd`로 바로 조인하며 정규화 이름 매칭이 필요 없다. 한 휴게소에 테마·이벤트가
+여러 건 붙을 수 있어(2026-07-28 실측: 서울만남(부산)휴게소에 이벤트 3건) 동기화는
+`std_rest_cd` + 부속 식별자(테마는 `item_nm`, 이벤트는 `event_seq`) 복합 자연키로 upsert한다.
+이벤트는 상당수가 오래전에 종료됐지만 삭제하지 않고 원본 기간(`stime`~`etime`)을 그대로
+보존하며, 조회 시점에 오늘 날짜가 그 사이인 것만 걸러 노출한다(이 필터링은 아직
+구현하지 않았고 프론트엔드 연동 단계에서 추가한다).
 
 ## 대표 이미지
 

@@ -241,6 +241,8 @@ class RestOilPriceRefreshServiceTest {
                 oilStationConveniences,
                 Optional.ofNullable(serviceAreaCode2),
                 oilPrice,
+                List.of(),
+                List.of(),
                 List.of());
     }
 }

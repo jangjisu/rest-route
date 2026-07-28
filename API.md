@@ -529,6 +529,106 @@ GET https://data.ex.co.kr/openapi/restinfo/restBestfoodList
 
 ---
 
+### restThemeList — 테마휴게소 현황
+
+휴게소별 테마(체험/관광/힐링 등) 명칭과 상세 설명을 반환한다.
+
+#### 엔드포인트
+
+```text
+GET https://data.ex.co.kr/openapi/restinfo/restThemeList
+```
+
+현재 `ExApiClient`는 `key`와 `type=json`만 전달하며 전체 목록을 한 번에 조회한다(페이지네이션 미사용).
+
+#### 2026-07-28 실측 결과
+
+- HTTP 상태: `200 OK`
+- 성공 코드: `"SUCCESS"`
+- `count`: `144` — 페이지네이션 없이 한 번의 호출로 전체 목록이 반환됨을 확인
+- `stdRestCd`는 `locationinfoRest.stdRestCd`와 직접 일치한다.
+- 한 휴게소에 테마가 여러 개 붙을 수 있다(자연키는 `stdRestCd`+`itemNm`).
+
+```json
+{
+  "count": 144,
+  "list": [
+    {
+      "detail": "365일 꽃향기가 나는 휴게소입니다",
+      "stdRestCd": "000001",
+      "stdRestNm": "서울만남(부산)휴게소",
+      "svarAddr": "서울 서초구 원지동10-16",
+      "routeCd": "0010",
+      "routeNm": "경부선",
+      "itemNm": "4계절 꽃이 있는 휴게소",
+      "regId": "MANN003",
+      "regDtime": "07/12/2024 17:21:31."
+    }
+  ],
+  "message": "인증키가 유효합니다.",
+  "code": "SUCCESS"
+}
+```
+
+#### 코드 기준 처리
+
+- 성공 여부는 `RestThemeResponse.isSuccess()`에서 판단한다.
+- 동기화는 `stdRestCd`+`itemNm` 자연키로 기존 행을 찾아 있으면 갱신, 없으면 새로 생성한다(삭제 로직 없음 — `HighwayServiceAreaInfoSyncService`와 동일 패턴).
+
+---
+
+### restEventList — 휴게소 이벤트 현황
+
+휴게소별 진행 이벤트명, 내용, 기간(`stime`~`etime`)을 반환한다.
+
+#### 엔드포인트
+
+```text
+GET https://data.ex.co.kr/openapi/restinfo/restEventList
+```
+
+현재 `ExApiClient`는 `key`와 `type=json`만 전달하며 전체 목록을 한 번에 조회한다(페이지네이션 미사용).
+
+#### 2026-07-28 실측 결과
+
+- HTTP 상태: `200 OK`
+- 성공 코드: `"SUCCESS"`
+- `count`: `898`
+- 상당수 행이 오래전에 종료된 이벤트다(예: `stime`/`etime`이 2020~2021년). 화면에 노출할 때는 오늘 날짜가 `stime`~`etime` 사이인 것만 걸러야 한다 — 이번 백엔드 연동 단계에서는 원본을 그대로 저장만 하고, 필터링은 프론트엔드 연동 단계에서 구현한다.
+- `eventSeq`가 한 휴게소 내 이벤트를 구분하는 일련번호다(자연키는 `stdRestCd`+`eventSeq`).
+
+```json
+{
+  "count": 898,
+  "list": [
+    {
+      "stdRestCd": "000001",
+      "stime": "2020-01-01",
+      "etime": "2027-12-31",
+      "routeCd": "0010",
+      "svarAddr": "서울 서초구 원지동10-16",
+      "routeNm": "경부선",
+      "stdRestNm": "서울만남(부산)휴게소",
+      "lastId": "dmsrud527",
+      "lastDtime": "20260621150549",
+      "stdRestGubun": "S",
+      "eventSeq": "1665",
+      "eventDetail": "우리 휴게소에서 한식당 식사시 TEN+1 이벤트를 이용하실 수 있습니다.",
+      "eventNm": "TEN+1 이벤트"
+    }
+  ],
+  "message": "인증키가 유효합니다.",
+  "code": "SUCCESS"
+}
+```
+
+#### 코드 기준 처리
+
+- 성공 여부는 `RestEventResponse.isSuccess()`에서 판단한다.
+- 동기화는 `stdRestCd`+`eventSeq` 자연키로 기존 행을 찾아 있으면 갱신, 없으면 새로 생성한다(삭제 로직 없음).
+
+---
+
 ## 내부 API
 
 모든 JSON 응답은 `ApiResponse<T>` 형식을 사용한다.

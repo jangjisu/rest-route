@@ -635,6 +635,7 @@ class RouteRestStopServiceTest {
             List<RestOilEntity> oilConveniences,
             Optional<RestOilPriceEntity> oilPrice,
             List<RestFoodEntity> foods) {
-        return RestStopRelatedInfo.of(detail, infos, oilConveniences, Optional.empty(), oilPrice, foods);
+        return RestStopRelatedInfo.of(
+                detail, infos, oilConveniences, Optional.empty(), oilPrice, foods, List.of(), List.of());
     }
 }

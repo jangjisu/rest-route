@@ -51,7 +51,9 @@ class RouteRestStopComparisonSummaryServiceTest {
                         List.of(oilConvenience),
                         Optional.empty(),
                         Optional.of(oilPrice),
-                        List.of(food)));
+                        List.of(food),
+                        List.of(),
+                        List.of()));
         Optional<NationalOilPriceSummary> nationalOilPriceSummary = Optional.of(NationalOilPriceSummary.of(
                 "2026.07.07",
                 AverageOilPrice.of("B027", "휘발유", "1,893원", "-4.19"),

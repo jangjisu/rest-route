@@ -53,6 +53,8 @@ class RestStopOilInfoQueryServiceTest {
                         List.of(convenience),
                         Optional.of("000002"),
                         Optional.of(oilPrice),
+                        List.of(),
+                        List.of(),
                         List.of()));
 
         Optional<OilInfoResponse> result = restStopOilInfoQueryService.findByServiceAreaCode("A00001");
@@ -81,7 +83,14 @@ class RestStopOilInfoQueryServiceTest {
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
         when(restStopRelatedInfoQueryService.findByRestStop(restStop))
                 .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(), List.of(), List.of(), Optional.empty(), Optional.empty(), List.of()));
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
 
         Optional<OilInfoResponse> result = restStopOilInfoQueryService.findByServiceAreaCode("A00001");
 
