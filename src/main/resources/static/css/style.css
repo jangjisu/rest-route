@@ -1472,6 +1472,41 @@ body.global-loading-open {
     font-size: 0.8rem;
 }
 
+.rest-stop-detail-event-list {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rest-stop-detail-event-item {
+    padding: 0.7rem 0.75rem;
+    border: 1px solid oklch(90% 0.05 55);
+    border-radius: 10px;
+    background-color: oklch(97% 0.02 55);
+}
+
+.rest-stop-detail-event-name {
+    margin: 0;
+    color: var(--rr-color-text);
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.rest-stop-detail-event-period {
+    margin: 0.3rem 0 0;
+    color: oklch(40% 0.12 55);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.rest-stop-detail-event-detail {
+    margin: 0.3rem 0 0;
+    color: var(--rr-color-text-secondary);
+    font-size: 0.8rem;
+}
+
 .rest-stop-food-open {
     min-height: 2.1rem;
     padding: 0.3rem 0.65rem;

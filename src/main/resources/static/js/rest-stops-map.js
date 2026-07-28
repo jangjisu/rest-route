@@ -610,6 +610,7 @@ function renderDetail(detail) {
     renderParkingInfo(detail.compactCarParkingCount, detail.fullSizeCarParkingCount, detail.disabledParkingCount);
     renderEvChargerInfo(detail.evChargerCount);
     renderThemeBadges(detail.themes);
+    renderEventSection(detail.events);
     renderSalesRanking(detail.salesRanking);
     renderOilInfo(detail.oilInfo);
     renderFoodMenu(detail.foodMenu);
@@ -2152,6 +2153,55 @@ export function renderThemeBadges(themes) {
     });
 
     list.classList.toggle('d-none', list.children.length === 0);
+}
+
+export function renderEventSection(events) {
+    const section = document.getElementById('restStopDetailEventSection');
+    const list = document.getElementById('restStopDetailEventList');
+    if (!section || !list) {
+        return;
+    }
+
+    list.replaceChildren();
+    const items = Array.isArray(events) ? events : [];
+    items.forEach((event) => {
+        const name = typeof event?.name === 'string' ? event.name.trim() : '';
+        if (name === '') {
+            return;
+        }
+
+        list.appendChild(createEventItem(event, name));
+    });
+
+    section.classList.toggle('d-none', list.children.length === 0);
+}
+
+function createEventItem(event, name) {
+    const item = document.createElement('li');
+    item.className = 'rest-stop-detail-event-item';
+
+    const nameElement = document.createElement('p');
+    nameElement.className = 'rest-stop-detail-event-name';
+    nameElement.textContent = name;
+    item.appendChild(nameElement);
+
+    const period = typeof event?.period === 'string' ? event.period.trim() : '';
+    if (period !== '') {
+        const periodElement = document.createElement('p');
+        periodElement.className = 'rest-stop-detail-event-period';
+        periodElement.textContent = period;
+        item.appendChild(periodElement);
+    }
+
+    const detail = typeof event?.detail === 'string' ? event.detail.trim() : '';
+    if (detail !== '') {
+        const detailElement = document.createElement('p');
+        detailElement.className = 'rest-stop-detail-event-detail';
+        detailElement.textContent = detail;
+        item.appendChild(detailElement);
+    }
+
+    return item;
 }
 
 function renderEvChargerInfo(count) {

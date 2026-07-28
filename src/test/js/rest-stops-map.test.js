@@ -11,6 +11,7 @@ import {
     formatOilPriceComparison,
     formatRouteComparisonSummary,
     isRouteGlobalLoadingState,
+    renderEventSection,
     renderNationalOilPriceState,
     renderOilInfo,
     renderThemeBadges,
@@ -139,6 +140,62 @@ test('renderThemeBadges tolerates missing or malformed input without throwing', 
 
         assert.equal(elements.get('restStopDetailThemes').children.length, 0);
         assert.equal(elements.get('restStopDetailThemes').classList.contains('d-none'), true);
+    });
+});
+
+function withFakeEventDocument(callback) {
+    const previousDocument = globalThis.document;
+    const elements = new Map([
+        ['restStopDetailEventSection', createFakeElement(['d-none'])],
+        ['restStopDetailEventList', createFakeElement()]
+    ]);
+
+    globalThis.document = {
+        createElement: () => createFakeElement(),
+        getElementById: (id) => elements.get(id) ?? null
+    };
+
+    try {
+        return callback(elements);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+}
+
+test('renderEventSection renders one item per event and reveals the section', () => {
+    withFakeEventDocument((elements) => {
+        renderEventSection([
+            { name: 'TEN+1 이벤트', detail: '한식당 식사 10번 이용 시 1번 무료', period: '2026.01.01 ~ 2026.12.31' },
+            { name: '포토존 이벤트', detail: '', period: '2026.03.01 ~ 2026.03.31' }
+        ]);
+
+        const list = elements.get('restStopDetailEventList');
+        assert.equal(list.children.length, 2);
+        assert.equal(list.children[0].children[0].textContent, 'TEN+1 이벤트');
+        assert.equal(list.children[0].children[1].textContent, '2026.01.01 ~ 2026.12.31');
+        assert.equal(list.children[0].children[2].textContent, '한식당 식사 10번 이용 시 1번 무료');
+        assert.equal(list.children[1].children.length, 2);
+        assert.equal(elements.get('restStopDetailEventSection').classList.contains('d-none'), false);
+    });
+});
+
+test('renderEventSection hides the section when there are no active events', () => {
+    withFakeEventDocument((elements) => {
+        renderEventSection([]);
+
+        assert.equal(elements.get('restStopDetailEventList').children.length, 0);
+        assert.equal(elements.get('restStopDetailEventSection').classList.contains('d-none'), true);
+    });
+});
+
+test('renderEventSection tolerates missing or malformed input without throwing', () => {
+    withFakeEventDocument((elements) => {
+        assert.doesNotThrow(() => renderEventSection(undefined));
+        assert.doesNotThrow(() => renderEventSection(null));
+        renderEventSection([{ name: '   ' }, { name: null }, 'not-an-object']);
+
+        assert.equal(elements.get('restStopDetailEventList').children.length, 0);
+        assert.equal(elements.get('restStopDetailEventSection').classList.contains('d-none'), true);
     });
 });
 
