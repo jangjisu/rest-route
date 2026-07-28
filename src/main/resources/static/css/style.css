@@ -1158,6 +1158,30 @@ body.global-loading-open {
     flex: 0 0 auto;
 }
 
+.rest-stop-detail-theme-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rest-stop-detail-theme-badge {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid oklch(85% 0.06 55);
+    border-radius: var(--rr-radius-pill);
+    background-color: oklch(95% 0.04 55);
+    color: oklch(40% 0.12 55);
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
 .rest-stop-detail-status {
     padding: 1.25rem;
     color: #6c757d;

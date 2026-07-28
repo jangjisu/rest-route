@@ -2,6 +2,7 @@ package com.restroute.service;
 
 import static com.restroute.support.RestStopTestFixtures.restStopDetailItem;
 import static com.restroute.support.RestStopTestFixtures.restStopItem;
+import static com.restroute.support.RestStopTestFixtures.restThemeItem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.restroute.controller.response.RestStopBasicInfoResponse;
 import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
+import com.restroute.domain.RestThemeEntity;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.service.evcharger.EvChargerQueryService;
 import com.restroute.service.image.RestStopImageQueryService;
@@ -84,6 +86,32 @@ class RestStopBasicInfoQueryServiceTest {
         assertThat(response.brand()).isEqualTo("투썸플레이스");
         assertThat(response.evChargerCount()).isZero();
         assertThat(response.detailImageUrl()).isEqualTo("/api/rest-stops/A00001/images/detail");
+        assertThat(response.themes()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("테마가 있으면 이름과 상세 설명을 함께 반환한다")
+    void findByServiceAreaCode_returnsThemes() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
+        RestThemeEntity theme = RestThemeEntity.from(restThemeItem("000001", "4계절 꽃이 있는 휴게소"));
+        when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
+        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+                .thenReturn(RestStopRelatedInfo.of(
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(theme),
+                        List.of()));
+
+        Optional<RestStopBasicInfoResponse> result = restStopBasicInfoQueryService.findByServiceAreaCode("A00001");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().themes()).hasSize(1);
+        assertThat(result.get().themes().get(0).name()).isEqualTo("4계절 꽃이 있는 휴게소");
+        assertThat(result.get().themes().get(0).detail()).isEqualTo("365일 꽃향기가 나는 휴게소입니다");
     }
 
     @Test

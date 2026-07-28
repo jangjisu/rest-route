@@ -609,6 +609,7 @@ function renderDetail(detail) {
     setDetailValue('restStopDetailFreight', detail.truckSaYn, '알 수 없음', formatFreightOperation);
     renderParkingInfo(detail.compactCarParkingCount, detail.fullSizeCarParkingCount, detail.disabledParkingCount);
     renderEvChargerInfo(detail.evChargerCount);
+    renderThemeBadges(detail.themes);
     renderSalesRanking(detail.salesRanking);
     renderOilInfo(detail.oilInfo);
     renderFoodMenu(detail.foodMenu);
@@ -2124,6 +2125,33 @@ export function formatEvChargerCount(count) {
     }
 
     return `${numericCount.toLocaleString()}대`;
+}
+
+export function renderThemeBadges(themes) {
+    const list = document.getElementById('restStopDetailThemes');
+    if (!list) {
+        return;
+    }
+
+    list.replaceChildren();
+    const items = Array.isArray(themes) ? themes : [];
+    items.forEach((theme) => {
+        const name = typeof theme?.name === 'string' ? theme.name.trim() : '';
+        if (name === '') {
+            return;
+        }
+
+        const badge = document.createElement('li');
+        badge.className = 'rest-stop-detail-theme-badge';
+        badge.textContent = name;
+        const detail = typeof theme?.detail === 'string' ? theme.detail.trim() : '';
+        if (detail !== '') {
+            badge.title = detail;
+        }
+        list.appendChild(badge);
+    });
+
+    list.classList.toggle('d-none', list.children.length === 0);
 }
 
 function renderEvChargerInfo(count) {

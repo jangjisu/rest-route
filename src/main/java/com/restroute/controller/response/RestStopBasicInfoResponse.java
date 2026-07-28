@@ -2,6 +2,8 @@ package com.restroute.controller.response;
 
 import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
+import com.restroute.domain.RestThemeEntity;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -18,10 +20,15 @@ public record RestStopBasicInfoResponse(
         String telNo,
         String brand,
         int evChargerCount,
-        String detailImageUrl) {
+        String detailImageUrl,
+        List<ThemeInfo> themes) {
 
     public static RestStopBasicInfoResponse of(
-            RestStopEntity restStop, Optional<RestStopDetailEntity> detail, int evChargerCount, String detailImageUrl) {
+            RestStopEntity restStop,
+            Optional<RestStopDetailEntity> detail,
+            int evChargerCount,
+            String detailImageUrl,
+            List<RestThemeEntity> themes) {
         return new RestStopBasicInfoResponse(
                 restStop.getServiceAreaCode(),
                 restStop.getUnitCode(),
@@ -35,7 +42,8 @@ public record RestStopBasicInfoResponse(
                 textOf(detail, RestStopDetailEntity::getTelNo),
                 textOf(detail, RestStopDetailEntity::getBrand),
                 evChargerCount,
-                detailImageUrl);
+                detailImageUrl,
+                themes.stream().map(ThemeInfo::from).toList());
     }
 
     private static String textOf(Optional<RestStopDetailEntity> detail, Function<RestStopDetailEntity, String> getter) {
@@ -47,5 +55,12 @@ public record RestStopBasicInfoResponse(
 
     private static boolean hasText(String value) {
         return !value.trim().isEmpty();
+    }
+
+    public record ThemeInfo(String name, String detail) {
+
+        public static ThemeInfo from(RestThemeEntity theme) {
+            return new ThemeInfo(theme.getItemNm(), theme.getDetail());
+        }
     }
 }

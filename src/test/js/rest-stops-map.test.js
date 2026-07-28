@@ -13,6 +13,7 @@ import {
     isRouteGlobalLoadingState,
     renderNationalOilPriceState,
     renderOilInfo,
+    renderThemeBadges,
     routeMapSelectionMessage,
     routeNearbyTrafficBadge,
     routePointLabel,
@@ -87,6 +88,59 @@ function withFakeOilInfoDocument(callback) {
         globalThis.document = previousDocument;
     }
 }
+
+function withFakeThemeDocument(callback) {
+    const previousDocument = globalThis.document;
+    const elements = new Map([['restStopDetailThemes', createFakeElement(['d-none'])]]);
+
+    globalThis.document = {
+        createElement: () => createFakeElement(),
+        getElementById: (id) => elements.get(id) ?? null
+    };
+
+    try {
+        return callback(elements);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+}
+
+test('renderThemeBadges renders one badge per theme and reveals the list', () => {
+    withFakeThemeDocument((elements) => {
+        renderThemeBadges([
+            { name: '4계절 꽃이 있는 휴게소', detail: '365일 꽃향기가 나는 휴게소입니다' },
+            { name: '포토존', detail: '' }
+        ]);
+
+        const list = elements.get('restStopDetailThemes');
+        assert.equal(list.children.length, 2);
+        assert.equal(list.children[0].textContent, '4계절 꽃이 있는 휴게소');
+        assert.equal(list.children[0].title, '365일 꽃향기가 나는 휴게소입니다');
+        assert.equal(list.children[1].textContent, '포토존');
+        assert.equal(list.children[1].title, undefined);
+        assert.equal(list.classList.contains('d-none'), false);
+    });
+});
+
+test('renderThemeBadges hides the list when there are no themes', () => {
+    withFakeThemeDocument((elements) => {
+        renderThemeBadges([]);
+
+        assert.equal(elements.get('restStopDetailThemes').children.length, 0);
+        assert.equal(elements.get('restStopDetailThemes').classList.contains('d-none'), true);
+    });
+});
+
+test('renderThemeBadges tolerates missing or malformed input without throwing', () => {
+    withFakeThemeDocument((elements) => {
+        assert.doesNotThrow(() => renderThemeBadges(undefined));
+        assert.doesNotThrow(() => renderThemeBadges(null));
+        renderThemeBadges([{ name: '   ' }, { name: null }, 'not-an-object']);
+
+        assert.equal(elements.get('restStopDetailThemes').children.length, 0);
+        assert.equal(elements.get('restStopDetailThemes').classList.contains('d-none'), true);
+    });
+});
 
 test('createPopupContent renders rest stop popup as a small summary card', () => {
     const content = createPopupContent({

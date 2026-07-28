@@ -28,6 +28,7 @@ public class RestStopBasicInfoQueryService {
         RestStopRelatedInfo relatedInfo = restStopRelatedInfoQueryService.findByRestStop(restStop);
         int evChargerCount = evChargerQueryService.findActiveChargerCount(restStop.getServiceAreaCode());
         String detailImageUrl = restStopImageQueryService.findDetailImageUrl(restStop.getServiceAreaCode());
-        return RestStopBasicInfoResponse.of(restStop, relatedInfo.detail(), evChargerCount, detailImageUrl);
+        return RestStopBasicInfoResponse.of(
+                restStop, relatedInfo.detail(), evChargerCount, detailImageUrl, relatedInfo.themes());
     }
 }
