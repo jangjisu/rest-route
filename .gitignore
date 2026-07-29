@@ -64,6 +64,7 @@ docs/**
 harness/runs/current/state.env
 harness/runs/current/commit-message.txt
 harness/runs/current/reviews/
+harness/runs/history/
 
 ### Brainstorming visual companion (local mockups) ###
 .superpowers/
