@@ -29,10 +29,11 @@ fi
 
 branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 safe_branch=$(printf '%s' "$branch" | tr '/' '-')
+short_sha=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 history_dir="harness/runs/history"
-archive_file="$history_dir/${safe_branch}.env"
+archive_file="$history_dir/${safe_branch}-${short_sha}.env"
 
 mkdir -p "$history_dir"
 cp "$state_file" "$archive_file"
 
-pass "commit" "archive-state" "state.env를 $archive_file 에 보관했습니다. (state.env는 다음 작업에서 덮어써지므로, 이 브랜치의 상태는 여기서 확인하세요.)"
+pass "commit" "archive-state" "state.env를 $archive_file 에 보관했습니다. (같은 브랜치라도 커밋마다 별도 파일로 남으며, state.env 자체는 다음 작업에서 덮어써집니다.)"
