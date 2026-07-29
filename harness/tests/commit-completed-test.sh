@@ -19,19 +19,7 @@ STATE_FILE="$TMP_DIR/state.env"
 MESSAGE_FILE="$TMP_DIR/commit-message.txt"
 HOOK="$ROOT_DIR/harness/hooks/commit/02-check-staged-files.sh"
 
-assert_exit_code() {
-  expected="$1"
-  shift
-  set +e
-  "$@" > "$TMP_DIR/output.txt" 2>&1
-  actual=$?
-  set -e
-  if [ "$actual" -ne "$expected" ]; then
-    cat "$TMP_DIR/output.txt"
-    echo "expected exit $expected, got $actual" >&2
-    exit 1
-  fi
-}
+. "$ROOT_DIR/harness/tests/lib/assert.sh"
 
 # 커밋 메시지 초안 파일이 없으면 실패한다.
 printf 'COMMIT_MESSAGE_FILE=%s\n' "$MESSAGE_FILE" > "$STATE_FILE"

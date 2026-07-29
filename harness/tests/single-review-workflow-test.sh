@@ -24,19 +24,7 @@ CODE_REVIEW_COUNT=$review_count
 EOF
 }
 
-assert_exit_code() {
-  expected="$1"
-  shift
-  set +e
-  "$@" > "$TMP_DIR/output.txt" 2>&1
-  actual=$?
-  set -e
-  if [ "$actual" -ne "$expected" ]; then
-    cat "$TMP_DIR/output.txt"
-    echo "expected exit $expected, got $actual" >&2
-    exit 1
-  fi
-}
+. "$ROOT_DIR/harness/tests/lib/assert.sh"
 
 printf '%s\n' '# 계획' '' '## 대안과 선택 이유' '최소 변경안을 선택한다.' > "$PLAN_FILE"
 
