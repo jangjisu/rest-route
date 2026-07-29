@@ -11,7 +11,7 @@ description: Use when implementing a feature, bugfix, refactor, API integration,
 ## 필수 원칙
 
 - `AGENTS.md`와 `harness/WORKFLOW.md`를 먼저 읽는다.
-- 하나의 작업 카테고리만 진행한다.
+- 백엔드/프론트엔드를 나누지 않고 요청을 하나의 작업 단위로 진행한다. 카테고리는 커밋을 나눌 때만 사용한다.
 - 설계 승인 전 코드를 수정하지 않는다.
 - 코드 리뷰는 전체 작업에서 한 번만 수행하고, 결과 파일이 있을 때만 `completed`로 기록한다.
 - 코드 리뷰를 반복하거나 Compound Engineering 리뷰를 추가로 실행하지 않는다.
@@ -29,6 +29,7 @@ description: Use when implementing a feature, bugfix, refactor, API integration,
 - 테스트와 품질: `QUALITY.md`
 
 사용자와 요구사항, 대안과 trade-off를 확인한 뒤 계획 초안을 작성한다.
+이 작업을 현재 브랜치에서 이어갈지 새 브랜치로 뗄지 정한다(열린 PR의 파생 작업이면 현재 브랜치, 무관한 새 작업이거나 이미 머지된 코드 이슈면 새 브랜치).
 
 ## 2. 스펙 영향도 확인
 
@@ -38,7 +39,9 @@ description: Use when implementing a feature, bugfix, refactor, API integration,
 ## 3. 계획 확정 및 사용자 승인
 
 스펙 영향도, 접근 방법과 trade-off를 반영한 계획을 사용자에게 보여주고 승인받는다.
-역할별 계획 리뷰는 수행하지 않는다. 승인 뒤 `verify review`를 실행한다.
+역할별 계획 리뷰는 수행하지 않는다.
+화면(UI) 변경이 있으면 화면 전체가 바뀔 때는 모바일/데스크톱 목업을 만들고, 일부만 바뀔 때는 계획 문서에 변경 스펙을 기록한다. 구현이 필요하지 않다면 계획(및 목업)만으로 종료할 수 있다.
+승인 뒤 `verify review`를 실행한다.
 
 ## 4. 코드 작성
 
@@ -55,9 +58,10 @@ description: Use when implementing a feature, bugfix, refactor, API integration,
 5. 확실한 지적을 수정하되 재리뷰하지 않는다.
 6. `harness/harness.sh verify verify`로 테스트와 커버리지를 검증한다.
 
-## 6. Commit / Push
+## 6. Commit
 
-Commit 게이트를 통과한 뒤 작업 브랜치에 커밋하고 push한다.
+Commit 게이트를 통과한 뒤 작업 브랜치에 커밋한다.
+원격 브랜치 push는 자동으로 수행하지 않는다. 사용자가 직접 검증한 뒤 명시적으로 요청하면 그때 push한다.
 PR 생성과 기본 브랜치 병합은 사용자가 수행한다.
 
 ## 완료 보고
@@ -65,4 +69,5 @@ PR 생성과 기본 브랜치 병합은 사용자가 수행한다.
 - 승인된 계획
 - 작업 전체에서 한 번 수행한 코드·문서 정합성 리뷰 결과
 - 테스트와 커버리지 결과
-- 브랜치, 커밋과 push 결과
+- 브랜치와 커밋 결과 (push는 사용자 요청 시 별도 수행)
+- 사용자가 직접 확인해볼 만한 항목(있다면)
