@@ -270,8 +270,7 @@ class RestStopRelatedInfoQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001"));
         RestStopDetailEntity firstDetail = RestStopDetailEntity.from(restStopDetailItem("A00001", "서울만남(부산)휴게소"));
         firstDetail.updateRestStopServiceAreaCode("A00001");
-        RestStopDetailEntity duplicateDetail =
-                RestStopDetailEntity.from(restStopDetailItem("A00001", "서울만남(부산)휴게소"));
+        RestStopDetailEntity duplicateDetail = RestStopDetailEntity.from(restStopDetailItem("A00001", "서울만남(부산)휴게소"));
         duplicateDetail.updateRestStopServiceAreaCode("A00001");
 
         List<String> codes = List.of("A00001");

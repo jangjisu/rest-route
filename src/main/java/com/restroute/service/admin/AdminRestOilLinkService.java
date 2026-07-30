@@ -10,10 +10,12 @@ import com.restroute.repository.RestOilPriceRepository;
 import com.restroute.repository.RestOilRepository;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.service.image.RestStopNotFoundException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,9 +47,25 @@ public class AdminRestOilLinkService {
 
     @Transactional(readOnly = true)
     public List<AdminOilStationSearchResponse> search(String name, String routeName) {
-        return findMatches(name, routeName).stream()
-                .map(oilPrice -> AdminOilStationSearchResponse.from(oilPrice, linkedRestStopName(oilPrice)))
+        List<RestOilPriceEntity> matches = findMatches(name, routeName);
+        Map<String, String> restStopNameByServiceAreaCode = linkedRestStopNames(matches);
+        return matches.stream()
+                .map(oilPrice -> AdminOilStationSearchResponse.from(
+                        oilPrice, restStopNameByServiceAreaCode.get(oilPrice.getRestStopServiceAreaCode())))
                 .toList();
+    }
+
+    private Map<String, String> linkedRestStopNames(List<RestOilPriceEntity> oilPrices) {
+        List<String> serviceAreaCodes = oilPrices.stream()
+                .map(RestOilPriceEntity::getRestStopServiceAreaCode)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        if (serviceAreaCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return restStopRepository.findAllByServiceAreaCodeIn(serviceAreaCodes).stream()
+                .collect(Collectors.toMap(RestStopEntity::getServiceAreaCode, RestStopEntity::getUnitName));
     }
 
     private List<RestOilPriceEntity> findMatches(String name, String routeName) {
