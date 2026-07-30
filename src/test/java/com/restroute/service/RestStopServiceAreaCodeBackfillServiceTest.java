@@ -37,6 +37,15 @@ import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
 import com.restroute.repository.RestThemeRepository;
+import com.restroute.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestEventServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestFoodServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestOilPriceServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestOilServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestStopDetailServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestStopProductSalesRankBackfiller;
+import com.restroute.service.backfill.RestStopStoreSalesRankBackfiller;
+import com.restroute.service.backfill.RestThemeServiceAreaCodeBackfiller;
 import com.restroute.service.evcharger.mapping.EvChargerStationMappingCalculator;
 import com.restroute.service.salesranking.SalesRankingProductRow;
 import com.restroute.service.salesranking.SalesRankingStoreRow;
@@ -52,7 +61,19 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 @ActiveProfiles("test")
-@Import({RestStopServiceAreaCodeBackfillService.class, EvChargerStationMappingCalculator.class})
+@Import({
+    RestStopServiceAreaCodeBackfillService.class,
+    EvChargerStationMappingCalculator.class,
+    RestStopDetailServiceAreaCodeBackfiller.class,
+    HighwayServiceAreaInfoServiceAreaCodeBackfiller.class,
+    RestFoodServiceAreaCodeBackfiller.class,
+    RestOilServiceAreaCodeBackfiller.class,
+    RestOilPriceServiceAreaCodeBackfiller.class,
+    RestStopProductSalesRankBackfiller.class,
+    RestStopStoreSalesRankBackfiller.class,
+    RestThemeServiceAreaCodeBackfiller.class,
+    RestEventServiceAreaCodeBackfiller.class
+})
 class RestStopServiceAreaCodeBackfillServiceTest {
 
     @Autowired
