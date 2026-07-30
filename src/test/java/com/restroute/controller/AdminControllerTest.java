@@ -1,7 +1,9 @@
 package com.restroute.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -148,5 +150,57 @@ class AdminControllerTest {
         assertThat(controller.backfillSalesRankings(authentication)).isEqualTo("redirect:/admin?backfill=success");
         verify(backfillService).backfill();
         verify(activityLogService).logBackfill(authentication);
+    }
+
+    @Test
+    @DisplayName("상품 판매순위 업로드가 실패하면 JSON이 아니라 에러 파라미터로 리다이렉트하고 활동 로그는 남기지 않는다")
+    void uploadProductSalesRankings_redirectsWithErrorWhenUploadFails() {
+        SalesRankingUploadService service = mock(SalesRankingUploadService.class);
+        AdminActivityLogService activityLogService = mock(AdminActivityLogService.class);
+        AdminController controller = new AdminController(
+                service,
+                mock(RestStopServiceAreaCodeBackfillService.class),
+                mock(AdminDashboardService.class),
+                activityLogService);
+        MockMultipartFile product = new MockMultipartFile("productFile", "broken.csv", "text/csv", new byte[] {1});
+        when(service.uploadProducts(product)).thenThrow(new RuntimeException("upload failed"));
+
+        assertThat(controller.uploadProductSalesRankings(product, authentication))
+                .isEqualTo("redirect:/admin?upload=error&type=product");
+        verify(activityLogService, never()).logProductSalesUpload(any(), any());
+    }
+
+    @Test
+    @DisplayName("매장 판매순위 업로드가 실패하면 JSON이 아니라 에러 파라미터로 리다이렉트하고 활동 로그는 남기지 않는다")
+    void uploadStoreSalesRankings_redirectsWithErrorWhenUploadFails() {
+        SalesRankingUploadService service = mock(SalesRankingUploadService.class);
+        AdminActivityLogService activityLogService = mock(AdminActivityLogService.class);
+        AdminController controller = new AdminController(
+                service,
+                mock(RestStopServiceAreaCodeBackfillService.class),
+                mock(AdminDashboardService.class),
+                activityLogService);
+        MockMultipartFile store = new MockMultipartFile("storeFile", "broken.csv", "text/csv", new byte[] {1});
+        when(service.uploadStores(store)).thenThrow(new RuntimeException("upload failed"));
+
+        assertThat(controller.uploadStoreSalesRankings(store, authentication))
+                .isEqualTo("redirect:/admin?upload=error&type=store");
+        verify(activityLogService, never()).logStoreSalesUpload(any(), any());
+    }
+
+    @Test
+    @DisplayName("판매순위 매핑 실행이 실패하면 JSON이 아니라 에러 파라미터로 리다이렉트하고 활동 로그는 남기지 않는다")
+    void backfillSalesRankings_redirectsWithErrorWhenBackfillFails() {
+        RestStopServiceAreaCodeBackfillService backfillService = mock(RestStopServiceAreaCodeBackfillService.class);
+        AdminActivityLogService activityLogService = mock(AdminActivityLogService.class);
+        AdminController controller = new AdminController(
+                mock(SalesRankingUploadService.class),
+                backfillService,
+                mock(AdminDashboardService.class),
+                activityLogService);
+        when(backfillService.backfill()).thenThrow(new RuntimeException("backfill failed"));
+
+        assertThat(controller.backfillSalesRankings(authentication)).isEqualTo("redirect:/admin?backfill=error");
+        verify(activityLogService, never()).logBackfill(any());
     }
 }
