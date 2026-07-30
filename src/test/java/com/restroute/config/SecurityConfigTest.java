@@ -246,10 +246,10 @@ class SecurityConfigTest {
     @Test
     @DisplayName("ADMIN 사용자가 전체 휴게소명 매핑을 실행하면 대시보드 최근 작업에 실제로 기록된다")
     void backfill_recordsActivityLogVisibleOnDashboard() throws Exception {
-        mockMvc.perform(post("/admin/sales-rankings/backfill")
+        mockMvc.perform(post("/api/admin/sales-rankings/backfill")
                         .with(user("admin").roles("ADMIN"))
                         .with(csrf()))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/admin/dashboard").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())

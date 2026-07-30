@@ -94,59 +94,96 @@ function submitButton(form) {
     return form.querySelector('button[type="submit"]');
 }
 
-function loadingMessage(form) {
-    return form.action.includes('/backfill') ? '휴게소명 매핑을 실행하고 있습니다.' : '파일을 업로드하고 있습니다.';
+function actionKind(url) {
+    if (url.includes('/backfill')) {
+        return 'backfill';
+    }
+    if (url.includes('/stores')) {
+        return 'store';
+    }
+    return 'product';
 }
 
-export function attachAdminForms(document) {
+function loadingMessage(kind) {
+    return kind === 'backfill' ? '휴게소명 매핑을 실행하고 있습니다.' : '파일을 업로드하고 있습니다.';
+}
+
+function submittingLabel(kind) {
+    return kind === 'backfill' ? '매핑 실행 중...' : '업로드 중...';
+}
+
+function idleLabel(kind) {
+    return kind === 'backfill' ? '전체 휴게소명 매핑' : '업로드';
+}
+
+function successMessage(kind, uploadedCount) {
+    if (kind === 'backfill') {
+        return '전체 휴게소명 매핑이 완료되었습니다.';
+    }
+    const label = kind === 'store' ? '매장' : '상품';
+    return `${label} 판매순위 ${uploadedCount ?? 0}건을 업로드했습니다.`;
+}
+
+function failureMessage(kind) {
+    return kind === 'backfill' ? '전체 휴게소명 매핑에 실패했습니다.' : '판매순위 업로드에 실패했습니다.';
+}
+
+function buildFormData(form) {
+    return new FormData(form);
+}
+
+async function submitAdminForm(document, form, fetchImpl, buildFormDataImpl) {
+    const kind = actionKind(form.action);
+    const button = submitButton(form);
+
+    try {
+        const response = await fetchImpl(form.action, {
+            method: 'POST',
+            body: buildFormDataImpl(form),
+            headers: { Accept: 'application/json' }
+        });
+        const payload = await response.json().catch(() => null);
+        if (response.ok) {
+            showToast(document, successMessage(kind, payload?.data), 'success');
+            form.reset?.();
+            fetchAdminDashboard(fetchImpl)
+                .then((summary) => renderDashboard(document, summary))
+                .catch(() => {});
+        } else {
+            showToast(document, payload?.message || failureMessage(kind), 'error');
+        }
+    } catch {
+        showToast(document, failureMessage(kind), 'error');
+    } finally {
+        setGlobalLoading(document, false);
+        form.dataset.submitting = 'false';
+        if (button) {
+            button.disabled = false;
+            button.textContent = idleLabel(kind);
+        }
+    }
+}
+
+export function attachAdminForms(document, fetchImpl = fetch, buildFormDataImpl = buildFormData) {
     const forms = document.querySelectorAll('form[action*="/admin/sales-rankings/"]');
     forms.forEach((form) => {
-        form.addEventListener('submit', () => {
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
             if (form.dataset.submitting === 'true') {
-                return;
+                return undefined;
             }
 
             form.dataset.submitting = 'true';
+            const kind = actionKind(form.action);
             const button = submitButton(form);
             if (button) {
                 button.disabled = true;
-                button.textContent = form.action.includes('/backfill') ? '매핑 실행 중...' : '업로드 중...';
+                button.textContent = submittingLabel(kind);
             }
-            setGlobalLoading(document, true, loadingMessage(form));
+            setGlobalLoading(document, true, loadingMessage(kind));
+            return submitAdminForm(document, form, fetchImpl, buildFormDataImpl);
         });
     });
-}
-
-function redirectNotice(location) {
-    const params = new globalThis.URLSearchParams(location.search);
-    if (params.get('upload') === 'success') {
-        const formType = params.get('type');
-        return formType === 'store'
-            ? '매장 판매순위 업로드가 완료되었습니다.'
-            : '상품 판매순위 업로드가 완료되었습니다.';
-    }
-    if (params.get('backfill') === 'success') {
-        return '전체 휴게소명 매핑이 완료되었습니다.';
-    }
-    if (params.get('upload') === 'error') {
-        return '판매순위 업로드에 실패했습니다.';
-    }
-    if (params.get('backfill') === 'error') {
-        return '전체 휴게소명 매핑에 실패했습니다.';
-    }
-    return null;
-}
-
-export function handleRedirectNotice(document, location = window.location, history = window.history) {
-    const message = redirectNotice(location);
-    if (!message) {
-        return;
-    }
-
-    const type = location.search.includes('=error') ? 'error' : 'success';
-    showToast(document, message, type);
-    const cleanUrl = `${location.pathname}${location.hash || ''}`;
-    history.replaceState({}, document.title, cleanUrl);
 }
 
 export async function fetchAdminDashboard(fetchImpl = fetch) {
@@ -159,8 +196,7 @@ export async function fetchAdminDashboard(fetchImpl = fetch) {
 }
 
 export function initializeAdminDashboard(document, fetchImpl = fetch) {
-    handleRedirectNotice(document);
-    attachAdminForms(document);
+    attachAdminForms(document, fetchImpl);
     bindActivityModal(document);
     fetchAdminDashboard(fetchImpl)
         .then((summary) => renderDashboard(document, summary))

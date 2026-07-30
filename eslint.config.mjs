@@ -11,6 +11,7 @@ export default [
         document: 'readonly',
         encodeURIComponent: 'readonly',
         fetch: 'readonly',
+        FormData: 'readonly',
         navigator: 'readonly',
         Number: 'readonly',
         Promise: 'readonly',
