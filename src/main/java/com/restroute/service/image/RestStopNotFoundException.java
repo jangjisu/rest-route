@@ -1,9 +1,12 @@
 package com.restroute.service.image;
 
-public class RestStopNotFoundException extends RuntimeException {
+import com.restroute.common.BusinessException;
+import com.restroute.common.ResponseCode;
+
+public class RestStopNotFoundException extends BusinessException {
 
     public RestStopNotFoundException(String serviceAreaCode) {
-        super("Rest stop not found: " + serviceAreaCode);
+        super(ResponseCode.NOT_FOUND, "Rest stop not found: " + serviceAreaCode);
     }
 
     public static RestStopNotFoundException forServiceAreaCode(String serviceAreaCode) {

@@ -1,9 +1,12 @@
 package com.restroute.service.admin;
 
-public class InvalidRestFoodEditException extends RuntimeException {
+import com.restroute.common.BusinessException;
+import com.restroute.common.ResponseCode;
+
+public class InvalidRestFoodEditException extends BusinessException {
 
     public InvalidRestFoodEditException(String message) {
-        super(message);
+        super(ResponseCode.INVALID_PARAMETER, message);
     }
 
     public static InvalidRestFoodEditException forSyncedFoodDeletion(Long foodId) {

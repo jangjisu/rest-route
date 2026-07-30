@@ -1,9 +1,12 @@
 package com.restroute.service.admin;
 
-public class RestOilNotFoundException extends RuntimeException {
+import com.restroute.common.BusinessException;
+import com.restroute.common.ResponseCode;
+
+public class RestOilNotFoundException extends BusinessException {
 
     private RestOilNotFoundException(String message) {
-        super(message);
+        super(ResponseCode.NOT_FOUND, message);
     }
 
     public static RestOilNotFoundException forId(Long oilId) {

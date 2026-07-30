@@ -1,9 +1,12 @@
 package com.restroute.service.admin;
 
-public class InvalidRestStopEditException extends RuntimeException {
+import com.restroute.common.BusinessException;
+import com.restroute.common.ResponseCode;
+
+public class InvalidRestStopEditException extends BusinessException {
 
     public InvalidRestStopEditException(String message) {
-        super(message);
+        super(ResponseCode.INVALID_PARAMETER, message);
     }
 
     public static InvalidRestStopEditException forInvalidCoordinate(String value) {
