@@ -12,6 +12,8 @@ import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.service.NationalOilPriceService;
 import com.restroute.service.RestStopEventQueryService;
+import com.restroute.service.RestStopRelatedInfo;
+import com.restroute.service.RestStopRelatedInfoQueryService;
 import com.restroute.service.RestThemeQueryService;
 import com.restroute.service.evcharger.EvChargerQueryService;
 import com.restroute.service.image.RestStopImageQueryService;
@@ -42,6 +44,7 @@ public class RouteRestStopService {
     private final RestStopImageQueryService restStopImageQueryService;
     private final RestThemeQueryService restThemeQueryService;
     private final RestStopEventQueryService restStopEventQueryService;
+    private final RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
 
     public RouteRestStopResponse findRouteRestStops(
             double originLatitude,
@@ -150,10 +153,17 @@ public class RouteRestStopService {
                 restThemeQueryService.findThemeMappedServiceAreaCodes(candidateServiceAreaCodes);
         List<String> activeEventServiceAreaCodes =
                 restStopEventQueryService.findActiveEventMappedServiceAreaCodes(candidateServiceAreaCodes);
+        Map<String, RestStopRelatedInfo> relatedInfoByServiceAreaCode =
+                restStopRelatedInfoQueryService.findAllByRestStops(candidates.stream()
+                        .map(RouteRestStopCandidate::restStop)
+                        .toList());
         List<RouteRestStopComparison> comparisons = candidates.stream()
                 .map(candidate -> RouteRestStopComparison.of(
                         candidate,
-                        routeRestStopComparisonSummaryService.create(candidate.restStop(), nationalOilPriceSummary)))
+                        routeRestStopComparisonSummaryService.create(
+                                relatedInfoByServiceAreaCode.get(
+                                        candidate.restStop().getServiceAreaCode()),
+                                nationalOilPriceSummary)))
                 .toList();
         RouteRestStopRecommendationStandards recommendationStandards =
                 routeRestStopRecommendationTagService.standards(comparisons);

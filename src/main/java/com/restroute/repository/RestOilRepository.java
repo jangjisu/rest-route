@@ -1,6 +1,7 @@
 package com.restroute.repository;
 
 import com.restroute.domain.RestOilEntity;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,4 +15,6 @@ public interface RestOilRepository extends JpaRepository<RestOilEntity, Long> {
     List<RestOilEntity> findAllByStandardRestNameContainingIgnoreCaseOrderByIdAsc(String standardRestName);
 
     List<RestOilEntity> findAllByStandardRestCodeOrderByIdAsc(String standardRestCode);
+
+    List<RestOilEntity> findAllByRestStopServiceAreaCodeIn(Collection<String> restStopServiceAreaCodes);
 }

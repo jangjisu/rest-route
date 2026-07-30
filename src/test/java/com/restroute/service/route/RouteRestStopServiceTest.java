@@ -35,7 +35,9 @@ import com.restroute.service.RestStopRelatedInfoQueryService;
 import com.restroute.service.RestThemeQueryService;
 import com.restroute.service.evcharger.EvChargerQueryService;
 import com.restroute.service.image.RestStopImageQueryService;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,11 +97,8 @@ class RouteRestStopServiceTest {
         lenient()
                 .when(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(any()))
                 .thenReturn(List.of());
-        lenient()
-                .when(restStopRelatedInfoQueryService.findByRestStop(any(RestStopEntity.class)))
-                .thenReturn(emptyRelatedInfo());
-        routeRestStopComparisonSummaryService =
-                new RouteRestStopComparisonSummaryService(restStopRelatedInfoQueryService);
+        stubRelatedInfoByCode(Map.of());
+        routeRestStopComparisonSummaryService = new RouteRestStopComparisonSummaryService();
         routeRestStopRecommendationTagService = new RouteRestStopRecommendationTagService();
         service = new RouteRestStopService(
                 kakaoMapClient,
@@ -110,7 +109,23 @@ class RouteRestStopServiceTest {
                 evChargerQueryService,
                 restStopImageQueryService,
                 restThemeQueryService,
-                restStopEventQueryService);
+                restStopEventQueryService,
+                restStopRelatedInfoQueryService);
+    }
+
+    private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {
+        lenient()
+                .doAnswer(invocation -> {
+                    List<RestStopEntity> stops = invocation.getArgument(0);
+                    Map<String, RestStopRelatedInfo> result = new HashMap<>();
+                    for (RestStopEntity stop : stops) {
+                        String code = stop.getServiceAreaCode();
+                        result.put(code, overridesByServiceAreaCode.getOrDefault(code, emptyRelatedInfo()));
+                    }
+                    return result;
+                })
+                .when(restStopRelatedInfoQueryService)
+                .findAllByRestStops(any());
     }
 
     private KakaoLocalSearchResponse searchResult(String x, String y, String placeName, String addressName) {
@@ -343,9 +358,9 @@ class RouteRestStopServiceTest {
         RestOilEntity oilConvenience = oilConvenience("OIL-A", "쉼터");
         RestOilPriceEntity oilPrice = oilPrice("1,850원", "1,900원", "1,135원");
         when(restStopRepository.findAll()).thenReturn(List.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(relatedInfo(
-                        Optional.empty(), List.of(), List.of(oilConvenience), Optional.of(oilPrice), List.of()));
+        stubRelatedInfoByCode(Map.of(
+                "A",
+                relatedInfo(Optional.empty(), List.of(), List.of(oilConvenience), Optional.of(oilPrice), List.of())));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -377,20 +392,21 @@ class RouteRestStopServiceTest {
         RestFoodEntity secondFood = mock(RestFoodEntity.class);
         RestFoodEntity thirdFood = mock(RestFoodEntity.class);
         when(restStopRepository.findAll()).thenReturn(List.of(first, second));
-        when(restStopRelatedInfoQueryService.findByRestStop(first))
-                .thenReturn(relatedInfo(
+        stubRelatedInfoByCode(Map.of(
+                "A",
+                relatedInfo(
                         Optional.empty(),
                         List.of(firstParking),
                         List.of(firstOilConvenience),
                         Optional.of(firstOilPrice),
-                        List.of(firstFood)));
-        when(restStopRelatedInfoQueryService.findByRestStop(second))
-                .thenReturn(relatedInfo(
+                        List.of(firstFood)),
+                "B",
+                relatedInfo(
                         Optional.empty(),
                         List.of(secondParking),
                         List.of(secondOilConvenience, thirdOilConvenience, fourthOilConvenience),
                         Optional.of(secondOilPrice),
-                        List.of(secondFood, thirdFood)));
+                        List.of(secondFood, thirdFood))));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -451,8 +467,8 @@ class RouteRestStopServiceTest {
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopDetailEntity detail = detail("수유실/쉼터, 쉼터", "Y", "X");
         when(restStopRepository.findAll()).thenReturn(List.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(relatedInfo(Optional.of(detail), List.of(), List.of(), Optional.empty(), List.of()));
+        stubRelatedInfoByCode(
+                Map.of("A", relatedInfo(Optional.of(detail), List.of(), List.of(), Optional.empty(), List.of())));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -473,8 +489,8 @@ class RouteRestStopServiceTest {
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopDetailEntity detail = detail(null, "Y", "Y");
         when(restStopRepository.findAll()).thenReturn(List.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(relatedInfo(Optional.of(detail), List.of(), List.of(), Optional.empty(), List.of()));
+        stubRelatedInfoByCode(
+                Map.of("A", relatedInfo(Optional.of(detail), List.of(), List.of(), Optional.empty(), List.of())));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -497,9 +513,14 @@ class RouteRestStopServiceTest {
         RestOilPriceEntity oilPrice =
                 oilPrice("", "무료", "999999999999999999999999999999999999999999999999999999999999999999");
         when(restStopRepository.findAll()).thenReturn(List.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(relatedInfo(
-                        Optional.empty(), List.of(parking), List.of(oilConvenience), Optional.of(oilPrice), List.of()));
+        stubRelatedInfoByCode(Map.of(
+                "A",
+                relatedInfo(
+                        Optional.empty(),
+                        List.of(parking),
+                        List.of(oilConvenience),
+                        Optional.of(oilPrice),
+                        List.of())));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
