@@ -31,6 +31,10 @@ public class AdminRestOilLinkController {
         return ResponseEntity.ok(ApiResponse.success(adminRestOilLinkService.findAll()));
     }
 
+    /**
+     * @param name 주유소명 검색어(부분 일치, 대소문자 무시). 예: "GS칼텍스"
+     * @param routeName 노선명 필터(정확히 일치). 예: "경부선"
+     */
     @GetMapping("/api/admin/oil-stations/search")
     public ResponseEntity<ApiResponse<List<AdminOilStationSearchResponse>>> search(
             @RequestParam(required = false) String name, @RequestParam(required = false) String routeName) {

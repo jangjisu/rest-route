@@ -30,6 +30,9 @@ public class AdminDashboardController {
         return ResponseEntity.ok(ApiResponse.success(dashboardService.getSummary()));
     }
 
+    /**
+     * @param productFile 상품 판매순위 CSV 파일(EUC-KR/MS949, 헤더 포함). 예: "product_sales_2026-07.csv"
+     */
     @PostMapping("/api/admin/sales-rankings/products")
     public ResponseEntity<ApiResponse<Integer>> uploadProductSalesRankings(
             @RequestParam("productFile") MultipartFile productFile, Authentication authentication) {
@@ -38,6 +41,9 @@ public class AdminDashboardController {
         return ResponseEntity.ok(ApiResponse.success(uploadedCount));
     }
 
+    /**
+     * @param storeFile 매장 판매순위 CSV 파일(EUC-KR/MS949, 헤더 포함). 예: "store_sales_2026-07.csv"
+     */
     @PostMapping("/api/admin/sales-rankings/stores")
     public ResponseEntity<ApiResponse<Integer>> uploadStoreSalesRankings(
             @RequestParam("storeFile") MultipartFile storeFile, Authentication authentication) {

@@ -29,7 +29,7 @@
 
 ## 새 엔드포인트의 파라미터 문서화
 
-`@RequestParam`이 3개 이상이거나 이름만으로 형식을 알기 어려운 파라미터(좌표, 코드값 등)가 있는 새 엔드포인트를 추가할 때는, 메서드 위에 Javadoc으로 각 파라미터의 의미와 예시값을 남긴다. springdoc/swagger는 이 프로젝트에 아직 없으므로 Javadoc으로 대체한다(의존성 도입은 별도 논의).
+`@RequestParam`이 있는 새 엔드포인트를 추가하거나 기존 엔드포인트의 파라미터를 변경할 때는, 파라미터가 하나뿐이어도 메서드 위에 Javadoc으로 각 파라미터의 의미와 예시값을 남긴다. 부분 일치/정확히 일치처럼 검색 동작이 이름만으로 드러나지 않는 경우 그 동작도 함께 적는다. springdoc/swagger는 이 프로젝트에 아직 없으므로 Javadoc으로 대체한다(의존성 도입은 별도 논의).
 
 ```java
 /**
@@ -50,4 +50,4 @@ public ResponseEntity<ApiResponse<XxxResponse>> getXxx(
 
 `config/checkstyle/checkstyle.xml`은 `UnusedImports`만 검사하고, harness `04-run-code-quality-tools.sh`의 SonarQube 게이트는 `SONAR_TOKEN`/`SONAR_HOST_URL`/`sonar-project.properties` 중 하나가 있어야 실행되는데 로컬 개발 환경엔 셋 다 없어 항상 스킵된다. 즉 IDE(Qodana 등) 인스펙션에서만 deprecated API 사용이 보이고, 빌드/커밋 게이트에서는 잡히지 않는다.
 
-`build.gradle`의 `JavaCompile`에 `-Xlint:deprecation`을 걸어뒀으므로 `./gradlew compileJava`(테스트 실행 시 항상 같이 돔) 로그에서 경고를 확인할 수 있다. SonarQube 서버 연결(SONAR_TOKEN 발급 등)은 외부 계정이 필요해 별도로 논의해야 한다.
+`build.gradle`의 `JavaCompile`에 `-Xlint:deprecation`을 걸어뒀으므로 `./gradlew compileJava`(테스트 실행 시 항상 같이 돔) 로그에서 경고를 확인할 수 있다. 단 `-Xlint:deprecation`은 javac lint 카테고리 중 `deprecation` 하나만 켠다 — `unchecked`/`rawtypes`/`cast` 등 나머지 카테고리는 별개로 켜야 하고(`-Xlint:all`), **IDE에서 보이는 "null이 될 수 있다" 경고는 애초에 javac lint 대상이 아니다**(IntelliJ/Qodana 자체 데이터플로우 분석). 이 프로젝트에서 null 안전성을 빌드 게이트로 강제하려면 SonarQube 서버 연결(SonarJava 룰셋에 null-dereference 룰 포함, `SONAR_TOKEN` 발급 등 외부 계정 필요) 또는 NullAway/SpotBugs 같은 별도 정적분석 도구 도입이 필요하며, 둘 다 이 프로젝트 규모의 별도 논의가 필요한 결정이라 "deprecated 체크 추가" 작업에 끼워 넣지 않는다.

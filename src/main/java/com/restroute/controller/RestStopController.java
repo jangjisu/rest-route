@@ -30,6 +30,9 @@ public class RestStopController {
         return ResponseEntity.ok(ApiResponse.success(restStops));
     }
 
+    /**
+     * @param name 휴게소명 검색어(부분 일치, 대소문자 무시). 예: "안성"
+     */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<RestStopItemResponse>>> searchRestStops(@RequestParam String name) {
         List<RestStopItemResponse> restStops = restStopQueryService.searchByName(name).stream()
