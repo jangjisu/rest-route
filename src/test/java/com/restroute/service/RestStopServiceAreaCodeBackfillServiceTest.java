@@ -63,6 +63,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ActiveProfiles("test")
 @Import({
     RestStopServiceAreaCodeBackfillService.class,
+    RestStopQueryService.class,
     EvChargerStationMappingCalculator.class,
     RestStopDetailServiceAreaCodeBackfiller.class,
     HighwayServiceAreaInfoServiceAreaCodeBackfiller.class,

@@ -11,6 +11,10 @@ public record KakaoDirectionsResponse(List<Route> routes) {
         return firstRoute() != null && Integer.valueOf(0).equals(firstRoute().resultCode());
     }
 
+    public boolean failedToRoute() {
+        return !hasSuccessfulRoute();
+    }
+
     public Route firstRoute() {
         if (routes == null || routes.isEmpty()) {
             return null;

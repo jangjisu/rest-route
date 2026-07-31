@@ -9,9 +9,9 @@ import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceS
 import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.controller.response.RouteRestStopResponse.RouteSummary;
 import com.restroute.domain.RestStopEntity;
-import com.restroute.repository.RestStopRepository;
 import com.restroute.service.NationalOilPriceService;
 import com.restroute.service.RestStopEventQueryService;
+import com.restroute.service.RestStopQueryService;
 import com.restroute.service.RestStopRelatedInfo;
 import com.restroute.service.RestStopRelatedInfoQueryService;
 import com.restroute.service.RestThemeQueryService;
@@ -36,7 +36,7 @@ public class RouteRestStopService {
     private static final String LIST_IMAGE_URL_FORMAT = "/api/rest-stops/%s/images/list";
 
     private final KakaoMapClient kakaoMapClient;
-    private final RestStopRepository restStopRepository;
+    private final RestStopQueryService restStopQueryService;
     private final RouteRestStopComparisonSummaryService routeRestStopComparisonSummaryService;
     private final RouteRestStopRecommendationTagService routeRestStopRecommendationTagService;
     private final NationalOilPriceService nationalOilPriceService;
@@ -60,7 +60,7 @@ public class RouteRestStopService {
         KakaoDirectionsResponse directions = kakaoMapClient.getDirections(
                 coordinateParam(originLongitude, originLatitude),
                 coordinateParam(destination.longitude(), destination.latitude()));
-        if (!directions.hasSuccessfulRoute()) {
+        if (directions.failedToRoute()) {
             KakaoDirectionsResponse.Route failedRoute = directions.firstRoute();
             throw new RouteRestStopNotFoundException(
                     routeFailureMessage(failedRoute == null ? null : failedRoute.resultCode()));
@@ -112,7 +112,7 @@ public class RouteRestStopService {
     private List<RouteRestStopItem> restStopsOnRoute(
             RoutePolyline polyline, int radiusMeters, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         List<RouteRestStopCandidate> candidates = new ArrayList<>();
-        for (RestStopEntity restStop : restStopRepository.findAll()) {
+        for (RestStopEntity restStop : restStopQueryService.findAll()) {
             Double latitude = parseCoordinate(restStop.getYValue());
             Double longitude = parseCoordinate(restStop.getXValue());
             if (latitude == null || longitude == null) {
@@ -125,14 +125,15 @@ public class RouteRestStopService {
             }
 
             RouteRestStopItem item = RouteRestStopItem.of(
-                    restStop.getServiceAreaCode(),
-                    restStop.getUnitName(),
-                    restStop.getRouteName(),
-                    latitude,
-                    longitude,
-                    Math.round(nearest.distanceMeters()));
-            Integer trafficState = polyline.coordinates().get(nearest.index()).trafficState();
-            candidates.add(RouteRestStopCandidate.of(restStop, item, nearest.index(), trafficState));
+                            restStop.getServiceAreaCode(),
+                            restStop.getUnitName(),
+                            restStop.getRouteName(),
+                            latitude,
+                            longitude,
+                            Math.round(nearest.distanceMeters()))
+                    .withNearbyTraffic(nearbyTraffic(
+                            polyline.coordinates().get(nearest.index()).trafficState()));
+            candidates.add(RouteRestStopCandidate.of(restStop, item, nearest.index()));
         }
 
         Map<String, Long> groupCounts = candidates.stream()
@@ -185,8 +186,7 @@ public class RouteRestStopService {
                                 groupCounts.getOrDefault(comparison.candidate().groupKey(), 0L) > 1)
                         .withComparison(
                                 comparison.summary(),
-                                routeRestStopRecommendationTagService.create(comparison, recommendationStandards))
-                        .withNearbyTraffic(nearbyTraffic(comparison.candidate().trafficState())))
+                                routeRestStopRecommendationTagService.create(comparison, recommendationStandards)))
                 .toList();
     }
 

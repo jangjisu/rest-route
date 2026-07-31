@@ -44,3 +44,24 @@ public static XxxDto from(XxxEntity entity) {
 - 변환 로직은 `from()` / `of()` 내부에서 처리한다
 - 컬렉션 수준 계산(rank, 집계 합산 등)은 서비스에서 계산 후 파라미터로 전달한다
 - 서비스는 "언제 변환할지"와 "컬렉션 수준 계산"만 담당한다
+
+## 실패/부정 조건 predicate 명명
+
+VO/DTO의 `boolean` predicate가 컨트롤 플로우의 실패·에러 분기 조건으로 쓰인다면, 호출부에서 `!x.isY()`/`!x.hasY()`로 부정하지 말고 VO 안에 실패 쪽을 직접 이름 붙인 predicate를 추가한다.
+
+```java
+// ❌ 호출부에서 부정 — "성공"의 정의가 나중에 바뀌면 호출부를 다 찾아 고쳐야 함
+if (!directions.hasSuccessfulRoute()) {
+    throw new RouteRestStopNotFoundException(...);
+}
+
+// ✅ VO 안에 실패 조건을 직접 명명 — 정의 변경이 VO 내부 한 곳으로 갇힘
+public boolean failedToRoute() {
+    return !hasSuccessfulRoute();
+}
+if (directions.failedToRoute()) {
+    throw new RouteRestStopNotFoundException(...);
+}
+```
+
+`isEmpty()`, `isSuccess()`, `isAdminOverridden()`처럼 표준 관용구이거나 단발성 조건 체크인 predicate까지 전부 이렇게 뒤집을 필요는 없다. 이 규칙은 "성공/실패"처럼 도메인적으로 의미 있는 이분법이고, 실패 분기(예외 처리, early return)에서 반복적으로 참조되는 predicate에만 적용한다.

@@ -28,7 +28,7 @@ class RouteRestStopRecommendationTagServiceTest {
     }
 
     private RouteRestStopComparison comparison(ComparisonSummary summary) {
-        return RouteRestStopComparison.of(new RouteRestStopCandidate(null, "", false, 0, null, null), summary);
+        return RouteRestStopComparison.of(new RouteRestStopCandidate(null, "", false, 0, null), summary);
     }
 
     private ComparisonSummary summary(

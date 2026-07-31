@@ -4,18 +4,12 @@ import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem
 import com.restroute.domain.RestStopEntity;
 
 record RouteRestStopCandidate(
-        RestStopEntity restStop,
-        String groupKey,
-        boolean hasDirectionGroup,
-        int routeIndex,
-        Integer trafficState,
-        RouteRestStopItem item) {
+        RestStopEntity restStop, String groupKey, boolean hasDirectionGroup, int routeIndex, RouteRestStopItem item) {
 
-    static RouteRestStopCandidate of(
-            RestStopEntity restStop, RouteRestStopItem item, int routeIndex, Integer trafficState) {
+    static RouteRestStopCandidate of(RestStopEntity restStop, RouteRestStopItem item, int routeIndex) {
         String directionLabel = directionLabel(restStop.getUnitName());
         String groupKey = groupKey(restStop, directionLabel);
-        return new RouteRestStopCandidate(restStop, groupKey, directionLabel != null, routeIndex, trafficState, item);
+        return new RouteRestStopCandidate(restStop, groupKey, directionLabel != null, routeIndex, item);
     }
 
     private static String groupKey(RestStopEntity restStop, String directionLabel) {

@@ -27,9 +27,9 @@ import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
-import com.restroute.repository.RestStopRepository;
 import com.restroute.service.NationalOilPriceService;
 import com.restroute.service.RestStopEventQueryService;
+import com.restroute.service.RestStopQueryService;
 import com.restroute.service.RestStopRelatedInfo;
 import com.restroute.service.RestStopRelatedInfoQueryService;
 import com.restroute.service.RestThemeQueryService;
@@ -56,7 +56,7 @@ class RouteRestStopServiceTest {
     private KakaoMapClient kakaoMapClient;
 
     @Mock
-    private RestStopRepository restStopRepository;
+    private RestStopQueryService restStopQueryService;
 
     @Mock
     private RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
@@ -102,7 +102,7 @@ class RouteRestStopServiceTest {
         routeRestStopRecommendationTagService = new RouteRestStopRecommendationTagService();
         service = new RouteRestStopService(
                 kakaoMapClient,
-                restStopRepository,
+                restStopQueryService,
                 routeRestStopComparisonSummaryService,
                 routeRestStopRecommendationTagService,
                 nationalOilPriceService,
@@ -265,7 +265,7 @@ class RouteRestStopServiceTest {
         RestStopEntity far = restStop("C", "C휴게소", "중부선", "130.0", "40.0");
         RestStopEntity blank = restStop("D", "D", "x", "127.0", "   ");
         RestStopEntity nonNumeric = restStop("E", "E", "x", "127.0", "abc");
-        when(restStopRepository.findAll()).thenReturn(List.of(near1, near0, near2, far, blank, nonNumeric));
+        when(restStopQueryService.findAll()).thenReturn(List.of(near1, near0, near2, far, blank, nonNumeric));
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
         assertThat(response.destination().name()).isEqualTo("부산역");
@@ -286,7 +286,7 @@ class RouteRestStopServiceTest {
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
-        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         when(evChargerQueryService.findChargerMappedServiceAreaCodes(List.of("A")))
                 .thenReturn(List.of("A"));
 
@@ -305,7 +305,7 @@ class RouteRestStopServiceTest {
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
-        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         when(restThemeQueryService.findThemeMappedServiceAreaCodes(List.of("A")))
                 .thenReturn(List.of("A"));
         when(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(List.of("A")))
@@ -327,7 +327,7 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(100L, 200L), VERTEXES));
         RestStopEntity first = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopEntity second = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
-        when(restStopRepository.findAll()).thenReturn(List.of(first, second));
+        when(restStopQueryService.findAll()).thenReturn(List.of(first, second));
         when(restStopImageQueryService.findExistingServiceAreaCodes(List.of("A", "B")))
                 .thenReturn(Set.of("A"));
 
@@ -357,7 +357,7 @@ class RouteRestStopServiceTest {
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestOilEntity oilConvenience = oilConvenience("OIL-A", "쉼터");
         RestOilPriceEntity oilPrice = oilPrice("1,850원", "1,900원", "1,135원");
-        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         stubRelatedInfoByCode(Map.of(
                 "A",
                 relatedInfo(Optional.empty(), List.of(), List.of(oilConvenience), Optional.of(oilPrice), List.of())));
@@ -391,7 +391,7 @@ class RouteRestStopServiceTest {
         RestFoodEntity firstFood = mock(RestFoodEntity.class);
         RestFoodEntity secondFood = mock(RestFoodEntity.class);
         RestFoodEntity thirdFood = mock(RestFoodEntity.class);
-        when(restStopRepository.findAll()).thenReturn(List.of(first, second));
+        when(restStopQueryService.findAll()).thenReturn(List.of(first, second));
         stubRelatedInfoByCode(Map.of(
                 "A",
                 relatedInfo(
@@ -447,7 +447,7 @@ class RouteRestStopServiceTest {
         RestStopEntity near0 = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopEntity near1 = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
         RestStopEntity near2 = restStop("C", "C휴게소", "경부선", "128.0001", "38.0001");
-        when(restStopRepository.findAll()).thenReturn(List.of(near0, near1, near2));
+        when(restStopQueryService.findAll()).thenReturn(List.of(near0, near1, near2));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -466,7 +466,7 @@ class RouteRestStopServiceTest {
 
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopDetailEntity detail = detail("수유실/쉼터, 쉼터", "Y", "X");
-        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         stubRelatedInfoByCode(
                 Map.of("A", relatedInfo(Optional.of(detail), List.of(), List.of(), Optional.empty(), List.of())));
 
@@ -488,7 +488,7 @@ class RouteRestStopServiceTest {
 
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopDetailEntity detail = detail(null, "Y", "Y");
-        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         stubRelatedInfoByCode(
                 Map.of("A", relatedInfo(Optional.of(detail), List.of(), List.of(), Optional.empty(), List.of())));
 
@@ -512,7 +512,7 @@ class RouteRestStopServiceTest {
         RestOilEntity oilConvenience = oilConvenience("OIL-A", "");
         RestOilPriceEntity oilPrice =
                 oilPrice("", "무료", "999999999999999999999999999999999999999999999999999999999999999999");
-        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         stubRelatedInfoByCode(Map.of(
                 "A",
                 relatedInfo(
@@ -541,7 +541,7 @@ class RouteRestStopServiceTest {
         RestStopEntity mokpo = restStop("A", "화성(목포)휴게소", "서해안선", "127.0001", "37.0001");
         RestStopEntity seoul = restStop("B", "화성(서울)휴게소", "서해안선", "127.0002", "37.0002");
         RestStopEntity next = restStop("C", "서산(목포)휴게소", "서해안선", "127.5001", "37.5001");
-        when(restStopRepository.findAll()).thenReturn(List.of(seoul, mokpo, next));
+        when(restStopQueryService.findAll()).thenReturn(List.of(seoul, mokpo, next));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "목포", null, null, null, 1000);
 
@@ -562,7 +562,7 @@ class RouteRestStopServiceTest {
 
         RestStopEntity nearer = restStop("A", "화성(서울)휴게소", "서해안선", "127.0001", "37.0001");
         RestStopEntity farther = restStop("B", "화성(목포)휴게소", "서해안선", "127.005", "37.005");
-        when(restStopRepository.findAll()).thenReturn(List.of(farther, nearer));
+        when(restStopQueryService.findAll()).thenReturn(List.of(farther, nearer));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "목적지", null, null, null, 1000);
 
@@ -584,7 +584,7 @@ class RouteRestStopServiceTest {
         RestStopEntity blankDirection = restStop("A", "화성()휴게소", "서해안선", "127.5001", "37.5001");
         RestStopEntity unnamedNear = restStop("B", null, "서해안선", "127.0001", "37.0001");
         RestStopEntity unnamedFar = restStop("B", null, "서해안선", "127.005", "37.005");
-        when(restStopRepository.findAll()).thenReturn(List.of(blankDirection, unnamedFar, unnamedNear));
+        when(restStopQueryService.findAll()).thenReturn(List.of(blankDirection, unnamedFar, unnamedNear));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "목적지", null, null, null, 1000);
 
@@ -604,7 +604,7 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(1L, 1L), VERTEXES));
         RestStopEntity nullLatitude = restStop("A", "A", "x", "127.0", null);
         RestStopEntity nullLongitude = restStop("B", "B", "x", null, "37.0");
-        when(restStopRepository.findAll()).thenReturn(List.of(nullLatitude, nullLongitude));
+        when(restStopQueryService.findAll()).thenReturn(List.of(nullLatitude, nullLongitude));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -616,7 +616,7 @@ class RouteRestStopServiceTest {
     void summaryNullAndAddressFallback() {
         when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "", "부산 우동"));
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
-        when(restStopRepository.findAll()).thenReturn(List.of());
+        when(restStopQueryService.findAll()).thenReturn(List.of());
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -631,7 +631,7 @@ class RouteRestStopServiceTest {
     void destinationCoordinates_skipGeocoding() {
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(10L, 20L), VERTEXES));
-        when(restStopRepository.findAll()).thenReturn(List.of());
+        when(restStopQueryService.findAll()).thenReturn(List.of());
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, null, 35.0, 129.0, "부산항", 1000);
 
@@ -646,7 +646,7 @@ class RouteRestStopServiceTest {
     void partialDestinationCoordinates_fallbackToQuery() {
         when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역", null));
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
-        when(restStopRepository.findAll()).thenReturn(List.of());
+        when(restStopQueryService.findAll()).thenReturn(List.of());
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", 35.0, null, "이름", 1000);
 
@@ -657,7 +657,7 @@ class RouteRestStopServiceTest {
     @DisplayName("목적지 좌표만 있고 이름이 없거나 비면 기본 이름을 쓴다")
     void destinationCoordinates_defaultName() {
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
-        when(restStopRepository.findAll()).thenReturn(List.of());
+        when(restStopQueryService.findAll()).thenReturn(List.of());
 
         assertThat(service.findRouteRestStops(37.0, 127.0, null, 35.0, 129.0, null, 1000)
                         .destination()
@@ -675,7 +675,7 @@ class RouteRestStopServiceTest {
         when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산", null));
         when(kakaoMapClient.getDirections(anyString(), anyString()))
                 .thenReturn(directions(0, new Summary(null, null), VERTEXES));
-        when(restStopRepository.findAll()).thenReturn(List.of());
+        when(restStopQueryService.findAll()).thenReturn(List.of());
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 

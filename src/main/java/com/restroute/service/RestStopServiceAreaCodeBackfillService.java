@@ -7,7 +7,6 @@ import com.restroute.repository.EvChargerRepository;
 import com.restroute.repository.EvChargerStationMappingRepository;
 import com.restroute.repository.RestOilRepository;
 import com.restroute.repository.RestStopDetailRepository;
-import com.restroute.repository.RestStopRepository;
 import com.restroute.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
 import com.restroute.service.backfill.RestEventServiceAreaCodeBackfiller;
 import com.restroute.service.backfill.RestFoodServiceAreaCodeBackfiller;
@@ -43,7 +42,7 @@ public class RestStopServiceAreaCodeBackfillService {
     public static final String REST_THEME_MAPPED_COUNT = "restThemeMappedCount";
     public static final String REST_EVENT_MAPPED_COUNT = "restEventMappedCount";
 
-    private final RestStopRepository restStopRepository;
+    private final RestStopQueryService restStopQueryService;
     private final RestStopDetailRepository restStopDetailRepository;
     private final RestOilRepository restOilRepository;
     private final EvChargerRepository evChargerRepository;
@@ -61,7 +60,7 @@ public class RestStopServiceAreaCodeBackfillService {
 
     @Transactional
     public Map<String, Integer> backfill() {
-        List<RestStopEntity> restStops = restStopRepository.findAll();
+        List<RestStopEntity> restStops = restStopQueryService.findAll();
         List<String> restStopServiceAreaCodes = findRestStopServiceAreaCodes(restStops);
         Map<String, String> serviceAreaCodeByStdRestCd = mapByStdRestCd(restStops);
         Map<String, String> serviceAreaCodeByOilKey = mapByOilKey(restStops);

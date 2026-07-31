@@ -41,7 +41,7 @@ public class SalesRankingCsvParser {
                 .setHeader()
                 .setSkipHeaderRecord(true)
                 .setIgnoreEmptyLines(true)
-                .build()
+                .get()
                 .parse(new InputStreamReader(file.getInputStream(), CSV_CHARSET))) {
             validateHeaders(parser.getHeaderNames(), requiredHeaders);
             List<T> rows = new ArrayList<>();
