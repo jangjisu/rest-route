@@ -13,3 +13,6 @@ Java 파일 수정 시 수정 대상에 해당하는 파일만 읽는다.
 
 **Controller 클래스를 추가하거나 수정하는 경우**
 → `controller.md` 를 읽어라
+
+**PMD/SpotBugs 관련 작업(잔여 findings 처리, 규칙 조정 등)을 하는 경우**
+→ `static-analysis.md` 를 읽어라

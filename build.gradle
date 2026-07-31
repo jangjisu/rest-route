@@ -3,8 +3,10 @@ plugins {
 	id 'org.springframework.boot' version '3.5.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'checkstyle'
+	id 'pmd'
 	id 'jacoco'
 	id 'com.diffplug.spotless' version '8.6.0'
+	id 'com.github.spotbugs' version '6.0.19'
 	id 'org.sonarqube' version '7.3.0.8198'
 }
 
@@ -65,6 +67,34 @@ checkstyle {
 	configDirectory = file("$rootDir/config/checkstyle")
 }
 
+pmd {
+	toolVersion = '7.7.0'
+	consoleOutput = true
+	ruleSetFiles = files("$rootDir/config/pmd/ruleset.xml")
+	ruleSets = []
+}
+
+spotbugs {
+	toolVersion = '4.8.6'
+	effort = 'max'
+	reportLevel = 'medium'
+	excludeFilter = file("$rootDir/config/spotbugs/exclude.xml")
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+	reports {
+		html.required = true
+		text.required = true
+		xml.required = false
+	}
+}
+
+// 테스트 코드는 PMD/SpotBugs 대상에서 제외한다. 테스트 특유의 관용구(단언문
+// 여러 개, 반복되는 리터럴)를 기본 룰셋이 대량으로 오탐 처리해 신호 대비
+// 노이즈 비율이 너무 높다(1차 스캔에서 pmdTest만 700건 이상).
+tasks.named('pmdTest') { enabled = false }
+tasks.named('spotbugsTest') { enabled = false }
+
 jacocoTestReport {
 	dependsOn tasks.named('test')
 
@@ -101,6 +131,7 @@ spotless {
 
 sonar {
 	properties {
+		property 'sonar.organization', 'jangjisu'
 		property 'sonar.projectKey', 'rest-route'
 		property 'sonar.projectName', 'rest-route'
 		property 'sonar.sources', 'src/main/java'

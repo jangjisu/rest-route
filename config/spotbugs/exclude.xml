@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+    EI/EI2(Exposes Internal Representation): 이 프로젝트는 record(불변 DTO)와
+    Spring 생성자 주입을 전면적으로 쓰는데, SpotBugs는 두 패턴 모두 "외부에서
+    변경 가능한 참조를 그대로 저장/반환한다"고 보고 전부 잡는다. 레코드 필드는
+    관례상 생성 후 변경하지 않고, 생성자 주입 필드는 Spring 컨테이너가 주입하는
+    협력자 참조라 방어적 복사가 의미 없다. 실제 버그 신호가 아니라 이 프로젝트
+    스타일과 맞지 않는 규칙이라 전체 제외한다.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <!--
+    UwF(Unwritten field): Jackson이 리플렉션으로 필드에 직접 값을 채우는
+    외부 API 응답 DTO에서만 발생. 필드가 안 쓰인 게 아니라 SpotBugs가
+    Jackson의 필드 기반 역직렬화를 인식하지 못하는 것뿐이라 제외한다.
+    -->
+    <Match>
+        <Bug pattern="UWF_UNWRITTEN_FIELD"/>
+    </Match>
+</FindBugsFilter>
