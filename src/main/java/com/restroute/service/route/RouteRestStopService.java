@@ -10,19 +10,14 @@ import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem
 import com.restroute.controller.response.RouteRestStopResponse.RouteSummary;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.service.NationalOilPriceService;
-import com.restroute.service.RestStopEventQueryService;
+import com.restroute.service.RestStopAggregate;
+import com.restroute.service.RestStopAggregateQueryService;
 import com.restroute.service.RestStopQueryService;
-import com.restroute.service.RestStopRelatedInfo;
-import com.restroute.service.RestStopRelatedInfoQueryService;
-import com.restroute.service.RestThemeQueryService;
-import com.restroute.service.evcharger.EvChargerQueryService;
-import com.restroute.service.image.RestStopImageQueryService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -40,11 +35,7 @@ public class RouteRestStopService {
     private final RouteRestStopComparisonSummaryService routeRestStopComparisonSummaryService;
     private final RouteRestStopRecommendationTagService routeRestStopRecommendationTagService;
     private final NationalOilPriceService nationalOilPriceService;
-    private final EvChargerQueryService evChargerQueryService;
-    private final RestStopImageQueryService restStopImageQueryService;
-    private final RestThemeQueryService restThemeQueryService;
-    private final RestStopEventQueryService restStopEventQueryService;
-    private final RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
+    private final RestStopAggregateQueryService restStopAggregateQueryService;
 
     public RouteRestStopResponse findRouteRestStops(
             double originLatitude,
@@ -124,30 +115,18 @@ public class RouteRestStopService {
                 .filter(RouteRestStopCandidate::hasDirectionGroup)
                 .map(RouteRestStopCandidate::groupKey)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        List<String> mappedServiceAreaCodes =
-                evChargerQueryService.findChargerMappedServiceAreaCodes(candidates.stream()
-                        .map(candidate -> candidate.restStop().getServiceAreaCode())
-                        .toList());
-        Set<String> imageServiceAreaCodes = restStopImageQueryService.findExistingServiceAreaCodes(candidates.stream()
-                .map(candidate -> candidate.restStop().getServiceAreaCode())
-                .toList());
         List<String> candidateServiceAreaCodes = candidates.stream()
                 .map(candidate -> candidate.restStop().getServiceAreaCode())
                 .toList();
-        List<String> themeServiceAreaCodes =
-                restThemeQueryService.findThemeMappedServiceAreaCodes(candidateServiceAreaCodes);
-        List<String> activeEventServiceAreaCodes =
-                restStopEventQueryService.findActiveEventMappedServiceAreaCodes(candidateServiceAreaCodes);
-        Map<String, RestStopRelatedInfo> relatedInfoByServiceAreaCode =
-                restStopRelatedInfoQueryService.findAllByRestStops(candidates.stream()
-                        .map(RouteRestStopCandidate::restStop)
-                        .toList());
+        Map<String, RestStopAggregate> aggregatesByServiceAreaCode =
+                restStopAggregateQueryService.findByServiceAreaCodesAndAdminOverridden(candidateServiceAreaCodes, null);
         List<RouteRestStopComparison> comparisons = candidates.stream()
                 .map(candidate -> RouteRestStopComparison.of(
                         candidate,
                         routeRestStopComparisonSummaryService.create(
-                                relatedInfoByServiceAreaCode.get(
-                                        candidate.restStop().getServiceAreaCode()),
+                                aggregatesByServiceAreaCode
+                                        .get(candidate.restStop().getServiceAreaCode())
+                                        .relatedInfo(),
                                 nationalOilPriceSummary)))
                 .toList();
         RouteRestStopRecommendationStandards recommendationStandards =
@@ -155,22 +134,25 @@ public class RouteRestStopService {
         return comparisons.stream()
                 .sorted(Comparator.comparingInt(
                         comparison -> comparison.candidate().routeIndex()))
-                .map(comparison -> comparison
-                        .candidate()
-                        .item()
-                        .withListImageUrl(listImageUrl(
-                                comparison.candidate().restStop().getServiceAreaCode(), imageServiceAreaCodes))
-                        .withEvCharger(mappedServiceAreaCodes.contains(
-                                comparison.candidate().restStop().getServiceAreaCode()))
-                        .withTheme(themeServiceAreaCodes.contains(
-                                comparison.candidate().restStop().getServiceAreaCode()))
-                        .withEvent(activeEventServiceAreaCodes.contains(
-                                comparison.candidate().restStop().getServiceAreaCode()))
-                        .withDirectionAlternative(
-                                groupCounts.getOrDefault(comparison.candidate().groupKey(), 0L) > 1)
-                        .withComparison(
-                                comparison.summary(),
-                                routeRestStopRecommendationTagService.create(comparison, recommendationStandards)))
+                .map(comparison -> {
+                    RestStopAggregate aggregate = aggregatesByServiceAreaCode.get(
+                            comparison.candidate().restStop().getServiceAreaCode());
+                    return comparison
+                            .candidate()
+                            .item()
+                            .withListImageUrl(listImageUrl(
+                                    aggregate.hasListImage(),
+                                    comparison.candidate().restStop().getServiceAreaCode()))
+                            .withEvCharger(aggregate.hasEvCharger())
+                            .withTheme(aggregate.hasTheme())
+                            .withEvent(aggregate.hasEvent())
+                            .withDirectionAlternative(groupCounts.getOrDefault(
+                                            comparison.candidate().groupKey(), 0L)
+                                    > 1)
+                            .withComparison(
+                                    comparison.summary(),
+                                    routeRestStopRecommendationTagService.create(comparison, recommendationStandards));
+                })
                 .toList();
     }
 
@@ -204,8 +186,8 @@ public class RouteRestStopService {
                 .orElse(null);
     }
 
-    private String listImageUrl(String serviceAreaCode, Set<String> imageServiceAreaCodes) {
-        if (!imageServiceAreaCodes.contains(serviceAreaCode)) {
+    private String listImageUrl(boolean hasListImage, String serviceAreaCode) {
+        if (!hasListImage) {
             return null;
         }
         return LIST_IMAGE_URL_FORMAT.formatted(serviceAreaCode);

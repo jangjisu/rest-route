@@ -224,16 +224,21 @@ class RestStopRelatedInfoQueryServiceTest {
         event.updateRestStopServiceAreaCode("A00001");
 
         List<String> codes = List.of("A00001", "A00002");
-        when(restStopDetailRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(detail));
+        when(restStopDetailRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
+                .thenReturn(List.of(detail));
         when(highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCodeIn(codes))
                 .thenReturn(List.of(info));
-        when(restOilRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(oilConvenience));
-        when(restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(oilPrice));
-        when(restFoodRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(food));
+        when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
+                .thenReturn(List.of(oilConvenience));
+        when(restOilPriceRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
+                .thenReturn(List.of(oilPrice));
+        when(restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
+                .thenReturn(List.of(food));
         when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(theme));
         when(restEventRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(event));
 
-        Map<String, RestStopRelatedInfo> relatedInfoByCode = service.findAllByRestStops(List.of(restStop1, restStop2));
+        Map<String, RestStopRelatedInfo> relatedInfoByCode =
+                service.findAllByRestStops(List.of(restStop1, restStop2), null);
 
         RestStopRelatedInfo info1 = relatedInfoByCode.get("A00001");
         assertThat(info1.detail()).contains(detail);
@@ -274,17 +279,20 @@ class RestStopRelatedInfoQueryServiceTest {
         duplicateDetail.updateRestStopServiceAreaCode("A00001");
 
         List<String> codes = List.of("A00001");
-        when(restStopDetailRepository.findAllByRestStopServiceAreaCodeIn(codes))
+        when(restStopDetailRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
                 .thenReturn(List.of(firstDetail, duplicateDetail));
         when(highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCodeIn(codes))
                 .thenReturn(List.of());
-        when(restOilRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
-        when(restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
-        when(restFoodRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
+        when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
+                .thenReturn(List.of());
+        when(restOilPriceRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
+                .thenReturn(List.of());
+        when(restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
+                .thenReturn(List.of());
         when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
         when(restEventRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
 
-        Map<String, RestStopRelatedInfo> relatedInfoByCode = service.findAllByRestStops(List.of(restStop));
+        Map<String, RestStopRelatedInfo> relatedInfoByCode = service.findAllByRestStops(List.of(restStop), null);
 
         assertThat(relatedInfoByCode.get("A00001").detail()).contains(firstDetail);
     }
@@ -292,7 +300,7 @@ class RestStopRelatedInfoQueryServiceTest {
     @Test
     @DisplayName("휴게소 목록이 비어 있으면 리포지토리를 호출하지 않고 빈 맵을 반환한다")
     void findAllByRestStops_returnsEmptyMapForEmptyInput() {
-        Map<String, RestStopRelatedInfo> result = service.findAllByRestStops(List.of());
+        Map<String, RestStopRelatedInfo> result = service.findAllByRestStops(List.of(), null);
 
         assertThat(result).isEmpty();
         verifyNoInteractions(
@@ -303,6 +311,34 @@ class RestStopRelatedInfoQueryServiceTest {
                 restFoodRepository,
                 restThemeRepository,
                 restEventRepository);
+    }
+
+    @Test
+    @DisplayName("adminOverridden=false를 넘기면 detail/oil/oilPrice/food 각각에 그대로 전달한다(테마/이벤트는 override 개념이 없어 영향 없음)")
+    void findAllByRestStops_passesAdminOverriddenFilterToSupportingRepositories() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001"));
+        List<String> codes = List.of("A00001");
+        when(restStopDetailRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
+                .thenReturn(List.of());
+        when(highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCodeIn(codes))
+                .thenReturn(List.of());
+        when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
+                .thenReturn(List.of());
+        when(restOilPriceRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
+                .thenReturn(List.of());
+        when(restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
+                .thenReturn(List.of());
+        when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
+        when(restEventRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
+
+        service.findAllByRestStops(List.of(restStop), false);
+
+        verify(restStopDetailRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
+        verify(restOilRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
+        verify(restOilPriceRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
+        verify(restFoodRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
+        verify(restThemeRepository).findAllByRestStopServiceAreaCodeIn(codes);
+        verify(restEventRepository).findAllByRestStopServiceAreaCodeIn(codes);
     }
 
     private RestFoodEntity foodEntity(String foodName) throws Exception {

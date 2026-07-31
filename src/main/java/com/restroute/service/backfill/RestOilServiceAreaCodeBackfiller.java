@@ -14,10 +14,7 @@ public class RestOilServiceAreaCodeBackfiller {
 
     public int backfill(Map<String, String> serviceAreaCodeByOilKey) {
         int mappedCount = 0;
-        for (RestOilEntity oil : restOilRepository.findAll()) {
-            if (oil.isAdminOverridden()) {
-                continue;
-            }
+        for (RestOilEntity oil : restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(null, false)) {
             String key = oilRestStopKey(oil.getRouteCode(), oil.getNormalizedStationName());
             String restStopServiceAreaCode = serviceAreaCodeByOilKey.get(key);
             oil.updateRestStopServiceAreaCode(restStopServiceAreaCode);

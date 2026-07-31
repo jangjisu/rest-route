@@ -57,9 +57,14 @@ public class RestStopRelatedInfoQueryService {
     /**
      * findByRestStop을 후보마다 반복 호출하면 후보 수 x 7개의 쿼리가 발생한다(N+1).
      * 경로 탐색처럼 여러 휴게소를 한 번에 다뤄야 하는 호출부는 이 배치 메서드를 써야 한다.
+     *
+     * <p>adminOverridden이 null이면 override 여부와 상관없이 전부 조회하고, false를 넘기면
+     * 관리자가 override하지 않은 행만 조회한다(각 도메인 테이블 자체의 override 필드 기준).
+     * theme/event는 override 개념이 없는 테이블이라 이 파라미터의 영향을 받지 않는다.
      */
     @Transactional(readOnly = true)
-    public Map<String, RestStopRelatedInfo> findAllByRestStops(List<RestStopEntity> restStops) {
+    public Map<String, RestStopRelatedInfo> findAllByRestStops(
+            List<RestStopEntity> restStops, Boolean adminOverridden) {
         List<String> serviceAreaCodes = restStops.stream()
                 .map(RestStopEntity::getServiceAreaCode)
                 .distinct()
@@ -69,7 +74,9 @@ public class RestStopRelatedInfoQueryService {
         }
 
         Map<String, RestStopDetailEntity> detailsByCode =
-                restStopDetailRepository.findAllByRestStopServiceAreaCodeIn(serviceAreaCodes).stream()
+                restStopDetailRepository
+                        .findByRestStopServiceAreaCodesAndAdminOverridden(serviceAreaCodes, adminOverridden)
+                        .stream()
                         .collect(Collectors.toMap(
                                 RestStopDetailEntity::getRestStopServiceAreaCode,
                                 Function.identity(),
@@ -78,13 +85,19 @@ public class RestStopRelatedInfoQueryService {
                 highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCodeIn(serviceAreaCodes).stream()
                         .collect(Collectors.groupingBy(HighwayServiceAreaInfoEntity::getRestStopServiceAreaCode));
         Map<String, List<RestOilEntity>> oilConveniencesByCode =
-                restOilRepository.findAllByRestStopServiceAreaCodeIn(serviceAreaCodes).stream()
+                restOilRepository
+                        .findByRestStopServiceAreaCodesAndAdminOverridden(serviceAreaCodes, adminOverridden)
+                        .stream()
                         .collect(Collectors.groupingBy(RestOilEntity::getRestStopServiceAreaCode));
         Map<String, List<RestOilPriceEntity>> oilPricesByCode =
-                restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(serviceAreaCodes).stream()
+                restOilPriceRepository
+                        .findByRestStopServiceAreaCodesAndAdminOverridden(serviceAreaCodes, adminOverridden)
+                        .stream()
                         .collect(Collectors.groupingBy(RestOilPriceEntity::getRestStopServiceAreaCode));
         Map<String, List<RestFoodEntity>> foodsByCode =
-                restFoodRepository.findAllByRestStopServiceAreaCodeIn(serviceAreaCodes).stream()
+                restFoodRepository
+                        .findByRestStopServiceAreaCodesAndAdminOverridden(serviceAreaCodes, adminOverridden)
+                        .stream()
                         .collect(Collectors.groupingBy(RestFoodEntity::getRestStopServiceAreaCode));
         Map<String, List<RestThemeEntity>> themesByCode =
                 restThemeRepository.findAllByRestStopServiceAreaCodeIn(serviceAreaCodes).stream()

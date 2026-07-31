@@ -28,18 +28,15 @@ import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.service.NationalOilPriceService;
-import com.restroute.service.RestStopEventQueryService;
+import com.restroute.service.RestStopAggregate;
+import com.restroute.service.RestStopAggregateQueryService;
 import com.restroute.service.RestStopQueryService;
 import com.restroute.service.RestStopRelatedInfo;
-import com.restroute.service.RestStopRelatedInfoQueryService;
-import com.restroute.service.RestThemeQueryService;
-import com.restroute.service.evcharger.EvChargerQueryService;
-import com.restroute.service.image.RestStopImageQueryService;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,7 +56,7 @@ class RouteRestStopServiceTest {
     private RestStopQueryService restStopQueryService;
 
     @Mock
-    private RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
+    private RestStopAggregateQueryService restStopAggregateQueryService;
 
     private RouteRestStopComparisonSummaryService routeRestStopComparisonSummaryService;
 
@@ -68,35 +65,11 @@ class RouteRestStopServiceTest {
     @Mock
     private NationalOilPriceService nationalOilPriceService;
 
-    @Mock
-    private EvChargerQueryService evChargerQueryService;
-
-    @Mock
-    private RestStopImageQueryService restStopImageQueryService;
-
-    @Mock
-    private RestThemeQueryService restThemeQueryService;
-
-    @Mock
-    private RestStopEventQueryService restStopEventQueryService;
-
     private RouteRestStopService service;
 
     @BeforeEach
     void setUp() {
         lenient().when(nationalOilPriceService.getTodaySummary()).thenReturn(Optional.empty());
-        lenient()
-                .when(evChargerQueryService.findChargerMappedServiceAreaCodes(any()))
-                .thenReturn(List.of());
-        lenient()
-                .when(restStopImageQueryService.findExistingServiceAreaCodes(any()))
-                .thenReturn(Set.of());
-        lenient()
-                .when(restThemeQueryService.findThemeMappedServiceAreaCodes(any()))
-                .thenReturn(List.of());
-        lenient()
-                .when(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(any()))
-                .thenReturn(List.of());
         stubRelatedInfoByCode(Map.of());
         routeRestStopComparisonSummaryService = new RouteRestStopComparisonSummaryService();
         routeRestStopRecommendationTagService = new RouteRestStopRecommendationTagService();
@@ -106,26 +79,32 @@ class RouteRestStopServiceTest {
                 routeRestStopComparisonSummaryService,
                 routeRestStopRecommendationTagService,
                 nationalOilPriceService,
-                evChargerQueryService,
-                restStopImageQueryService,
-                restThemeQueryService,
-                restStopEventQueryService,
-                restStopRelatedInfoQueryService);
+                restStopAggregateQueryService);
     }
 
     private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {
+        Map<String, RestStopAggregate> aggregates = new HashMap<>();
+        overridesByServiceAreaCode.forEach((code, relatedInfo) ->
+                aggregates.put(code, new RestStopAggregate(null, relatedInfo, false, false, false, false)));
+        stubAggregates(aggregates);
+    }
+
+    private void stubAggregates(Map<String, RestStopAggregate> overridesByServiceAreaCode) {
         lenient()
                 .doAnswer(invocation -> {
-                    List<RestStopEntity> stops = invocation.getArgument(0);
-                    Map<String, RestStopRelatedInfo> result = new HashMap<>();
-                    for (RestStopEntity stop : stops) {
-                        String code = stop.getServiceAreaCode();
-                        result.put(code, overridesByServiceAreaCode.getOrDefault(code, emptyRelatedInfo()));
+                    Collection<String> codes = invocation.getArgument(0);
+                    Map<String, RestStopAggregate> result = new HashMap<>();
+                    for (String code : codes) {
+                        result.put(
+                                code,
+                                overridesByServiceAreaCode.getOrDefault(
+                                        code,
+                                        new RestStopAggregate(null, emptyRelatedInfo(), false, false, false, false)));
                     }
                     return result;
                 })
-                .when(restStopRelatedInfoQueryService)
-                .findAllByRestStops(any());
+                .when(restStopAggregateQueryService)
+                .findByServiceAreaCodesAndAdminOverridden(any(), any());
     }
 
     private KakaoLocalSearchResponse searchResult(String x, String y, String placeName, String addressName) {
@@ -287,8 +266,7 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(100L, 200L), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
-        when(evChargerQueryService.findChargerMappedServiceAreaCodes(List.of("A")))
-                .thenReturn(List.of("A"));
+        stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), true, false, false, false)));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -306,10 +284,7 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(100L, 200L), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
-        when(restThemeQueryService.findThemeMappedServiceAreaCodes(List.of("A")))
-                .thenReturn(List.of("A"));
-        when(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(List.of("A")))
-                .thenReturn(List.of("A"));
+        stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), false, false, true, true)));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -328,17 +303,14 @@ class RouteRestStopServiceTest {
         RestStopEntity first = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopEntity second = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
         when(restStopQueryService.findAll()).thenReturn(List.of(first, second));
-        when(restStopImageQueryService.findExistingServiceAreaCodes(List.of("A", "B")))
-                .thenReturn(Set.of("A"));
+        stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false)));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
         assertThat(response.restStops())
                 .extracting(RouteRestStopResponse.RouteRestStopItem::listImageUrl)
                 .containsExactly("/api/rest-stops/A/images/list", null);
-        verify(restStopImageQueryService).findExistingServiceAreaCodes(List.of("A", "B"));
-        verify(restStopImageQueryService, never()).findDetailImage(anyString());
-        verify(restStopImageQueryService, never()).findListImage(anyString());
+        verify(restStopAggregateQueryService).findByServiceAreaCodesAndAdminOverridden(List.of("A", "B"), null);
     }
 
     @Test

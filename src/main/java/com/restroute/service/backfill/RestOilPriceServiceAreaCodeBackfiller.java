@@ -14,10 +14,8 @@ public class RestOilPriceServiceAreaCodeBackfiller {
 
     public int backfill(Map<String, String> serviceAreaCodeByOilStandardRestCode) {
         int mappedCount = 0;
-        for (RestOilPriceEntity oilPrice : restOilPriceRepository.findAll()) {
-            if (oilPrice.isAdminOverridden()) {
-                continue;
-            }
+        for (RestOilPriceEntity oilPrice :
+                restOilPriceRepository.findByRestStopServiceAreaCodesAndAdminOverridden(null, false)) {
             String restStopServiceAreaCode = serviceAreaCodeByOilStandardRestCode.get(oilPrice.getServiceAreaCode2());
             oilPrice.updateRestStopServiceAreaCode(restStopServiceAreaCode);
             if (restStopServiceAreaCode != null) {

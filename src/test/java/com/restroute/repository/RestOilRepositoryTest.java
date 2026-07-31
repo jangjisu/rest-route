@@ -50,4 +50,18 @@ class RestOilRepositoryTest {
 
         assertThat(result).containsExactly(first, second);
     }
+
+    @Test
+    @DisplayName("override=false만 지정하면 관리자가 override하지 않은 편의시설만 조회한다")
+    void findByRestStopServiceAreaCodesAndAdminOverridden_excludesOverriddenRowsWhenFalse() {
+        RestOilEntity notOverridden = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+        notOverridden.updateRestStopServiceAreaCode("A00001");
+        RestOilEntity overridden = RestOilEntity.from(restOilItem("000006", "기흥(부산)주유소"));
+        overridden.applyAdminLink("A00002");
+        restOilRepository.saveAll(List.of(notOverridden, overridden));
+
+        List<RestOilEntity> result = restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(null, false);
+
+        assertThat(result).containsExactly(notOverridden);
+    }
 }

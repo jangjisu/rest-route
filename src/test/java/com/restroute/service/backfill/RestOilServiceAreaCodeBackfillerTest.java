@@ -2,6 +2,7 @@ package com.restroute.service.backfill;
 
 import static com.restroute.support.RestStopTestFixtures.restOilItem;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.restroute.domain.RestOilEntity;
@@ -33,7 +34,8 @@ class RestOilServiceAreaCodeBackfillerTest {
     void backfill_mapsMatchingRowsAndCountsThem() {
         RestOilEntity matched = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
         RestOilEntity unmatched = RestOilEntity.from(restOilItem("999999", "미매칭주유소"));
-        when(restOilRepository.findAll()).thenReturn(List.of(matched, unmatched));
+        when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(null, false))
+                .thenReturn(List.of(matched, unmatched));
         String key = "0010\n" + RestOilEntity.normalizeStationName("서울만남(부산)주유소");
 
         int mappedCount = backfiller.backfill(Map.of(key, "A00001"));
@@ -44,16 +46,15 @@ class RestOilServiceAreaCodeBackfillerTest {
     }
 
     @Test
-    @DisplayName("관리자가 연결을 잠근 행은 조회 맵에 매칭돼도 건드리지 않는다")
-    void backfill_skipsAdminOverriddenRows() {
-        RestOilEntity locked = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
-        locked.applyAdminLink("A00099");
-        when(restOilRepository.findAll()).thenReturn(List.of(locked));
+    @DisplayName("관리자가 연결을 잠근 행은 override=false 조회 자체에서 걸러져 대상에 포함되지 않는다")
+    void backfill_queriesOnlyNonOverriddenRows() {
+        when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(null, false))
+                .thenReturn(List.of());
         String key = "0010\n" + RestOilEntity.normalizeStationName("서울만남(부산)주유소");
 
         int mappedCount = backfiller.backfill(Map.of(key, "A00001"));
 
         assertThat(mappedCount).isZero();
-        assertThat(locked.getRestStopServiceAreaCode()).isEqualTo("A00099");
+        verify(restOilRepository).findByRestStopServiceAreaCodesAndAdminOverridden(null, false);
     }
 }
