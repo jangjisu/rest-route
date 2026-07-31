@@ -84,6 +84,34 @@ class SalesRankingUploadServiceTest {
         assertThat(captureSavedStores()).containsExactly(existingStore);
     }
 
+    @Test
+    void uploadsProducts_createsNewEntityWhenKeyNotYetExisting() {
+        SalesRankingProductRow productRow = productRow("2026-06", "신상품");
+        when(csvParser.parseProducts(productFile)).thenReturn(List.of(productRow));
+        when(productRepository.findAll()).thenReturn(List.of());
+        runTransactionCallback();
+
+        int result = uploadService.uploadProducts(productFile);
+
+        assertThat(result).isEqualTo(1);
+        assertThat(captureSavedProducts())
+                .singleElement()
+                .satisfies(saved -> assertThat(saved.getProductName()).isEqualTo("신상품"));
+    }
+
+    @Test
+    void uploadsStores_createsNewEntityWhenKeyNotYetExisting() {
+        SalesRankingStoreRow storeRow = storeRow("2026-06");
+        when(csvParser.parseStores(storeFile)).thenReturn(List.of(storeRow));
+        when(storeRepository.findAll()).thenReturn(List.of());
+        runTransactionCallback();
+
+        int result = uploadService.uploadStores(storeFile);
+
+        assertThat(result).isEqualTo(1);
+        assertThat(captureSavedStores()).hasSize(1);
+    }
+
     private SalesRankingProductRow productRow(String month, String productName) {
         return new SalesRankingProductRow(month, "1", "S000001", "휴게소", "M001", "매장", "P001", productName);
     }

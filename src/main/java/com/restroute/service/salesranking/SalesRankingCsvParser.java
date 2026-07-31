@@ -18,10 +18,29 @@ public class SalesRankingCsvParser {
 
     private static final Charset CSV_CHARSET = Charset.forName("MS949");
     private static final Pattern YEAR_MONTH = Pattern.compile("\\d{4}-\\d{2}");
-    private static final Set<String> PRODUCT_HEADERS =
-            Set.of("기준년월", "휴게소내판매순위", "휴게소코드", "휴게소명", "매장코드", "매장명", "판매상품SEQ", "판매상품명");
-    private static final Set<String> STORE_HEADERS =
-            Set.of("기준년월", "전체판매순위", "휴게소내판매순위", "휴게소코드", "휴게소명", "매장코드", "매장명");
+    private static final String HEADER_BASE_YEAR_MONTH = "기준년월";
+    private static final String HEADER_RANK_IN_REST_STOP = "휴게소내판매순위";
+    private static final String HEADER_REST_STOP_CODE = "휴게소코드";
+    private static final String HEADER_REST_STOP_NAME = "휴게소명";
+    private static final String HEADER_STORE_CODE = "매장코드";
+    private static final String HEADER_STORE_NAME = "매장명";
+    private static final Set<String> PRODUCT_HEADERS = Set.of(
+            HEADER_BASE_YEAR_MONTH,
+            HEADER_RANK_IN_REST_STOP,
+            HEADER_REST_STOP_CODE,
+            HEADER_REST_STOP_NAME,
+            HEADER_STORE_CODE,
+            HEADER_STORE_NAME,
+            "판매상품SEQ",
+            "판매상품명");
+    private static final Set<String> STORE_HEADERS = Set.of(
+            HEADER_BASE_YEAR_MONTH,
+            "전체판매순위",
+            HEADER_RANK_IN_REST_STOP,
+            HEADER_REST_STOP_CODE,
+            HEADER_REST_STOP_NAME,
+            HEADER_STORE_CODE,
+            HEADER_STORE_NAME);
 
     public List<SalesRankingProductRow> parseProducts(MultipartFile file) {
         return parse(file, PRODUCT_HEADERS, this::toProductRow);
@@ -45,8 +64,8 @@ public class SalesRankingCsvParser {
                 .parse(new InputStreamReader(file.getInputStream(), CSV_CHARSET))) {
             validateHeaders(parser.getHeaderNames(), requiredHeaders);
             List<T> rows = new ArrayList<>();
-            for (CSVRecord record : parser) {
-                rows.add(converter.convert(record));
+            for (CSVRecord csvRecord : parser) {
+                rows.add(converter.convert(csvRecord));
             }
             if (rows.isEmpty()) {
                 throw new SalesRankingUploadException("판매순위 CSV에 데이터가 없습니다.");
@@ -63,35 +82,35 @@ public class SalesRankingCsvParser {
         }
     }
 
-    private SalesRankingProductRow toProductRow(CSVRecord record) {
+    private SalesRankingProductRow toProductRow(CSVRecord csvRecord) {
         SalesRankingProductRow row = new SalesRankingProductRow(
-                required(record, "기준년월"),
-                required(record, "휴게소내판매순위"),
-                required(record, "휴게소코드"),
-                required(record, "휴게소명"),
-                required(record, "매장코드"),
-                required(record, "매장명"),
-                required(record, "판매상품SEQ"),
-                required(record, "판매상품명"));
+                required(csvRecord, HEADER_BASE_YEAR_MONTH),
+                required(csvRecord, HEADER_RANK_IN_REST_STOP),
+                required(csvRecord, HEADER_REST_STOP_CODE),
+                required(csvRecord, HEADER_REST_STOP_NAME),
+                required(csvRecord, HEADER_STORE_CODE),
+                required(csvRecord, HEADER_STORE_NAME),
+                required(csvRecord, "판매상품SEQ"),
+                required(csvRecord, "판매상품명"));
         validateYearMonth(row.baseYearMonth());
         return row;
     }
 
-    private SalesRankingStoreRow toStoreRow(CSVRecord record) {
+    private SalesRankingStoreRow toStoreRow(CSVRecord csvRecord) {
         SalesRankingStoreRow row = new SalesRankingStoreRow(
-                required(record, "기준년월"),
-                required(record, "전체판매순위"),
-                required(record, "휴게소내판매순위"),
-                required(record, "휴게소코드"),
-                required(record, "휴게소명"),
-                required(record, "매장코드"),
-                required(record, "매장명"));
+                required(csvRecord, HEADER_BASE_YEAR_MONTH),
+                required(csvRecord, "전체판매순위"),
+                required(csvRecord, HEADER_RANK_IN_REST_STOP),
+                required(csvRecord, HEADER_REST_STOP_CODE),
+                required(csvRecord, HEADER_REST_STOP_NAME),
+                required(csvRecord, HEADER_STORE_CODE),
+                required(csvRecord, HEADER_STORE_NAME));
         validateYearMonth(row.baseYearMonth());
         return row;
     }
 
-    private String required(CSVRecord record, String header) {
-        String value = record.get(header).trim();
+    private String required(CSVRecord csvRecord, String header) {
+        String value = csvRecord.get(header).trim();
         if (value.isEmpty()) {
             throw new SalesRankingUploadException(header + " 값이 비어 있습니다.");
         }
@@ -106,6 +125,6 @@ public class SalesRankingCsvParser {
 
     @FunctionalInterface
     private interface RowConverter<T> {
-        T convert(CSVRecord record);
+        T convert(CSVRecord csvRecord);
     }
 }

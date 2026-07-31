@@ -10,10 +10,10 @@ import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.service.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-@Component
+@Service
 class RouteRestStopComparisonSummaryService {
 
     ComparisonSummary create(

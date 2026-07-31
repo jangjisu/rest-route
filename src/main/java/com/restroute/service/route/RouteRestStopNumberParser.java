@@ -11,7 +11,7 @@ final class RouteRestStopNumberParser {
         if (!StringUtils.hasText(value)) {
             return Optional.empty();
         }
-        String digits = value.replaceAll("[^0-9]", "");
+        String digits = value.replaceAll("\\D", "");
         if (!StringUtils.hasText(digits)) {
             return Optional.empty();
         }
@@ -26,7 +26,7 @@ final class RouteRestStopNumberParser {
         if (!StringUtils.hasText(value)) {
             return 0;
         }
-        String digits = value.replaceAll("[^0-9]", "");
+        String digits = value.replaceAll("\\D", "");
         if (!StringUtils.hasText(digits)) {
             return 0;
         }

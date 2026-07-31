@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 class RouteRestStopRecommendationTagService {
 
     RouteRestStopRecommendationStandards standards(List<RouteRestStopComparison> comparisons) {

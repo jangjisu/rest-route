@@ -113,27 +113,11 @@ public class RouteRestStopService {
             RoutePolyline polyline, int radiusMeters, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         List<RouteRestStopCandidate> candidates = new ArrayList<>();
         for (RestStopEntity restStop : restStopQueryService.findAll()) {
-            Double latitude = parseCoordinate(restStop.getYValue());
-            Double longitude = parseCoordinate(restStop.getXValue());
-            if (latitude == null || longitude == null) {
+            RouteRestStopCandidate candidate = buildCandidate(restStop, polyline, radiusMeters);
+            if (candidate == null) {
                 continue;
             }
-
-            RoutePolyline.Nearest nearest = polyline.nearest(latitude, longitude);
-            if (nearest.distanceMeters() > radiusMeters) {
-                continue;
-            }
-
-            RouteRestStopItem item = RouteRestStopItem.of(
-                            restStop.getServiceAreaCode(),
-                            restStop.getUnitName(),
-                            restStop.getRouteName(),
-                            latitude,
-                            longitude,
-                            Math.round(nearest.distanceMeters()))
-                    .withNearbyTraffic(nearbyTraffic(
-                            polyline.coordinates().get(nearest.index()).trafficState()));
-            candidates.add(RouteRestStopCandidate.of(restStop, item, nearest.index()));
+            candidates.add(candidate);
         }
 
         Map<String, Long> groupCounts = candidates.stream()
@@ -188,6 +172,30 @@ public class RouteRestStopService {
                                 comparison.summary(),
                                 routeRestStopRecommendationTagService.create(comparison, recommendationStandards)))
                 .toList();
+    }
+
+    private RouteRestStopCandidate buildCandidate(RestStopEntity restStop, RoutePolyline polyline, int radiusMeters) {
+        Double latitude = parseCoordinate(restStop.getYValue());
+        Double longitude = parseCoordinate(restStop.getXValue());
+        if (latitude == null || longitude == null) {
+            return null;
+        }
+
+        RoutePolyline.Nearest nearest = polyline.nearest(latitude, longitude);
+        if (nearest.distanceMeters() > radiusMeters) {
+            return null;
+        }
+
+        RouteRestStopItem item = RouteRestStopItem.of(
+                        restStop.getServiceAreaCode(),
+                        restStop.getUnitName(),
+                        restStop.getRouteName(),
+                        latitude,
+                        longitude,
+                        Math.round(nearest.distanceMeters()))
+                .withNearbyTraffic(nearbyTraffic(
+                        polyline.coordinates().get(nearest.index()).trafficState()));
+        return RouteRestStopCandidate.of(restStop, item, nearest.index());
     }
 
     private RouteRestStopResponse.NearbyTraffic nearbyTraffic(Integer trafficState) {

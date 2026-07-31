@@ -97,16 +97,14 @@ public class RestFoodSyncService {
         String key = foodKey(item.getStdRestCd(), item.getSeq());
         RestFoodEntity existing = existingByKey.get(key);
 
-        if (existing == null) {
-            RestFoodEntity created = RestFoodEntity.from(item);
-            existingByKey.put(key, created);
-            return created;
+        if (existing != null) {
+            if (!existing.isAdminOverridden()) {
+                existing.updateFrom(item);
+            }
+            return existing;
         }
 
-        if (!existing.isAdminOverridden()) {
-            existing.updateFrom(item);
-        }
-        return existing;
+        return existingByKey.computeIfAbsent(key, k -> RestFoodEntity.from(item));
     }
 
     private String foodKey(String stdRestCd, String seq) {

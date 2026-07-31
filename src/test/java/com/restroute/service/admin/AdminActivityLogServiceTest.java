@@ -6,6 +6,9 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.domain.AdminActivityLogEntity;
 import com.restroute.repository.AdminActivityLogRepository;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +22,8 @@ import org.springframework.security.core.Authentication;
 @ExtendWith(MockitoExtension.class)
 class AdminActivityLogServiceTest {
 
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-07T01:00:00Z"), ZoneId.of("Asia/Seoul"));
+
     @Mock
     private AdminActivityLogRepository adminActivityLogRepository;
 
@@ -29,7 +34,7 @@ class AdminActivityLogServiceTest {
 
     @BeforeEach
     void setUp() {
-        adminActivityLogService = new AdminActivityLogService(adminActivityLogRepository);
+        adminActivityLogService = new AdminActivityLogService(adminActivityLogRepository, CLOCK);
     }
 
     private AdminActivityLogEntity captureSavedEntity() {

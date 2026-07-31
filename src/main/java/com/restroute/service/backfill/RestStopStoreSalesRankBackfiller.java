@@ -16,11 +16,7 @@ public class RestStopStoreSalesRankBackfiller {
     public int backfill(List<RestStopEntity> restStops) {
         int mappedCount = 0;
         for (RestStopStoreSalesRankEntity rank : storeSalesRankRepository.findAll()) {
-            if (!rank.isUnmapped()) {
-                continue;
-            }
-            String serviceAreaCode =
-                    RestStopUniqueNameMatcher.findUniqueServiceAreaCode(restStops, rank.getSourceRestStopName());
+            String serviceAreaCode = matchServiceAreaCode(rank, restStops);
             if (serviceAreaCode == null) {
                 continue;
             }
@@ -28,5 +24,12 @@ public class RestStopStoreSalesRankBackfiller {
             mappedCount++;
         }
         return mappedCount;
+    }
+
+    private String matchServiceAreaCode(RestStopStoreSalesRankEntity rank, List<RestStopEntity> restStops) {
+        if (!rank.isUnmapped()) {
+            return null;
+        }
+        return RestStopUniqueNameMatcher.findUniqueServiceAreaCode(restStops, rank.getSourceRestStopName());
     }
 }
