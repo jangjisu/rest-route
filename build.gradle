@@ -74,6 +74,22 @@ pmd {
 	ruleSets = []
 }
 
+// rules/backend/module-design.md의 "얕은 모듈" 판단 기준 중 기계적으로 검증 가능한
+// 부분만 골라 실제 커밋을 막는 별도 게이트로 돌린다. pmdMain(위 ruleSetFiles)은
+// SonarCloud를 통한 advisory로만 쓰고, 이 task는 harness code 단계에서 blocking으로 쓴다.
+tasks.register('pmdDepthGate', org.gradle.api.plugins.quality.Pmd) {
+	description = 'Run PMD module-depth gate (TooManyMethods/TooManyFields/CyclomaticComplexity) for main classes'
+	group = 'verification'
+	source = sourceSets.main.allJava
+	ruleSetFiles = files("$rootDir/config/pmd/ruleset-depth-gate.xml")
+	ruleSets = []
+	consoleOutput = true
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
+
 spotbugs {
 	toolVersion = '4.8.6'
 	effort = 'max'

@@ -99,6 +99,11 @@ if [ -n "${SONAR_TOKEN:-}" ] || [ -n "${SONAR_HOST_URL:-}" ] || [ -f sonar-proje
 	run_check_task_if_exists "sonarqube" "SonarQube"
 fi
 
+# rules/backend/module-design.md의 "얕은 모듈" 판단 기준 중 기계적으로 검증 가능한 부분
+# (TooManyMethods/TooManyFields/CyclomaticComplexity)을 실제로 막는 게이트. 나머지 PMD
+# 규칙(bestpractices/errorprone)은 pmdMain으로 계속 SonarCloud에만 advisory로 올라간다.
+run_check_task_if_exists "pmdDepthGate" "PMD(모듈 depth)"
+
 if [ -z "$formatted_tools" ] && [ -z "$ran_tools" ]; then
 	pass "code" "run-code-quality-tools" "실행 가능한 Checkstyle/SonarQube/Palantir task 또는 CLI가 설정되어 있지 않습니다."
 fi
