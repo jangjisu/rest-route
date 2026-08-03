@@ -33,16 +33,19 @@ public class NationalOilPriceService {
 
     public Optional<NationalOilPriceSummary> getTodaySummary() {
         LocalDate today = LocalDate.now(clock);
-        List<NationalOilPriceEntity> stored = nationalOilPriceRepository.findAllByTradeDate(today);
-        if (hasRequiredProducts(stored)) {
-            return summaryOf(stored);
+        List<NationalOilPriceEntity> todayPrices = nationalOilPriceRepository.findAllByTradeDate(today);
+        if (hasTodayPrices(todayPrices)) {
+            return summaryOf(todayPrices);
         }
+        return fetchAndSaveTodayPrices(today).flatMap(this::summaryOf);
+    }
 
+    private Optional<List<NationalOilPriceEntity>> fetchAndSaveTodayPrices(LocalDate today) {
         try {
             List<OpinetAverageOilPriceItem> items =
                     opinetApiClient.getAverageOilPrices().oil();
             transactionTemplate.execute(status -> saveFetchedItems(items));
-            return summaryOf(nationalOilPriceRepository.findAllByTradeDate(today));
+            return Optional.of(nationalOilPriceRepository.findAllByTradeDate(today));
         } catch (RuntimeException e) {
             log.warn("National oil price summary unavailable. tradeDate={}, message={}", today, e.getMessage());
             return Optional.empty();
@@ -62,7 +65,7 @@ public class NationalOilPriceService {
         return entities.size();
     }
 
-    private boolean hasRequiredProducts(List<NationalOilPriceEntity> prices) {
+    private boolean hasTodayPrices(List<NationalOilPriceEntity> prices) {
         Map<String, NationalOilPriceEntity> byProductCode = byProductCode(prices);
         return byProductCode.containsKey(Product.GASOLINE.code())
                 && byProductCode.containsKey(Product.DIESEL.code())
@@ -70,7 +73,7 @@ public class NationalOilPriceService {
     }
 
     private Optional<NationalOilPriceSummary> summaryOf(List<NationalOilPriceEntity> prices) {
-        if (!hasRequiredProducts(prices)) {
+        if (!hasTodayPrices(prices)) {
             return Optional.empty();
         }
 
