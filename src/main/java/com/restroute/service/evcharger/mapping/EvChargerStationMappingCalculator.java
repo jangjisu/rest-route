@@ -22,18 +22,16 @@ public class EvChargerStationMappingCalculator {
             List<RestStopEntity> restStops,
             List<RestStopDetailEntity> restStopDetails,
             List<EvChargerEntity> evChargers) {
-        List<EvChargerEntity> distinctChargers = distinctActiveChargers(evChargers);
-        List<EvChargerStationMappingEntity> mappings = new ArrayList<>();
+        return distinctActiveChargers(evChargers).stream()
+                .map(charger -> mappingOf(charger, restStops, restStopDetails))
+                .flatMap(Optional::stream)
+                .toList();
+    }
 
-        for (EvChargerEntity charger : distinctChargers) {
-            Optional<DistanceCandidate> matchedCandidate =
-                    findNearestMatchingRestStop(charger, restStops, restStopDetails);
-            if (matchedCandidate.isEmpty()) {
-                continue;
-            }
-            mappings.add(createMapping(charger, matchedCandidate.get()));
-        }
-        return mappings;
+    private Optional<EvChargerStationMappingEntity> mappingOf(
+            EvChargerEntity charger, List<RestStopEntity> restStops, List<RestStopDetailEntity> restStopDetails) {
+        return findNearestMatchingRestStop(charger, restStops, restStopDetails)
+                .map(matchedCandidate -> createMapping(charger, matchedCandidate));
     }
 
     private List<EvChargerEntity> distinctActiveChargers(List<EvChargerEntity> evChargers) {

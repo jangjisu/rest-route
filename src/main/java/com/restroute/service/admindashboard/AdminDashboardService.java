@@ -1,5 +1,7 @@
 package com.restroute.service.admindashboard;
 
+import com.restroute.domain.RestStopProductSalesRankEntity;
+import com.restroute.domain.RestStopStoreSalesRankEntity;
 import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
@@ -7,6 +9,7 @@ import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admindashboard.dto.AdminActivityLogItemResponse;
 import com.restroute.service.admindashboard.dto.AdminDashboardSummary;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,22 +25,33 @@ public class AdminDashboardService {
     private final AdminActivityLogService adminActivityLogService;
 
     public AdminDashboardSummary getSummary() {
-        long restStopCount = restStopRepository.count();
-        String latestSalesRankingMonth = Stream.of(
-                        productSalesRankRepository
-                                .findTopByOrderByBaseYearMonthDesc()
-                                .map(entity -> entity.getBaseYearMonth())
-                                .orElse(null),
-                        storeSalesRankRepository
-                                .findTopByOrderByBaseYearMonthDesc()
-                                .map(entity -> entity.getBaseYearMonth())
-                                .orElse(null))
+        return AdminDashboardSummary.of(
+                restStopRepository.count(), latestSalesRankingMonth(), "준비중", recentActivityLogs());
+    }
+
+    private String latestSalesRankingMonth() {
+        return Stream.of(productLastMonth(), storeLastMonth())
+                .flatMap(Optional::stream)
                 .filter(StringUtils::hasText)
                 .max(String::compareTo)
                 .orElse(null);
-        List<AdminActivityLogItemResponse> recentActivityLogs = adminActivityLogService.findRecent().stream()
+    }
+
+    private Optional<String> productLastMonth() {
+        return productSalesRankRepository
+                .findTopByOrderByBaseYearMonthDesc()
+                .map(RestStopProductSalesRankEntity::getBaseYearMonth);
+    }
+
+    private Optional<String> storeLastMonth() {
+        return storeSalesRankRepository
+                .findTopByOrderByBaseYearMonthDesc()
+                .map(RestStopStoreSalesRankEntity::getBaseYearMonth);
+    }
+
+    private List<AdminActivityLogItemResponse> recentActivityLogs() {
+        return adminActivityLogService.findRecent().stream()
                 .map(AdminActivityLogItemResponse::from)
                 .toList();
-        return AdminDashboardSummary.of(restStopCount, latestSalesRankingMonth, "준비중", recentActivityLogs);
     }
 }

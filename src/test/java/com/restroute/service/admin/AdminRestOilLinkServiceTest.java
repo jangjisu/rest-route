@@ -83,6 +83,24 @@ class AdminRestOilLinkServiceTest {
     }
 
     @Test
+    @DisplayName("같은 휴게소 코드에 연결된 주유소 가격이 두 건이면 나중 조회분을 사용한다")
+    void findAll_keepsLastOilPriceWhenServiceAreaCodeIsDuplicated() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001"));
+        RestOilPriceEntity first = oilPriceWithId(1L, "000002", "먼저조회된주유소");
+        first.applyAdminLink("A00001");
+        RestOilPriceEntity last = oilPriceWithId(2L, "000006", "나중조회된주유소");
+        last.applyAdminLink("A00001");
+        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        when(restOilPriceRepository.findAll()).thenReturn(List.of(first, last));
+
+        List<AdminRestOilLinkSummaryResponse> result = service.findAll();
+
+        assertThat(result).singleElement().satisfies(item -> assertThat(
+                        item.linkedOilStation().standardRestName())
+                .isEqualTo("나중조회된주유소"));
+    }
+
+    @Test
     @DisplayName("이름으로 주유소를 검색하면 이미 연결된 휴게소명을 배치 조회로 함께 반환한다(N+1 방지)")
     void search_returnsMatchesWithLinkedRestStopName() {
         RestOilPriceEntity linkedOilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");

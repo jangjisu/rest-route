@@ -15,8 +15,8 @@ import com.restroute.service.route.dto.RouteRestStopCandidate;
 import com.restroute.service.route.dto.RouteSearchResult;
 import com.restroute.service.route.exception.RouteRestStopNotFoundException;
 import com.restroute.service.route.util.RouteCoordinateFormat;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -100,15 +100,10 @@ public class RouteRestStopCandidateFinder {
     }
 
     private List<RouteRestStopCandidate> candidatesNearRoute(RoutePolyline polyline, int radiusMeters) {
-        List<RouteRestStopCandidate> candidates = new ArrayList<>();
-        for (RestStopEntity restStop : restStopQueryService.findAll()) {
-            RouteRestStopCandidate candidate = buildCandidate(restStop, polyline, radiusMeters);
-            if (candidate == null) {
-                continue;
-            }
-            candidates.add(candidate);
-        }
-        return candidates;
+        return restStopQueryService.findAll().stream()
+                .map(restStop -> buildCandidate(restStop, polyline, radiusMeters))
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private RouteRestStopCandidate buildCandidate(RestStopEntity restStop, RoutePolyline polyline, int radiusMeters) {
