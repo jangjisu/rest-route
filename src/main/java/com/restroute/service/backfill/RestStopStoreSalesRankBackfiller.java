@@ -28,7 +28,7 @@ public class RestStopStoreSalesRankBackfiller {
     }
 
     private String matchServiceAreaCode(RestStopStoreSalesRankEntity rank, List<RestStopEntity> restStops) {
-        if (!rank.isUnmapped()) {
+        if (rank.isMapped()) {
             return null;
         }
         return RestStopUniqueNameMatcher.findUniqueServiceAreaCode(restStops, rank.getSourceRestStopName());

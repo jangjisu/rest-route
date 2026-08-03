@@ -59,6 +59,10 @@ public class RestStopStoreSalesRankEntity {
         return !StringUtils.hasText(restStopServiceAreaCode);
     }
 
+    public boolean isMapped() {
+        return !isUnmapped();
+    }
+
     public void updateRestStopServiceAreaCode(String serviceAreaCode) {
         this.restStopServiceAreaCode = serviceAreaCode;
     }
