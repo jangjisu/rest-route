@@ -1,4 +1,4 @@
-package com.restroute.service;
+package com.restroute.service.admin;
 
 import com.restroute.common.AdminUserExceptionFactory;
 import com.restroute.domain.AdminUserEntity;

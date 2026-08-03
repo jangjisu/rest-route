@@ -1,4 +1,4 @@
-package com.restroute.controller;
+package com.restroute.controller.admin;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;

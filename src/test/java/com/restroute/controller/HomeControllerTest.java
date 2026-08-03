@@ -10,14 +10,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * TrafficController 는 GET / 에서 HTML 껍데기만 서빙합니다.
- * 데이터는 TrafficApiController (GET /api/*) 가 담당하며,
- * 프론트엔드 JS가 각 섹션을 비동기로 채웁니다.
- */
-@WebMvcTest(TrafficController.class)
+/** HomeController 는 GET / 에서 HTML 껍데기만 서빙한다. 프론트엔드 JS가 각 섹션을 비동기로 채운다. */
+@WebMvcTest(HomeController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class TrafficControllerTest {
+class HomeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

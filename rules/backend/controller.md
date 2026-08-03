@@ -1,5 +1,18 @@
 # Controller 수정 시 확인 규칙
 
+## 패키지 depth — 관리자 전용 Controller는 `admin/` 서브패키지
+
+관리자 전용(`@PreAuthorize`/관리자 세션 필요, URL이 `/admin/**`인) Controller는
+`controller/admin/`에 둔다. 일반 사용자용 Controller와 이름 접두사(`Admin*`)만으로
+구분되는 채 같은 패키지에 flat하게 섞이지 않게 한다 — 파일 목록만 보고 어디까지가
+공개 API인지 즉시 구분되어야 한다.
+
+새 Controller를 추가할 때:
+
+- 관리자 전용이면 `com.restroute.controller.admin` 패키지에 만든다.
+- 공개(비관리자) API면 기존대로 `com.restroute.controller`에 만든다.
+- `request`/`response` DTO는 이번 규칙 대상이 아니다(현재 범위 밖, 필요해지면 별도 논의).
+
 ## ApiResponse 구조
 
 ```json

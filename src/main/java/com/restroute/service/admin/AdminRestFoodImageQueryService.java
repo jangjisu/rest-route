@@ -1,33 +1,23 @@
-package com.restroute.service.image;
+package com.restroute.service.admin;
 
-import com.restroute.domain.RestFoodImageEntity;
 import com.restroute.repository.RestFoodImageRepository;
 import com.restroute.repository.RestFoodRepository;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
-public class AdminRestFoodImageCommandService {
+public class AdminRestFoodImageQueryService {
 
     private final RestFoodRepository restFoodRepository;
     private final RestFoodImageRepository restFoodImageRepository;
-    private final RestStopImageProcessor processor;
 
-    @Transactional
-    public void save(String serviceAreaCode, Long foodId, MultipartFile file) {
+    @Transactional(readOnly = true)
+    public Optional<byte[]> findListImage(String serviceAreaCode, Long foodId) {
         requireFood(serviceAreaCode, foodId);
-        RestStopImageData imageData = processor.process(file);
-        restFoodImageRepository.save(
-                RestFoodImageEntity.of(foodId, imageData.detailImageData(), imageData.listImageData()));
-    }
-
-    @Transactional
-    public void delete(String serviceAreaCode, Long foodId) {
-        requireFood(serviceAreaCode, foodId);
-        restFoodImageRepository.deleteById(foodId);
+        return restFoodImageRepository.findListImageDataByFoodId(foodId);
     }
 
     private void requireFood(String serviceAreaCode, Long foodId) {

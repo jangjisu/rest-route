@@ -1,4 +1,4 @@
-package com.restroute.controller;
+package com.restroute.controller.admin;
 
 import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.image.RestStopImageCommandService;

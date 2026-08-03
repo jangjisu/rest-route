@@ -1,4 +1,4 @@
-package com.restroute.controller;
+package com.restroute.controller.admin;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -17,7 +17,7 @@ import com.restroute.controller.response.AdminRestFoodResponse;
 import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admin.AdminRestFoodService;
 import com.restroute.service.admin.InvalidRestFoodEditException;
-import com.restroute.service.image.RestFoodNotFoundException;
+import com.restroute.service.admin.RestFoodNotFoundException;
 import com.restroute.service.image.RestStopNotFoundException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package com.restroute.service.image;
+package com.restroute.service.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import com.restroute.domain.RestFoodEntity;
 import com.restroute.repository.RestFoodImageRepository;
 import com.restroute.repository.RestFoodRepository;
+import com.restroute.service.image.RestStopImageData;
+import com.restroute.service.image.RestStopImageProcessor;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

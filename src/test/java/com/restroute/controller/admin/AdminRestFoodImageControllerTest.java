@@ -1,4 +1,4 @@
-package com.restroute.controller;
+package com.restroute.controller.admin;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,9 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.restroute.common.GlobalExceptionHandler;
 import com.restroute.service.admin.AdminActivityLogService;
-import com.restroute.service.image.AdminRestFoodImageCommandService;
-import com.restroute.service.image.AdminRestFoodImageQueryService;
-import com.restroute.service.image.RestFoodNotFoundException;
+import com.restroute.service.admin.AdminRestFoodImageCommandService;
+import com.restroute.service.admin.AdminRestFoodImageQueryService;
+import com.restroute.service.admin.RestFoodNotFoundException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

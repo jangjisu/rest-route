@@ -1,4 +1,4 @@
-package com.restroute.controller;
+package com.restroute.controller.admin;
 
 import com.restroute.common.ApiResponse;
 import com.restroute.controller.request.AdminRestStopUpdateRequest;

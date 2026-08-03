@@ -7,7 +7,6 @@ import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestFoodImageRepository;
 import com.restroute.repository.RestFoodRepository;
 import com.restroute.repository.RestStopRepository;
-import com.restroute.service.image.RestFoodNotFoundException;
 import com.restroute.service.image.RestStopNotFoundException;
 import java.util.HashSet;
 import java.util.List;

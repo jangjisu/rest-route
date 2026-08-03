@@ -1,4 +1,4 @@
-package com.restroute.service;
+package com.restroute.service.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

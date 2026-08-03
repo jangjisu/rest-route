@@ -1,4 +1,4 @@
-package com.restroute.service.image;
+package com.restroute.service.admin;
 
 import com.restroute.common.BusinessException;
 import com.restroute.common.ResponseCode;

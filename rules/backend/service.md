@@ -1,5 +1,19 @@
 # Service 수정 시 확인 규칙
 
+## 패키지 depth — 관리자 전용 Service는 `admin/` 서브패키지
+
+관리자 전용 Service(관리자 Controller에서만 호출되는 Service·예외)는
+`service/admin/`에 둔다. 일반 조회/동기화 Service와 이름 접두사(`Admin*`)만으로
+구분되는 채 같은 패키지에 flat하게 섞이지 않게 한다.
+
+- 여러 도메인 Service가 공용으로 쓰는 클래스(예: `RestStopImageProcessor`처럼
+  admin/non-admin 양쪽에서 호출되는 순수 변환기, `RestStopNotFoundException`처럼
+  양쪽에서 던지는 예외)는 admin 전용이 아니므로 그 도메인 패키지(`service/image/` 등)에
+  그대로 둔다. 어느 한쪽에서만 쓰는 클래스만 옮긴다 — 옮기기 전에 실제 사용처를
+  `grep -rl "import com.restroute.service.xxx.ClassName;"`로 확인한다.
+- `controller.md`의 같은 규칙과 대응한다 — Controller가 `admin/`으로 옮겨지면
+  그 Controller가 전용으로 쓰는 Service도 함께 검토한다.
+
 ## 레이어 경계
 
 - Service A는 Service B 소유의 Repository에 직접 접근하지 않는다
