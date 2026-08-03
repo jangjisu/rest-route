@@ -9,6 +9,12 @@ import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem
 import com.restroute.controller.response.RouteRestStopResponse.RouteSummary;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.service.RestStopQueryService;
+import com.restroute.service.route.dto.NearbyTrafficStatus;
+import com.restroute.service.route.dto.RoutePolyline;
+import com.restroute.service.route.dto.RouteRestStopCandidate;
+import com.restroute.service.route.dto.RouteSearchResult;
+import com.restroute.service.route.exception.RouteRestStopNotFoundException;
+import com.restroute.service.route.util.RouteCoordinateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

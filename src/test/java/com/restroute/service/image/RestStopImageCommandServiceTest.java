@@ -9,6 +9,10 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.repository.RestStopImageRepository;
 import com.restroute.repository.RestStopRepository;
+import com.restroute.service.image.dto.RestStopImageData;
+import com.restroute.service.image.exception.InvalidRestStopImageException;
+import com.restroute.service.image.exception.RestStopNotFoundException;
+import com.restroute.service.image.util.RestStopImageProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

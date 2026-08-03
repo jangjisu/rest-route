@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.repository.RestStopImageRepository;
 import com.restroute.repository.RestStopRepository;
+import com.restroute.service.image.exception.RestStopNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

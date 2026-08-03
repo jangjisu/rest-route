@@ -1,6 +1,6 @@
 package com.restroute.domain;
 
-import com.restroute.service.salesranking.SalesRankingStoreRow;
+import com.restroute.service.salesranking.dto.SalesRankingStoreRow;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;

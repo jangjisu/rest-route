@@ -5,7 +5,7 @@ import com.restroute.controller.request.AdminRestStopUpdateRequest;
 import com.restroute.controller.response.AdminRestStopEditableResponse;
 import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admin.AdminRestStopEditService;
-import com.restroute.service.image.RestStopNotFoundException;
+import com.restroute.service.image.exception.RestStopNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

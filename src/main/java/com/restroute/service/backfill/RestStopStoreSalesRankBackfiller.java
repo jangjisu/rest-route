@@ -3,6 +3,7 @@ package com.restroute.service.backfill;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.domain.RestStopStoreSalesRankEntity;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
+import com.restroute.service.backfill.util.RestStopUniqueNameMatcher;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

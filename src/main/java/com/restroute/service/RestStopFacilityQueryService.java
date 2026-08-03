@@ -3,6 +3,7 @@ package com.restroute.service;
 import com.restroute.controller.response.RestStopFacilityResponse;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestStopRepository;
+import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

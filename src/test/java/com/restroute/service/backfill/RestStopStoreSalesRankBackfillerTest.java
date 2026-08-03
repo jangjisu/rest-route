@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.domain.RestStopStoreSalesRankEntity;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
-import com.restroute.service.salesranking.SalesRankingStoreRow;
+import com.restroute.service.salesranking.dto.SalesRankingStoreRow;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

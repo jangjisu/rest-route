@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
 import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admindashboard.AdminDashboardService;
-import com.restroute.service.admindashboard.AdminDashboardSummary;
+import com.restroute.service.admindashboard.dto.AdminDashboardSummary;
 import com.restroute.service.salesranking.SalesRankingUploadService;
 import java.util.List;
 import java.util.Map;

@@ -2,6 +2,7 @@ package com.restroute.service.image;
 
 import com.restroute.repository.RestStopImageRepository;
 import com.restroute.repository.RestStopRepository;
+import com.restroute.service.image.exception.RestStopNotFoundException;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;

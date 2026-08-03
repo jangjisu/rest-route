@@ -2,8 +2,8 @@ package com.restroute.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.restroute.service.salesranking.SalesRankingProductRow;
-import com.restroute.service.salesranking.SalesRankingStoreRow;
+import com.restroute.service.salesranking.dto.SalesRankingProductRow;
+import com.restroute.service.salesranking.dto.SalesRankingStoreRow;
 import org.junit.jupiter.api.Test;
 
 class RestStopSalesRankEntityTest {

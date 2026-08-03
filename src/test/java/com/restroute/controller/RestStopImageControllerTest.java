@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.restroute.common.GlobalExceptionHandler;
 import com.restroute.service.image.RestStopImageQueryService;
-import com.restroute.service.image.RestStopNotFoundException;
+import com.restroute.service.image.exception.RestStopNotFoundException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

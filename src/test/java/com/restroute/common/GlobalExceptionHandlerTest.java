@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.restroute.client.exception.ExApiException;
 import com.restroute.client.exception.KakaoApiException;
-import com.restroute.service.image.InvalidRestStopImageException;
-import com.restroute.service.image.RestStopNotFoundException;
-import com.restroute.service.salesranking.SalesRankingUploadException;
+import com.restroute.service.image.exception.InvalidRestStopImageException;
+import com.restroute.service.image.exception.RestStopNotFoundException;
+import com.restroute.service.salesranking.exception.SalesRankingUploadException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;

@@ -12,7 +12,7 @@ import com.restroute.domain.RestFoodEntity;
 import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.domain.RestStopDetailEntity;
-import com.restroute.service.RestStopRelatedInfo;
+import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;

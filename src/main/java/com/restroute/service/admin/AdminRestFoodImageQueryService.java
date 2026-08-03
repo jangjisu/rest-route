@@ -2,6 +2,7 @@ package com.restroute.service.admin;
 
 import com.restroute.repository.RestFoodImageRepository;
 import com.restroute.repository.RestFoodRepository;
+import com.restroute.service.admin.exception.RestFoodNotFoundException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -13,7 +13,7 @@ import com.restroute.common.GlobalExceptionHandler;
 import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admin.AdminRestFoodImageCommandService;
 import com.restroute.service.admin.AdminRestFoodImageQueryService;
-import com.restroute.service.admin.RestFoodNotFoundException;
+import com.restroute.service.admin.exception.RestFoodNotFoundException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -9,9 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.restroute.common.GlobalExceptionHandler;
 import com.restroute.service.admin.AdminActivityLogService;
-import com.restroute.service.image.InvalidRestStopImageException;
 import com.restroute.service.image.RestStopImageCommandService;
-import com.restroute.service.image.RestStopNotFoundException;
+import com.restroute.service.image.exception.InvalidRestStopImageException;
+import com.restroute.service.image.exception.RestStopNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

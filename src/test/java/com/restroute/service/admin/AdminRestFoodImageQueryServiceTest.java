@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.restroute.domain.RestFoodEntity;
 import com.restroute.repository.RestFoodImageRepository;
 import com.restroute.repository.RestFoodRepository;
+import com.restroute.service.admin.exception.RestFoodNotFoundException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

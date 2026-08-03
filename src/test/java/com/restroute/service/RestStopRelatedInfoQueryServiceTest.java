@@ -31,6 +31,7 @@ import com.restroute.repository.RestOilPriceRepository;
 import com.restroute.repository.RestOilRepository;
 import com.restroute.repository.RestStopDetailRepository;
 import com.restroute.repository.RestThemeRepository;
+import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

@@ -13,6 +13,7 @@ import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestStopRepository;
+import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

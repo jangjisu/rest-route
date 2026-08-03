@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.restroute.controller.response.RouteRestStopResponse.ComparisonSummary;
 import com.restroute.controller.response.RouteRestStopResponse.RecommendationTag;
+import com.restroute.service.route.dto.RouteRestStopCandidate;
+import com.restroute.service.route.dto.RouteRestStopComparison;
+import com.restroute.service.route.dto.RouteRestStopRecommendationStandards;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
