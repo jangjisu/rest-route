@@ -72,8 +72,12 @@ public class NationalOilPriceService {
                 && byProductCode.containsKey(Product.LPG.code());
     }
 
+    private boolean isMissingAnyProduct(List<NationalOilPriceEntity> prices) {
+        return !hasTodayPrices(prices);
+    }
+
     private Optional<NationalOilPriceSummary> summaryOf(List<NationalOilPriceEntity> prices) {
-        if (!hasTodayPrices(prices)) {
+        if (isMissingAnyProduct(prices)) {
             return Optional.empty();
         }
 
