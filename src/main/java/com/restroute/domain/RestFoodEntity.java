@@ -112,6 +112,14 @@ public class RestFoodEntity {
         return seq != null && seq.startsWith(ADMIN_SEQ_PREFIX);
     }
 
+    public boolean isSyncedFood() {
+        return !isAdminCreated();
+    }
+
+    public boolean isSyncable() {
+        return !adminOverridden;
+    }
+
     public static RestFoodEntity from(RestBestfoodItem item) {
         return new RestFoodEntity(item);
     }

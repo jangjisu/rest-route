@@ -73,7 +73,7 @@ public class AdminRestFoodService {
     @Transactional
     public void delete(String serviceAreaCode, Long foodId) {
         RestFoodEntity entity = requireFood(serviceAreaCode, foodId);
-        if (!entity.isAdminCreated()) {
+        if (entity.isSyncedFood()) {
             throw InvalidRestFoodEditException.forSyncedFoodDeletion(foodId);
         }
         restFoodRepository.delete(entity);

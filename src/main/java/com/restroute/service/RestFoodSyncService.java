@@ -98,7 +98,7 @@ public class RestFoodSyncService {
         RestFoodEntity existing = existingByKey.get(key);
 
         if (existing != null) {
-            if (!existing.isAdminOverridden()) {
+            if (existing.isSyncable()) {
                 existing.updateFrom(item);
             }
             return existing;

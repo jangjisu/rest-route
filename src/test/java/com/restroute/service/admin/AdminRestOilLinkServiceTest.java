@@ -95,9 +95,10 @@ class AdminRestOilLinkServiceTest {
 
         List<AdminRestOilLinkSummaryResponse> result = service.findAll();
 
-        assertThat(result).singleElement().satisfies(item -> assertThat(
-                        item.linkedOilStation().standardRestName())
-                .isEqualTo("나중조회된주유소"));
+        assertThat(result)
+                .singleElement()
+                .satisfies(item ->
+                        assertThat(item.linkedOilStation().standardRestName()).isEqualTo("나중조회된주유소"));
     }
 
     @Test
