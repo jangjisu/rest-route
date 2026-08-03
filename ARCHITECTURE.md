@@ -57,5 +57,10 @@
 
 ## 미결정 사항
 
-- 조회 조합이 커질 때 도입할 전용 Query 계층 또는 Mapper의 기준
 - 외부 API 장애 시 캐시와 재시도 정책
+
+## 관련 문서
+
+- 조회 조합이 커질 때 Service를 어떻게 나눌지(모듈 depth, seam 판단 기준)는
+  [rules/backend/module-design.md](rules/backend/module-design.md) 참고.
+- 도메인 용어 정의는 [CONTEXT.md](CONTEXT.md) 참고.

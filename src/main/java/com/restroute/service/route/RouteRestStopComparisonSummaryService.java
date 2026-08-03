@@ -7,23 +7,19 @@ import com.restroute.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.domain.RestStopDetailEntity;
-import com.restroute.domain.RestStopEntity;
-import com.restroute.service.RestStopRelatedInfo;
-import com.restroute.service.RestStopRelatedInfoQueryService;
+import com.restroute.service.dto.RestStopRelatedInfo;
+import com.restroute.service.route.dto.FuelType;
+import com.restroute.service.route.util.RouteRestStopNumberParser;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-@Component
-@RequiredArgsConstructor
+@Service
 class RouteRestStopComparisonSummaryService {
 
-    private final RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
-
-    ComparisonSummary create(RestStopEntity restStop, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        RestStopRelatedInfo relatedInfo = restStopRelatedInfoQueryService.findByRestStop(restStop);
+    ComparisonSummary create(
+            RestStopRelatedInfo relatedInfo, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         Optional<RestStopDetailEntity> detail = relatedInfo.detail();
         List<HighwayServiceAreaInfoEntity> infos = relatedInfo.highwayServiceAreaInfos();
         List<RestOilEntity> oilConveniences = relatedInfo.oilStationConveniences();

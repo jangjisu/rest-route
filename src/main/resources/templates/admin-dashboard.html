@@ -12,7 +12,7 @@
     <main>
         <header th:replace="~{fragments/admin-shell :: header(title='대시보드')}"></header>
         <div class="content">
-            <div class="intro"><div><h1>대시보드</h1><p>휴게소 데이터 작업 현황을 확인합니다.</p></div><form th:action="@{/admin/sales-rankings/backfill}" method="post"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button class="secondary mapping-action" type="submit">전체 휴게소명 매핑</button></form></div>
+            <div class="intro"><div><h1>대시보드</h1><p>휴게소 데이터 작업 현황을 확인합니다.</p></div><form th:action="@{/api/admin/sales-rankings/backfill}" method="post"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button class="secondary mapping-action" type="submit">전체 휴게소명 매핑</button></form></div>
             <section class="summary">
                 <div class="summary-card"><span>등록 휴게소</span><strong id="restStopCount" aria-live="polite">불러오는 중</strong><em>전체 휴게소</em></div>
                 <div class="summary-card"><span>최신 판매순위</span><strong id="latestSalesRankingMonth" aria-live="polite">불러오는 중</strong><em>최근 업로드 월</em></div>
@@ -22,8 +22,8 @@
                 <section class="panel">
                     <div class="panel-head"><div><h2>판매순위 관리</h2><p>월별 CSV를 업로드합니다.</p></div><span id="salesRankingMonthTag" class="tag">기준월 불러오는 중</span></div>
                     <div class="panel-body">
-                        <div class="upload-block"><div class="upload-title"><span>상품 판매순위</span><span class="tag">CP949 CSV</span></div><form id="productUploadForm" th:action="@{/admin/sales-rankings/products}" method="post" enctype="multipart/form-data"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><div class="file-row"><input class="file-input" name="productFile" type="file" accept=".csv" required><button class="primary" type="submit">업로드</button></div></form><p class="helper">상품명, 판매순위, 휴게소명과 매장 정보를 저장합니다.</p></div>
-                        <div class="upload-block"><div class="upload-title"><span>매장 판매순위</span><span class="tag">CP949 CSV</span></div><form id="storeUploadForm" th:action="@{/admin/sales-rankings/stores}" method="post" enctype="multipart/form-data"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><div class="file-row"><input class="file-input" name="storeFile" type="file" accept=".csv" required><button class="primary" type="submit">업로드</button></div></form><p class="helper">매장별 판매순위와 원본 휴게소 정보를 저장합니다.</p></div>
+                        <div class="upload-block"><div class="upload-title"><span>상품 판매순위</span><span class="tag">CP949 CSV</span></div><form id="productUploadForm" th:action="@{/api/admin/sales-rankings/products}" method="post" enctype="multipart/form-data"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><div class="file-row"><input class="file-input" name="productFile" type="file" accept=".csv" required><button class="primary" type="submit">업로드</button></div></form><p class="helper">상품명, 판매순위, 휴게소명과 매장 정보를 저장합니다.</p></div>
+                        <div class="upload-block"><div class="upload-title"><span>매장 판매순위</span><span class="tag">CP949 CSV</span></div><form id="storeUploadForm" th:action="@{/api/admin/sales-rankings/stores}" method="post" enctype="multipart/form-data"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><div class="file-row"><input class="file-input" name="storeFile" type="file" accept=".csv" required><button class="primary" type="submit">업로드</button></div></form><p class="helper">매장별 판매순위와 원본 휴게소 정보를 저장합니다.</p></div>
                     </div>
                 </section>
                 <section class="panel activity">

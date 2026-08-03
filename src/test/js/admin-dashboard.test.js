@@ -5,7 +5,6 @@ import {
     attachAdminForms,
     bindActivityModal,
     fetchAdminDashboard,
-    handleRedirectNotice,
     renderDashboard,
     renderDashboardError
 } from '../../main/resources/static/js/admin-dashboard.js';
@@ -90,23 +89,6 @@ test('renders a stable error state when dashboard loading fails', () => {
     assert.equal(document.elements.get('salesRankingMonthTag').textContent, '조회 실패');
 });
 
-test('shows a product upload success toast and removes redirect parameters', () => {
-    const toast = { textContent: '', className: '' };
-    const document = {
-        title: '관리자',
-        getElementById: (id) => id === 'adminToast' ? toast : undefined
-    };
-    const location = { pathname: '/admin', search: '?upload=success&type=product', hash: '' };
-    let replacedUrl;
-    const history = { replaceState: (_state, _title, url) => { replacedUrl = url; } };
-
-    handleRedirectNotice(document, location, history);
-
-    assert.equal(toast.textContent, '상품 판매순위 업로드가 완료되었습니다.');
-    assert.match(toast.className, /is-success/);
-    assert.equal(replacedUrl, '/admin');
-});
-
 test('renders up to 5 recent activity logs inline and clears the empty state', () => {
     const document = documentWithDashboardElements();
     const logs = Array.from({ length: 7 }, (_, index) => ({
@@ -149,27 +131,133 @@ test('전체 보기 클릭 시 모달에 전체 활동 로그를 렌더링하고
     assert.equal(modalList.children.length, 7);
 });
 
-test('shows the backfill loading overlay and locks the page while submitting', () => {
-    const overlay = { classList: { toggle: (_name, value) => { overlay.visible = value; } }, setAttribute: () => {} };
-    const message = { textContent: '' };
+function fakeAdminForm(action) {
     const button = { disabled: false, textContent: '' };
     const form = {
-        action: '/admin/sales-rankings/backfill',
+        action,
         dataset: {},
         querySelector: () => button,
-        addEventListener: (_event, handler) => { form.submitHandler = handler; }
+        reset: () => { form.wasReset = true; },
+        addEventListener: (_event, handler) => { form.submitHandler = handler; },
+        button
     };
-    const document = {
-        getElementById: (id) => ({ adminLoadingOverlay: overlay, adminLoadingMessage: message }[id]),
-        querySelectorAll: () => [form]
-    };
+    return form;
+}
 
-    attachAdminForms(document);
-    form.submitHandler();
+function fakeAdminDocument(form) {
+    const overlay = { classList: { toggle: (_name, value) => { overlay.visible = value; } }, setAttribute: () => {} };
+    const message = { textContent: '' };
+    const toast = { textContent: '', className: '' };
+    const dashboardElements = documentWithDashboardElements();
+    return {
+        getElementById: (id) =>
+            ({ adminLoadingOverlay: overlay, adminLoadingMessage: message, adminToast: toast }[id]
+                ?? dashboardElements.getElementById(id)),
+        querySelectorAll: () => [form],
+        overlay,
+        message,
+        toast
+    };
+}
+
+function jsonResponse(ok, body) {
+    return { ok, json: async () => body };
+}
+
+test('shows the backfill loading overlay and locks the page while submitting', () => {
+    const form = fakeAdminForm('/api/admin/sales-rankings/backfill');
+    const document = fakeAdminDocument(form);
+
+    attachAdminForms(document, () => new Promise(() => {}), () => 'fake-form-data');
+    form.submitHandler({ preventDefault: () => {} });
 
     assert.equal(form.dataset.submitting, 'true');
-    assert.equal(button.disabled, true);
-    assert.equal(button.textContent, '매핑 실행 중...');
-    assert.equal(overlay.visible, true);
-    assert.equal(message.textContent, '휴게소명 매핑을 실행하고 있습니다.');
+    assert.equal(form.button.disabled, true);
+    assert.equal(form.button.textContent, '매핑 실행 중...');
+    assert.equal(document.overlay.visible, true);
+    assert.equal(document.message.textContent, '휴게소명 매핑을 실행하고 있습니다.');
+});
+
+test('shows the uploaded row count and refreshes the dashboard after a successful product upload', async () => {
+    const form = fakeAdminForm('/api/admin/sales-rankings/products');
+    const document = fakeAdminDocument(form);
+    const calledUrls = [];
+    const fetchImpl = async (url) => {
+        calledUrls.push(url);
+        if (url === '/api/admin/sales-rankings/products') {
+            return jsonResponse(true, { data: 128 });
+        }
+        return jsonResponse(true, { data: { restStopCount: 203, latestSalesRankingMonth: '2026-06' } });
+    };
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    await form.submitHandler({ preventDefault: () => {} });
+
+    assert.deepEqual(calledUrls, ['/api/admin/sales-rankings/products', '/api/admin/dashboard']);
+    assert.equal(document.toast.textContent, '상품 판매순위 128건을 업로드했습니다.');
+    assert.match(document.toast.className, /is-success/);
+    assert.equal(form.wasReset, true);
+    assert.equal(form.button.disabled, false);
+    assert.equal(form.button.textContent, '업로드');
+    assert.equal(form.dataset.submitting, 'false');
+});
+
+test('shows the server error message when a product upload fails', async () => {
+    const form = fakeAdminForm('/api/admin/sales-rankings/products');
+    const document = fakeAdminDocument(form);
+    const fetchImpl = async () => jsonResponse(false, { message: 'CSV 형식이 올바르지 않습니다.' });
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    await form.submitHandler({ preventDefault: () => {} });
+
+    assert.equal(document.toast.textContent, 'CSV 형식이 올바르지 않습니다.');
+    assert.match(document.toast.className, /is-error/);
+    assert.equal(form.wasReset, undefined);
+});
+
+test('falls back to a generic error message when the upload request itself fails', async () => {
+    const form = fakeAdminForm('/api/admin/sales-rankings/stores');
+    const document = fakeAdminDocument(form);
+    const fetchImpl = async () => {
+        throw new Error('network down');
+    };
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    await form.submitHandler({ preventDefault: () => {} });
+
+    assert.equal(document.toast.textContent, '판매순위 업로드에 실패했습니다.');
+    assert.match(document.toast.className, /is-error/);
+});
+
+test('shows a completion toast for a successful backfill run', async () => {
+    const form = fakeAdminForm('/api/admin/sales-rankings/backfill');
+    const document = fakeAdminDocument(form);
+    const fetchImpl = async (url) => {
+        if (url === '/api/admin/sales-rankings/backfill') {
+            return jsonResponse(true, { data: { restFoodMappedCount: 3 } });
+        }
+        return jsonResponse(true, { data: {} });
+    };
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    await form.submitHandler({ preventDefault: () => {} });
+
+    assert.equal(document.toast.textContent, '전체 휴게소명 매핑이 완료되었습니다.');
+    assert.match(document.toast.className, /is-success/);
+});
+
+test('ignores a duplicate submit while a request is already in flight', () => {
+    const form = fakeAdminForm('/api/admin/sales-rankings/backfill');
+    form.dataset.submitting = 'true';
+    const document = fakeAdminDocument(form);
+    let fetchCalls = 0;
+    const fetchImpl = async () => {
+        fetchCalls += 1;
+        return jsonResponse(true, { data: {} });
+    };
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    form.submitHandler({ preventDefault: () => {} });
+
+    assert.equal(fetchCalls, 0);
 });

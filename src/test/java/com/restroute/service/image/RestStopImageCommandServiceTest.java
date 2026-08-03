@@ -1,5 +1,6 @@
 package com.restroute.service.image;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -8,6 +9,10 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.repository.RestStopImageRepository;
 import com.restroute.repository.RestStopRepository;
+import com.restroute.service.image.dto.RestStopImageData;
+import com.restroute.service.image.exception.InvalidRestStopImageException;
+import com.restroute.service.image.exception.RestStopNotFoundException;
+import com.restroute.service.image.util.RestStopImageProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class RestStopImageCommandServiceTest {
@@ -80,5 +87,18 @@ class RestStopImageCommandServiceTest {
         assertThatThrownBy(() -> commandService.save("A00001", file)).isInstanceOf(InvalidRestStopImageException.class);
 
         verify(restStopImageRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("save/delete는 트랜잭션 경계 안에서 실행된다")
+    void save_and_delete_areTransactional() throws NoSuchMethodException {
+        assertThat(RestStopImageCommandService.class
+                        .getMethod("save", String.class, MultipartFile.class)
+                        .isAnnotationPresent(Transactional.class))
+                .isTrue();
+        assertThat(RestStopImageCommandService.class
+                        .getMethod("delete", String.class)
+                        .isAnnotationPresent(Transactional.class))
+                .isTrue();
     }
 }

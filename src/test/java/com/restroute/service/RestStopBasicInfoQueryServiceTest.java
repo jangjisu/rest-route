@@ -13,6 +13,7 @@ import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.domain.RestThemeEntity;
 import com.restroute.repository.RestStopRepository;
+import com.restroute.service.dto.RestStopRelatedInfo;
 import com.restroute.service.evcharger.EvChargerQueryService;
 import com.restroute.service.image.RestStopImageQueryService;
 import java.util.List;

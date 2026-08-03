@@ -1,30 +1,22 @@
 package com.restroute.service;
 
 import com.restroute.domain.EvChargerStationMappingEntity;
-import com.restroute.domain.HighwayServiceAreaInfoEntity;
-import com.restroute.domain.RestEventEntity;
-import com.restroute.domain.RestFoodEntity;
 import com.restroute.domain.RestOilEntity;
-import com.restroute.domain.RestOilPriceEntity;
-import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
-import com.restroute.domain.RestStopProductSalesRankEntity;
-import com.restroute.domain.RestStopStoreSalesRankEntity;
-import com.restroute.domain.RestThemeEntity;
 import com.restroute.repository.EvChargerRepository;
 import com.restroute.repository.EvChargerStationMappingRepository;
-import com.restroute.repository.HighwayServiceAreaInfoRepository;
-import com.restroute.repository.RestEventRepository;
-import com.restroute.repository.RestFoodRepository;
-import com.restroute.repository.RestOilPriceRepository;
 import com.restroute.repository.RestOilRepository;
 import com.restroute.repository.RestStopDetailRepository;
-import com.restroute.repository.RestStopProductSalesRankRepository;
-import com.restroute.repository.RestStopRepository;
-import com.restroute.repository.RestStopStoreSalesRankRepository;
-import com.restroute.repository.RestThemeRepository;
+import com.restroute.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestEventServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestFoodServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestOilPriceServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestOilServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestStopDetailServiceAreaCodeBackfiller;
+import com.restroute.service.backfill.RestStopProductSalesRankBackfiller;
+import com.restroute.service.backfill.RestStopStoreSalesRankBackfiller;
+import com.restroute.service.backfill.RestThemeServiceAreaCodeBackfiller;
 import com.restroute.service.evcharger.mapping.EvChargerStationMappingCalculator;
-import com.restroute.service.salesranking.SalesRankingRestStopNameNormalizer;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,37 +42,39 @@ public class RestStopServiceAreaCodeBackfillService {
     public static final String REST_THEME_MAPPED_COUNT = "restThemeMappedCount";
     public static final String REST_EVENT_MAPPED_COUNT = "restEventMappedCount";
 
-    private final RestStopRepository restStopRepository;
+    private final RestStopQueryService restStopQueryService;
     private final RestStopDetailRepository restStopDetailRepository;
-    private final HighwayServiceAreaInfoRepository highwayServiceAreaInfoRepository;
-    private final RestFoodRepository restFoodRepository;
     private final RestOilRepository restOilRepository;
-    private final RestOilPriceRepository restOilPriceRepository;
     private final EvChargerRepository evChargerRepository;
     private final EvChargerStationMappingRepository evChargerStationMappingRepository;
     private final EvChargerStationMappingCalculator evChargerStationMappingCalculator;
-    private final RestStopProductSalesRankRepository productSalesRankRepository;
-    private final RestStopStoreSalesRankRepository storeSalesRankRepository;
-    private final RestThemeRepository restThemeRepository;
-    private final RestEventRepository restEventRepository;
+    private final RestStopDetailServiceAreaCodeBackfiller restStopDetailBackfiller;
+    private final HighwayServiceAreaInfoServiceAreaCodeBackfiller highwayServiceAreaInfoBackfiller;
+    private final RestFoodServiceAreaCodeBackfiller restFoodBackfiller;
+    private final RestOilServiceAreaCodeBackfiller restOilBackfiller;
+    private final RestOilPriceServiceAreaCodeBackfiller restOilPriceBackfiller;
+    private final RestStopProductSalesRankBackfiller productSalesRankBackfiller;
+    private final RestStopStoreSalesRankBackfiller storeSalesRankBackfiller;
+    private final RestThemeServiceAreaCodeBackfiller restThemeBackfiller;
+    private final RestEventServiceAreaCodeBackfiller restEventBackfiller;
 
     @Transactional
     public Map<String, Integer> backfill() {
-        List<RestStopEntity> restStops = restStopRepository.findAll();
+        List<RestStopEntity> restStops = restStopQueryService.findAll();
         List<String> restStopServiceAreaCodes = findRestStopServiceAreaCodes(restStops);
         Map<String, String> serviceAreaCodeByStdRestCd = mapByStdRestCd(restStops);
         Map<String, String> serviceAreaCodeByOilKey = mapByOilKey(restStops);
 
-        int restStopDetailMappedCount = backfillRestStopDetails(restStopServiceAreaCodes);
-        int highwayServiceAreaInfoMappedCount = backfillHighwayServiceAreaInfos(restStopServiceAreaCodes);
-        int restFoodMappedCount = backfillRestFoods(serviceAreaCodeByStdRestCd);
-        int restOilMappedCount = backfillRestOils(serviceAreaCodeByOilKey);
-        int restOilPriceMappedCount = backfillRestOilPrices(mapByOilStandardRestCode());
+        int restStopDetailMappedCount = restStopDetailBackfiller.backfill(restStopServiceAreaCodes);
+        int highwayServiceAreaInfoMappedCount = highwayServiceAreaInfoBackfiller.backfill(restStopServiceAreaCodes);
+        int restFoodMappedCount = restFoodBackfiller.backfill(serviceAreaCodeByStdRestCd);
+        int restOilMappedCount = restOilBackfiller.backfill(serviceAreaCodeByOilKey);
+        int restOilPriceMappedCount = restOilPriceBackfiller.backfill(mapByOilStandardRestCode());
         int evChargerMappedCount = backfillEvChargerMappings(restStops);
-        int productSalesRankMappedCount = backfillProductSalesRanks(restStops);
-        int storeSalesRankMappedCount = backfillStoreSalesRanks(restStops);
-        int restThemeMappedCount = backfillRestThemes(serviceAreaCodeByStdRestCd);
-        int restEventMappedCount = backfillRestEvents(serviceAreaCodeByStdRestCd);
+        int productSalesRankMappedCount = productSalesRankBackfiller.backfill(restStops);
+        int storeSalesRankMappedCount = storeSalesRankBackfiller.backfill(restStops);
+        int restThemeMappedCount = restThemeBackfiller.backfill(serviceAreaCodeByStdRestCd);
+        int restEventMappedCount = restEventBackfiller.backfill(serviceAreaCodeByStdRestCd);
 
         Map<String, Integer> result = Map.of(
                 REST_STOP_DETAIL_MAPPED_COUNT,
@@ -165,150 +159,6 @@ public class RestStopServiceAreaCodeBackfillService {
                         RestOilEntity::getStandardRestCode,
                         RestOilEntity::getRestStopServiceAreaCode,
                         (first, second) -> first));
-    }
-
-    private int backfillRestStopDetails(List<String> restStopServiceAreaCodes) {
-        int mappedCount = 0;
-        for (RestStopDetailEntity detail : restStopDetailRepository.findAll()) {
-            String restStopServiceAreaCode =
-                    findMatchingServiceAreaCode(detail.getServiceAreaCode(), restStopServiceAreaCodes);
-            detail.updateRestStopServiceAreaCode(restStopServiceAreaCode);
-            if (restStopServiceAreaCode != null) {
-                mappedCount++;
-            }
-        }
-        return mappedCount;
-    }
-
-    private int backfillHighwayServiceAreaInfos(List<String> restStopServiceAreaCodes) {
-        int mappedCount = 0;
-        for (HighwayServiceAreaInfoEntity info : highwayServiceAreaInfoRepository.findAll()) {
-            String restStopServiceAreaCode =
-                    findMatchingServiceAreaCode(info.getBusinessFacilityCode(), restStopServiceAreaCodes);
-            info.updateRestStopServiceAreaCode(restStopServiceAreaCode);
-            if (restStopServiceAreaCode != null) {
-                mappedCount++;
-            }
-        }
-        return mappedCount;
-    }
-
-    private String findMatchingServiceAreaCode(String sourceCode, List<String> restStopServiceAreaCodes) {
-        return restStopServiceAreaCodes.contains(sourceCode) ? sourceCode : null;
-    }
-
-    private int backfillRestFoods(Map<String, String> serviceAreaCodeByStdRestCd) {
-        int mappedCount = 0;
-        for (RestFoodEntity food : restFoodRepository.findAll()) {
-            String restStopServiceAreaCode = serviceAreaCodeByStdRestCd.get(food.getStdRestCd());
-            food.updateRestStopServiceAreaCode(restStopServiceAreaCode);
-            if (restStopServiceAreaCode != null) {
-                mappedCount++;
-            }
-        }
-        return mappedCount;
-    }
-
-    private int backfillRestThemes(Map<String, String> serviceAreaCodeByStdRestCd) {
-        int mappedCount = 0;
-        for (RestThemeEntity theme : restThemeRepository.findAll()) {
-            String restStopServiceAreaCode = serviceAreaCodeByStdRestCd.get(theme.getStdRestCd());
-            theme.updateRestStopServiceAreaCode(restStopServiceAreaCode);
-            if (restStopServiceAreaCode != null) {
-                mappedCount++;
-            }
-        }
-        return mappedCount;
-    }
-
-    private int backfillRestEvents(Map<String, String> serviceAreaCodeByStdRestCd) {
-        int mappedCount = 0;
-        for (RestEventEntity event : restEventRepository.findAll()) {
-            String restStopServiceAreaCode = serviceAreaCodeByStdRestCd.get(event.getStdRestCd());
-            event.updateRestStopServiceAreaCode(restStopServiceAreaCode);
-            if (restStopServiceAreaCode != null) {
-                mappedCount++;
-            }
-        }
-        return mappedCount;
-    }
-
-    private int backfillRestOils(Map<String, String> serviceAreaCodeByOilKey) {
-        int mappedCount = 0;
-        for (RestOilEntity oil : restOilRepository.findAll()) {
-            if (oil.isAdminOverridden()) {
-                continue;
-            }
-            String key = oilRestStopKey(oil.getRouteCode(), oil.getNormalizedStationName());
-            String restStopServiceAreaCode = serviceAreaCodeByOilKey.get(key);
-            oil.updateRestStopServiceAreaCode(restStopServiceAreaCode);
-            if (restStopServiceAreaCode != null) {
-                mappedCount++;
-            }
-        }
-        return mappedCount;
-    }
-
-    private int backfillRestOilPrices(Map<String, String> serviceAreaCodeByOilStandardRestCode) {
-        int mappedCount = 0;
-        for (RestOilPriceEntity oilPrice : restOilPriceRepository.findAll()) {
-            if (oilPrice.isAdminOverridden()) {
-                continue;
-            }
-            String restStopServiceAreaCode = serviceAreaCodeByOilStandardRestCode.get(oilPrice.getServiceAreaCode2());
-            oilPrice.updateRestStopServiceAreaCode(restStopServiceAreaCode);
-            if (restStopServiceAreaCode != null) {
-                mappedCount++;
-            }
-        }
-        return mappedCount;
-    }
-
-    private int backfillProductSalesRanks(List<RestStopEntity> restStops) {
-        int mappedCount = 0;
-        for (RestStopProductSalesRankEntity rank : productSalesRankRepository.findAll()) {
-            if (!rank.isUnmapped()) {
-                continue;
-            }
-            String serviceAreaCode = findUniqueServiceAreaCode(restStops, rank.getSourceRestStopName());
-            if (serviceAreaCode == null) {
-                continue;
-            }
-            rank.updateRestStopServiceAreaCode(serviceAreaCode);
-            mappedCount++;
-        }
-        return mappedCount;
-    }
-
-    private int backfillStoreSalesRanks(List<RestStopEntity> restStops) {
-        int mappedCount = 0;
-        for (RestStopStoreSalesRankEntity rank : storeSalesRankRepository.findAll()) {
-            if (!rank.isUnmapped()) {
-                continue;
-            }
-            String serviceAreaCode = findUniqueServiceAreaCode(restStops, rank.getSourceRestStopName());
-            if (serviceAreaCode == null) {
-                continue;
-            }
-            rank.updateRestStopServiceAreaCode(serviceAreaCode);
-            mappedCount++;
-        }
-        return mappedCount;
-    }
-
-    private String findUniqueServiceAreaCode(List<RestStopEntity> restStops, String name) {
-        List<String> serviceAreaCodes = restStops.stream()
-                .filter(restStop -> StringUtils.hasText(restStop.getUnitName()))
-                .filter(restStop -> StringUtils.hasText(restStop.getServiceAreaCode()))
-                .filter(restStop -> SalesRankingRestStopNameNormalizer.normalize(restStop.getUnitName())
-                        .equals(SalesRankingRestStopNameNormalizer.normalize(name)))
-                .map(RestStopEntity::getServiceAreaCode)
-                .distinct()
-                .toList();
-        if (serviceAreaCodes.size() != 1) {
-            return null;
-        }
-        return serviceAreaCodes.get(0);
     }
 
     private String oilRestStopKey(String routeCode, String normalizedStationName) {

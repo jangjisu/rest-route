@@ -60,13 +60,11 @@ public class RestThemeSyncService {
     private RestThemeEntity upsertOne(RestThemeItem item, Map<String, RestThemeEntity> existingByKey) {
         String key = themeKey(item.getStdRestCd(), item.getItemNm());
         RestThemeEntity existing = existingByKey.get(key);
-        if (existing == null) {
-            RestThemeEntity created = RestThemeEntity.from(item);
-            existingByKey.put(key, created);
-            return created;
+        if (existing != null) {
+            existing.updateFrom(item);
+            return existing;
         }
-        existing.updateFrom(item);
-        return existing;
+        return existingByKey.computeIfAbsent(key, k -> RestThemeEntity.from(item));
     }
 
     private String themeKey(String stdRestCd, String itemNm) {

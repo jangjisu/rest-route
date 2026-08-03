@@ -10,6 +10,9 @@ import com.restroute.domain.RestStopProductSalesRankEntity;
 import com.restroute.domain.RestStopStoreSalesRankEntity;
 import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
+import com.restroute.service.salesranking.dto.SalesRankingProductRow;
+import com.restroute.service.salesranking.dto.SalesRankingStoreRow;
+import com.restroute.service.salesranking.util.SalesRankingCsvParser;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,6 +85,34 @@ class SalesRankingUploadServiceTest {
 
         assertThat(result).isEqualTo(1);
         assertThat(captureSavedStores()).containsExactly(existingStore);
+    }
+
+    @Test
+    void uploadsProducts_createsNewEntityWhenKeyNotYetExisting() {
+        SalesRankingProductRow productRow = productRow("2026-06", "신상품");
+        when(csvParser.parseProducts(productFile)).thenReturn(List.of(productRow));
+        when(productRepository.findAll()).thenReturn(List.of());
+        runTransactionCallback();
+
+        int result = uploadService.uploadProducts(productFile);
+
+        assertThat(result).isEqualTo(1);
+        assertThat(captureSavedProducts())
+                .singleElement()
+                .satisfies(saved -> assertThat(saved.getProductName()).isEqualTo("신상품"));
+    }
+
+    @Test
+    void uploadsStores_createsNewEntityWhenKeyNotYetExisting() {
+        SalesRankingStoreRow storeRow = storeRow("2026-06");
+        when(csvParser.parseStores(storeFile)).thenReturn(List.of(storeRow));
+        when(storeRepository.findAll()).thenReturn(List.of());
+        runTransactionCallback();
+
+        int result = uploadService.uploadStores(storeFile);
+
+        assertThat(result).isEqualTo(1);
+        assertThat(captureSavedStores()).hasSize(1);
     }
 
     private SalesRankingProductRow productRow(String month, String productName) {

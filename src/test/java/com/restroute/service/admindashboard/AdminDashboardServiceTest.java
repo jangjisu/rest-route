@@ -10,6 +10,8 @@ import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
 import com.restroute.service.admin.AdminActivityLogService;
+import com.restroute.service.admindashboard.dto.AdminActivityLogItemResponse;
+import com.restroute.service.admindashboard.dto.AdminDashboardSummary;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -80,12 +82,12 @@ class AdminDashboardServiceTest {
     }
 
     private RestStopProductSalesRankEntity product(String month) {
-        return RestStopProductSalesRankEntity.from(new com.restroute.service.salesranking.SalesRankingProductRow(
+        return RestStopProductSalesRankEntity.from(new com.restroute.service.salesranking.dto.SalesRankingProductRow(
                 month, "1", "S1", "휴게소", "M1", "매장", "P1", "상품"));
     }
 
     private RestStopStoreSalesRankEntity store(String month) {
-        return RestStopStoreSalesRankEntity.from(
-                new com.restroute.service.salesranking.SalesRankingStoreRow(month, "1", "1", "S1", "휴게소", "M1", "매장"));
+        return RestStopStoreSalesRankEntity.from(new com.restroute.service.salesranking.dto.SalesRankingStoreRow(
+                month, "1", "1", "S1", "휴게소", "M1", "매장"));
     }
 }

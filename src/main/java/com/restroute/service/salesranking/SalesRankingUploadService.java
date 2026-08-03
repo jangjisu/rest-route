@@ -4,6 +4,9 @@ import com.restroute.domain.RestStopProductSalesRankEntity;
 import com.restroute.domain.RestStopStoreSalesRankEntity;
 import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
+import com.restroute.service.salesranking.dto.SalesRankingProductRow;
+import com.restroute.service.salesranking.dto.SalesRankingStoreRow;
+import com.restroute.service.salesranking.util.SalesRankingCsvParser;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -45,13 +48,11 @@ public class SalesRankingUploadService {
             SalesRankingProductRow row, Map<String, RestStopProductSalesRankEntity> existingByKey) {
         String key = productKey(row);
         RestStopProductSalesRankEntity entity = existingByKey.get(key);
-        if (entity == null) {
-            entity = RestStopProductSalesRankEntity.from(row);
-            existingByKey.put(key, entity);
+        if (entity != null) {
+            entity.updateFrom(row);
             return entity;
         }
-        entity.updateFrom(row);
-        return entity;
+        return existingByKey.computeIfAbsent(key, k -> RestStopProductSalesRankEntity.from(row));
     }
 
     private void saveStores(List<SalesRankingStoreRow> rows) {
@@ -65,13 +66,11 @@ public class SalesRankingUploadService {
             SalesRankingStoreRow row, Map<String, RestStopStoreSalesRankEntity> existingByKey) {
         String key = storeKey(row);
         RestStopStoreSalesRankEntity entity = existingByKey.get(key);
-        if (entity == null) {
-            entity = RestStopStoreSalesRankEntity.from(row);
-            existingByKey.put(key, entity);
+        if (entity != null) {
+            entity.updateFrom(row);
             return entity;
         }
-        entity.updateFrom(row);
-        return entity;
+        return existingByKey.computeIfAbsent(key, k -> RestStopStoreSalesRankEntity.from(row));
     }
 
     private String productKey(RestStopProductSalesRankEntity entity) {

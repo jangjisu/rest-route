@@ -58,6 +58,36 @@ class RestFoodRepositoryTest {
         assertThat(mismatch).isEmpty();
     }
 
+    @Test
+    @DisplayName("override=false만 지정하면 관리자가 override하지 않은 메뉴만 조회한다")
+    void findByRestStopServiceAreaCodesAndAdminOverridden_excludesOverriddenRowsWhenFalse() throws Exception {
+        RestFoodEntity notOverridden = foodEntity("000001", "농심어묵우동");
+        notOverridden.updateRestStopServiceAreaCode("A00001");
+        RestFoodEntity overridden = foodEntity("000002", "한우국밥");
+        overridden.updateRestStopServiceAreaCode("A00002");
+        overridden.applyAdminEdit("한우국밥(수정)", "9000", "설명");
+        restFoodRepository.saveAll(List.of(notOverridden, overridden));
+
+        List<RestFoodEntity> result = restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(null, false);
+
+        assertThat(result).containsExactly(notOverridden);
+    }
+
+    @Test
+    @DisplayName("override 조건이 null이면 override 여부와 상관없이 전부 조회한다")
+    void findByRestStopServiceAreaCodesAndAdminOverridden_returnsAllWhenOverriddenIsNull() throws Exception {
+        RestFoodEntity notOverridden = foodEntity("000001", "농심어묵우동");
+        notOverridden.updateRestStopServiceAreaCode("A00001");
+        RestFoodEntity overridden = foodEntity("000002", "한우국밥");
+        overridden.updateRestStopServiceAreaCode("A00002");
+        overridden.applyAdminEdit("한우국밥(수정)", "9000", "설명");
+        restFoodRepository.saveAll(List.of(notOverridden, overridden));
+
+        List<RestFoodEntity> result = restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(null, null);
+
+        assertThat(result).containsExactlyInAnyOrder(notOverridden, overridden);
+    }
+
     private RestFoodEntity foodEntity(String stdRestCd, String foodNm) throws Exception {
         String json = """
                 {"stdRestCd":"%s","foodNm":"%s","foodCost":"7000","recommendyn":"N"}

@@ -5,6 +5,9 @@ import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
 import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.restroute.controller.response.AdminOilStationSearchResponse;
@@ -15,7 +18,8 @@ import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestOilPriceRepository;
 import com.restroute.repository.RestOilRepository;
 import com.restroute.repository.RestStopRepository;
-import com.restroute.service.image.RestStopNotFoundException;
+import com.restroute.service.admin.exception.RestOilNotFoundException;
+import com.restroute.service.image.exception.RestStopNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,21 +83,36 @@ class AdminRestOilLinkServiceTest {
     }
 
     @Test
-    @DisplayName("이름으로 주유소를 검색하면 이미 연결된 휴게소명을 함께 반환한다")
+    @DisplayName("이름으로 주유소를 검색하면 이미 연결된 휴게소명을 배치 조회로 함께 반환한다(N+1 방지)")
     void search_returnsMatchesWithLinkedRestStopName() {
         RestOilPriceEntity linkedOilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
         linkedOilPrice.applyAdminLink("A00099");
         RestOilPriceEntity unlinkedOilPrice = oilPriceWithId(2L, "000006", "SK에너지 마장주유소(하행)");
         when(restOilPriceRepository.findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc("마장"))
                 .thenReturn(List.of(linkedOilPrice, unlinkedOilPrice));
-        when(restStopRepository.findByServiceAreaCode("A00099"))
-                .thenReturn(Optional.of(RestStopEntity.from(restStopItem("002", "마장휴게소", "A00099"))));
+        when(restStopRepository.findAllByServiceAreaCodeIn(List.of("A00099")))
+                .thenReturn(List.of(RestStopEntity.from(restStopItem("002", "마장휴게소", "A00099"))));
 
         List<AdminOilStationSearchResponse> result = service.search("마장", null);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).linkedRestStopName()).isEqualTo("마장휴게소");
         assertThat(result.get(1).linkedRestStopName()).isNull();
+        verify(restStopRepository, never()).findByServiceAreaCode(anyString());
+    }
+
+    @Test
+    @DisplayName("검색 결과에 연결된 휴게소가 하나도 없으면 배치 조회 자체를 하지 않는다")
+    void search_skipsBatchLookupWhenNoResultsAreLinked() {
+        RestOilPriceEntity unlinkedOilPrice = oilPriceWithId(1L, "000006", "SK에너지 마장주유소(하행)");
+        when(restOilPriceRepository.findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc("마장"))
+                .thenReturn(List.of(unlinkedOilPrice));
+
+        List<AdminOilStationSearchResponse> result = service.search("마장", null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).linkedRestStopName()).isNull();
+        verify(restStopRepository, never()).findAllByServiceAreaCodeIn(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

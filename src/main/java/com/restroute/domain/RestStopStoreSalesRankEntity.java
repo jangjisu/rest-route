@@ -1,6 +1,6 @@
 package com.restroute.domain;
 
-import com.restroute.service.salesranking.SalesRankingStoreRow;
+import com.restroute.service.salesranking.dto.SalesRankingStoreRow;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -57,6 +57,10 @@ public class RestStopStoreSalesRankEntity {
 
     public boolean isUnmapped() {
         return !StringUtils.hasText(restStopServiceAreaCode);
+    }
+
+    public boolean isMapped() {
+        return !isUnmapped();
     }
 
     public void updateRestStopServiceAreaCode(String serviceAreaCode) {

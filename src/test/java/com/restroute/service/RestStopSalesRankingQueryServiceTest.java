@@ -170,7 +170,7 @@ class RestStopSalesRankingQueryServiceTest {
     }
 
     private RestStopProductSalesRankEntity product(String month, String rank, String name) {
-        var row = new com.restroute.service.salesranking.SalesRankingProductRow(
+        var row = new com.restroute.service.salesranking.dto.SalesRankingProductRow(
                 month, rank, "S000001", "휴게소", "M001", "매장", "P001", name);
         RestStopProductSalesRankEntity product = RestStopProductSalesRankEntity.from(row);
         product.updateRestStopServiceAreaCode("A00001");
@@ -178,7 +178,7 @@ class RestStopSalesRankingQueryServiceTest {
     }
 
     private RestStopStoreSalesRankEntity store(String month, String rank, String name) {
-        var row = new com.restroute.service.salesranking.SalesRankingStoreRow(
+        var row = new com.restroute.service.salesranking.dto.SalesRankingStoreRow(
                 month, rank, rank, "S000001", "휴게소", "M001", name);
         RestStopStoreSalesRankEntity store = RestStopStoreSalesRankEntity.from(row);
         store.updateRestStopServiceAreaCode("A00001");

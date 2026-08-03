@@ -5,6 +5,7 @@ import com.restroute.domain.RestEventEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestEventRepository;
 import com.restroute.repository.RestStopRepository;
+import com.restroute.service.dto.RestStopRelatedInfo;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

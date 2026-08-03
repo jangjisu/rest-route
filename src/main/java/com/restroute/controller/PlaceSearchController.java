@@ -18,6 +18,9 @@ public class PlaceSearchController {
 
     private final PlaceSearchService placeSearchService;
 
+    /**
+     * @param query 카카오 로컬 검색 키워드(장소명/주소). 예: "부산역"
+     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<PlaceCandidateResponse>>> search(@RequestParam String query) {
         return ResponseEntity.ok(ApiResponse.success(placeSearchService.search(query)));

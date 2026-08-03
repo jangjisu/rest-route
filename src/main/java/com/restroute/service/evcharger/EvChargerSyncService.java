@@ -6,6 +6,8 @@ import com.restroute.client.response.EvChargerItem;
 import com.restroute.client.response.EvChargerResponse;
 import com.restroute.domain.EvChargerEntity;
 import com.restroute.repository.EvChargerRepository;
+import com.restroute.service.evcharger.dto.EvChargerFetchSummary;
+import com.restroute.service.evcharger.dto.EvChargerSyncResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

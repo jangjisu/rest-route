@@ -10,6 +10,7 @@ import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.RestStopRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -89,5 +90,42 @@ class RestStopQueryServiceTest {
 
         assertThat(results).isEmpty();
         verifyNoInteractions(restStopRepository);
+    }
+
+    @Test
+    @DisplayName("코드 목록이 주어지면 그 코드와 override 조건을 그대로 레포지토리에 위임한다")
+    void findByServiceAreaCodesAndAdminOverridden_delegatesCodesAsIs() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
+        when(restStopRepository.findByServiceAreaCodesAndAdminOverridden(Set.of("A00001"), null))
+                .thenReturn(List.of(restStop));
+
+        List<RestStopEntity> results =
+                restStopQueryService.findByServiceAreaCodesAndAdminOverridden(Set.of("A00001"), null);
+
+        assertThat(results).containsExactly(restStop);
+    }
+
+    @Test
+    @DisplayName("코드 목록이 null이면 코드 필터 없이 레포지토리에 null을 전달한다")
+    void findByServiceAreaCodesAndAdminOverridden_passesNullCodesThrough() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
+        when(restStopRepository.findByServiceAreaCodesAndAdminOverridden(null, false))
+                .thenReturn(List.of(restStop));
+
+        List<RestStopEntity> results = restStopQueryService.findByServiceAreaCodesAndAdminOverridden(null, false);
+
+        assertThat(results).containsExactly(restStop);
+    }
+
+    @Test
+    @DisplayName("코드 목록이 빈 컬렉션이면 null로 정규화해 레포지토리에 전달한다")
+    void findByServiceAreaCodesAndAdminOverridden_normalizesEmptyCodesToNull() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
+        when(restStopRepository.findByServiceAreaCodesAndAdminOverridden(null, null))
+                .thenReturn(List.of(restStop));
+
+        List<RestStopEntity> results = restStopQueryService.findByServiceAreaCodesAndAdminOverridden(Set.of(), null);
+
+        assertThat(results).containsExactly(restStop);
     }
 }

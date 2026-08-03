@@ -12,9 +12,7 @@ import com.restroute.domain.RestFoodEntity;
 import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.domain.RestStopDetailEntity;
-import com.restroute.domain.RestStopEntity;
-import com.restroute.service.RestStopRelatedInfo;
-import com.restroute.service.RestStopRelatedInfoQueryService;
+import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -25,9 +23,7 @@ class RouteRestStopComparisonSummaryServiceTest {
     @Test
     @DisplayName("휴게소 관련 정보로 가격 차이, 주차, 음식, 시설 비교 요약을 만든다")
     void create_returnsComparisonSummary() {
-        RestStopEntity restStop = mock(RestStopEntity.class);
-        RestStopRelatedInfoQueryService queryService = mock(RestStopRelatedInfoQueryService.class);
-        RouteRestStopComparisonSummaryService service = new RouteRestStopComparisonSummaryService(queryService);
+        RouteRestStopComparisonSummaryService service = new RouteRestStopComparisonSummaryService();
 
         RestOilPriceEntity oilPrice = mock(RestOilPriceEntity.class);
         when(oilPrice.getGasolinePrice()).thenReturn("1,850원");
@@ -44,23 +40,22 @@ class RouteRestStopComparisonSummaryServiceTest {
         RestOilEntity oilConvenience = mock(RestOilEntity.class);
         when(oilConvenience.getConvenienceName()).thenReturn("샤워실");
         RestFoodEntity food = mock(RestFoodEntity.class);
-        when(queryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.of(detail),
-                        List.of(parking),
-                        List.of(oilConvenience),
-                        Optional.empty(),
-                        Optional.of(oilPrice),
-                        List.of(food),
-                        List.of(),
-                        List.of()));
+        RestStopRelatedInfo relatedInfo = RestStopRelatedInfo.of(
+                Optional.of(detail),
+                List.of(parking),
+                List.of(oilConvenience),
+                Optional.empty(),
+                Optional.of(oilPrice),
+                List.of(food),
+                List.of(),
+                List.of());
         Optional<NationalOilPriceSummary> nationalOilPriceSummary = Optional.of(NationalOilPriceSummary.of(
                 "2026.07.07",
                 AverageOilPrice.of("B027", "휘발유", "1,893원", "-4.19"),
                 AverageOilPrice.of("D047", "자동차용경유", "1,880원", "-4.51"),
                 AverageOilPrice.of("K015", "자동차용부탄", "1,135원", "+0.01")));
 
-        ComparisonSummary summary = service.create(restStop, nationalOilPriceSummary);
+        ComparisonSummary summary = service.create(relatedInfo, nationalOilPriceSummary);
 
         assertThat(summary.gasolinePrice()).isEqualTo("1,850원");
         assertThat(summary.gasolinePriceDiffFromAverage()).isEqualTo(-43);

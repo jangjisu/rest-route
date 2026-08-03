@@ -60,13 +60,11 @@ public class RestEventSyncService {
     private RestEventEntity upsertOne(RestEventItem item, Map<String, RestEventEntity> existingByKey) {
         String key = eventKey(item.getStdRestCd(), item.getEventSeq());
         RestEventEntity existing = existingByKey.get(key);
-        if (existing == null) {
-            RestEventEntity created = RestEventEntity.from(item);
-            existingByKey.put(key, created);
-            return created;
+        if (existing != null) {
+            existing.updateFrom(item);
+            return existing;
         }
-        existing.updateFrom(item);
-        return existing;
+        return existingByKey.computeIfAbsent(key, k -> RestEventEntity.from(item));
     }
 
     private String eventKey(String stdRestCd, String eventSeq) {

@@ -3,7 +3,7 @@ package com.restroute.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.restroute.domain.RestStopStoreSalesRankEntity;
-import com.restroute.service.salesranking.SalesRankingStoreRow;
+import com.restroute.service.salesranking.dto.SalesRankingStoreRow;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

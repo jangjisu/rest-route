@@ -2,8 +2,8 @@ package com.restroute.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.restroute.service.salesranking.SalesRankingProductRow;
-import com.restroute.service.salesranking.SalesRankingStoreRow;
+import com.restroute.service.salesranking.dto.SalesRankingProductRow;
+import com.restroute.service.salesranking.dto.SalesRankingStoreRow;
 import org.junit.jupiter.api.Test;
 
 class RestStopSalesRankEntityTest {
@@ -16,6 +16,7 @@ class RestStopSalesRankEntityTest {
         entity.updateFrom(new SalesRankingProductRow("2026-06", "2", "S1", "휴게소", "M1", "매장", "P1", "변경상품"));
 
         assertThat(entity.isUnmapped()).isFalse();
+        assertThat(entity.isMapped()).isTrue();
         assertThat(entity.getProductName()).isEqualTo("변경상품");
         assertThat(entity.getRestStopServiceAreaCode()).isEqualTo("A00001");
     }
@@ -26,6 +27,7 @@ class RestStopSalesRankEntityTest {
                 new SalesRankingStoreRow("2026-06", "1", "1", "S1", "휴게소", "M1", "매장"));
 
         assertThat(entity.isUnmapped()).isTrue();
+        assertThat(entity.isMapped()).isFalse();
         assertThat(entity.getRestStopServiceAreaCode()).isEmpty();
     }
 

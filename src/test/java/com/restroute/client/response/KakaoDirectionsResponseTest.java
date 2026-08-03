@@ -4,11 +4,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.client.response.KakaoDirectionsResponse.Road;
+import com.restroute.client.response.KakaoDirectionsResponse.Route;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class KakaoDirectionsResponseTest {
+
+    @Test
+    @DisplayName("result_code가 0인 첫 경로가 있으면 실패로 보지 않는다")
+    void failedToRoute_falseWhenFirstRouteSucceeded() {
+        KakaoDirectionsResponse response = new KakaoDirectionsResponse(List.of(new Route(0, null, List.of())));
+
+        assertThat(response.failedToRoute()).isFalse();
+    }
+
+    @Test
+    @DisplayName("첫 경로의 result_code가 0이 아니면 실패로 본다")
+    void failedToRoute_trueWhenFirstRouteResultCodeNotZero() {
+        KakaoDirectionsResponse response = new KakaoDirectionsResponse(List.of(new Route(104, null, List.of())));
+
+        assertThat(response.failedToRoute()).isTrue();
+    }
+
+    @Test
+    @DisplayName("경로가 비어있거나 null이면 실패로 본다")
+    void failedToRoute_trueWhenRoutesEmptyOrNull() {
+        assertThat(new KakaoDirectionsResponse(List.of()).failedToRoute()).isTrue();
+        assertThat(new KakaoDirectionsResponse(null).failedToRoute()).isTrue();
+    }
 
     @Test
     @DisplayName("road_details 응답의 도로 구간 필드를 매핑한다")

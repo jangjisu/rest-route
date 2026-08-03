@@ -19,6 +19,9 @@ case "${SCOPE:-}" in
           /^rules\/backend\// { next }
           /^docs\// { next }
           /^harness\// { next }
+          /^build\.gradle$/ { next }
+          /^settings\.gradle$/ { next }
+          /^config\// { next }
           /\.md$/ { next }
           NF { print }
         '

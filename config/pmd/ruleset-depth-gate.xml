@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<ruleset name="rest-route-depth-gate"
+        xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        rules/backend/module-design.md가 다루는 "모듈이 얕아지는지" 판단과 직접 관련된
+        규칙만 모은, 커밋을 실제로 막는 게이트 전용 ruleset. 나머지 PMD 규칙(bestpractices/
+        errorprone)은 ruleset.xml이 담당하며 SonarCloud를 통한 advisory로만 취급한다 —
+        이 파일에 섞지 않는다.
+    </description>
+    <!--
+    domain(JPA @Entity)과 client/response(외부 API 응답 Jackson DTO)는 DB 컬럼/외부 응답
+    구조를 1:1로 반영하는 게 정상적인 형태라 필드 수가 자연히 많다 — module-design.md가
+    말하는 "얕은 모듈" 문제와 무관해 TooManyFields 대상에서 제외한다.
+    -->
+    <exclude-pattern>.*/domain/.*</exclude-pattern>
+    <exclude-pattern>.*/client/response/.*</exclude-pattern>
+    <!--
+    ARCHITECTURE.md에 기록된 기존 결정: AOP/인터셉터 자동 계측 대신 관리자 쓰기 지점마다
+    액션별 log 메서드를 명시적으로 호출하는 구조를 의도적으로 선택했다(문구 가독성 우선).
+    공개 메서드가 액션 수만큼 늘어나는 게 설계의 일부라 depth 게이트 대상에서 제외한다.
+    -->
+    <exclude-pattern>.*/service/admin/AdminActivityLogService\.java</exclude-pattern>
+
+    <!--
+    PMD 기본 TooManyMethods는 public/private 구분 없이 다 센다. module-design.md의
+    depth 기준은 "공개 인터페이스 크기"이므로(내부 private 헬퍼가 많아도 depth 문제가
+    아니다), public 메서드만 세도록 XPath를 직접 정의했다.
+    -->
+    <rule name="TooManyPublicMethods"
+            language="java"
+            message="This class has too many public methods, consider refactoring it."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <priority>3</priority>
+        <properties>
+            <property name="maxmethods" type="Integer" description="공개 메서드 개수 임계치" value="10"/>
+            <property name="xpath">
+                <value>
+<![CDATA[
+ //ClassDeclaration/ClassBody
+     [
+      count(MethodDeclaration[
+         @Visibility = 'public'
+         and
+         not (
+                (starts-with(@Name,'get') or starts-with(@Name,'set') or starts-with(@Name,'is'))
+                and
+                count(Block/*) <= 1
+            )
+      ]) > $maxmethods
+   ]
+]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/TooManyFields"/>
+    <rule ref="category/java/design.xml/CyclomaticComplexity"/>
+</ruleset>

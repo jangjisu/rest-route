@@ -65,14 +65,12 @@ public class RestOilSyncService {
         String key = oilKey(item.getStandardRestCode(), item.getConvenienceCode());
         RestOilEntity existing = existingByKey.get(key);
 
-        if (existing == null) {
-            RestOilEntity created = RestOilEntity.from(item);
-            existingByKey.put(key, created);
-            return created;
+        if (existing != null) {
+            existing.updateFrom(item);
+            return existing;
         }
 
-        existing.updateFrom(item);
-        return existing;
+        return existingByKey.computeIfAbsent(key, k -> RestOilEntity.from(item));
     }
 
     private String oilKey(String standardRestCode, String convenienceCode) {
