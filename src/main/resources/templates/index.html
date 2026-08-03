@@ -38,6 +38,10 @@
                 <button id="routeSearchButton" class="btn btn-primary route-search-button" type="button">
                     <i class="bi bi-signpost-split me-1"></i>경로 휴게소 찾기
                 </button>
+                <button id="restStopCompareOpen" class="btn btn-outline-primary rest-stop-compare-open"
+                        type="button" aria-haspopup="dialog" aria-controls="restStopCompareModal">
+                    <i class="bi bi-arrow-left-right me-1"></i>휴게소 비교
+                </button>
                 <button id="routeResultOpen" class="btn btn-outline-secondary route-result-open d-none"
                         type="button" aria-haspopup="dialog" aria-controls="routeResultModal">
                     <i class="bi bi-list-ul me-1"></i>경로 결과
@@ -310,6 +314,32 @@
                         aria-label="휴게소 검색 결과 닫기"></button>
             </div>
             <ol id="restStopSearchList" class="route-result-list"></ol>
+        </dialog>
+        <dialog id="restStopCompareModal" class="route-result-modal rest-stop-compare-modal"
+                aria-labelledby="restStopCompareModalTitle">
+            <div class="route-result-modal-header">
+                <h3 id="restStopCompareModalTitle" class="route-result-modal-title">휴게소 비교</h3>
+                <button id="restStopCompareModalClose" class="btn-close" type="button"
+                        aria-label="휴게소 비교 닫기"></button>
+            </div>
+            <div id="restStopComparePicker" class="rest-stop-compare-picker">
+                <div class="rest-stop-compare-picker-side">
+                    <label class="rest-stop-compare-picker-label" for="restStopCompareInputA">휴게소 A</label>
+                    <input id="restStopCompareInputA" class="form-control" type="text"
+                           placeholder="이름으로 검색" aria-label="비교할 휴게소 A 검색">
+                    <p id="restStopCompareSelectedA" class="rest-stop-compare-picker-selected" hidden></p>
+                    <ul id="restStopCompareCandidatesA" class="rest-stop-compare-picker-candidates"></ul>
+                </div>
+                <div class="rest-stop-compare-picker-side">
+                    <label class="rest-stop-compare-picker-label" for="restStopCompareInputB">휴게소 B</label>
+                    <input id="restStopCompareInputB" class="form-control" type="text"
+                           placeholder="이름으로 검색" aria-label="비교할 휴게소 B 검색">
+                    <p id="restStopCompareSelectedB" class="rest-stop-compare-picker-selected" hidden></p>
+                    <ul id="restStopCompareCandidatesB" class="rest-stop-compare-picker-candidates"></ul>
+                </div>
+            </div>
+            <p id="restStopCompareStatus" class="rest-stop-compare-status" aria-live="polite" hidden></p>
+            <div id="restStopCompareResult" class="rest-stop-compare-result" hidden></div>
         </dialog>
         <div id="restStopMapError" class="alert alert-warning mt-3 mb-0 d-none" role="alert"></div>
     </section>

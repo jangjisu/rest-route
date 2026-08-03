@@ -6,9 +6,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.restroute.common.GlobalExceptionHandler;
+import com.restroute.controller.response.RestStopCompareResponse;
+import com.restroute.controller.response.RestStopCompareResponse.RestStopCompareResult;
+import com.restroute.controller.response.RestStopCompareResponse.RestStopCompareSide;
 import com.restroute.controller.response.RestStopDetailViewResponse;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.service.RestStopQueryService;
+import com.restroute.service.compare.InvalidRestStopCompareException;
+import com.restroute.service.compare.RestStopCompareService;
+import com.restroute.service.image.RestStopNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,11 +33,15 @@ class RestStopControllerTest {
     @Mock
     private RestStopQueryService restStopQueryService;
 
+    @Mock
+    private RestStopCompareService restStopCompareService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new RestStopController(restStopQueryService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new RestStopController(restStopQueryService, restStopCompareService))
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
 
@@ -113,5 +124,60 @@ class RestStopControllerTest {
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /api/rest-stops/compare는 두 휴게소의 비교 결과를 ApiResponse로 반환한다")
+    void compareRestStops_returnsComparisonResult() throws Exception {
+        RestStopCompareSide sideA = RestStopCompareSide.of(
+                "A00001",
+                "888안성(서울)휴게소",
+                "경부선",
+                "/api/rest-stops/A00001/images/list",
+                "1798",
+                "1689",
+                "1186",
+                312,
+                List.of("수유실", "샤워실"));
+        RestStopCompareSide sideB =
+                RestStopCompareSide.of("A00002", "죽전(부산)복합휴게소", "경부선", null, "1872", "1720", "1140", 201, List.of());
+        RestStopCompareResult result = RestStopCompareResult.of("A", "A", "B", "A", "A", "A");
+        when(restStopCompareService.compare("A00001", "A00002"))
+                .thenReturn(RestStopCompareResponse.of(sideA, sideB, result));
+
+        mockMvc.perform(get("/api/rest-stops/compare")
+                        .param("serviceAreaCodeA", "A00001")
+                        .param("serviceAreaCodeB", "A00002"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.sideA.unitName").value("888안성(서울)휴게소"))
+                .andExpect(jsonPath("$.data.sideB.unitName").value("죽전(부산)복합휴게소"))
+                .andExpect(jsonPath("$.data.result.recommendedSide").value("A"));
+    }
+
+    @Test
+    @DisplayName("GET /api/rest-stops/compare는 대상 휴게소가 없으면 NOT_FOUND를 반환한다")
+    void compareRestStops_returnsNotFoundWhenRestStopMissing() throws Exception {
+        when(restStopCompareService.compare("A00001", "UNKNOWN"))
+                .thenThrow(RestStopNotFoundException.forServiceAreaCode("UNKNOWN"));
+
+        mockMvc.perform(get("/api/rest-stops/compare")
+                        .param("serviceAreaCodeA", "A00001")
+                        .param("serviceAreaCodeB", "UNKNOWN"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("GET /api/rest-stops/compare는 같은 휴게소를 두 번 넣으면 INVALID_PARAMETER를 반환한다")
+    void compareRestStops_returnsInvalidParameterWhenSameServiceAreaCode() throws Exception {
+        when(restStopCompareService.compare("A00001", "A00001"))
+                .thenThrow(InvalidRestStopCompareException.forSameServiceAreaCode("A00001"));
+
+        mockMvc.perform(get("/api/rest-stops/compare")
+                        .param("serviceAreaCodeA", "A00001")
+                        .param("serviceAreaCodeB", "A00001"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
     }
 }

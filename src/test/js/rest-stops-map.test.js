@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    buildRestStopCompareRows,
     canRequestRouteAutomatically,
     createPopupContent,
     formatEvChargerAvailability,
@@ -319,6 +320,71 @@ test('routeNearbyTrafficBadge returns null when there is no traffic info', () =>
     assert.equal(routeNearbyTrafficBadge({ nearbyTraffic: null }), null);
     assert.equal(routeNearbyTrafficBadge({}), null);
     assert.equal(routeNearbyTrafficBadge(undefined), null);
+});
+
+test('buildRestStopCompareRows formats prices/parking/facilities and marks each row winner', () => {
+    const rows = buildRestStopCompareRows({
+        sideA: {
+            gasolinePrice: '1,798원',
+            dieselPrice: '1,689원',
+            lpgPrice: '1,186원',
+            parkingCount: 312,
+            facilities: ['수유실', '샤워실']
+        },
+        sideB: {
+            gasolinePrice: '1,872원',
+            dieselPrice: '1,720원',
+            lpgPrice: '1,140원',
+            parkingCount: 201,
+            facilities: ['수유실']
+        },
+        result: {
+            gasolineWinner: 'A',
+            dieselWinner: 'A',
+            lpgWinner: 'B',
+            parkingWinner: 'A',
+            facilityWinner: 'A'
+        }
+    });
+
+    assert.deepEqual(rows[0], {
+        label: '휘발유',
+        type: 'text',
+        a: { text: '1,798원', isWinner: true },
+        b: { text: '1,872원', isWinner: false }
+    });
+    assert.deepEqual(rows[2], {
+        label: 'LPG',
+        type: 'text',
+        a: { text: '1,186원', isWinner: false },
+        b: { text: '1,140원', isWinner: true }
+    });
+    assert.deepEqual(rows[3], {
+        label: '주차',
+        type: 'text',
+        a: { text: '312대', isWinner: true },
+        b: { text: '201대', isWinner: false }
+    });
+    assert.deepEqual(rows[4], {
+        label: '부대시설',
+        type: 'chips',
+        a: { chips: ['수유실', '샤워실'], isWinner: true },
+        b: { chips: ['수유실'], isWinner: false }
+    });
+});
+
+test('buildRestStopCompareRows falls back to 정보 없음/빈 배열 when data is missing, with no winner', () => {
+    const rows = buildRestStopCompareRows({ sideA: {}, sideB: {}, result: {} });
+
+    assert.equal(rows[0].a.text, '정보 없음');
+    assert.equal(rows[0].a.isWinner, false);
+    assert.equal(rows[3].a.text, '정보 없음');
+    assert.deepEqual(rows[4].a.chips, []);
+});
+
+test('buildRestStopCompareRows returns an empty array when there is no response', () => {
+    assert.deepEqual(buildRestStopCompareRows(undefined), []);
+    assert.deepEqual(buildRestStopCompareRows(null), []);
 });
 
 test('formatRouteComparisonSummary renders prices, parking, food and facility counts compactly', () => {
