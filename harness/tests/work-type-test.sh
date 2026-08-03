@@ -8,19 +8,7 @@ trap 'rm -r "$TMP_DIR"' EXIT
 STATE_FILE="$TMP_DIR/state.env"
 HOOK="$ROOT_DIR/harness/hooks/plan/01-check-work-type.sh"
 
-assert_exit_code() {
-  expected="$1"
-  shift
-  set +e
-  "$@" > "$TMP_DIR/output.txt" 2>&1
-  actual=$?
-  set -e
-  if [ "$actual" -ne "$expected" ]; then
-    cat "$TMP_DIR/output.txt"
-    echo "expected exit $expected, got $actual" >&2
-    exit 1
-  fi
-}
+. "$ROOT_DIR/harness/tests/lib/assert.sh"
 
 # WORKFLOW가 비어 있으면 실패한다.
 : > "$STATE_FILE"
