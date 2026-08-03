@@ -9,19 +9,7 @@ STATE_FILE="$TMP_DIR/state.env"
 MOCKUP_FILE="$TMP_DIR/mockup.html"
 HOOK="$ROOT_DIR/harness/hooks/review/03-check-ui-mockup.sh"
 
-assert_exit_code() {
-  expected="$1"
-  shift
-  set +e
-  "$@" > "$TMP_DIR/output.txt" 2>&1
-  actual=$?
-  set -e
-  if [ "$actual" -ne "$expected" ]; then
-    cat "$TMP_DIR/output.txt"
-    echo "expected exit $expected, got $actual" >&2
-    exit 1
-  fi
-}
+. "$ROOT_DIR/harness/tests/lib/assert.sh"
 
 # 화면 변경이 없으면 통과한다.
 printf 'UI_IMPACT=no\n' > "$STATE_FILE"

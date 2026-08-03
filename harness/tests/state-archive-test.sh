@@ -22,19 +22,7 @@ STATE_FILE="$TMP_DIR/state.env"
 MESSAGE_FILE="$TMP_DIR/commit-message.txt"
 HOOK="$ROOT_DIR/harness/hooks/commit/04-archive-state.sh"
 
-assert_exit_code() {
-  expected="$1"
-  shift
-  set +e
-  "$@" > "$TMP_DIR/output.txt" 2>&1
-  actual=$?
-  set -e
-  if [ "$actual" -ne "$expected" ]; then
-    cat "$TMP_DIR/output.txt"
-    echo "expected exit $expected, got $actual" >&2
-    exit 1
-  fi
-}
+. "$ROOT_DIR/harness/tests/lib/assert.sh"
 
 assert_no_archive_files() {
   if [ -d "$HISTORY_DIR" ] && [ -n "$(ls -A "$HISTORY_DIR" 2>/dev/null)" ]; then
