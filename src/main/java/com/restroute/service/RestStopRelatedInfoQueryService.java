@@ -16,7 +16,6 @@ import com.restroute.repository.RestOilRepository;
 import com.restroute.repository.RestStopDetailRepository;
 import com.restroute.repository.RestThemeRepository;
 import com.restroute.service.dto.RestStopRelatedInfo;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,27 +106,23 @@ public class RestStopRelatedInfoQueryService {
                 restEventRepository.findAllByRestStopServiceAreaCodeIn(serviceAreaCodes).stream()
                         .collect(Collectors.groupingBy(RestEventEntity::getRestStopServiceAreaCode));
 
-        Map<String, RestStopRelatedInfo> result = new HashMap<>();
-        for (String serviceAreaCode : serviceAreaCodes) {
+        return serviceAreaCodes.stream().collect(Collectors.toMap(Function.identity(), serviceAreaCode -> {
             List<RestOilEntity> oilConveniences = oilConveniencesByCode.getOrDefault(serviceAreaCode, List.of());
             Optional<String> oilServiceAreaCode2 = firstOilServiceAreaCode2(oilConveniences);
             Optional<RestOilPriceEntity> oilPrice = oilServiceAreaCode2.isEmpty()
                     ? Optional.empty()
                     : oilPricesByCode.getOrDefault(serviceAreaCode, List.of()).stream()
                             .findFirst();
-            result.put(
-                    serviceAreaCode,
-                    RestStopRelatedInfo.of(
-                            Optional.ofNullable(detailsByCode.get(serviceAreaCode)),
-                            infosByCode.getOrDefault(serviceAreaCode, List.of()),
-                            oilConveniences,
-                            oilServiceAreaCode2,
-                            oilPrice,
-                            foodsByCode.getOrDefault(serviceAreaCode, List.of()),
-                            themesByCode.getOrDefault(serviceAreaCode, List.of()),
-                            eventsByCode.getOrDefault(serviceAreaCode, List.of())));
-        }
-        return result;
+            return RestStopRelatedInfo.of(
+                    Optional.ofNullable(detailsByCode.get(serviceAreaCode)),
+                    infosByCode.getOrDefault(serviceAreaCode, List.of()),
+                    oilConveniences,
+                    oilServiceAreaCode2,
+                    oilPrice,
+                    foodsByCode.getOrDefault(serviceAreaCode, List.of()),
+                    themesByCode.getOrDefault(serviceAreaCode, List.of()),
+                    eventsByCode.getOrDefault(serviceAreaCode, List.of()));
+        }));
     }
 
     private List<HighwayServiceAreaInfoEntity> findHighwayServiceAreaInfos(String serviceAreaCode) {

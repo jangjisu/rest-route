@@ -70,4 +70,8 @@ public class RestStopEntity {
     public void clearAdminOverride() {
         this.adminOverridden = false;
     }
+
+    public boolean isSyncable() {
+        return !adminOverridden;
+    }
 }

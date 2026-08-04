@@ -12,10 +12,10 @@ import com.restroute.repository.RestStopRepository;
 import com.restroute.service.admin.exception.RestOilNotFoundException;
 import com.restroute.service.image.exception.RestStopNotFoundException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,13 +33,12 @@ public class AdminRestOilLinkService {
     @Transactional(readOnly = true)
     public List<AdminRestOilLinkSummaryResponse> findAll() {
         List<RestStopEntity> restStops = restStopRepository.findAll();
-        Map<String, RestOilPriceEntity> oilPriceByServiceAreaCode = new HashMap<>();
-        for (RestOilPriceEntity oilPrice : restOilPriceRepository.findAll()) {
-            if (!StringUtils.hasText(oilPrice.getRestStopServiceAreaCode())) {
-                continue;
-            }
-            oilPriceByServiceAreaCode.put(oilPrice.getRestStopServiceAreaCode(), oilPrice);
-        }
+        Map<String, RestOilPriceEntity> oilPriceByServiceAreaCode = restOilPriceRepository.findAll().stream()
+                .filter(oilPrice -> StringUtils.hasText(oilPrice.getRestStopServiceAreaCode()))
+                .collect(Collectors.toMap(
+                        RestOilPriceEntity::getRestStopServiceAreaCode,
+                        Function.identity(),
+                        (first, second) -> second));
         return restStops.stream()
                 .map(restStop -> AdminRestOilLinkSummaryResponse.from(
                         restStop, oilPriceByServiceAreaCode.get(restStop.getServiceAreaCode())))
