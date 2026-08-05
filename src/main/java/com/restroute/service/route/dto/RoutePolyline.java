@@ -110,13 +110,26 @@ public final class RoutePolyline {
     }
 
     /**
+     * 진행방향 벡터를 구할 때 최근접 지점 기준 앞뒤로 보는 정점 "개수"(거리 아님). downsample(300)을
+     * 거친 뒤의 정점 간격은 경로 길이에 따라 달라지므로, 이 값이 실제로 커버하는 거리(m)도 경로마다
+     * 다르다. 5는 실측 검증(안성(서울)/안성(부산) 사례)에서 잘 맞았던 경험적인 값이다 — 오판별
+     * 사례가 나오면 그때 다시 조정한다.
+     */
+    private static final int DIRECTION_VECTOR_SPAN_POINTS = 5;
+
+    /**
      * nearestIndex 지점에서 진행방향 기준으로 (latitude, longitude)가 왼쪽/오른쪽 어느 쪽에
      * 있는지 판별한다. 우리나라는 우측통행이므로 RIGHT만 진행방향에서 실제로 진입 가능한 쪽이다.
+     *
+     * UNKNOWN은 진행방향 벡터 자체를 구할 수 없을 때만 반환한다 — 폴리라인 정점이 1개뿐이거나,
+     * 최근접 지점 앞뒤로 잡은 두 정점의 좌표가 완전히 같은 경우(연속된 중복 정점)뿐이다. 대상
+     * 좌표가 진행방향 직선에 거의 걸쳐 있는(외적이 0에 가까운) 경계 케이스는 별도로 UNKNOWN
+     * 처리하지 않고 LEFT/RIGHT 중 하나로 결정된다 — 얼마나 가까워야 "거의 걸친 것"으로 볼지
+     * 판단할 근거(GPS 오차 범위 등)가 아직 없어서다.
      */
     public Side sideOfTravel(int nearestIndex, double latitude, double longitude) {
-        int span = 5;
-        int i0 = Math.max(0, nearestIndex - span);
-        int i1 = Math.min(points.size() - 1, nearestIndex + span);
+        int i0 = Math.max(0, nearestIndex - DIRECTION_VECTOR_SPAN_POINTS);
+        int i1 = Math.min(points.size() - 1, nearestIndex + DIRECTION_VECTOR_SPAN_POINTS);
         Coordinate from = points.get(i0);
         Coordinate to = points.get(i1);
 
