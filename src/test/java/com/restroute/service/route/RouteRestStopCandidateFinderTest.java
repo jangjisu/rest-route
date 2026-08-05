@@ -264,6 +264,84 @@ class RouteRestStopCandidateFinderTest {
                 .isEqualTo("목적지");
     }
 
+    private static final List<Double> NORTH_HEADING_VERTEXES = List.of(127.0, 37.0, 127.0, 37.01);
+
+    @Test
+    @DisplayName("이름이 같은 방향 페어(안성(서울)/안성(부산))는 진행방향상 실제로 갈 수 있는 쪽만 남긴다")
+    void directionPair_keepsOnlyReachableSide() {
+        when(kakaoMapClient.searchKeyword(anyString())).thenReturn(searchResult("129.0", "35.0", "부산", null));
+        when(kakaoMapClient.getDirections(anyString(), anyString()))
+                .thenReturn(directions(0, new Summary(1L, 1L), NORTH_HEADING_VERTEXES));
+
+        RestStopEntity busan = restStop("A", "안성(부산)휴게소", "경부선", "127.001", "37.005");
+        RestStopEntity seoul = restStop("B", "안성(서울)휴게소", "경부선", "126.999", "37.005");
+        when(restStopQueryService.findAll()).thenReturn(List.of(busan, seoul));
+
+        RouteSearchResult result = finder.findCandidates(37.0, 127.0, "부산", null, null, null, 1000);
+
+        assertThat(result.candidates())
+                .extracting(candidate -> candidate.item().serviceAreaCode())
+                .containsExactly("A");
+        assertThat(result.candidates().get(0).item().hasDirectionAlternative()).isFalse();
+    }
+
+    @Test
+    @DisplayName("방향 페어가 아닌 단일 휴게소(마장휴게소류)는 진행방향 좌/우와 무관하게 그대로 남는다")
+    void soloRestStop_survivesRegardlessOfSide() {
+        when(kakaoMapClient.searchKeyword(anyString())).thenReturn(searchResult("129.0", "35.0", "부산", null));
+        when(kakaoMapClient.getDirections(anyString(), anyString()))
+                .thenReturn(directions(0, new Summary(1L, 1L), NORTH_HEADING_VERTEXES));
+
+        RestStopEntity majang = restStop("C", "마장휴게소", "중부선", "126.999", "37.005");
+        when(restStopQueryService.findAll()).thenReturn(List.of(majang));
+
+        RouteSearchResult result = finder.findCandidates(37.0, 127.0, "부산", null, null, null, 1000);
+
+        assertThat(result.candidates())
+                .extracting(candidate -> candidate.item().serviceAreaCode())
+                .containsExactly("C");
+        assertThat(result.candidates().get(0).item().hasDirectionAlternative()).isFalse();
+    }
+
+    @Test
+    @DisplayName("방향 페어 이름이지만 짝이 경로 근처에 없으면(그룹 크기 1) 그대로 두고 대안 플래그도 켜지 않는다")
+    void directionPairNameWithoutNearbySibling_survivesUnfiltered() {
+        when(kakaoMapClient.searchKeyword(anyString())).thenReturn(searchResult("129.0", "35.0", "부산", null));
+        when(kakaoMapClient.getDirections(anyString(), anyString()))
+                .thenReturn(directions(0, new Summary(1L, 1L), NORTH_HEADING_VERTEXES));
+
+        RestStopEntity busan = restStop("A", "안성(부산)휴게소", "경부선", "127.001", "37.005");
+        when(restStopQueryService.findAll()).thenReturn(List.of(busan));
+
+        RouteSearchResult result = finder.findCandidates(37.0, 127.0, "부산", null, null, null, 1000);
+
+        assertThat(result.candidates())
+                .extracting(candidate -> candidate.item().serviceAreaCode())
+                .containsExactly("A");
+        assertThat(result.candidates().get(0).item().hasDirectionAlternative()).isFalse();
+    }
+
+    @Test
+    @DisplayName("진행방향 판별이 애매하면(폴리라인 정점 1개) 그룹을 그대로 두고 대안 존재 플래그를 켠다")
+    void ambiguousDirectionPair_keepsBothAndMarksAlternative() {
+        when(kakaoMapClient.searchKeyword(anyString())).thenReturn(searchResult("129.0", "35.0", "부산", null));
+        when(kakaoMapClient.getDirections(anyString(), anyString()))
+                .thenReturn(directions(0, new Summary(1L, 1L), List.of(127.0, 37.0)));
+
+        RestStopEntity busan = restStop("A", "죽암(부산)휴게소", "경부선", "127.0001", "37.0001");
+        RestStopEntity seoul = restStop("B", "죽암(서울)휴게소", "경부선", "126.9999", "37.0001");
+        when(restStopQueryService.findAll()).thenReturn(List.of(busan, seoul));
+
+        RouteSearchResult result = finder.findCandidates(37.0, 127.0, "부산", null, null, null, 1000);
+
+        assertThat(result.candidates())
+                .extracting(candidate -> candidate.item().serviceAreaCode())
+                .containsExactlyInAnyOrder("A", "B");
+        assertThat(result.candidates())
+                .allSatisfy(candidate ->
+                        assertThat(candidate.item().hasDirectionAlternative()).isTrue());
+    }
+
     @Test
     @DisplayName("summary 값이 null이면 거리/시간 0으로 처리한다")
     void summaryWithNullValues() {

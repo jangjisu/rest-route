@@ -114,4 +114,68 @@ class RoutePolylineTest {
         assertThat(far.index()).isEqualTo(1);
         assertThat(far.distanceMeters()).isLessThan(1);
     }
+
+    private static RoutePolyline northHeadingPolyline() {
+        List<Double> vertexes = new ArrayList<>();
+        for (int i = 0; i <= 10; i++) {
+            vertexes.add(127.0);
+            vertexes.add(37.000 + i * 0.001);
+        }
+        return RoutePolyline.fromRoute(route(vertexes));
+    }
+
+    @Test
+    @DisplayName("sideOfTravel은 북쪽으로 향하는 경로에서 동쪽(진행방향 오른쪽) 지점을 RIGHT로 판별한다")
+    void sideOfTravel_returnsRightForEastPoint() {
+        RoutePolyline polyline = northHeadingPolyline();
+        RoutePolyline.Nearest nearest = polyline.nearest(37.005, 127.001);
+
+        RoutePolyline.Side side = polyline.sideOfTravel(nearest.index(), 37.005, 127.001);
+
+        assertThat(side).isEqualTo(RoutePolyline.Side.RIGHT);
+    }
+
+    @Test
+    @DisplayName("sideOfTravel은 북쪽으로 향하는 경로에서 서쪽(진행방향 왼쪽) 지점을 LEFT로 판별한다")
+    void sideOfTravel_returnsLeftForWestPoint() {
+        RoutePolyline polyline = northHeadingPolyline();
+        RoutePolyline.Nearest nearest = polyline.nearest(37.005, 126.999);
+
+        RoutePolyline.Side side = polyline.sideOfTravel(nearest.index(), 37.005, 126.999);
+
+        assertThat(side).isEqualTo(RoutePolyline.Side.LEFT);
+    }
+
+    @Test
+    @DisplayName("sideOfTravel은 경로 시작/끝 근처(인덱스 경계)에서도 좌/우를 판별한다")
+    void sideOfTravel_worksNearPolylineBoundaries() {
+        RoutePolyline polyline = northHeadingPolyline();
+
+        assertThat(polyline.sideOfTravel(0, 37.000, 127.001)).isEqualTo(RoutePolyline.Side.RIGHT);
+        assertThat(polyline.sideOfTravel(10, 37.010, 126.999)).isEqualTo(RoutePolyline.Side.LEFT);
+    }
+
+    @Test
+    @DisplayName("sideOfTravel은 경도도 함께 변하는 대각선 경로에서도 좌/우를 판별한다")
+    void sideOfTravel_handlesDiagonalHeading() {
+        List<Double> vertexes = new ArrayList<>();
+        for (int i = 0; i <= 10; i++) {
+            vertexes.add(127.000 + i * 0.001);
+            vertexes.add(37.000 + i * 0.001);
+        }
+        RoutePolyline polyline = RoutePolyline.fromRoute(route(vertexes));
+
+        assertThat(polyline.sideOfTravel(5, 37.004, 127.006)).isEqualTo(RoutePolyline.Side.RIGHT);
+        assertThat(polyline.sideOfTravel(5, 37.006, 127.004)).isEqualTo(RoutePolyline.Side.LEFT);
+    }
+
+    @Test
+    @DisplayName("sideOfTravel은 진행방향 벡터가 축퇴(같은 지점 반복)되면 UNKNOWN을 반환한다")
+    void sideOfTravel_returnsUnknownWhenDirectionIsDegenerate() {
+        RoutePolyline singlePoint = RoutePolyline.fromRoute(route(List.of(127.0, 37.0)));
+
+        RoutePolyline.Side side = singlePoint.sideOfTravel(0, 37.001, 127.001);
+
+        assertThat(side).isEqualTo(RoutePolyline.Side.UNKNOWN);
+    }
 }

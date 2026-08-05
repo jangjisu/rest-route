@@ -14,8 +14,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -55,10 +53,6 @@ public class RouteRestStopService {
 
     private List<RouteRestStopItem> buildResponseItems(
             List<RouteRestStopCandidate> candidates, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        Map<String, Long> groupCounts = candidates.stream()
-                .filter(RouteRestStopCandidate::hasDirectionGroup)
-                .map(RouteRestStopCandidate::groupKey)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         List<String> candidateServiceAreaCodes = candidates.stream()
                 .map(candidate -> candidate.restStop().getServiceAreaCode())
                 .toList();
@@ -90,9 +84,6 @@ public class RouteRestStopService {
                             .withEvCharger(aggregate.hasEvCharger())
                             .withTheme(aggregate.hasTheme())
                             .withEvent(aggregate.hasEvent())
-                            .withDirectionAlternative(groupCounts.getOrDefault(
-                                            comparison.candidate().groupKey(), 0L)
-                                    > 1)
                             .withComparison(
                                     comparison.summary(),
                                     routeRestStopRecommendationTagService.create(comparison, recommendationStandards));
