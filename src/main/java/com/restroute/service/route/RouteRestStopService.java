@@ -17,6 +17,7 @@ import com.restroute.service.dto.RestStopAggregate;
 import com.restroute.service.route.dto.IndexedMatch;
 import com.restroute.service.route.dto.MatchedRestStop;
 import com.restroute.service.route.dto.NearbyTrafficStatus;
+import com.restroute.service.route.dto.ResolvedRoute;
 import com.restroute.service.route.dto.RoutePath;
 import com.restroute.service.route.dto.RouteRestStopCandidate;
 import com.restroute.service.route.dto.RouteRestStopComparison;
@@ -56,6 +57,35 @@ public class RouteRestStopService {
             Double destinationLongitude,
             String destinationName,
             int radiusMeters) {
+        ResolvedRoute resolved = resolveRoute(
+                originLatitude,
+                originLongitude,
+                destinationQuery,
+                destinationLatitude,
+                destinationLongitude,
+                destinationName);
+
+        List<RouteRestStopCandidate> matched = matchRestStopsToPath(resolved.path(), radiusMeters);
+        List<RouteRestStopItem> directionFiltered = removeUnreachableSide(matched, resolved.path());
+
+        Optional<NationalOilPriceSummary> nationalOilPriceSummary = nationalOilPriceService.getTodaySummary();
+        List<RouteRestStopItem> restStops = buildResponseItems(directionFiltered, nationalOilPriceSummary);
+
+        return RouteRestStopResponse.of(
+                resolved.destination(), routeSummary(resolved.summary(), resolved.path()), restStops);
+    }
+
+    /**
+     * 목적지를 정하고, 카카오 길찾기를 호출해서 경로 좌표열(RoutePath)까지 만든다.
+     * 길찾기 실패/좌표 없음은 여기서 바로 예외로 끝낸다.
+     */
+    private ResolvedRoute resolveRoute(
+            double originLatitude,
+            double originLongitude,
+            String destinationQuery,
+            Double destinationLatitude,
+            Double destinationLongitude,
+            String destinationName) {
         Destination destination =
                 resolveDestination(destinationQuery, destinationLatitude, destinationLongitude, destinationName);
 
@@ -69,18 +99,19 @@ public class RouteRestStopService {
         }
 
         KakaoDirectionsResponse.Route route = directions.firstRoute();
-        RoutePath path = RoutePath.from(route);
+        RoutePath path = RoutePath.from(route.sections(), totalDistanceMeters(route.summary()));
         if (path.isEmpty()) {
             throw new RouteRestStopNotFoundException("경로 좌표가 없습니다.");
         }
 
-        List<RouteRestStopCandidate> matched = matchRestStopsToPath(path, radiusMeters);
-        List<RouteRestStopItem> directionFiltered = removeUnreachableSide(matched, path);
+        return ResolvedRoute.of(destination, path, route.summary());
+    }
 
-        Optional<NationalOilPriceSummary> nationalOilPriceSummary = nationalOilPriceService.getTodaySummary();
-        List<RouteRestStopItem> restStops = buildResponseItems(directionFiltered, nationalOilPriceSummary);
-
-        return RouteRestStopResponse.of(destination, routeSummary(route, path), restStops);
+    private long totalDistanceMeters(KakaoDirectionsResponse.Summary summary) {
+        if (summary == null || summary.distance() == null) {
+            return 0L;
+        }
+        return summary.distance();
     }
 
     private String routeFailureMessage(Integer resultCode) {
@@ -265,14 +296,13 @@ public class RouteRestStopService {
         return LIST_IMAGE_URL_FORMAT.formatted(serviceAreaCode);
     }
 
-    private RouteSummary routeSummary(KakaoDirectionsResponse.Route route, RoutePath path) {
-        long distance = summaryValue(route, true);
-        long duration = summaryValue(route, false);
+    private RouteSummary routeSummary(KakaoDirectionsResponse.Summary summary, RoutePath path) {
+        long distance = summaryValue(summary, true);
+        long duration = summaryValue(summary, false);
         return RouteSummary.of(distance, duration, path.path());
     }
 
-    private long summaryValue(KakaoDirectionsResponse.Route route, boolean distance) {
-        KakaoDirectionsResponse.Summary summary = route.summary();
+    private long summaryValue(KakaoDirectionsResponse.Summary summary, boolean distance) {
         if (summary == null) {
             return 0L;
         }

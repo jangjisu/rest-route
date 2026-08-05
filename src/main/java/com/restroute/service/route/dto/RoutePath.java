@@ -29,12 +29,12 @@ public final class RoutePath {
         this.trafficStates = trafficStates;
     }
 
-    public static RoutePath from(KakaoDirectionsResponse.Route route) {
+    public static RoutePath from(List<KakaoDirectionsResponse.Section> sections, long totalDistanceMeters) {
         List<PathPoint> rawPoints = new ArrayList<>();
         List<Integer> rawTrafficStates = new ArrayList<>();
-        collect(route, rawPoints, rawTrafficStates);
+        collect(sections, rawPoints, rawTrafficStates);
 
-        int targetCount = targetPointCount(totalDistanceMeters(route));
+        int targetCount = targetPointCount(totalDistanceMeters);
         return new RoutePath(downsample(rawPoints, targetCount), downsample(rawTrafficStates, targetCount));
     }
 
@@ -43,19 +43,12 @@ public final class RoutePath {
         return Math.max(MINIMUM_POINTS, distanceBasedCount);
     }
 
-    private static long totalDistanceMeters(KakaoDirectionsResponse.Route route) {
-        if (route == null || route.summary() == null || route.summary().distance() == null) {
-            return 0L;
-        }
-        return route.summary().distance();
-    }
-
     private static void collect(
-            KakaoDirectionsResponse.Route route, List<PathPoint> points, List<Integer> trafficStates) {
-        if (route == null || route.sections() == null) {
+            List<KakaoDirectionsResponse.Section> sections, List<PathPoint> points, List<Integer> trafficStates) {
+        if (sections == null) {
             return;
         }
-        for (KakaoDirectionsResponse.Section section : route.sections()) {
+        for (KakaoDirectionsResponse.Section section : sections) {
             if (section == null || section.roads() == null) {
                 continue;
             }
