@@ -70,9 +70,10 @@
 경로 결과 조회에서 오늘 평균가가 없으면 오피넷 `avgAllPrice.do`를 호출하고, 필수 유종
 휘발유(`B027`), 자동차용경유(`D047`), 자동차용부탄(`K015`)이 모두 있을 때만
 `/api/national-oil-prices/summary`에서 전국 평균 유가 요약을 제공한다. 경로 응답은
-`destination`, `route`, `restStops`를 반환하며, `restStops`의 `comparisonSummary`에는
-전국 평균 대비 휴게소별 차이값이 포함될 수 있다. 전국 평균 유가 요약 자체는 경로 응답의
-최상위 필드로 포함하지 않는다. 오피넷 평균가는 휴게소 상세 응답에도 연결하지 않는다.
+`destination`과 `routes`(대안 경로 포함 배열, 각 원소가 `summary`/`restStops`를 가짐)를
+반환하며, `restStops`의 `comparisonSummary`에는 전국 평균 대비 휴게소별 차이값이 포함될 수
+있다. 전국 평균 유가 요약 자체는 경로 응답의 최상위 필드로 포함하지 않는다. 오피넷 평균가는
+휴게소 상세 응답에도 연결하지 않는다.
 
 휴게소 음식 메뉴(`restBestfoodList`) 연결은 2026-06-16 실측에서 `restBestfoodList.stdRestCd`가
 `rest_stop.std_rest_cd`와 직접 일치함을 확인했다. 서울만남(부산)휴게소가 양쪽 모두 `000001`이며,

@@ -20,5 +20,6 @@ public interface KakaoNaviFeignClient {
             @RequestParam("origin") String origin,
             @RequestParam("destination") String destination,
             @RequestParam("priority") String priority,
-            @RequestParam("road_details") boolean roadDetails);
+            @RequestParam("road_details") boolean roadDetails,
+            @RequestParam("alternatives") boolean alternatives);
 }

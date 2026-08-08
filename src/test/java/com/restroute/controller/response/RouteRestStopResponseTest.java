@@ -14,13 +14,15 @@ class RouteRestStopResponseTest {
     void routeResponse_doesNotExposeNationalOilPriceSummary() {
         RouteRestStopResponse response = RouteRestStopResponse.of(
                 RouteRestStopResponse.Destination.of("부산역", 35.0, 129.0),
-                RouteRestStopResponse.RouteSummary.of(100L, 200L, List.of()),
-                List.of());
+                List.of(RouteRestStopResponse.RouteOption.of(
+                        0, RouteRestStopResponse.RouteSummary.of(100L, 200L, 0L, List.of()), List.of())));
 
         assertThat(Arrays.stream(RouteRestStopResponse.class.getRecordComponents())
                         .map(component -> component.getName()))
                 .doesNotContain("nationalOilPriceSummary");
-        assertThat(response.restStops()).isEmpty();
+        assertThat(response.routes())
+                .singleElement()
+                .satisfies(route -> assertThat(route.restStops()).isEmpty());
     }
 
     @Test

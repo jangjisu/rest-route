@@ -26,7 +26,10 @@ public record KakaoDirectionsResponse(List<Route> routes) {
     public record Route(@JsonProperty("result_code") Integer resultCode, Summary summary, List<Section> sections) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Summary(Long distance, Long duration) {}
+    public record Summary(Long distance, Long duration, Fare fare) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Fare(Integer toll) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Section(List<Road> roads) {}

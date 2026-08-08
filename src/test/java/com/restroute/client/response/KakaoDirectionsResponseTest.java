@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.client.response.KakaoDirectionsResponse.Road;
 import com.restroute.client.response.KakaoDirectionsResponse.Route;
+import com.restroute.client.response.KakaoDirectionsResponse.Summary;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,27 @@ class KakaoDirectionsResponseTest {
         assertThat(road.trafficSpeed()).isEqualTo(9);
         assertThat(road.trafficState()).isEqualTo(1);
         assertThat(road.vertexes()).hasSize(4);
+    }
+
+    @Test
+    @DisplayName("summary 응답의 fare.toll을 매핑한다")
+    void readValue_mapsSummaryFareToll() throws Exception {
+        String json = """
+                {
+                  "distance": 19032,
+                  "duration": 3494,
+                  "fare": {
+                    "taxi": 22200,
+                    "toll": 4500
+                  }
+                }
+                """;
+
+        Summary summary = new ObjectMapper().readValue(json, Summary.class);
+
+        assertThat(summary.distance()).isEqualTo(19032L);
+        assertThat(summary.duration()).isEqualTo(3494L);
+        assertThat(summary.fare().toll()).isEqualTo(4500);
     }
 
     @Test
