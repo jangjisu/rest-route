@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.restroute.controller.response.RouteRestStopResponse.ComparisonSummary;
 import com.restroute.controller.response.RouteRestStopResponse.RecommendationTag;
-import com.restroute.service.route.dto.RouteRestStopCandidate;
 import com.restroute.service.route.dto.RouteRestStopComparison;
 import com.restroute.service.route.dto.RouteRestStopRecommendationStandards;
 import java.util.List;
@@ -31,7 +30,7 @@ class RouteRestStopRecommendationTagServiceTest {
     }
 
     private RouteRestStopComparison comparison(ComparisonSummary summary) {
-        return RouteRestStopComparison.of(new RouteRestStopCandidate(null, "", false, 0, null), summary);
+        return RouteRestStopComparison.of(null, summary);
     }
 
     private ComparisonSummary summary(

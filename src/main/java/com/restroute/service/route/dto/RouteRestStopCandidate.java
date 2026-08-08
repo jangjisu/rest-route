@@ -1,38 +1,14 @@
 package com.restroute.service.route.dto;
 
-import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
-import com.restroute.domain.RestStopEntity;
+import java.util.List;
 
-public record RouteRestStopCandidate(
-        RestStopEntity restStop, String groupKey, boolean hasDirectionGroup, int routeIndex, RouteRestStopItem item) {
+/**
+ * 경로상 매칭 지점(routeIndex) 하나와, 거기 매칭된 휴게소 목록. 보통 1개지만, 서로 다른 휴게소가
+ * 같은 지점에 매칭되면(드묾) 2개 이상일 수 있다.
+ */
+public record RouteRestStopCandidate(int routeIndex, List<MatchedRestStop> restStops) {
 
-    public static RouteRestStopCandidate of(RestStopEntity restStop, RouteRestStopItem item, int routeIndex) {
-        String directionLabel = directionLabel(restStop.getUnitName());
-        String groupKey = groupKey(restStop, directionLabel);
-        return new RouteRestStopCandidate(restStop, groupKey, directionLabel != null, routeIndex, item);
-    }
-
-    private static String groupKey(RestStopEntity restStop, String directionLabel) {
-        if (directionLabel == null) {
-            return restStop.getRouteName() + "|" + restStop.getUnitName() + "|" + restStop.getServiceAreaCode();
-        }
-        return restStop.getRouteName() + "|" + restStopBaseName(restStop.getUnitName());
-    }
-
-    private static String restStopBaseName(String unitName) {
-        String name = unitName.substring(0, unitName.indexOf('('));
-        return name.replace("휴게소", "").replaceAll("\\s+", "");
-    }
-
-    private static String directionLabel(String unitName) {
-        if (unitName == null) {
-            return null;
-        }
-        int start = unitName.indexOf('(');
-        int end = unitName.indexOf(')', start + 1);
-        if (start < 0 || end <= start + 1) {
-            return null;
-        }
-        return unitName.substring(start + 1, end).replaceAll("\\s+", "");
+    public static RouteRestStopCandidate of(int routeIndex, List<MatchedRestStop> restStops) {
+        return new RouteRestStopCandidate(routeIndex, restStops);
     }
 }
