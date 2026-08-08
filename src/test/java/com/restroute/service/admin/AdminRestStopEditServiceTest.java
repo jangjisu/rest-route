@@ -202,4 +202,33 @@ class AdminRestStopEditServiceTest {
 
         assertThatThrownBy(() -> service.clearOverride("UNKNOWN")).isInstanceOf(RestStopNotFoundException.class);
     }
+
+    @Test
+    @DisplayName("신규 등록하면 휴게소와 상세 정보를 저장하고 잠긴 상태로 반환한다")
+    void create_savesNewRestStopAndDetailBothLocked() {
+        when(restStopRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(restStopDetailRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminRestStopEditableResponse result = service.create(validRequest());
+
+        assertThat(result.unitName()).isEqualTo("수정된이름");
+        assertThat(result.telNo()).isEqualTo("031-000-0000");
+        assertThat(result.adminOverridden()).isTrue();
+        ArgumentCaptor<RestStopEntity> savedRestStop = ArgumentCaptor.forClass(RestStopEntity.class);
+        verify(restStopRepository).save(savedRestStop.capture());
+        assertThat(savedRestStop.getValue().getServiceAreaCode()).startsWith("ADMIN-");
+        ArgumentCaptor<RestStopDetailEntity> savedDetail = ArgumentCaptor.forClass(RestStopDetailEntity.class);
+        verify(restStopDetailRepository).save(savedDetail.capture());
+        assertThat(savedDetail.getValue().getServiceAreaCode())
+                .isEqualTo(savedRestStop.getValue().getServiceAreaCode());
+    }
+
+    @Test
+    @DisplayName("신규 등록 시 좌표가 숫자로 파싱되지 않으면 InvalidRestStopEditException을 던진다")
+    void create_throwsWhenCoordinateIsNotParseable() {
+        AdminRestStopUpdateRequest invalidRequest = new AdminRestStopUpdateRequest(
+                "새휴게소", "9999", "새노선", "숫자아님", "38.0", "031-000-0000", "새브랜드", "9998", "새주소", "샤워실", "O", "O");
+
+        assertThatThrownBy(() -> service.create(invalidRequest)).isInstanceOf(InvalidRestStopEditException.class);
+    }
 }

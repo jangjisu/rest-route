@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "rest_stop")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RestStopEntity {
+
+    private static final String ADMIN_CODE_PREFIX = "ADMIN-";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,6 +59,23 @@ public class RestStopEntity {
 
     public static RestStopEntity from(RestStopItem item) {
         return new RestStopEntity(item);
+    }
+
+    private RestStopEntity(String unitName, String routeNo, String routeName, String xValue, String yValue) {
+        this.unitCode = ADMIN_CODE_PREFIX + UUID.randomUUID();
+        this.unitName = unitName;
+        this.routeNo = routeNo;
+        this.routeName = routeName;
+        this.xValue = xValue;
+        this.yValue = yValue;
+        this.stdRestCd = ADMIN_CODE_PREFIX + UUID.randomUUID();
+        this.serviceAreaCode = ADMIN_CODE_PREFIX + UUID.randomUUID();
+        this.adminOverridden = true;
+    }
+
+    public static RestStopEntity createByAdmin(
+            String unitName, String routeNo, String routeName, String xValue, String yValue) {
+        return new RestStopEntity(unitName, routeNo, routeName, xValue, yValue);
     }
 
     public void applyAdminEdit(String unitName, String routeNo, String routeName, String xValue, String yValue) {

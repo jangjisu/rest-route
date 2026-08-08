@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -152,6 +153,41 @@ class AdminRestStopEditControllerTest {
                 .andExpect(jsonPath("$.data.adminOverridden").value(false));
 
         verify(adminActivityLogService).logRestStopOverrideCleared(authentication, "서울만남(부산)휴게소");
+    }
+
+    @Test
+    @DisplayName("POST /api/admin/rest-stops는 저장 후 200과 신규 정보를 반환하며 활동 로그를 남긴다")
+    void create_returnsOk() throws Exception {
+        AdminRestStopUpdateRequest request = new AdminRestStopUpdateRequest(
+                "가평휴게소", "0650", "서울양양선", "127.5", "37.8", "031-000-0000", "새브랜드", "9998", "새주소", "샤워실", "O", "O");
+        when(editService.create(request)).thenReturn(sampleResponse(true));
+
+        mockMvc.perform(post("/api/admin/rest-stops")
+                        .principal(authentication)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.adminOverridden").value(true));
+
+        verify(editService).create(request);
+        verify(adminActivityLogService).logRestStopCreated(authentication, "서울만남(부산)휴게소");
+    }
+
+    @Test
+    @DisplayName("POST /api/admin/rest-stops는 좌표가 잘못되면 400을 반환한다")
+    void create_returnsBadRequestWhenCoordinateInvalid() throws Exception {
+        AdminRestStopUpdateRequest request = new AdminRestStopUpdateRequest(
+                "가평휴게소", "0650", "서울양양선", "숫자아님", "37.8", "031-000-0000", "새브랜드", "9998", "새주소", "샤워실", "O", "O");
+        doThrow(new InvalidRestStopEditException("Invalid coordinate value: 숫자아님"))
+                .when(editService)
+                .create(request);
+
+        mockMvc.perform(post("/api/admin/rest-stops")
+                        .principal(authentication)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
     }
 
     @Test

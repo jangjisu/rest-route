@@ -42,6 +42,33 @@ class RestStopEntityTest {
     }
 
     @Test
+    @DisplayName("관리자가 새로 등록하면 코드 3종을 ADMIN- 접두사로 발급하고 동기화 잠금 상태로 시작한다")
+    void createByAdmin_issuesAdminPrefixedCodesAndStartsOverridden() {
+        RestStopEntity entity = RestStopEntity.createByAdmin("가평휴게소", "0650", "서울양양선", "127.5", "37.8");
+
+        assertThat(entity.getUnitName()).isEqualTo("가평휴게소");
+        assertThat(entity.getRouteNo()).isEqualTo("0650");
+        assertThat(entity.getRouteName()).isEqualTo("서울양양선");
+        assertThat(entity.getXValue()).isEqualTo("127.5");
+        assertThat(entity.getYValue()).isEqualTo("37.8");
+        assertThat(entity.getServiceAreaCode()).startsWith("ADMIN-");
+        assertThat(entity.getUnitCode()).startsWith("ADMIN-");
+        assertThat(entity.getStdRestCd()).startsWith("ADMIN-");
+        assertThat(entity.isAdminOverridden()).isTrue();
+    }
+
+    @Test
+    @DisplayName("관리자가 새로 등록할 때마다 서로 다른 코드가 발급된다")
+    void createByAdmin_issuesDistinctCodesEachTime() {
+        RestStopEntity first = RestStopEntity.createByAdmin("A휴게소", "0650", "서울양양선", "127.5", "37.8");
+        RestStopEntity second = RestStopEntity.createByAdmin("B휴게소", "0650", "서울양양선", "127.6", "37.9");
+
+        assertThat(first.getServiceAreaCode()).isNotEqualTo(second.getServiceAreaCode());
+        assertThat(first.getUnitCode()).isNotEqualTo(second.getUnitCode());
+        assertThat(first.getStdRestCd()).isNotEqualTo(second.getStdRestCd());
+    }
+
+    @Test
     @DisplayName("clearAdminOverride를 호출하면 잠금 플래그가 꺼진다")
     void clearAdminOverride_resetsOverrideFlag() {
         RestStopEntity entity = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));

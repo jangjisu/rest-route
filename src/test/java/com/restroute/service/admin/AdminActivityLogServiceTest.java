@@ -117,6 +117,16 @@ class AdminActivityLogServiceTest {
     }
 
     @Test
+    @DisplayName("휴게소 신규 등록을 기록한다")
+    void logRestStopCreated_savesEntryWithUnitName() {
+        when(authentication.getName()).thenReturn("admin");
+        adminActivityLogService.logRestStopCreated(authentication, "가평휴게소");
+
+        AdminActivityLogEntity saved = captureSavedEntity();
+        assertThat(saved.getMessage()).isEqualTo("가평휴게소 휴게소를 새로 등록했습니다.");
+    }
+
+    @Test
     @DisplayName("커스텀 메뉴 추가를 기록한다")
     void logCustomFoodAdded_savesEntryWithFoodName() {
         when(authentication.getName()).thenReturn("admin");

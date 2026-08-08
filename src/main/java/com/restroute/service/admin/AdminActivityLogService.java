@@ -21,6 +21,7 @@ public class AdminActivityLogService {
     private static final String IMAGE_DELETED_MESSAGE = "휴게소(%s) 이미지를 삭제했습니다.";
     private static final String EDITED_MESSAGE = "%s 정보를 수정했습니다.";
     private static final String OVERRIDE_CLEARED_MESSAGE = "%s의 동기화 잠금을 해제했습니다.";
+    private static final String CREATED_MESSAGE = "%s 휴게소를 새로 등록했습니다.";
     private static final String CUSTOM_FOOD_ADDED_MESSAGE = "%s 메뉴를 추가했습니다.";
     private static final String CUSTOM_FOOD_EDITED_MESSAGE = "%s 메뉴를 수정했습니다.";
     private static final String CUSTOM_FOOD_OVERRIDE_CLEARED_MESSAGE = "%s 메뉴의 동기화 잠금을 해제했습니다.";
@@ -67,6 +68,11 @@ public class AdminActivityLogService {
     @Transactional
     public void logRestStopOverrideCleared(Authentication authentication, String unitName) {
         saveLog(authentication, String.format(OVERRIDE_CLEARED_MESSAGE, unitName));
+    }
+
+    @Transactional
+    public void logRestStopCreated(Authentication authentication, String unitName) {
+        saveLog(authentication, String.format(CREATED_MESSAGE, unitName));
     }
 
     @Transactional
