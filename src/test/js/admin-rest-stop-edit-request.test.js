@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
     clearRestStopOverride,
+    createRestStop,
     fetchEditableRestStop,
     saveEditableRestStop
 } from '../../main/resources/static/js/admin-rest-stop-edit-request.js';
@@ -96,6 +97,38 @@ test('saveEditableRestStop returns not-found on 404', async () => {
     const result = await saveEditableRestStop('UNKNOWN', {}, CSRF, fetchImpl);
 
     assert.deepEqual(result, { status: 'not-found' });
+});
+
+test('createRestStop sends POST with JSON body and CSRF header', async () => {
+    let capturedUrl;
+    let capturedOptions;
+    const fetchImpl = (url, options) => {
+        capturedUrl = url;
+        capturedOptions = options;
+        return Promise.resolve(response({ body: { code: 'SUCCESS', data: sampleData({ adminOverridden: true }) } }));
+    };
+    const payload = { unitName: '가평휴게소' };
+
+    const result = await createRestStop(payload, CSRF, fetchImpl);
+
+    assert.equal(capturedUrl, '/api/admin/rest-stops');
+    assert.equal(capturedOptions.method, 'POST');
+    assert.equal(capturedOptions.headers['X-CSRF-TOKEN'], 'csrf-token');
+    assert.equal(capturedOptions.headers['Content-Type'], 'application/json');
+    assert.deepEqual(JSON.parse(capturedOptions.body), payload);
+    assert.deepEqual(result, { status: 'success', data: sampleData({ adminOverridden: true }) });
+});
+
+test('createRestStop returns invalid with server message on 400', async () => {
+    const fetchImpl = () => Promise.resolve(response({
+        ok: false,
+        status: 400,
+        body: { code: 'INVALID_PARAMETER', message: 'Invalid coordinate value: 숫자아님' }
+    }));
+
+    const result = await createRestStop({}, CSRF, fetchImpl);
+
+    assert.deepEqual(result, { status: 'invalid', message: 'Invalid coordinate value: 숫자아님' });
 });
 
 test('clearRestStopOverride sends DELETE and returns success', async () => {

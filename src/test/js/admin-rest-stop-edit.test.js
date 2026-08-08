@@ -57,7 +57,8 @@ function editDocument() {
         ['restStopEditSvarAddr', interactiveElement()],
         ['restStopEditConvenience', interactiveElement()],
         ['restStopEditMaintenanceYn', interactiveElement()],
-        ['restStopEditTruckSaYn', interactiveElement()]
+        ['restStopEditTruckSaYn', interactiveElement()],
+        ['restStopEditCreateButton', interactiveElement()]
     ]);
     return {
         createElement: () => interactiveElement(),
@@ -298,4 +299,107 @@ test('selecting an unknown rest stop hides the form and shows a status message',
 
     assert.equal(document.elements.get('restStopEditForm').hidden, true);
     assert.equal(document.elements.get('restStopEditStatus').textContent, '존재하지 않는 휴게소 코드입니다.');
+});
+
+test('clicking the create button opens an empty form in create mode', async () => {
+    const document = editDocument();
+    const fetchImpl = async () => restStopListResponse();
+
+    initializeAdminRestStopEdit(document, { fetchImpl, onNotice: () => {} });
+    await flushPromises();
+    document.elements.get('restStopEditUnitName').value = '남은값';
+
+    await document.elements.get('restStopEditCreateButton').handlers.click();
+
+    assert.equal(document.elements.get('restStopEditForm').hidden, false);
+    assert.equal(document.elements.get('restStopEditUnitName').value, '');
+    assert.equal(document.elements.get('restStopEditLockBanner').hidden, true);
+    assert.equal(document.elements.get('restStopEditSelect').value, '');
+});
+
+test('submitting the form in create mode posts a new rest stop and adds it to the picker', async () => {
+    const document = editDocument();
+    let createdRequest;
+    const fetchImpl = async (url, options = {}) => {
+        if (url === '/api/rest-stops') {
+            return restStopListResponse();
+        }
+        if (url === '/api/admin/rest-stops' && options.method === 'POST') {
+            createdRequest = { url, options };
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    code: 'SUCCESS',
+                    data: sampleData({ serviceAreaCode: 'ADMIN-1', unitName: '가평휴게소', adminOverridden: true })
+                })
+            };
+        }
+        throw new Error(`Unexpected request: ${url} ${options.method}`);
+    };
+    const notices = [];
+
+    initializeAdminRestStopEdit(document, { fetchImpl, onNotice: (message, type) => notices.push({ message, type }) });
+    await flushPromises();
+    await document.elements.get('restStopEditCreateButton').handlers.click();
+    document.elements.get('restStopEditUnitName').value = '가평휴게소';
+
+    await document.elements.get('restStopEditForm').handlers.submit({ preventDefault() {} });
+
+    assert.equal(createdRequest.options.headers['X-CSRF-TOKEN'], 'csrf-token');
+    assert.equal(JSON.parse(createdRequest.options.body).unitName, '가평휴게소');
+    const select = document.elements.get('restStopEditSelect');
+    assert.equal(select.appended.length, 2);
+    assert.equal(select.value, 'ADMIN-1');
+    assert.equal(document.elements.get('restStopEditLockBanner').dataset.state, 'locked');
+    assert.deepEqual(notices.at(-1), { message: '휴게소를 새로 등록했습니다.', type: undefined });
+});
+
+test('create mode with invalid coordinate shows the server message as an error notice', async () => {
+    const document = editDocument();
+    const fetchImpl = async (url, options = {}) => {
+        if (url === '/api/rest-stops') {
+            return restStopListResponse();
+        }
+        if (url === '/api/admin/rest-stops' && options.method === 'POST') {
+            return {
+                ok: false,
+                status: 400,
+                json: async () => ({ code: 'INVALID_PARAMETER', message: 'Invalid coordinate value: 숫자아님' })
+            };
+        }
+        throw new Error(`Unexpected request: ${url}`);
+    };
+    const notices = [];
+
+    initializeAdminRestStopEdit(document, { fetchImpl, onNotice: (message, type) => notices.push({ message, type }) });
+    await flushPromises();
+    await document.elements.get('restStopEditCreateButton').handlers.click();
+
+    await document.elements.get('restStopEditForm').handlers.submit({ preventDefault() {} });
+
+    assert.deepEqual(notices.at(-1), { message: 'Invalid coordinate value: 숫자아님', type: 'error' });
+});
+
+test('selecting an existing rest stop while in create mode cancels create mode', async () => {
+    const document = editDocument();
+    const fetchImpl = async (url) => {
+        if (url === '/api/rest-stops') {
+            return restStopListResponse();
+        }
+        if (url === '/api/admin/rest-stops/A00001/editable') {
+            return { ok: true, status: 200, json: async () => ({ code: 'SUCCESS', data: sampleData() }) };
+        }
+        throw new Error(`Unexpected request: ${url}`);
+    };
+
+    initializeAdminRestStopEdit(document, { fetchImpl, onNotice: () => {} });
+    await flushPromises();
+    await document.elements.get('restStopEditCreateButton').handlers.click();
+    const select = document.elements.get('restStopEditSelect');
+    select.value = 'A00001';
+    await select.handlers.change();
+
+    assert.equal(document.elements.get('restStopEditUnitName').value, '서울만남(부산)휴게소');
+    assert.equal(document.elements.get('restStopEditLockBanner').hidden, false);
 });

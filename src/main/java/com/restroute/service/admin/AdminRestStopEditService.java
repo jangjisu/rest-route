@@ -56,6 +56,27 @@ public class AdminRestStopEditService {
     }
 
     @Transactional
+    public AdminRestStopEditableResponse create(AdminRestStopUpdateRequest request) {
+        validateCoordinate(request.xValue());
+        validateCoordinate(request.yValue());
+
+        RestStopEntity restStop = restStopRepository.save(RestStopEntity.createByAdmin(
+                request.unitName(), request.routeNo(), request.routeName(), request.xValue(), request.yValue()));
+        RestStopDetailEntity detail = RestStopDetailEntity.createEmpty(restStop.getServiceAreaCode());
+        detail.applyAdminEdit(
+                request.telNo(),
+                request.brand(),
+                request.routeCode(),
+                request.svarAddr(),
+                request.convenience(),
+                request.maintenanceYn(),
+                request.truckSaYn());
+        restStopDetailRepository.save(detail);
+
+        return AdminRestStopEditableResponse.of(restStop, detail);
+    }
+
+    @Transactional
     public AdminRestStopEditableResponse clearOverride(String serviceAreaCode) {
         RestStopEntity restStop = findRestStopOrThrow(serviceAreaCode);
         RestStopDetailEntity detail = findDetailOrThrow(serviceAreaCode);

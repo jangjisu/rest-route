@@ -1,6 +1,7 @@
 import { fetchAdminRestStops } from './admin-rest-stop-image.js';
 import {
     clearRestStopOverride,
+    createRestStop,
     fetchEditableRestStop,
     saveEditableRestStop
 } from './admin-rest-stop-edit-request.js';
@@ -51,17 +52,21 @@ export function initializeAdminRestStopEdit(document, { fetchImpl = fetch, onNot
     const convenience = document.getElementById('restStopEditConvenience');
     const maintenanceYn = document.getElementById('restStopEditMaintenanceYn');
     const truckSaYn = document.getElementById('restStopEditTruckSaYn');
+    const createButton = document.getElementById('restStopEditCreateButton');
     if (!select || !status || !form || !submitButton || !lockBanner || !lockIcon || !lockTitle || !lockDesc
         || !lockToggle || !serviceAreaCodeView || !unitCodeView || !unitName || !routeNo || !routeName
         || !xValue || !yValue || !telNo || !brand || !routeCode || !svarAddr || !convenience
-        || !maintenanceYn || !truckSaYn) {
+        || !maintenanceYn || !truckSaYn || !createButton) {
         return;
     }
 
+    let isCreateMode = false;
+
     function setBusy(busy) {
-        select.disabled = busy;
+        select.disabled = busy || isCreateMode;
         submitButton.disabled = busy;
         lockToggle.disabled = busy;
+        createButton.disabled = busy;
     }
 
     function renderLockState(overridden) {
@@ -112,7 +117,30 @@ export function initializeAdminRestStopEdit(document, { fetchImpl = fetch, onNot
         };
     }
 
+    function enterCreateMode() {
+        isCreateMode = true;
+        select.value = '';
+        status.textContent = '';
+        lockBanner.hidden = true;
+        serviceAreaCodeView.textContent = '';
+        unitCodeView.textContent = '저장하면 자동 발급됩니다';
+        unitName.value = '';
+        routeNo.value = '';
+        routeName.value = '';
+        xValue.value = '';
+        yValue.value = '';
+        telNo.value = '';
+        brand.value = '';
+        routeCode.value = '';
+        svarAddr.value = '';
+        convenience.value = '';
+        maintenanceYn.checked = false;
+        truckSaYn.checked = false;
+        form.hidden = false;
+    }
+
     async function loadSelected() {
+        isCreateMode = false;
         const serviceAreaCode = select.value;
         form.hidden = true;
         lockBanner.hidden = true;
@@ -146,6 +174,31 @@ export function initializeAdminRestStopEdit(document, { fetchImpl = fetch, onNot
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
+
+        if (isCreateMode) {
+            setBusy(true);
+            const result = await createRestStop(collectPayload(), csrfFrom(form), fetchImpl);
+            setBusy(false);
+
+            if (result.status === 'invalid') {
+                onNotice(result.message, 'error');
+                return;
+            }
+
+            if (result.status !== 'success') {
+                onNotice('휴게소 등록에 실패했습니다.', 'error');
+                return;
+            }
+
+            isCreateMode = false;
+            select.disabled = false;
+            select.append(createOption(document, result.data));
+            select.value = result.data.serviceAreaCode;
+            renderFields(result.data);
+            onNotice('휴게소를 새로 등록했습니다.');
+            return;
+        }
+
         const serviceAreaCode = select.value;
         if (serviceAreaCode === '') {
             return;
@@ -173,6 +226,8 @@ export function initializeAdminRestStopEdit(document, { fetchImpl = fetch, onNot
         renderFields(result.data);
         onNotice('휴게소 정보를 저장했습니다.');
     });
+
+    createButton.addEventListener('click', enterCreateMode);
 
     lockToggle.addEventListener('click', async () => {
         const serviceAreaCode = select.value;

@@ -711,7 +711,11 @@ JPEG 또는 PNG 한 장을 보낸다. 서버는 상세용 1600px와 목록용 48
 
 ### 관리자 휴게소 정보 편집 API
 
-관리자 인증(`ROLE_ADMIN`)이 필요한 API 3종으로, `rest_stop`/`rest_stop_detail`의 편집 대상 필드를 조회·저장·잠금해제한다. 응답은 `ApiResponse<AdminRestStopEditableResponse>` 형식이며 필드는 다음과 같다: `serviceAreaCode`, `unitCode`(읽기 전용), `unitName`, `routeNo`, `routeName`, `xValue`, `yValue`, `telNo`, `brand`, `routeCode`, `svarAddr`, `convenience`, `maintenanceYn`, `truckSaYn`, `adminOverridden`(동기화 잠금 여부).
+관리자 인증(`ROLE_ADMIN`)이 필요한 API 4종으로, `rest_stop`/`rest_stop_detail`의 편집 대상 필드를 조회·신규등록·저장·잠금해제한다. 응답은 `ApiResponse<AdminRestStopEditableResponse>` 형식이며 필드는 다음과 같다: `serviceAreaCode`, `unitCode`(읽기 전용), `unitName`, `routeNo`, `routeName`, `xValue`, `yValue`, `telNo`, `brand`, `routeCode`, `svarAddr`, `convenience`, `maintenanceYn`, `truckSaYn`, `adminOverridden`(동기화 잠금 여부).
+
+#### POST /api/admin/rest-stops
+
+`data.ex.co.kr`의 `locationinfoRest` API 자체에 없는 휴게소(예: 가평휴게소)를 관리자가 직접 등록한다. JSON 바디는 `PUT .../editable`과 동일한 `AdminRestStopUpdateRequest` 형식. `serviceAreaCode`/`unitCode`/`stdRestCd`는 서버가 각각 `"ADMIN-" + UUID`로 발급하며(요청 바디에 포함하지 않음), 실제 외부 API 코드와 절대 겹치지 않는다. 저장과 동시에 `rest_stop`/`rest_stop_detail` 두 행 모두 `admin_overridden=true`로 생성되어 처음부터 자동 동기화 대상에서 제외된다. `xValue`/`yValue`는 비어 있지 않다면 실수로 파싱 가능해야 하며, 실패하면 `400 Bad Request`.
 
 #### GET /api/admin/rest-stops/{serviceAreaCode}/editable
 

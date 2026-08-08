@@ -70,6 +70,15 @@ export async function saveEditableRestStop(serviceAreaCode, payload, csrf, fetch
     }
 }
 
+export async function createRestStop(payload, csrf, fetchImpl = fetch) {
+    try {
+        const response = await fetchImpl(ADMIN_REST_STOPS_ENDPOINT, mutationOptions('POST', csrf, payload));
+        return await parseMutationResponse(response);
+    } catch {
+        return { status: 'error' };
+    }
+}
+
 export async function clearRestStopOverride(serviceAreaCode, csrf, fetchImpl = fetch) {
     try {
         const response = await fetchImpl(overrideEndpoint(serviceAreaCode), mutationOptions('DELETE', csrf));
