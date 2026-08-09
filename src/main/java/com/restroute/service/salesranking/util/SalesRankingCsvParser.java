@@ -75,7 +75,7 @@ public class SalesRankingCsvParser {
             }
             return rows;
         } catch (IOException e) {
-            throw new SalesRankingUploadException("판매순위 CSV를 읽을 수 없습니다.");
+            throw new SalesRankingUploadException("판매순위 CSV를 읽을 수 없습니다.", e);
         }
     }
 

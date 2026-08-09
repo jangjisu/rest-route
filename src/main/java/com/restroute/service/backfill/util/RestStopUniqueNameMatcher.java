@@ -7,6 +7,8 @@ import org.springframework.util.StringUtils;
 
 public final class RestStopUniqueNameMatcher {
 
+    private static final int SINGLE_MATCH_COUNT = 1;
+
     private RestStopUniqueNameMatcher() {}
 
     public static String findUniqueServiceAreaCode(List<RestStopEntity> restStops, String name) {
@@ -18,7 +20,7 @@ public final class RestStopUniqueNameMatcher {
                 .map(RestStopEntity::getServiceAreaCode)
                 .distinct()
                 .toList();
-        if (serviceAreaCodes.size() != 1) {
+        if (serviceAreaCodes.size() != SINGLE_MATCH_COUNT) {
             return null;
         }
         return serviceAreaCodes.get(0);

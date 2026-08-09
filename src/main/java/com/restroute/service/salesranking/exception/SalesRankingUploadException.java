@@ -12,4 +12,8 @@ public class SalesRankingUploadException extends BusinessException {
     public SalesRankingUploadException(String message) {
         super(ResponseCode.INVALID_PARAMETER, message);
     }
+
+    public SalesRankingUploadException(String message, Throwable cause) {
+        super(ResponseCode.INVALID_PARAMETER, message, cause);
+    }
 }

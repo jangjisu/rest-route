@@ -1,5 +1,6 @@
 package com.restroute.service.salesranking.util;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public final class SalesRankingRestStopNameNormalizer {
@@ -12,6 +13,6 @@ public final class SalesRankingRestStopNameNormalizer {
         return NON_ALPHANUMERIC
                 .matcher(value == null ? "" : value)
                 .replaceAll("")
-                .toLowerCase();
+                .toLowerCase(Locale.ROOT);
     }
 }

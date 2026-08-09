@@ -99,6 +99,7 @@ public class RestOilEntity {
         this.adminOverridden = true;
     }
 
+    @SuppressWarnings("PMD.NullAssignment")
     public void clearAdminLink() {
         this.restStopServiceAreaCode = null;
         this.adminOverridden = true;

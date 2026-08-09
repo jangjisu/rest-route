@@ -18,6 +18,8 @@ import org.springframework.util.StringUtils;
 @Service
 class RouteRestStopComparisonSummaryService {
 
+    private static final String YES_FLAG = "Y";
+
     ComparisonSummary create(
             RestStopRelatedInfo relatedInfo, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         Optional<RestStopDetailEntity> detail = relatedInfo.detail();
@@ -105,7 +107,7 @@ class RouteRestStopComparisonSummaryService {
     }
 
     private int ynCount(String value) {
-        if ("Y".equals(value)) {
+        if (YES_FLAG.equals(value)) {
             return 1;
         }
         return 0;

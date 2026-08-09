@@ -22,4 +22,15 @@
     <Match>
         <Bug pattern="UWF_UNWRITTEN_FIELD"/>
     </Match>
+    <!--
+    RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE: 실제 운영 구현체는 null을 반환하지
+    않지만, 테스트에서 Mockito로 null을 스텁해 해당 방어 분기(EvChargerSyncResult
+    누락 시 기존 backfill 흐름 유지)를 검증한다. SpotBugs는 현재 구현체만 보고
+    "항상 non-null"이라 판단하지만, 이 null 체크는 의도적인 방어 코드라 제외한다.
+    -->
+    <Match>
+        <Class name="com.restroute.scheduler.RestStopStartupInitializer"/>
+        <Method name="initializeEvChargers"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+    </Match>
 </FindBugsFilter>

@@ -87,6 +87,7 @@ public class RestOilPriceEntity {
         this.adminOverridden = true;
     }
 
+    @SuppressWarnings("PMD.NullAssignment")
     public void clearAdminLink() {
         this.restStopServiceAreaCode = null;
         this.adminOverridden = true;

@@ -37,7 +37,7 @@ public class RestStopStoreSalesRankEntity {
     private String restStopServiceAreaCode;
 
     private RestStopStoreSalesRankEntity(SalesRankingStoreRow row) {
-        updateFrom(row);
+        apply(row);
         this.restStopServiceAreaCode = "";
     }
 
@@ -46,6 +46,10 @@ public class RestStopStoreSalesRankEntity {
     }
 
     public void updateFrom(SalesRankingStoreRow row) {
+        apply(row);
+    }
+
+    private void apply(SalesRankingStoreRow row) {
         this.baseYearMonth = row.baseYearMonth();
         this.overallRank = row.overallRank();
         this.restStopRank = row.restStopRank();

@@ -12,6 +12,10 @@ public record FoodMenuItemResponse(
         String season,
         String seasonLabel) {
 
+    private static final String SEASON_ALL = "4";
+    private static final String SEASON_SUMMER = "S";
+    private static final String SEASON_WINTER = "W";
+
     public static FoodMenuItemResponse from(RestFoodEntity entity) {
         return new FoodMenuItemResponse(
                 entity.getFoodName(),
@@ -25,13 +29,13 @@ public record FoodMenuItemResponse(
     }
 
     private static String seasonLabel(String season) {
-        if ("4".equals(season)) {
+        if (SEASON_ALL.equals(season)) {
             return "사계절";
         }
-        if ("S".equals(season)) {
+        if (SEASON_SUMMER.equals(season)) {
             return "여름";
         }
-        if ("W".equals(season)) {
+        if (SEASON_WINTER.equals(season)) {
             return "겨울";
         }
         return null;

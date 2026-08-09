@@ -40,7 +40,7 @@ public class RestStopImageProcessor {
                 ImageInputStream imageInput = ImageIO.createImageInputStream(input)) {
             return processImage(imageInput);
         } catch (IOException exception) {
-            throw new InvalidRestStopImageException("Unable to read image file");
+            throw new InvalidRestStopImageException("Unable to read image file", exception);
         }
     }
 
