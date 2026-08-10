@@ -2,6 +2,7 @@ package com.restroute.common;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -14,6 +15,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         log.warn("Request parameter type mismatch: {}", e.getMessage());
+        return ResponseEntity.status(ResponseCode.INVALID_PARAMETER.getHttpStatus())
+                .body(ApiResponse.error(ResponseCode.INVALID_PARAMETER));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestParameter(MissingServletRequestParameterException e) {
+        log.warn("Missing required request parameter: {}", e.getMessage());
         return ResponseEntity.status(ResponseCode.INVALID_PARAMETER.getHttpStatus())
                 .body(ApiResponse.error(ResponseCode.INVALID_PARAMETER));
     }
