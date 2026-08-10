@@ -30,34 +30,22 @@ class FlightCityQueryServiceTest {
     @Test
     @DisplayName("keyword가 있으면 이름 부분 일치로 검색한다")
     void search_byKeyword_searchesByName() {
-        FlightCityEntity osaka = new FlightCityEntity("OSA", "Osaka", "오사카", "JP", "일본", "JAPAN");
-        when(flightCityRepository.findAllByNameContainingIgnoreCaseOrNameKoContainingIgnoreCaseOrderByNameKoAsc(
-                        "오사카", "오사카"))
+        FlightCityEntity osaka = new FlightCityEntity("OSA", "Osaka", "JP");
+        when(flightCityRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc("osaka"))
                 .thenReturn(List.of(osaka));
 
-        List<FlightCityResponse> result = flightCityQueryService.search("오사카", null);
+        List<FlightCityResponse> result = flightCityQueryService.search("osaka");
 
         assertThat(result).extracting(FlightCityResponse::code).containsExactly("OSA");
     }
 
     @Test
-    @DisplayName("keyword가 없고 region이 있으면 지역권으로 조회한다")
-    void search_byRegion_whenKeywordMissing() {
-        FlightCityEntity osaka = new FlightCityEntity("OSA", "Osaka", "오사카", "JP", "일본", "JAPAN");
-        when(flightCityRepository.findAllByRegionGroupOrderByNameKoAsc("JAPAN")).thenReturn(List.of(osaka));
-
-        List<FlightCityResponse> result = flightCityQueryService.search(null, "JAPAN");
-
-        assertThat(result).extracting(FlightCityResponse::code).containsExactly("OSA");
-    }
-
-    @Test
-    @DisplayName("keyword와 region이 모두 없으면 전체 목록을 조회한다")
-    void search_returnsAll_whenNoFilterGiven() {
-        FlightCityEntity osaka = new FlightCityEntity("OSA", "Osaka", "오사카", "JP", "일본", "JAPAN");
+    @DisplayName("keyword가 없으면 전체 목록을 조회한다")
+    void search_returnsAll_whenKeywordMissing() {
+        FlightCityEntity osaka = new FlightCityEntity("OSA", "Osaka", "JP");
         when(flightCityRepository.findAll()).thenReturn(List.of(osaka));
 
-        List<FlightCityResponse> result = flightCityQueryService.search(null, null);
+        List<FlightCityResponse> result = flightCityQueryService.search(null);
 
         assertThat(result).extracting(FlightCityResponse::code).containsExactly("OSA");
     }

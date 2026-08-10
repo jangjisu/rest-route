@@ -20,7 +20,7 @@ public class FlightCityController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<FlightCityResponse>>> search(
-            @RequestParam(required = false) String keyword, @RequestParam(required = false) String region) {
-        return ResponseEntity.ok(ApiResponse.success(flightCityQueryService.search(keyword, region)));
+            @RequestParam(required = false) String keyword) {
+        return ResponseEntity.ok(ApiResponse.success(flightCityQueryService.search(keyword)));
     }
 }

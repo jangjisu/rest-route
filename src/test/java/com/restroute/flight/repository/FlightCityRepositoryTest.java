@@ -21,12 +21,12 @@ class FlightCityRepositoryTest {
     @Test
     @DisplayName("IATA 코드로 도시를 조회한다")
     void findByCode_returnsMatchingCity() {
-        flightCityRepository.save(new FlightCityEntity("OSA", "Osaka", "오사카", "JP", "일본", "JAPAN"));
+        flightCityRepository.save(new FlightCityEntity("OSA", "Osaka", "JP"));
 
         Optional<FlightCityEntity> result = flightCityRepository.findByCode("OSA");
 
         assertThat(result).isPresent();
-        assertThat(result.get().getNameKo()).isEqualTo("오사카");
+        assertThat(result.get().getName()).isEqualTo("Osaka");
     }
 
     @Test
@@ -38,31 +38,15 @@ class FlightCityRepositoryTest {
     }
 
     @Test
-    @DisplayName("지역권으로 도시를 가나다순 정렬해 조회한다")
-    void findAllByRegionGroupOrderByNameKoAsc_returnsSortedMatches() {
+    @DisplayName("이름 부분 일치로 도시를 가나다순 정렬해 조회한다")
+    void findAllByNameContaining_returnsSortedMatches() {
         flightCityRepository.saveAll(List.of(
-                new FlightCityEntity("FUK", "Fukuoka", "후쿠오카", "JP", "일본", "JAPAN"),
-                new FlightCityEntity("OSA", "Osaka", "오사카", "JP", "일본", "JAPAN"),
-                new FlightCityEntity("BKK", "Bangkok", "방콕", "TH", "태국", "SOUTHEAST_ASIA")));
+                new FlightCityEntity("FUK", "Fukuoka", "JP"),
+                new FlightCityEntity("OSA", "Osaka", "JP"),
+                new FlightCityEntity("BKK", "Bangkok", "TH")));
 
-        List<FlightCityEntity> result = flightCityRepository.findAllByRegionGroupOrderByNameKoAsc("JAPAN");
+        List<FlightCityEntity> result = flightCityRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc("o");
 
-        assertThat(result).extracting(FlightCityEntity::getCode).containsExactly("OSA", "FUK");
-    }
-
-    @Test
-    @DisplayName("영문/한글 이름 부분 일치로 도시를 검색한다")
-    void findAllByNameContaining_matchesEnglishOrKoreanName() {
-        flightCityRepository.save(new FlightCityEntity("OSA", "Osaka", "오사카", "JP", "일본", "JAPAN"));
-
-        List<FlightCityEntity> byKorean =
-                flightCityRepository.findAllByNameContainingIgnoreCaseOrNameKoContainingIgnoreCaseOrderByNameKoAsc(
-                        "오사", "오사");
-        List<FlightCityEntity> byEnglish =
-                flightCityRepository.findAllByNameContainingIgnoreCaseOrNameKoContainingIgnoreCaseOrderByNameKoAsc(
-                        "osa", "osa");
-
-        assertThat(byKorean).extracting(FlightCityEntity::getCode).containsExactly("OSA");
-        assertThat(byEnglish).extracting(FlightCityEntity::getCode).containsExactly("OSA");
+        assertThat(result).extracting(FlightCityEntity::getCode).containsExactly("BKK", "FUK", "OSA");
     }
 }

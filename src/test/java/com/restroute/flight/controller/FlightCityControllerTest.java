@@ -32,22 +32,22 @@ class FlightCityControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/flights/cities는 keyword/region 파라미터를 그대로 서비스에 전달한다")
-    void search_delegatesKeywordAndRegionToService() throws Exception {
-        FlightCityResponse osaka = new FlightCityResponse("OSA", "Osaka", "오사카", "JP", "일본", "JAPAN");
-        when(flightCityQueryService.search("오사카", "JAPAN")).thenReturn(List.of(osaka));
+    @DisplayName("GET /api/flights/cities는 keyword 파라미터를 그대로 서비스에 전달한다")
+    void search_delegatesKeywordToService() throws Exception {
+        FlightCityResponse osaka = new FlightCityResponse("OSA", "Osaka", "JP");
+        when(flightCityQueryService.search("osaka")).thenReturn(List.of(osaka));
 
-        mockMvc.perform(get("/api/flights/cities").param("keyword", "오사카").param("region", "JAPAN"))
+        mockMvc.perform(get("/api/flights/cities").param("keyword", "osaka"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.data[0].code").value("OSA"))
-                .andExpect(jsonPath("$.data[0].nameKo").value("오사카"));
+                .andExpect(jsonPath("$.data[0].name").value("Osaka"));
     }
 
     @Test
     @DisplayName("파라미터가 없으면 null로 서비스에 위임한다")
-    void search_delegatesNullFilters_whenNoParamsGiven() throws Exception {
-        when(flightCityQueryService.search(null, null)).thenReturn(List.of());
+    void search_delegatesNullKeyword_whenParamMissing() throws Exception {
+        when(flightCityQueryService.search(null)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/flights/cities"))
                 .andExpect(status().isOk())

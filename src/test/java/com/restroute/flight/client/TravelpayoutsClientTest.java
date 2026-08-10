@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.restroute.flight.client.exception.TravelpayoutsApiException;
+import com.restroute.flight.client.response.TravelpayoutsCityItem;
 import com.restroute.flight.client.response.TravelpayoutsGroupedPricesResponse;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +39,17 @@ class TravelpayoutsClientTest {
         TravelpayoutsGroupedPricesResponse result = travelpayoutsClient.groupedPrices("ICN", "OSA", "2026-08", 1, 3);
 
         assertThat(result).isSameAs(response);
+    }
+
+    @Test
+    @DisplayName("citiesData는 전체 도시 목록을 그대로 반환한다")
+    void citiesData_returnsFullCityList() {
+        List<TravelpayoutsCityItem> items = List.of(new TravelpayoutsCityItem("Osaka", "OSA", "JP", true));
+        when(travelpayoutsFeignClient.citiesData()).thenReturn(items);
+
+        List<TravelpayoutsCityItem> result = travelpayoutsClient.citiesData();
+
+        assertThat(result).isSameAs(items);
     }
 
     @Test

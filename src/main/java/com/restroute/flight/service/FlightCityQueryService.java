@@ -15,17 +15,9 @@ public class FlightCityQueryService {
     private final FlightCityRepository flightCityRepository;
 
     @Transactional(readOnly = true)
-    public List<FlightCityResponse> search(String keyword, String regionGroup) {
+    public List<FlightCityResponse> search(String keyword) {
         if (StringUtils.hasText(keyword)) {
-            return flightCityRepository
-                    .findAllByNameContainingIgnoreCaseOrNameKoContainingIgnoreCaseOrderByNameKoAsc(keyword, keyword)
-                    .stream()
-                    .map(FlightCityResponse::from)
-                    .toList();
-        }
-
-        if (StringUtils.hasText(regionGroup)) {
-            return flightCityRepository.findAllByRegionGroupOrderByNameKoAsc(regionGroup).stream()
+            return flightCityRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc(keyword).stream()
                     .map(FlightCityResponse::from)
                     .toList();
         }
