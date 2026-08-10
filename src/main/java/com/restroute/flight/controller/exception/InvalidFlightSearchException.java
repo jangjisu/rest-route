@@ -11,21 +11,20 @@ public class InvalidFlightSearchException extends BusinessException {
     }
 
     public static InvalidFlightSearchException forReversedDateRange(LocalDate dateFrom, LocalDate dateTo) {
-        return new InvalidFlightSearchException(
-                "dateTo must not be before dateFrom: dateFrom=" + dateFrom + ", dateTo=" + dateTo);
+        return new InvalidFlightSearchException("종료일(" + dateTo + ")은 시작일(" + dateFrom + ")보다 빠를 수 없습니다.");
     }
 
     public static InvalidFlightSearchException forDateRangeTooWide(
             LocalDate dateFrom, LocalDate dateTo, int maxMonths) {
         return new InvalidFlightSearchException(
-                "Date range must not exceed " + maxMonths + " months: dateFrom=" + dateFrom + ", dateTo=" + dateTo);
+                "날짜 범위는 최대 " + maxMonths + "개월을 넘을 수 없습니다: " + dateFrom + " ~ " + dateTo);
     }
 
     public static InvalidFlightSearchException forEmptyNights() {
-        return new InvalidFlightSearchException("nights must contain at least one value");
+        return new InvalidFlightSearchException("여행 박수(nights)는 최소 1개 이상 선택해야 합니다.");
     }
 
     public static InvalidFlightSearchException forUnknownRegion(String region) {
-        return new InvalidFlightSearchException("Unknown region: " + region);
+        return new InvalidFlightSearchException("알 수 없는 지역권입니다: " + region);
     }
 }

@@ -60,7 +60,7 @@ class TravelpayoutsClientTest {
 
         assertThatThrownBy(() -> travelpayoutsClient.groupedPrices("ICN", "OSA", "2026-08", null, null))
                 .isInstanceOf(TravelpayoutsApiException.class)
-                .hasMessageContaining("empty response");
+                .hasMessageContaining("빈 응답");
     }
 
     @Test

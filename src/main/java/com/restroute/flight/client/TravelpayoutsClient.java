@@ -52,7 +52,7 @@ public class TravelpayoutsClient {
         try {
             T response = request.get();
             if (response == null) {
-                throw new TravelpayoutsApiException(requestDescription, "empty response");
+                throw new TravelpayoutsApiException(requestDescription, "빈 응답");
             }
             log.info("External API request succeeded. api={}, endpoint={}", API_NAME, requestDescription);
             return response;

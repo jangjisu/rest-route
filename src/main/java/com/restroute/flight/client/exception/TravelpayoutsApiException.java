@@ -13,6 +13,6 @@ public class TravelpayoutsApiException extends ExternalApiException {
     }
 
     private static String buildMessage(String requestDescription, String message) {
-        return "Failed to call Travelpayouts API. request=" + requestDescription + ", message=" + message;
+        return "Travelpayouts API 호출에 실패했습니다. 요청=" + requestDescription + ", 메시지=" + message;
     }
 }
