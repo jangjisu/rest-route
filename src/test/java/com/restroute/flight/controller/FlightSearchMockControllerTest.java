@@ -21,7 +21,7 @@ class FlightSearchMockControllerTest {
     private static final String VALID_ORIGIN = "ICN";
     private static final String VALID_DATE_FROM = "2099-01-10";
     private static final String VALID_DATE_TO = "2099-02-10";
-    private static final String FIRST_ITEM_ID = "08ef4f93-9a8c-3fad-a286-f10efa3f2f61";
+    private static final String FIRST_ITEM_ID = "MA";
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();

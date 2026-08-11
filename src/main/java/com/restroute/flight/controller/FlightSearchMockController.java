@@ -23,14 +23,7 @@ public class FlightSearchMockController {
     private static final int MAX_PAGE_SIZE = 50;
 
     /**
-     * origin/dateFrom/dateTo/nights는 진짜 필수라 어노테이션 기본값({@code required = true})을
-     * 그대로 쓴다 — 이 중 하나라도 아예 안 오면 Spring이 {@link
-     * org.springframework.web.bind.MissingServletRequestParameterException}을 던지고,
-     * {@link FlightExceptionHandler}가 그 필드 하나만 {@code REQUIRED}로 표시해서 flight 전용
-     * {@code {data,error}} 봉투로 응답한다(동시에 여러 개가 비어도 Spring이 첫 번째에서 멈추기
-     * 때문에 한 번엔 하나씩만 알려준다). 값은 왔지만 형식이 잘못됐거나(IATA 코드, 날짜 형식 등)
-     * 빈 문자열로 온 경우까지 포함한 나머지 검증은 전부 {@link FlightSearchRequestValidator}가
-     * 한 번에 모아서 처리한다.
+     * 필수 값이 잘못된 경우 {@link FlightExceptionHandler}에서 처리한다.
      *
      * @param origin 출발지 IATA 코드(필수). 예: "ICN"
      * @param destination 도착지 IATA 코드(옵션, 비우면 범위 내 전체 목적지). 예: "OSA"

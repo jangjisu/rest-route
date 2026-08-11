@@ -10,11 +10,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.IntStream;
 import org.springframework.util.StringUtils;
 
@@ -22,10 +22,9 @@ import org.springframework.util.StringUtils;
  * 프론트엔드 개발용 고정 모킹 데이터. Travelpayouts grouped_prices가 실제로 줄 수 있는
  * 필드만으로 결정적(deterministic) 가짜 데이터를 생성한다.
  *
- * <p>id는 인덱스를 그대로 노출하는 대신 결정적 UUID(v3, {@link UUID#nameUUIDFromBytes})로
- * 만들어서 커서가 정말 불투명한 값이 되게 하고, 커서를 받으면 그 문자열을 파싱해서 위치를
- * 역산하지 않고 생성된 목록에서 실제로 찾아서 위치를 구한다 — 나중에 진짜 백엔드 id로
- * 바뀌어도 이 방식은 그대로 통한다.
+ * <p>id는 인덱스를 base64로 인코딩해서 만든다 — 커서를 받으면 그 문자열을 디코드해서 위치를
+ * 역산하지 않고, 생성된 목록에서 실제로 찾아서(lookup) 위치를 구한다. 나중에 진짜 백엔드 id로
+ * 바뀌어도 이 lookup 방식은 그대로 통한다.
  */
 final class FlightSearchMockFixture {
 
@@ -162,8 +161,9 @@ final class FlightSearchMockFixture {
     }
 
     private static String idOf(int index) {
-        return UUID.nameUUIDFromBytes(("flight-deal-" + index).getBytes(StandardCharsets.UTF_8))
-                .toString();
+        return Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(String.valueOf(index).getBytes(StandardCharsets.UTF_8));
     }
 
     private record Destination(String code, String name, ZoneOffset offset) {}
