@@ -14,6 +14,7 @@ public class KakaoMapClient {
 
     private static final String DEFAULT_PRIORITY = "RECOMMEND";
     private static final boolean ROAD_DETAILS = true;
+    private static final boolean ALTERNATIVES = true;
     private static final String API_NAME = "KAKAO";
 
     private final KakaoNaviFeignClient kakaoNaviFeignClient;
@@ -37,7 +38,7 @@ public class KakaoMapClient {
         return fetch(
                 "directions",
                 () -> kakaoNaviFeignClient.getDirections(
-                        authorization(), origin, destination, DEFAULT_PRIORITY, ROAD_DETAILS));
+                        authorization(), origin, destination, DEFAULT_PRIORITY, ROAD_DETAILS, ALTERNATIVES));
     }
 
     private String authorization() {

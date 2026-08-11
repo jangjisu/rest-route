@@ -67,8 +67,10 @@ let currentFoodSections = [];
 let routeRequest;
 let placeSearchRequest;
 let restStopNameSearchRequest;
-let routePolyline;
+let routePolylines = [];
 let routeMarkers = [];
+let currentRouteData;
+let selectedRouteIndex = 0;
 let allRestStopMarkers = [];
 let markerMode = 'all';
 let originMarker;
@@ -1774,25 +1776,34 @@ function renderRouteState(state) {
 
 function renderRoute(data) {
     clearRouteOverlays();
+    currentRouteData = data;
+    selectedRouteIndex = 0;
+    renderRouteSelection();
+    openRouteResultModal();
+    setMarkerMode('route');
+}
 
-    const path = Array.isArray(data?.route?.path) ? data.route.path : [];
-    const latLngs = path
-        .filter((point) => Array.isArray(point) && point.length === 2)
-        .map((point) => new naverMaps.LatLng(point[1], point[0]));
-    if (latLngs.length > 0) {
-        routePolyline = new naverMaps.Polyline({
-            map,
-            path: latLngs,
-            strokeColor: '#0d6efd',
-            strokeWeight: 5,
-            strokeOpacity: 0.85
-        });
-        fitMapToPath(latLngs);
+function selectRoute(index) {
+    const routes = Array.isArray(currentRouteData?.routes) ? currentRouteData.routes : [];
+    if (!routes[index] || index === selectedRouteIndex) {
+        return;
     }
 
-    renderEndpointMarkers(data?.destination);
+    selectedRouteIndex = index;
+    renderRouteSelection();
+}
 
-    const restStops = Array.isArray(data?.restStops) ? data.restStops : [];
+function renderRouteSelection() {
+    const routes = Array.isArray(currentRouteData?.routes) ? currentRouteData.routes : [];
+    const selected = routes[selectedRouteIndex];
+
+    clearRoutePolylines();
+    renderRoutePolylines(routes, selectedRouteIndex);
+    renderEndpointMarkers(currentRouteData?.destination);
+    renderRouteOptionCards(routes, selectedRouteIndex);
+
+    clearRouteMarkers();
+    const restStops = Array.isArray(selected?.restStops) ? selected.restStops : [];
     currentNationalOilPriceSummary = null;
     restStops.forEach((restStop) => {
         const position = new naverMaps.LatLng(restStop.latitude, restStop.longitude);
@@ -1819,7 +1830,7 @@ function renderRoute(data) {
     currentRouteRestStops = restStops;
     renderRouteList(restStops, currentNationalOilPriceSummary);
     nationalOilPriceRequest?.load();
-    const destinationName = data?.destination?.name ?? '목적지';
+    const destinationName = currentRouteData?.destination?.name ?? '목적지';
     setRouteStatus(`${destinationName}까지 경로상 휴게소 ${restStops.length}곳`);
 
     const button = document.getElementById('routeResultOpen');
@@ -1827,8 +1838,60 @@ function renderRoute(data) {
         button.textContent = `경로 결과 ${restStops.length}곳`;
     }
     toggleRouteResultButton(restStops.length > 0);
-    openRouteResultModal();
-    setMarkerMode('route');
+}
+
+function renderRoutePolylines(routes, selectedIndex) {
+    routes.forEach((route, index) => {
+        const path = Array.isArray(route?.summary?.path) ? route.summary.path : [];
+        const latLngs = path
+            .filter((point) => Array.isArray(point) && point.length === 2)
+            .map((point) => new naverMaps.LatLng(point[1], point[0]));
+        if (latLngs.length === 0) {
+            return;
+        }
+
+        const isSelected = index === selectedIndex;
+        const polyline = new naverMaps.Polyline({
+            map,
+            path: latLngs,
+            strokeColor: isSelected ? '#0d6efd' : '#adb5bd',
+            strokeWeight: isSelected ? 5 : 3,
+            strokeOpacity: isSelected ? 0.85 : 0.6,
+            strokeStyle: isSelected ? 'solid' : 'shortdash'
+        });
+        naverMaps.Event.addListener(polyline, 'click', () => selectRoute(index));
+        routePolylines.push(polyline);
+
+        if (isSelected) {
+            fitMapToPath(latLngs);
+        }
+    });
+}
+
+function renderRouteOptionCards(routes, selectedIndex) {
+    const container = document.getElementById('routeOptions');
+    if (!container) {
+        return;
+    }
+
+    container.replaceChildren();
+    if (routes.length <= 1) {
+        container.classList.add('d-none');
+        return;
+    }
+
+    container.classList.remove('d-none');
+    routes.forEach((route, index) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `route-option${index === selectedIndex ? ' selected' : ''}`;
+        card.innerHTML = `
+            <span class="route-option-label">경로 ${index + 1}</span>
+            <p class="route-option-summary">${formatRouteOptionSummary(route)}</p>
+        `;
+        card.addEventListener('click', () => selectRoute(index));
+        container.appendChild(card);
+    });
 }
 
 function renderEndpointMarker(target, point) {
@@ -2083,6 +2146,54 @@ function renderNationalOilPriceSummary(summary) {
         list.appendChild(chip);
     });
     container.appendChild(list);
+}
+
+export function formatRouteDuration(durationSeconds) {
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+        return '';
+    }
+
+    const totalMinutes = Math.round(durationSeconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) {
+        return `${minutes}분`;
+    }
+    if (minutes === 0) {
+        return `${hours}시간`;
+    }
+    return `${hours}시간 ${minutes}분`;
+}
+
+export function formatRouteDistance(distanceMeters) {
+    if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+        return '';
+    }
+
+    const km = distanceMeters / 1000;
+    return `${km.toFixed(km < 10 ? 1 : 0)}km`;
+}
+
+export function formatRouteTollFare(tollFareWon) {
+    if (!Number.isFinite(tollFareWon) || tollFareWon <= 0) {
+        return '무료';
+    }
+    return `톨비 ${tollFareWon.toLocaleString()}원`;
+}
+
+export function formatRouteOptionSummary(route) {
+    const summary = route?.summary;
+    if (!summary || typeof summary !== 'object') {
+        return '';
+    }
+
+    return [
+        formatRouteDuration(summary.durationSeconds),
+        formatRouteDistance(summary.distanceMeters),
+        formatRouteTollFare(summary.tollFareWon)
+    ]
+        .filter((part) => part !== '')
+        .join(' · ');
 }
 
 export function formatRouteComparisonSummary(restStop) {
@@ -2397,13 +2508,19 @@ function selectRouteRestStop(restStop) {
     });
 }
 
+function clearRoutePolylines() {
+    routePolylines.forEach((polyline) => polyline.setMap(null));
+    routePolylines = [];
+}
+
+function clearRouteMarkers() {
+    routeMarkers.forEach((marker) => marker.setMap(null));
+    routeMarkers = [];
+}
+
 function clearRouteOverlays() {
     nationalOilPriceRequest?.invalidate();
-
-    if (routePolyline) {
-        routePolyline.setMap(null);
-        routePolyline = undefined;
-    }
+    clearRoutePolylines();
 
     if (originMarker) {
         originMarker.setMap(null);
@@ -2415,10 +2532,17 @@ function clearRouteOverlays() {
         destinationMarker = undefined;
     }
 
-    routeMarkers.forEach((marker) => marker.setMap(null));
-    routeMarkers = [];
+    clearRouteMarkers();
     currentRouteRestStops = [];
     currentNationalOilPriceSummary = null;
+    currentRouteData = undefined;
+    selectedRouteIndex = 0;
+
+    const routeOptions = document.getElementById('routeOptions');
+    if (routeOptions) {
+        routeOptions.replaceChildren();
+        routeOptions.classList.add('d-none');
+    }
 }
 
 function setRouteStatus(message) {

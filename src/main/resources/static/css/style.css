@@ -575,6 +575,58 @@ body.global-loading-open {
     overflow-y: auto;
 }
 
+.route-options {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.55rem;
+    margin: 1rem 1.25rem 0;
+    padding-bottom: 0.2rem;
+    overflow-x: auto;
+}
+
+.route-option {
+    flex: 1 1 0;
+    min-width: 8.5rem;
+    border: 1.5px solid oklch(90% 0.01 75);
+    border-radius: 12px;
+    background-color: var(--rr-color-surface);
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+    font-family: inherit;
+}
+
+.route-option:hover {
+    border-color: oklch(80% 0.04 220);
+}
+
+.route-option.selected {
+    border-color: var(--rr-color-primary);
+    background-color: oklch(96% 0.03 220);
+    box-shadow: 0 2px 8px oklch(52% 0.11 220 / 0.18);
+}
+
+.route-option-label {
+    display: block;
+    margin: 0 0 0.3rem;
+    color: var(--rr-color-text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.route-option.selected .route-option-label {
+    color: var(--rr-color-primary);
+}
+
+.route-option-summary {
+    margin: 0;
+    color: var(--rr-color-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
 .route-direction-alternative-notice {
     margin: 1rem 1.25rem 0;
     padding: 0.65rem 0.75rem;

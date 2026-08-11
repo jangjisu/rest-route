@@ -2,11 +2,10 @@ package com.restroute.controller.response;
 
 import java.util.List;
 
-public record RouteRestStopResponse(Destination destination, RouteSummary route, List<RouteRestStopItem> restStops) {
+public record RouteRestStopResponse(Destination destination, List<RouteOption> routes) {
 
-    public static RouteRestStopResponse of(
-            Destination destination, RouteSummary route, List<RouteRestStopItem> restStops) {
-        return new RouteRestStopResponse(destination, route, restStops);
+    public static RouteRestStopResponse of(Destination destination, List<RouteOption> routes) {
+        return new RouteRestStopResponse(destination, routes);
     }
 
     public record Destination(String name, double latitude, double longitude) {
@@ -16,10 +15,18 @@ public record RouteRestStopResponse(Destination destination, RouteSummary route,
         }
     }
 
-    public record RouteSummary(long distanceMeters, long durationSeconds, List<List<Double>> path) {
+    public record RouteOption(int routeIndex, RouteSummary summary, List<RouteRestStopItem> restStops) {
 
-        public static RouteSummary of(long distanceMeters, long durationSeconds, List<List<Double>> path) {
-            return new RouteSummary(distanceMeters, durationSeconds, path);
+        public static RouteOption of(int routeIndex, RouteSummary summary, List<RouteRestStopItem> restStops) {
+            return new RouteOption(routeIndex, summary, restStops);
+        }
+    }
+
+    public record RouteSummary(long distanceMeters, long durationSeconds, long tollFareWon, List<List<Double>> path) {
+
+        public static RouteSummary of(
+                long distanceMeters, long durationSeconds, long tollFareWon, List<List<Double>> path) {
+            return new RouteSummary(distanceMeters, durationSeconds, tollFareWon, path);
         }
     }
 

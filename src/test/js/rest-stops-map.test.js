@@ -10,6 +10,10 @@ import {
     formatNationalOilPriceSummary,
     formatOilPriceComparison,
     formatRouteComparisonSummary,
+    formatRouteDistance,
+    formatRouteDuration,
+    formatRouteOptionSummary,
+    formatRouteTollFare,
     isRouteGlobalLoadingState,
     renderEventSection,
     renderNationalOilPriceState,
@@ -22,6 +26,33 @@ import {
     shouldRequestRouteAutomatically,
     shouldShowRouteResultBackButton
 } from '../../main/resources/static/js/rest-stops-map.js';
+
+test('formatRouteDuration formats seconds as hours and minutes', () => {
+    assert.equal(formatRouteDuration(12000), '3시간 20분');
+    assert.equal(formatRouteDuration(3600), '1시간');
+    assert.equal(formatRouteDuration(1800), '30분');
+    assert.equal(formatRouteDuration(0), '');
+    assert.equal(formatRouteDuration(undefined), '');
+});
+
+test('formatRouteDistance formats meters as km', () => {
+    assert.equal(formatRouteDistance(250000), '250km');
+    assert.equal(formatRouteDistance(9500), '9.5km');
+    assert.equal(formatRouteDistance(0), '');
+    assert.equal(formatRouteDistance(undefined), '');
+});
+
+test('formatRouteTollFare formats won or 무료', () => {
+    assert.equal(formatRouteTollFare(4500), '톨비 4,500원');
+    assert.equal(formatRouteTollFare(0), '무료');
+    assert.equal(formatRouteTollFare(undefined), '무료');
+});
+
+test('formatRouteOptionSummary joins duration/distance/toll with a separator', () => {
+    const route = { summary: { durationSeconds: 12000, distanceMeters: 250000, tollFareWon: 4500 } };
+    assert.equal(formatRouteOptionSummary(route), '3시간 20분 · 250km · 톨비 4,500원');
+    assert.equal(formatRouteOptionSummary({}), '');
+});
 
 test('formatEvChargerAvailability only displays an indicator for true values', () => {
     assert.equal(formatEvChargerAvailability({ hasEvCharger: true }), '전기차 충전 가능');
