@@ -1,9 +1,10 @@
 package com.restroute.flight.controller;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.restroute.flight.controller.exception.InvalidFlightSearchException;
+import com.restroute.flight.controller.response.FlightApiError;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -11,55 +12,150 @@ import org.junit.jupiter.api.Test;
 
 class FlightSearchRequestValidatorTest {
 
-    private static final LocalDate FROM = LocalDate.of(2026, 7, 1);
-    private static final LocalDate TO = LocalDate.of(2026, 7, 31);
-
     @Test
-    @DisplayName("유효한 값이면 예외를 던지지 않는다")
-    void validate_passesForValidRequest() {
-        assertThatCode(() -> FlightSearchRequestValidator.validate(FROM, TO, List.of(3, 4), List.of("JAPAN")))
-                .doesNotThrowAnyException();
+    @DisplayName("전부 유효하면 파싱된 요청을 반환한다")
+    void validate_returnsParsedRequest_whenAllValid() {
+        FlightSearchRequestValidator.ValidatedRequest result = FlightSearchRequestValidator.validate(
+                "ICN", "OSA", "2099-01-10", "2099-02-10", List.of("3", "4"), List.of("JAPAN"));
+
+        assertThat(result.origin()).isEqualTo("ICN");
+        assertThat(result.destination()).isEqualTo("OSA");
+        assertThat(result.dateFrom()).isEqualTo(LocalDate.of(2099, 1, 10));
+        assertThat(result.dateTo()).isEqualTo(LocalDate.of(2099, 2, 10));
+        assertThat(result.nights()).containsExactly(3, 4);
+        assertThat(result.regions()).containsExactly("JAPAN");
     }
 
     @Test
-    @DisplayName("지역권/박수가 없어도(옵션) 통과한다")
-    void validate_passesWithoutOptionalValues() {
-        assertThatCode(() -> FlightSearchRequestValidator.validate(FROM, TO, List.of(3), null))
-                .doesNotThrowAnyException();
+    @DisplayName("destination/regions 없이도(옵션) 통과한다")
+    void validate_passesWithoutOptionalFields() {
+        FlightSearchRequestValidator.ValidatedRequest result =
+                FlightSearchRequestValidator.validate("ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null);
+
+        assertThat(result.destination()).isNull();
+        assertThat(result.regions()).isNull();
     }
 
     @Test
-    @DisplayName("종료일이 시작일보다 빠르면 한글 메시지로 예외를 던진다")
-    void validate_throwsForReversedDateRange() {
-        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(TO, FROM, List.of(3), null))
+    @DisplayName("origin이 없으면 REQUIRED를 반환한다")
+    void validate_flagsMissingOrigin() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        null, null, "2099-01-10", "2099-02-10", List.of("3"), null))
                 .isInstanceOf(InvalidFlightSearchException.class)
-                .hasMessageContaining("시작일")
-                .hasMessageContaining("빠를 수 없습니다");
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("origin", "REQUIRED")));
     }
 
     @Test
-    @DisplayName("날짜 범위가 3개월을 넘으면 한글 메시지로 예외를 던진다")
-    void validate_throwsForDateRangeTooWide() {
-        LocalDate tooFar = FROM.plusMonths(3).plusDays(1);
-
-        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(FROM, tooFar, List.of(3), null))
+    @DisplayName("origin이 IATA 코드 형식이 아니면 INVALID_IATA_CODE를 반환한다")
+    void validate_flagsInvalidOriginFormat() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "seoul", null, "2099-01-10", "2099-02-10", List.of("3"), null))
                 .isInstanceOf(InvalidFlightSearchException.class)
-                .hasMessageContaining("최대 3개월");
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("origin", "INVALID_IATA_CODE")));
     }
 
     @Test
-    @DisplayName("nights가 비어있으면 한글 메시지로 예외를 던진다")
-    void validate_throwsForEmptyNights() {
-        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(FROM, TO, List.of(), null))
+    @DisplayName("destination이 있는데 IATA 코드 형식이 아니면 INVALID_IATA_CODE를 반환한다")
+    void validate_flagsInvalidDestinationFormat() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "ICN", "osaka", "2099-01-10", "2099-02-10", List.of("3"), null))
                 .isInstanceOf(InvalidFlightSearchException.class)
-                .hasMessageContaining("최소 1개 이상 선택");
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("destination", "INVALID_IATA_CODE")));
     }
 
     @Test
-    @DisplayName("알 수 없는 지역권이면 한글 메시지로 예외를 던진다")
-    void validate_throwsForUnknownRegion() {
-        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(FROM, TO, List.of(3), List.of("EUROPE")))
+    @DisplayName("dateFrom이 없으면 REQUIRED를 반환한다")
+    void validate_flagsMissingDateFrom() {
+        assertThatThrownBy(() ->
+                        FlightSearchRequestValidator.validate("ICN", null, null, "2099-02-10", List.of("3"), null))
                 .isInstanceOf(InvalidFlightSearchException.class)
-                .hasMessageContaining("알 수 없는 지역권");
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "REQUIRED")));
+    }
+
+    @Test
+    @DisplayName("dateFrom 형식이 이상하면 INVALID_DATE_FORMAT을 반환한다")
+    void validate_flagsInvalidDateFromFormat() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099/01/10", "2099-02-10", List.of("3"), null))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "INVALID_DATE_FORMAT")));
+    }
+
+    @Test
+    @DisplayName("dateFrom이 과거면 PAST_DATE_NOT_ALLOWED를 반환한다")
+    void validate_flagsPastDateFrom() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2000-01-01", "2000-01-10", List.of("3"), null))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "PAST_DATE_NOT_ALLOWED")));
+    }
+
+    @Test
+    @DisplayName("dateTo가 dateFrom보다 빠르면 BEFORE_DATE_FROM을 반환한다")
+    void validate_flagsReversedDateRange() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099-02-10", "2099-01-10", List.of("3"), null))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("dateTo", "BEFORE_DATE_FROM")));
+    }
+
+    @Test
+    @DisplayName("날짜 범위가 3개월을 넘으면 DATE_RANGE_TOO_WIDE를 반환한다")
+    void validate_flagsDateRangeTooWide() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099-01-01", "2099-06-01", List.of("3"), null))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("dateTo", "DATE_RANGE_TOO_WIDE")));
+    }
+
+    @Test
+    @DisplayName("nights가 비어있으면 REQUIRED를 반환한다")
+    void validate_flagsMissingNights() {
+        assertThatThrownBy(() ->
+                        FlightSearchRequestValidator.validate("ICN", null, "2099-01-10", "2099-02-10", List.of(), null))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("nights", "REQUIRED")));
+    }
+
+    @Test
+    @DisplayName("nights에 숫자가 아닌 값이 있으면 INVALID_NIGHTS_VALUE를 반환한다")
+    void validate_flagsInvalidNightsValue() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("three"), null))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE")));
+    }
+
+    @Test
+    @DisplayName("regions에 알 수 없는 값이 있으면 INVALID_REGION을 반환한다")
+    void validate_flagsUnknownRegion() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), List.of("EUROPE")))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("regions", "INVALID_REGION")));
+    }
+
+    @Test
+    @DisplayName("여러 필드가 동시에 잘못되면 전부 모아서 반환한다")
+    void validate_collectsMultipleDetailsAtOnce() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(null, null, null, null, List.of(), null))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(
+                        new FlightApiError.Detail("origin", "REQUIRED"),
+                        new FlightApiError.Detail("dateFrom", "REQUIRED"),
+                        new FlightApiError.Detail("dateTo", "REQUIRED"),
+                        new FlightApiError.Detail("nights", "REQUIRED")));
     }
 }

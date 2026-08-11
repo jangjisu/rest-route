@@ -1,6 +1,7 @@
 package com.restroute.flight.controller;
 
 import com.restroute.flight.controller.exception.FlightDealNotFoundException;
+import com.restroute.flight.controller.exception.InvalidFlightSearchException;
 import com.restroute.flight.controller.response.FlightApiError;
 import com.restroute.flight.controller.response.FlightApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -30,5 +31,13 @@ public class FlightExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(FlightApiResponse.error(
                         FlightApiError.of("DEAL_NOT_FOUND", "Deal not found or already expired")));
+    }
+
+    @ExceptionHandler(InvalidFlightSearchException.class)
+    public ResponseEntity<FlightApiResponse<Void>> handleInvalidSearch(InvalidFlightSearchException e) {
+        log.warn("Invalid flight search request: {}", e.details());
+        String message = e.details().size() + " fields are invalid";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(FlightApiResponse.error(new FlightApiError("VALIDATION_FAILED", message, e.details())));
     }
 }
