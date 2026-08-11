@@ -4,11 +4,13 @@ import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.exception.InvalidFlightSearchException;
 import com.restroute.flight.controller.response.FlightApiError;
 import com.restroute.flight.controller.response.FlightApiResponse;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -39,5 +41,15 @@ public class FlightExceptionHandler {
         String message = e.details().size() + " fields are invalid";
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(FlightApiResponse.error(new FlightApiError("VALIDATION_FAILED", message, e.details())));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<FlightApiResponse<Void>> handleMissingRequestParameter(
+            MissingServletRequestParameterException e) {
+        log.warn("Missing required flight search parameter: {}", e.getParameterName());
+        List<FlightApiError.Detail> details = List.of(new FlightApiError.Detail(e.getParameterName(), "REQUIRED"));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(FlightApiResponse.error(
+                        new FlightApiError("VALIDATION_FAILED", "1 fields are invalid", details)));
     }
 }

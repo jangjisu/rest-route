@@ -21,6 +21,7 @@ class FlightSearchMockControllerTest {
     private static final String VALID_ORIGIN = "ICN";
     private static final String VALID_DATE_FROM = "2099-01-10";
     private static final String VALID_DATE_TO = "2099-02-10";
+    private static final String FIRST_ITEM_ID = "08ef4f93-9a8c-3fad-a286-f10efa3f2f61";
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -45,15 +46,51 @@ class FlightSearchMockControllerTest {
                 .andExpect(jsonPath("$.data.items.length()").value(20))
                 .andExpect(jsonPath("$.data.meta.totalCount").value(342))
                 .andExpect(jsonPath("$.data.meta.hasNext").value(true))
-                .andExpect(jsonPath("$.data.items[0].destination.iata").value("FUK"))
-                .andExpect(jsonPath("$.data.items[0].departureAt").value("2099-01-10T09:20:00+09:00"))
-                .andExpect(jsonPath("$.data.items[0].returnAt").value("2099-01-13T11:20:00+09:00"))
+                .andExpect(jsonPath("$.data.items[0].id").value(FIRST_ITEM_ID))
+                .andExpect(jsonPath("$.data.items[0].destination.code").value("FUK"))
+                .andExpect(jsonPath("$.data.items[0].destination.name").value("후쿠오카"))
+                .andExpect(jsonPath("$.data.items[0].departure.departureFrom").value("2099-01-10T09:20:00+09:00"))
+                .andExpect(jsonPath("$.data.items[0].departure.departTo").value("2099-01-10T10:50:00+09:00"))
+                .andExpect(jsonPath("$.data.items[0].departure.duration").value(90))
+                .andExpect(jsonPath("$.data.items[0].departure.transferCount").value(0))
+                .andExpect(jsonPath("$.data.items[0].arrival.departureFrom").value("2099-01-13T13:10:00+09:00"))
+                .andExpect(jsonPath("$.data.items[0].arrival.departTo").value("2099-01-13T14:40:00+09:00"))
+                .andExpect(jsonPath("$.data.items[0].arrival.duration").value(90))
+                .andExpect(jsonPath("$.data.items[0].arrival.transferCount").value(0))
                 .andExpect(jsonPath("$.data.items[0].nights").value(3))
-                .andExpect(jsonPath("$.data.items[0].airline").value("LJ"))
-                .andExpect(jsonPath("$.data.items[0].flightNumber").value("LJ100"))
+                .andExpect(jsonPath("$.data.items[0].airline.code").value("LJ"))
+                .andExpect(jsonPath("$.data.items[0].airline.name").value("진에어"))
                 .andExpect(jsonPath("$.data.items[0].price.amount").value(89000))
                 .andExpect(jsonPath("$.data.items[0].price.currency").value("KRW"))
                 .andExpect(jsonPath("$.data.items[0].gateName").value("Trip.com"));
+    }
+
+    @Test
+    @DisplayName("includeTransfer가 없으면(기본 false) 모든 항목이 직항(transferCount=0)이다")
+    void searchMock_defaultsToDirectOnlyWhenIncludeTransferOmitted() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[2].departure.transferCount").value(0))
+                .andExpect(jsonPath("$.data.items[3].arrival.transferCount").value(0));
+    }
+
+    @Test
+    @DisplayName("includeTransfer=true면 경유가 섞여 나온다")
+    void searchMock_includesTransfersWhenRequested() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3")
+                        .param("includeTransfer", "true")
+                        .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].departure.transferCount").value(1));
     }
 
     @Test
@@ -67,18 +104,33 @@ class FlightSearchMockControllerTest {
                         .param("nights", "3")
                         .param("size", "5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].destination.iata").value("OSA"))
-                .andExpect(jsonPath("$.data.items[4].destination.iata").value("OSA"));
+                .andExpect(jsonPath("$.data.items[0].destination.code").value("OSA"))
+                .andExpect(jsonPath("$.data.items[4].destination.code").value("OSA"));
     }
 
     @Test
-    @DisplayName("필수 파라미터가 여러 개 없으면 VALIDATION_FAILED와 details를 반환한다")
-    void searchMock_returnsValidationFailedForMissingRequiredParams() throws Exception {
+    @DisplayName("필수 파라미터가 아예 없으면 Spring이 먼저 걸러서 VALIDATION_FAILED와 그 필드 하나만 반환한다")
+    void searchMock_returnsValidationFailedForMissingRequiredParam() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.error.details.length()").value(4))
+                .andExpect(jsonPath("$.error.details.length()").value(1))
+                .andExpect(jsonPath("$.error.details[0].field").value("origin"))
+                .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
+    }
+
+    @Test
+    @DisplayName("필수 파라미터가 값은 왔지만 빈 문자열이면 validator가 REQUIRED로 잡는다")
+    void searchMock_returnsValidationFailedForBlankRequiredParam() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", "")
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.error.details.length()").value(1))
                 .andExpect(jsonPath("$.error.details[0].field").value("origin"))
                 .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
     }
@@ -91,7 +143,7 @@ class FlightSearchMockControllerTest {
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("cursor", "deal_notreal1"))
+                        .param("cursor", "not-a-real-cursor"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"))

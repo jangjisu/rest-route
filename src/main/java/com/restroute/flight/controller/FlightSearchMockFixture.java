@@ -4,6 +4,7 @@ import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchMeta;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -13,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import org.springframework.util.StringUtils;
 
@@ -20,9 +22,10 @@ import org.springframework.util.StringUtils;
  * 프론트엔드 개발용 고정 모킹 데이터. Travelpayouts grouped_prices가 실제로 줄 수 있는
  * 필드만으로 결정적(deterministic) 가짜 데이터를 생성한다.
  *
- * <p>id는 인덱스를 그대로 노출하는 대신(예: deal_00000) 커서가 정말 불투명한 값이 되도록
- * 섞어서 만들고, 커서를 받으면 그 문자열을 파싱해서 위치를 역산하지 않고 생성된 목록에서
- * 실제로 찾아서 위치를 구한다 — 나중에 진짜 백엔드 id로 바뀌어도 이 방식은 그대로 통한다.
+ * <p>id는 인덱스를 그대로 노출하는 대신 결정적 UUID(v3, {@link UUID#nameUUIDFromBytes})로
+ * 만들어서 커서가 정말 불투명한 값이 되게 하고, 커서를 받으면 그 문자열을 파싱해서 위치를
+ * 역산하지 않고 생성된 목록에서 실제로 찾아서 위치를 구한다 — 나중에 진짜 백엔드 id로
+ * 바뀌어도 이 방식은 그대로 통한다.
  */
 final class FlightSearchMockFixture {
 
@@ -32,21 +35,26 @@ final class FlightSearchMockFixture {
     private static final int PRICE_CYCLE = 15;
     private static final int BASE_DURATION_MINUTES = 90;
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
-    private static final DateTimeFormatter DEPARTURE_FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    private static final DateTimeFormatter LEG_TIME_FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     private static final List<Destination> DESTINATIONS = List.of(
-            new Destination("FUK", "Fukuoka"),
-            new Destination("KIX", "Osaka"),
-            new Destination("OKA", "Okinawa"),
-            new Destination("NGO", "Nagoya"),
-            new Destination("TYO", "Tokyo"),
-            new Destination("BKK", "Bangkok"),
-            new Destination("DAD", "Da Nang"),
-            new Destination("SGN", "Ho Chi Minh City"),
-            new Destination("PQC", "Phu Quoc"),
-            new Destination("GUM", "Guam"));
+            new Destination("FUK", "후쿠오카", ZoneOffset.ofHours(9)),
+            new Destination("KIX", "오사카", ZoneOffset.ofHours(9)),
+            new Destination("OKA", "오키나와", ZoneOffset.ofHours(9)),
+            new Destination("NGO", "나고야", ZoneOffset.ofHours(9)),
+            new Destination("TYO", "도쿄", ZoneOffset.ofHours(9)),
+            new Destination("BKK", "방콕", ZoneOffset.ofHours(7)),
+            new Destination("DAD", "다낭", ZoneOffset.ofHours(7)),
+            new Destination("SGN", "호치민", ZoneOffset.ofHours(7)),
+            new Destination("PQC", "푸꾸옥", ZoneOffset.ofHours(7)),
+            new Destination("GUM", "괌", ZoneOffset.ofHours(10)));
 
-    private static final List<String> AIRLINES = List.of("LJ", "7C", "TW", "WE");
+    private static final List<Airline> AIRLINES = List.of(
+            new Airline("LJ", "진에어"),
+            new Airline("7C", "제주항공"),
+            new Airline("TW", "티웨이항공"),
+            new Airline("WE", "타이스마일항공"));
+
     private static final List<String> GATES = List.of("Trip.com", "Kupi.com", "Mytrip.com");
 
     private FlightSearchMockFixture() {}
@@ -96,36 +104,48 @@ final class FlightSearchMockFixture {
         int nights = nightsAt(index, request);
         LocalDate departureDate = departureDateAt(index, request);
         LocalDate returnDate = departureDate.plusDays(nights);
-        String airline = AIRLINES.get(index % AIRLINES.size());
+        Airline airline = AIRLINES.get(index % AIRLINES.size());
         int amount = BASE_PRICE + (index % PRICE_CYCLE) * PRICE_STEP;
-        int durationMinutes = BASE_DURATION_MINUTES + (index % 5) * 10;
-        int returnDurationMinutes = BASE_DURATION_MINUTES + (index % 4) * 10;
-
-        OffsetDateTime departureAt = departureDate.atTime(9, 20).atOffset(KST);
-        OffsetDateTime returnAt = returnDate.atTime(11, 20).atOffset(KST);
+        int departureDuration = BASE_DURATION_MINUTES + (index % 5) * 10;
+        int arrivalDuration = BASE_DURATION_MINUTES + (index % 4) * 10;
+        int departureTransferCount = request.includeTransfer() && index % 3 == 0 ? 1 : 0;
+        int arrivalTransferCount = request.includeTransfer() && index % 4 == 0 ? 1 : 0;
         String id = idOf(index);
+
+        FlightDealResponse.Leg departure = legAt(
+                departureDate.atTime(9, 20).atOffset(KST),
+                destination.offset(),
+                departureDuration,
+                departureTransferCount);
+        FlightDealResponse.Leg arrival = legAt(
+                returnDate.atTime(13, 10).atOffset(destination.offset()), KST, arrivalDuration, arrivalTransferCount);
 
         return new FlightDealResponse(
                 id,
-                new FlightDealResponse.Destination(destination.iata(), destination.city()),
-                DEPARTURE_FORMAT.format(departureAt),
-                DEPARTURE_FORMAT.format(returnAt),
+                new FlightDealResponse.Destination(destination.code(), destination.name()),
+                departure,
+                arrival,
                 nights,
-                index % 3 == 0 ? 1 : 0,
-                index % 4 == 0 ? 1 : 0,
-                airline,
-                airline + (100 + index % 900),
-                durationMinutes,
-                returnDurationMinutes,
+                new FlightDealResponse.Airline(airline.code(), airline.name()),
                 new FlightDealResponse.Price(amount, "KRW"),
                 GATES.get(index % GATES.size()),
                 "https://www.aviasales.com/search/mock-" + id);
     }
 
+    private static FlightDealResponse.Leg legAt(
+            OffsetDateTime departureFrom, ZoneOffset arrivalOffset, int duration, int transferCount) {
+        OffsetDateTime departTo = departureFrom.plusMinutes(duration).withOffsetSameInstant(arrivalOffset);
+        return new FlightDealResponse.Leg(
+                LEG_TIME_FORMAT.format(departureFrom), LEG_TIME_FORMAT.format(departTo), duration, transferCount);
+    }
+
     private static Destination destinationAt(int index, FlightSearchRequestValidator.ValidatedRequest request) {
         if (StringUtils.hasText(request.destination())) {
-            String iata = request.destination().toUpperCase(Locale.ROOT);
-            return new Destination(iata, iata);
+            String code = request.destination().toUpperCase(Locale.ROOT);
+            return DESTINATIONS.stream()
+                    .filter(destination -> destination.code().equals(code))
+                    .findFirst()
+                    .orElseGet(() -> new Destination(code, code, KST));
         }
         return DESTINATIONS.get(index % DESTINATIONS.size());
     }
@@ -142,18 +162,11 @@ final class FlightSearchMockFixture {
     }
 
     private static String idOf(int index) {
-        long mixed = mix(index);
-        String token = Long.toUnsignedString(mixed, 36).toUpperCase(Locale.ROOT);
-        String padded = token.length() >= 8 ? token.substring(0, 8) : "0".repeat(8 - token.length()) + token;
-        return "deal_" + padded;
+        return UUID.nameUUIDFromBytes(("flight-deal-" + index).getBytes(StandardCharsets.UTF_8))
+                .toString();
     }
 
-    private static long mix(int index) {
-        long x = index + 0x9E3779B97F4A7C15L;
-        x = (x ^ (x >>> 30)) * 0xBF58476D1CE4E5B9L;
-        x = (x ^ (x >>> 27)) * 0x94D049BB133111EBL;
-        return x ^ (x >>> 31);
-    }
+    private record Destination(String code, String name, ZoneOffset offset) {}
 
-    private record Destination(String iata, String city) {}
+    private record Airline(String code, String name) {}
 }

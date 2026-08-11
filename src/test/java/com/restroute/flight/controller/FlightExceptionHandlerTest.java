@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 
 class FlightExceptionHandlerTest {
 
@@ -45,5 +46,19 @@ class FlightExceptionHandlerTest {
         assertThat(response.getBody().error().code()).isEqualTo("VALIDATION_FAILED");
         assertThat(response.getBody().error().message()).isEqualTo("2 fields are invalid");
         assertThat(response.getBody().error().details()).isEqualTo(details);
+    }
+
+    @Test
+    @DisplayName("필수 파라미터가 아예 없으면 400과 VALIDATION_FAILED, 그 필드 하나만 담긴 details를 반환한다")
+    void handleMissingRequestParameter_returnsValidationFailedError() {
+        ResponseEntity<FlightApiResponse<Void>> response =
+                handler.handleMissingRequestParameter(new MissingServletRequestParameterException("origin", "String"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isNull();
+        assertThat(response.getBody().error().code()).isEqualTo("VALIDATION_FAILED");
+        assertThat(response.getBody().error().details())
+                .isEqualTo(List.of(new FlightApiError.Detail("origin", "REQUIRED")));
     }
 }

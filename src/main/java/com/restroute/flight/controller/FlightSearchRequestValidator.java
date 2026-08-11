@@ -17,6 +17,8 @@ import org.springframework.util.StringUtils;
 final class FlightSearchRequestValidator {
 
     private static final int MAX_DATE_RANGE_MONTHS = 3;
+    private static final int MIN_NIGHTS = 1;
+    private static final int MAX_NIGHTS = 90;
     private static final Pattern IATA_CODE = Pattern.compile("^[A-Za-z]{3}$");
 
     private FlightSearchRequestValidator() {}
@@ -27,7 +29,9 @@ final class FlightSearchRequestValidator {
             String dateFromRaw,
             String dateToRaw,
             List<String> nightsRaw,
-            List<String> regions) {
+            List<String> filter,
+            List<String> dayOption,
+            String includeTransferRaw) {
         List<FlightApiError.Detail> details = new ArrayList<>();
 
         validateOrigin(origin, details);
@@ -36,13 +40,15 @@ final class FlightSearchRequestValidator {
         LocalDate dateTo = validateRequiredDate("dateTo", dateToRaw, details);
         validateDateRange(dateFrom, dateTo, details);
         List<Integer> nights = validateNights(nightsRaw, details);
-        validateRegions(regions, details);
+        validateFilter(filter, details);
+        validateDayOption(dayOption, details);
+        boolean includeTransfer = validateIncludeTransfer(includeTransferRaw, details);
 
         if (!details.isEmpty()) {
             throw new InvalidFlightSearchException(details);
         }
 
-        return new ValidatedRequest(origin, destination, dateFrom, dateTo, nights, regions);
+        return new ValidatedRequest(origin, destination, dateFrom, dateTo, nights, filter, dayOption, includeTransfer);
     }
 
     private static void validateOrigin(String origin, List<FlightApiError.Detail> details) {
@@ -107,22 +113,31 @@ final class FlightSearchRequestValidator {
 
         List<Integer> nights = new ArrayList<>();
         for (String raw : nightsRaw) {
-            try {
-                nights.add(Integer.parseInt(raw));
-            } catch (NumberFormatException e) {
+            Integer value = parseNights(raw);
+            if (value == null || value < MIN_NIGHTS || value > MAX_NIGHTS) {
                 details.add(new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE"));
+                continue;
             }
+            nights.add(value);
         }
         return nights;
     }
 
-    private static void validateRegions(List<String> regions, List<FlightApiError.Detail> details) {
-        if (CollectionUtils.isEmpty(regions)) {
+    private static Integer parseNights(String raw) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static void validateFilter(List<String> filter, List<FlightApiError.Detail> details) {
+        if (CollectionUtils.isEmpty(filter)) {
             return;
         }
-        for (String region : regions) {
+        for (String region : filter) {
             if (!isKnownRegion(region)) {
-                details.add(new FlightApiError.Detail("regions", "INVALID_REGION"));
+                details.add(new FlightApiError.Detail("filter", "INVALID_FILTER"));
             }
         }
     }
@@ -136,11 +151,47 @@ final class FlightSearchRequestValidator {
         }
     }
 
+    private static void validateDayOption(List<String> dayOption, List<FlightApiError.Detail> details) {
+        if (CollectionUtils.isEmpty(dayOption)) {
+            return;
+        }
+        for (String option : dayOption) {
+            if (!isKnownDayOption(option)) {
+                details.add(new FlightApiError.Detail("dayOption", "INVALID_DAY_OPTION"));
+            }
+        }
+    }
+
+    private static boolean isKnownDayOption(String option) {
+        try {
+            FlightDayOption.valueOf(option);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private static boolean validateIncludeTransfer(String raw, List<FlightApiError.Detail> details) {
+        if (!StringUtils.hasText(raw)) {
+            return false;
+        }
+        if ("true".equals(raw)) {
+            return true;
+        }
+        if ("false".equals(raw)) {
+            return false;
+        }
+        details.add(new FlightApiError.Detail("includeTransfer", "INVALID_INCLUDE_TRANSFER"));
+        return false;
+    }
+
     record ValidatedRequest(
             String origin,
             String destination,
             LocalDate dateFrom,
             LocalDate dateTo,
             List<Integer> nights,
-            List<String> regions) {}
+            List<String> filter,
+            List<String> dayOption,
+            boolean includeTransfer) {}
 }
