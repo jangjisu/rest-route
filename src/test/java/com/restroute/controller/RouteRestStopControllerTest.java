@@ -15,6 +15,7 @@ import com.restroute.client.exception.KakaoApiException;
 import com.restroute.common.GlobalExceptionHandler;
 import com.restroute.controller.response.RouteRestStopResponse;
 import com.restroute.controller.response.RouteRestStopResponse.Destination;
+import com.restroute.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.controller.response.RouteRestStopResponse.RouteSummary;
 import com.restroute.service.route.RouteRestStopService;
@@ -49,22 +50,24 @@ class RouteRestStopControllerTest {
     void getRouteRestStops_returnsRouteRestStops() throws Exception {
         RouteRestStopResponse response = new RouteRestStopResponse(
                 new Destination("부산역", 35.0, 129.0),
-                new RouteSummary(100L, 200L, List.of(List.of(127.0, 37.0))),
-                List.of(new RouteRestStopItem(
-                        "A",
-                        "A휴게소",
-                        "경부선",
-                        37.0,
-                        127.0,
-                        false,
-                        false,
-                        false,
-                        false,
-                        12L,
-                        RouteRestStopResponse.ComparisonSummary.empty(),
-                        List.of(),
-                        "/api/rest-stops/A/images/list",
-                        null)));
+                List.of(new RouteOption(
+                        0,
+                        new RouteSummary(100L, 200L, 4500L, List.of(List.of(127.0, 37.0))),
+                        List.of(new RouteRestStopItem(
+                                "A",
+                                "A휴게소",
+                                "경부선",
+                                37.0,
+                                127.0,
+                                false,
+                                false,
+                                false,
+                                false,
+                                12L,
+                                RouteRestStopResponse.ComparisonSummary.empty(),
+                                List.of(),
+                                "/api/rest-stops/A/images/list",
+                                null)))));
         when(routeRestStopService.findRouteRestStops(eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000)))
                 .thenReturn(response);
 
@@ -75,14 +78,17 @@ class RouteRestStopControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.destination.name").value("부산역"))
-                .andExpect(jsonPath("$.data.route.distanceMeters").value(100))
+                .andExpect(jsonPath("$.data.routes[0].summary.distanceMeters").value(100))
+                .andExpect(jsonPath("$.data.routes[0].summary.tollFareWon").value(4500))
                 .andExpect(jsonPath("$.data.nationalOilPriceSummary").doesNotExist())
-                .andExpect(jsonPath("$.data.restStops[0].serviceAreaCode").value("A"))
+                .andExpect(jsonPath("$.data.routes[0].restStops[0].serviceAreaCode")
+                        .value("A"))
+                .andExpect(jsonPath("$.data.routes[0].restStops[0].hasDirectionAlternative")
+                        .value(false))
+                .andExpect(jsonPath("$.data.routes[0].restStops[0].distanceFromRouteMeters")
+                        .value(12))
                 .andExpect(
-                        jsonPath("$.data.restStops[0].hasDirectionAlternative").value(false))
-                .andExpect(
-                        jsonPath("$.data.restStops[0].distanceFromRouteMeters").value(12))
-                .andExpect(jsonPath("$.data.restStops[0].listImageUrl").value("/api/rest-stops/A/images/list"));
+                        jsonPath("$.data.routes[0].restStops[0].listImageUrl").value("/api/rest-stops/A/images/list"));
     }
 
     @Test
@@ -90,8 +96,10 @@ class RouteRestStopControllerTest {
     void getRouteRestStops_returnsNullListImageUrlWhenImageIsMissing() throws Exception {
         RouteRestStopResponse response = new RouteRestStopResponse(
                 new Destination("부산역", 35.0, 129.0),
-                new RouteSummary(100L, 200L, List.of(List.of(127.0, 37.0))),
-                List.of(new RouteRestStopItem("A", "A휴게소", "경부선", 37.0, 127.0, 12L)));
+                List.of(new RouteOption(
+                        0,
+                        new RouteSummary(100L, 200L, 0L, List.of(List.of(127.0, 37.0))),
+                        List.of(new RouteRestStopItem("A", "A휴게소", "경부선", 37.0, 127.0, 12L)))));
         when(routeRestStopService.findRouteRestStops(eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000)))
                 .thenReturn(response);
 
@@ -100,7 +108,8 @@ class RouteRestStopControllerTest {
                         .param("originLng", "127.0")
                         .param("destinationQuery", "부산"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.restStops[0].listImageUrl").value(nullValue()));
+                .andExpect(
+                        jsonPath("$.data.routes[0].restStops[0].listImageUrl").value(nullValue()));
     }
 
     @Test

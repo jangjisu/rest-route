@@ -681,7 +681,7 @@ HTTP 200과 빈 배열을 반환하며 에러로 취급하지 않는다.
 ### 휴게소 대표 이미지 API
 
 `GET /api/rest-stops/{serviceAreaCode}/basic-info`의 `data.detailImageUrl`과
-`GET /api/route-rest-stops`의 `data.restStops[].listImageUrl`은 이미지가 있을 때 각각 상세용·목록용
+`GET /api/route-rest-stops`의 `data.routes[].restStops[].listImageUrl`은 이미지가 있을 때 각각 상세용·목록용
 바이너리 URL을 반환하고, 이미지가 없으면 `null`이다. JSON 응답에는 이미지 BLOB을 포함하지 않는다.
 
 #### GET /api/rest-stops/{serviceAreaCode}/images/detail
@@ -860,12 +860,24 @@ JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연
 목적지 좌표가 있으면 검색 없이 해당 좌표를 사용한다. 좌표가 없으면 `destinationQuery`로 검색한 첫 결과를
 사용하는 하위 호환 경로가 남아 있다. 현재 화면은 `/api/place-search`에서 사용자가 고른 목적지 좌표를 전달한다.
 
+카카오 길찾기 호출 시 `alternatives=true`를 항상 함께 보내 대안 경로까지 조회한다. 카카오 공식 문서상
+"1개 이상의 경로 제공 가능"이라고만 되어있어 정확한 개수를 보장하지 않으며, 실측으로도 같은 출발/도착
+좌표에 대해 호출마다 1개 또는 2개로 결과가 달라지는 것을 확인했다(교통 상황에 따라 카카오 쪽에서
+"서로 다른 경로"로 판단하는 후보가 그때그때 달라지는 것으로 보임).
+
 응답 `data`는 다음 영역으로 구성된다.
 
 - `destination`: 목적지 이름과 좌표
-- `route`: 전체 거리(m), 예상 시간(초)과 다운샘플링한 `[경도, 위도]` 경로 좌표
-- `nationalOilPriceSummary`: 경로 결과 상단에 표시할 전국 평균 유가 요약. 오피넷 호출 실패 또는 필수 제품 누락 시 `null`
-- `restStops`: 휴게소 코드, 이름, 노선, 좌표, 경로로부터의 거리(m), 방향 후보 여부, 비교 요약과 추천 태그
+- `routes`: 경로(대안 포함) 배열. 각 원소는 `routeIndex`(0부터 시작하는 경로 순번), `summary`,
+  `restStops`로 구성된다.
+  - `summary`: 전체 거리(m, `distanceMeters`), 예상 시간(초, `durationSeconds`), 통행요금(원,
+    `tollFareWon`, 카카오 `fare.toll` 그대로)과 다운샘플링한 `[경도, 위도]` 경로 좌표(`path`)
+  - `restStops`: 그 경로 위 휴게소 코드, 이름, 노선, 좌표, 경로로부터의 거리(m), 방향 후보 여부,
+    비교 요약과 추천 태그. 경로마다 독립적으로 계산되므로 대안 경로끼리 겹치지 않는 휴게소가
+    매칭될 수 있다.
+
+전국 평균 유가 요약(`nationalOilPriceSummary`)은 이 응답의 최상위 필드로 노출하지 않는다.
+`restStops[].comparisonSummary`의 유종별 평균 대비 차이값 계산에만 내부적으로 쓰인다.
 
 `nationalOilPriceSummary`는 오피넷 전국 평균가 중 화면에서 사용하는 3개 제품만 포함한다.
 

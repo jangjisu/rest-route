@@ -44,11 +44,16 @@ class KakaoMapClientTest {
     }
 
     @Test
-    @DisplayName("getDirections는 KakaoAK 헤더와 RECOMMEND 우선순위, road_details=true로 길찾기를 호출한다")
+    @DisplayName("getDirections는 KakaoAK 헤더와 RECOMMEND 우선순위, road_details=true, alternatives=true로 길찾기를 호출한다")
     void getDirections_passesAuthorizationAndPriority() {
         KakaoDirectionsResponse response = new KakaoDirectionsResponse(List.of());
         when(kakaoNaviFeignClient.getDirections(
-                        eq("KakaoAK test-key"), eq("127.0,37.0"), eq("129.0,35.0"), eq("RECOMMEND"), eq(true)))
+                        eq("KakaoAK test-key"),
+                        eq("127.0,37.0"),
+                        eq("129.0,35.0"),
+                        eq("RECOMMEND"),
+                        eq(true),
+                        eq(true)))
                 .thenReturn(response);
 
         KakaoDirectionsResponse result = kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0");
@@ -69,7 +74,7 @@ class KakaoMapClientTest {
     @Test
     @DisplayName("호출이 런타임 예외를 던지면 KakaoApiException으로 감싼다")
     void fetch_wrapsRuntimeException() {
-        when(kakaoNaviFeignClient.getDirections("KakaoAK test-key", "a", "b", "RECOMMEND", true))
+        when(kakaoNaviFeignClient.getDirections("KakaoAK test-key", "a", "b", "RECOMMEND", true, true))
                 .thenThrow(new RuntimeException("boom"));
 
         assertThatThrownBy(() -> kakaoMapClient.getDirections("a", "b"))

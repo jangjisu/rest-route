@@ -7,6 +7,7 @@ import com.restroute.controller.response.RouteRestStopResponse;
 import com.restroute.controller.response.RouteRestStopResponse.Destination;
 import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.controller.response.RouteRestStopResponse.NearbyTraffic;
+import com.restroute.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.controller.response.RouteRestStopResponse.RouteSummary;
 import com.restroute.domain.RestStopEntity;
@@ -18,6 +19,7 @@ import com.restroute.service.route.dto.IndexedMatch;
 import com.restroute.service.route.dto.MatchedRestStop;
 import com.restroute.service.route.dto.NearbyTrafficStatus;
 import com.restroute.service.route.dto.ResolvedRoute;
+import com.restroute.service.route.dto.ResolvedRoute.RouteGeometry;
 import com.restroute.service.route.dto.RoutePath;
 import com.restroute.service.route.dto.RouteRestStopCandidate;
 import com.restroute.service.route.dto.RouteRestStopComparison;
@@ -33,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -65,19 +68,38 @@ public class RouteRestStopService {
                 destinationLongitude,
                 destinationName);
 
-        List<RouteRestStopCandidate> matched = matchRestStopsToPath(resolved.path(), radiusMeters);
-        List<RouteRestStopItem> directionFiltered = removeUnreachableSide(matched, resolved.path());
-
+        List<RestStopEntity> allRestStops = restStopQueryService.findAll();
         Optional<NationalOilPriceSummary> nationalOilPriceSummary = nationalOilPriceService.getTodaySummary();
-        List<RouteRestStopItem> restStops = buildResponseItems(directionFiltered, nationalOilPriceSummary);
 
-        return RouteRestStopResponse.of(
-                resolved.destination(), routeSummary(resolved.summary(), resolved.path()), restStops);
+        List<RouteOption> routes = IntStream.range(0, resolved.routes().size())
+                .mapToObj(routeIndex -> buildRouteOption(
+                        routeIndex,
+                        resolved.routes().get(routeIndex),
+                        allRestStops,
+                        radiusMeters,
+                        nationalOilPriceSummary))
+                .toList();
+
+        return RouteRestStopResponse.of(resolved.destination(), routes);
+    }
+
+    private RouteOption buildRouteOption(
+            int routeIndex,
+            RouteGeometry geometry,
+            List<RestStopEntity> allRestStops,
+            int radiusMeters,
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+        RoutePath path = geometry.path();
+        List<RouteRestStopCandidate> matched = matchRestStopsToPath(path, radiusMeters, allRestStops);
+        List<RouteRestStopItem> directionFiltered = removeUnreachableSide(matched, path);
+        List<RouteRestStopItem> restStops = buildResponseItems(directionFiltered, nationalOilPriceSummary);
+        return RouteOption.of(routeIndex, routeSummary(geometry.summary(), path), restStops);
     }
 
     /**
-     * 목적지를 정하고, 카카오 길찾기를 호출해서 경로 좌표열(RoutePath)까지 만든다.
-     * 길찾기 실패/좌표 없음은 여기서 바로 예외로 끝낸다.
+     * 목적지를 정하고, 카카오 길찾기를 호출해서 대안 경로까지 포함한 경로 좌표열(RoutePath)을 만든다.
+     * 길찾기 실패는 여기서 바로 예외로 끝낸다. 개별 경로의 좌표가 비어있으면 그 경로만 제외하고,
+     * 전부 비어있으면 예외로 끝낸다.
      */
     private ResolvedRoute resolveRoute(
             double originLatitude,
@@ -98,13 +120,20 @@ public class RouteRestStopService {
                     routeFailureMessage(failedRoute == null ? null : failedRoute.resultCode()));
         }
 
-        KakaoDirectionsResponse.Route route = directions.firstRoute();
-        RoutePath path = RoutePath.from(route.sections(), totalDistanceMeters(route.summary()));
-        if (path.isEmpty()) {
+        List<RouteGeometry> routes = directions.routes().stream()
+                .map(this::toGeometry)
+                .filter(geometry -> !geometry.path().isEmpty())
+                .toList();
+        if (routes.isEmpty()) {
             throw new RouteRestStopNotFoundException("경로 좌표가 없습니다.");
         }
 
-        return ResolvedRoute.of(destination, path, route.summary());
+        return ResolvedRoute.of(destination, routes);
+    }
+
+    private RouteGeometry toGeometry(KakaoDirectionsResponse.Route route) {
+        RoutePath path = RoutePath.from(route.sections(), totalDistanceMeters(route.summary()));
+        return RouteGeometry.of(path, route.summary());
     }
 
     private long totalDistanceMeters(KakaoDirectionsResponse.Summary summary) {
@@ -153,8 +182,9 @@ public class RouteRestStopService {
      * 1번: 휴게소 전체를 경로에 매칭한다. 경로상 같은 지점(routeIndex)에 매칭된 휴게소가
      * 여럿이면(드묾) 하나의 RouteRestStopCandidate에 묶인다.
      */
-    private List<RouteRestStopCandidate> matchRestStopsToPath(RoutePath path, int radiusMeters) {
-        Map<Integer, List<MatchedRestStop>> matchesByRouteIndex = restStopQueryService.findAll().stream()
+    private List<RouteRestStopCandidate> matchRestStopsToPath(
+            RoutePath path, int radiusMeters, List<RestStopEntity> allRestStops) {
+        Map<Integer, List<MatchedRestStop>> matchesByRouteIndex = allRestStops.stream()
                 .map(restStop -> matchOne(restStop, path, radiusMeters))
                 .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(
@@ -299,7 +329,7 @@ public class RouteRestStopService {
     private RouteSummary routeSummary(KakaoDirectionsResponse.Summary summary, RoutePath path) {
         long distance = summaryValue(summary, true);
         long duration = summaryValue(summary, false);
-        return RouteSummary.of(distance, duration, path.path());
+        return RouteSummary.of(distance, duration, tollFareWon(summary), path.path());
     }
 
     private long summaryValue(KakaoDirectionsResponse.Summary summary, boolean distance) {
@@ -308,5 +338,12 @@ public class RouteRestStopService {
         }
         Long value = distance ? summary.distance() : summary.duration();
         return value == null ? 0L : value;
+    }
+
+    private long tollFareWon(KakaoDirectionsResponse.Summary summary) {
+        if (summary == null || summary.fare() == null || summary.fare().toll() == null) {
+            return 0L;
+        }
+        return summary.fare().toll();
     }
 }
