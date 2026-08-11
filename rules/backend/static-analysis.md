@@ -7,7 +7,9 @@
 ./gradlew spotbugsMain    # SpotBugs, main 소스만(테스트는 비활성화)
 ```
 
-`harness/hooks/code/04-run-code-quality-tools.sh`나 CI(`./gradlew test`)는 이 두 task를 자동으로 돌리지 않는다 — 커밋/CI를 막지 않는 상태로 도구만 먼저 추가했다(2026-07-31). `./gradlew check`/`build`는 Gradle 기본 동작으로 이 task들에 의존하므로, 아래 잔여 findings가 남아있는 동안은 `check`가 실패한다. 이건 의도된 상태다 — 잔여 findings를 다 고치기 전에는 `check`/`build`를 커밋 게이트에 넣지 않는다.
+`harness/hooks/code/04-run-code-quality-tools.sh`나 CI(`./gradlew test`)는 이 두 task를 자동으로 돌리지 않는다 — 커밋/CI를 막지 않는 상태로 도구만 먼저 추가했다(2026-07-31). `./gradlew check`/`build`는 Gradle 기본 동작으로 이 task들에 의존하므로, 잔여 findings가 남아있는 동안은 `check`가 실패했었다.
+
+**2026-08-10 기준: 아래 잔여 백로그를 전부 해소해서 `pmdMain`/`spotbugsMain` 모두 findings 0건으로 깨끗하다.** `./gradlew check`/`build`를 커밋 게이트에 넣을지는 여전히 별도 결정 사항으로 남겨둔다(이 문서는 "고칠 수 있는 상태가 됐다"까지만 기록한다).
 
 ## `pmdDepthGate` — 모듈 depth 관련 규칙만 실제로 막는 별도 게이트 (2026-08-02)
 
@@ -73,18 +75,21 @@ depth 문제와 무관해 제외했다.
 
 새로운 오탐 패턴을 발견하면 여기 이유를 적고 제외 목록에 추가한다.
 
-## 잔여 백로그 (2026-07-31 기준, 아직 안 고침)
+## 잔여 백로그 — 해소됨 (2026-08-10)
 
-`./gradlew pmdMain`/`spotbugsMain`으로 재현 가능. 사용자 결정: 도구 추가와 커밋을 먼저 하고, 아래 항목은 별도 작업으로 진행한다.
+2026-07-31 시점에 아래 표의 항목들이 남아있었다. `feature/flight-price-search` 브랜치
+작업 중(무관한 신규 기능 커밋과는 별도 커밋으로) 전부 정리했다. `AvoidDuplicateLiterals`
+(`SalesRankingCsvParser`, 6건)만 재확인 시점엔 이미 사라져 있었다 — 이 문서 작성 이후
+어느 시점에 별도로 고쳐지고 문서 갱신이 누락된 것으로 보인다.
 
-| 규칙 | 건수 | 위치(대표) |
-|---|---|---|
-| SpotBugs `Nm`(오해 소지 있는 이름) | 1 | `RestStopDetailResponse.UpstreamException`이 `Exception`을 상속 안 함 |
-| SpotBugs `RCN`(불필요한 null 체크) | 1 | `RestStopStartupInitializer.initializeEvChargers()` |
-| PMD `AvoidDuplicateLiterals` | 6 | `SalesRankingCsvParser`의 CSV 헤더명 리터럴 반복 |
-| PMD `AvoidLiteralsInIfCondition` | 6 | 여러 파일, 조건문에 매직 리터럴 |
-| PMD `PreserveStackTrace` | 3 | 예외 재발생 시 원본 스택트레이스 유실 |
-| PMD `LiteralsFirstInComparisons` | 3 | `x.equals("literal")` → `"literal".equals(x)` |
-| PMD `ConstructorCallsOverridableMethod` | 3 | `EvChargerEntity`/`RestStopProductSalesRankEntity`/`RestStopStoreSalesRankEntity`의 `updateFrom()` |
-| PMD `NullAssignment` | 2 | `RestOilEntity`/`RestOilPriceEntity` |
-| PMD `UseLocaleWithCaseConversions` | 1 | `SalesRankingRestStopNameNormalizer` |
+| 규칙 | 건수 | 위치(대표) | 처리 |
+|---|---|---|---|
+| SpotBugs `Nm`(오해 소지 있는 이름) | 1 | `RestStopDetailResponse.UpstreamException`이 `Exception`을 상속 안 함 | `UpstreamErrorDetail`로 이름 변경 |
+| SpotBugs `RCN`(불필요한 null 체크) | 1 | `RestStopStartupInitializer.initializeEvChargers()` | 실제로는 테스트에서만 발생하는 방어 코드라 `config/spotbugs/exclude.xml`에 사유를 남기고 제외 |
+| PMD `AvoidDuplicateLiterals` | 6 | `SalesRankingCsvParser`의 CSV 헤더명 리터럴 반복 | 재확인 시점에 이미 해소되어 있었음(별도 조치 없음) |
+| PMD `AvoidLiteralsInIfCondition` | 6 | 여러 파일, 조건문에 매직 리터럴 | 의미 있는 이름의 상수로 추출(단, `RouteRestStopComparisonSummaryService.ynCount()`는 메서드명 자체가 의미를 이미 드러내 상수화가 오히려 불필요한 이름만 늘려서 `@SuppressWarnings("PMD.AvoidLiteralsInIfCondition")`로 대신 표시) |
+| PMD `PreserveStackTrace` | 3 | 예외 재발생 시 원본 스택트레이스 유실 | 커스텀 예외 3개에 `(message, cause)` 생성자를 추가하고 호출부에서 원인 예외 전달 |
+| PMD `LiteralsFirstInComparisons` | 3 | `x.equals("literal")` → `"literal".equals(x)` | 리터럴을 앞으로 이동 |
+| PMD `ConstructorCallsOverridableMethod` | 3 | `EvChargerEntity`/`RestStopProductSalesRankEntity`/`RestStopStoreSalesRankEntity`의 `updateFrom()` | 필드 대입 로직을 `private apply()`로 옮기고 생성자·`updateFrom()` 둘 다 위임하도록 분리(`RestThemeEntity`에 이미 있던 패턴과 동일) |
+| PMD `NullAssignment` | 2 | `RestOilEntity`/`RestOilPriceEntity`의 `clearAdminLink()` | 코드는 유지, `@SuppressWarnings("PMD.NullAssignment")`로 표시 — 이 두 엔티티는 `restStopServiceAreaCode`가 생성자에서부터 미설정(`null`)이 "미매핑" 상태이고, `RestOilServiceAreaCodeBackfiller`가 `!= null`로 엄격히 체크하므로 `""`로 바꾸면 오히려 백필 로직이 오동작함(`RestStopProductSalesRankEntity` 계열은 반대로 `""` + `hasText()` 컨벤션이라 서로 다름) |
+| PMD `UseLocaleWithCaseConversions` | 1 | `SalesRankingRestStopNameNormalizer` | `.toLowerCase(Locale.ROOT)`로 로케일 명시 |

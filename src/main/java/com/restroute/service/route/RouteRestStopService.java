@@ -44,6 +44,8 @@ import org.springframework.stereotype.Service;
 public class RouteRestStopService {
 
     private static final String LIST_IMAGE_URL_FORMAT = "/api/rest-stops/%s/images/list";
+    private static final int AMBIGUITY_CHECK_MIN_GROUP_SIZE = 2;
+    private static final int SINGLE_REACHABLE_MATCH_COUNT = 1;
 
     private final KakaoMapClient kakaoMapClient;
     private final RestStopQueryService restStopQueryService;
@@ -244,13 +246,13 @@ public class RouteRestStopService {
         Map<String, IndexedMatch> winnerByGroupKey = new HashMap<>();
         Set<String> ambiguousGroupKeys = new HashSet<>();
         groups.forEach((groupKey, group) -> {
-            if (group.size() < 2) {
+            if (group.size() < AMBIGUITY_CHECK_MIN_GROUP_SIZE) {
                 return;
             }
             List<IndexedMatch> reachableSide = group.stream()
                     .filter(indexed -> sideOfTravel(indexed, path) == RoutePath.Side.RIGHT)
                     .toList();
-            if (reachableSide.size() != 1) {
+            if (reachableSide.size() != SINGLE_REACHABLE_MATCH_COUNT) {
                 ambiguousGroupKeys.add(groupKey);
                 return;
             }
@@ -274,7 +276,7 @@ public class RouteRestStopService {
 
     private boolean isKept(IndexedMatch indexed, Map<String, IndexedMatch> winnerByGroupKey) {
         IndexedMatch winner = winnerByGroupKey.get(indexed.matchedRestStop().groupKey());
-        return winner == null || winner == indexed;
+        return winner == null || winner.equals(indexed);
     }
 
     /**

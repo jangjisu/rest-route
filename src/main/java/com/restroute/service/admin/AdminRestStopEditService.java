@@ -106,7 +106,7 @@ public class AdminRestStopEditService {
         try {
             Double.parseDouble(value);
         } catch (NumberFormatException e) {
-            throw InvalidRestStopEditException.forInvalidCoordinate(value);
+            throw InvalidRestStopEditException.forInvalidCoordinate(value, e);
         }
     }
 }

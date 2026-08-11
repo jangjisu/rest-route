@@ -72,7 +72,7 @@ public class EvChargerEntity {
     private String maker;
 
     private EvChargerEntity(EvChargerItem item) {
-        updateFrom(item);
+        apply(item);
     }
 
     public static EvChargerEntity from(EvChargerItem item) {
@@ -80,6 +80,10 @@ public class EvChargerEntity {
     }
 
     public void updateFrom(EvChargerItem item) {
+        apply(item);
+    }
+
+    private void apply(EvChargerItem item) {
         this.statNm = item.getStatNm();
         this.statId = item.getStatId();
         this.chgerId = item.getChgerId();

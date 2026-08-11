@@ -9,7 +9,11 @@ public class InvalidRestStopEditException extends BusinessException {
         super(ResponseCode.INVALID_PARAMETER, message);
     }
 
-    public static InvalidRestStopEditException forInvalidCoordinate(String value) {
-        return new InvalidRestStopEditException("Invalid coordinate value: " + value);
+    public InvalidRestStopEditException(String message, Throwable cause) {
+        super(ResponseCode.INVALID_PARAMETER, message, cause);
+    }
+
+    public static InvalidRestStopEditException forInvalidCoordinate(String value, Throwable cause) {
+        return new InvalidRestStopEditException("Invalid coordinate value: " + value, cause);
     }
 }

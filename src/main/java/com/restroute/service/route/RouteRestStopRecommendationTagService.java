@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 @Service
 class RouteRestStopRecommendationTagService {
 
+    private static final int MANY_FACILITIES_THRESHOLD = 3;
+
     RouteRestStopRecommendationStandards standards(List<RouteRestStopComparison> comparisons) {
         return RouteRestStopRecommendationStandards.of(
                 lowestPrice(comparisons, FuelType.GASOLINE),
@@ -78,7 +80,7 @@ class RouteRestStopRecommendationTagService {
     }
 
     private void addFacilityTag(List<RecommendationTag> tags, ComparisonSummary summary) {
-        if (summary.facilityCount() < 3) {
+        if (summary.facilityCount() < MANY_FACILITIES_THRESHOLD) {
             return;
         }
         tags.add(RecommendationTag.of("many-facilities", "시설 많음"));

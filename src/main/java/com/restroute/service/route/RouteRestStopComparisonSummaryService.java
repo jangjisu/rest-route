@@ -104,6 +104,7 @@ class RouteRestStopComparisonSummaryService {
         return Math.toIntExact(detailConvenienceCount + detailFlagCount + oilConvenienceCount);
     }
 
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     private int ynCount(String value) {
         if ("Y".equals(value)) {
             return 1;

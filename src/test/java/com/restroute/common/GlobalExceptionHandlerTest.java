@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
@@ -30,6 +31,17 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getCode()).isEqualTo(ResponseCode.INVALID_PARAMETER.name());
         assertThat(response.getBody().getMessage()).isEqualTo(ResponseCode.INVALID_PARAMETER.getDefaultMessage());
+    }
+
+    @Test
+    @DisplayName("필수 파라미터 누락은 INVALID_PARAMETER 응답으로 변환한다(이전엔 500으로 새던 버그)")
+    void handleMissingRequestParameter_returnsInvalidParameter() {
+        ResponseEntity<ApiResponse<Void>> response =
+                handler.handleMissingRequestParameter(new MissingServletRequestParameterException("origin", "String"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo(ResponseCode.INVALID_PARAMETER.name());
     }
 
     @Test

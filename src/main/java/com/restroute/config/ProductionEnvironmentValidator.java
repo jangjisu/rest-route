@@ -48,10 +48,10 @@ class ProductionEnvironmentValidator implements InitializingBean {
         String normalized = value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
         return normalized.contains("placeholder")
                 || normalized.contains("replacewithreal")
-                || normalized.equals("yourapikeyhere")
-                || normalized.equals("yourapikey")
+                || "yourapikeyhere".equals(normalized)
+                || "yourapikey".equals(normalized)
                 || (normalized.startsWith("your") && normalized.endsWith("apikey"))
-                || normalized.equals("changeme");
+                || "changeme".equals(normalized);
     }
 
     private record RequiredProperty(String name, String value) {

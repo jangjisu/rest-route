@@ -16,7 +16,7 @@ public class RestStopDetailResponse implements ExApiResponse {
     private String count;
     private String pageSize;
     private List<RestStopDetailItem> list;
-    private UpstreamException exception;
+    private UpstreamErrorDetail exception;
 
     @Override
     public boolean isSuccess() {
@@ -41,5 +41,5 @@ public class RestStopDetailResponse implements ExApiResponse {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record UpstreamException(String message) {}
+    private record UpstreamErrorDetail(String message) {}
 }
