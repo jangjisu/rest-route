@@ -18,6 +18,7 @@ class FlightSearchMockControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new FlightSearchMockController())
+                .setControllerAdvice(new FlightExceptionHandler())
                 .build();
     }
 
@@ -84,18 +85,28 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
-    @DisplayName("알 수 없는 커서가 오면 처음부터 반환한다")
-    void searchMock_fallsBackToStartForUnknownCursor() throws Exception {
+    @DisplayName("형식이 이상한 커서는 DEAL_NOT_FOUND 에러를 반환한다")
+    void searchMock_returnsDealNotFoundForMalformedCursor() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock").param("cursor", "not-a-real-cursor"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].id").value("deal_00000"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.message").value("Deal not found or already expired"));
     }
 
     @Test
-    @DisplayName("deal_ 접두사인데 숫자가 아닌 커서도 처음부터 반환한다")
-    void searchMock_fallsBackToStartForNonNumericCursorSuffix() throws Exception {
+    @DisplayName("deal_ 접두사인데 숫자가 아닌 커서도 DEAL_NOT_FOUND 에러를 반환한다")
+    void searchMock_returnsDealNotFoundForNonNumericCursorSuffix() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock").param("cursor", "deal_abcde"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].id").value("deal_00000"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("범위를 벗어난 커서도 DEAL_NOT_FOUND 에러를 반환한다")
+    void searchMock_returnsDealNotFoundForOutOfRangeCursor() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock").param("cursor", "deal_00999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"));
     }
 }

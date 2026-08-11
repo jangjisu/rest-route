@@ -1,5 +1,6 @@
 package com.restroute.flight.controller;
 
+import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchMeta;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
@@ -54,7 +55,11 @@ final class FlightSearchMockFixture {
         }
 
         int cursorIndex = indexFromId(cursor);
-        return cursorIndex >= 0 ? cursorIndex + 1 : 0;
+        if (cursorIndex < 0 || cursorIndex >= TOTAL_COUNT) {
+            throw new FlightDealNotFoundException(cursor);
+        }
+
+        return cursorIndex + 1;
     }
 
     private static List<FlightDealResponse> generateRange(int startIndex, int endIndex) {
