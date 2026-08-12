@@ -1,34 +1,26 @@
 package com.restroute.flight.controller;
 
-import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealResponse;
-import com.restroute.flight.controller.response.FlightDealSearchMeta;
-import com.restroute.flight.controller.response.FlightDealSearchResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.IntStream;
 import org.springframework.util.StringUtils;
 
 /**
- * 프론트엔드 개발용 고정 모킹 데이터. Travelpayouts grouped_prices가 실제로 줄 수 있는
- * 필드만으로 결정적(deterministic) 가짜 데이터를 생성한다.
+ * 프론트엔드 개발용 고정 모킹 데이터 생성기. Travelpayouts grouped_prices가 실제로 줄 수 있는
+ * 필드만으로 결정적(deterministic) 가짜 데이터를 만든다.
  *
- * <p>id는 인덱스를 base64로 인코딩해서 만든다 — 커서를 받으면 그 문자열을 디코드해서 위치를
- * 역산하지 않고, 생성된 목록에서 실제로 찾아서(lookup) 위치를 구한다. 나중에 진짜 백엔드 id로
- * 바뀌어도 이 lookup 방식은 그대로 통한다.
+ * <p>id는 세션 토큰(4자리) + 순번(예: "aB3x_0004")으로 구성된다. 세션별 저장/조회, cursor
+ * lookup은 이 클래스가 아니라 {@link FlightDealSessionStore}가 담당한다 — 여기는 순수하게
+ * "이 세션의 몇 번째 항목이 어떤 값인지"만 계산한다.
  */
 final class FlightSearchMockFixture {
 
-    private static final int TOTAL_COUNT = 342;
     private static final int BASE_PRICE = 89000;
     private static final int PRICE_STEP = 7300;
     private static final int PRICE_CYCLE = 15;
@@ -58,47 +50,13 @@ final class FlightSearchMockFixture {
 
     private FlightSearchMockFixture() {}
 
-    static FlightDealSearchResponse page(
-            FlightSearchRequestValidator.ValidatedRequest request, String cursor, int size) {
-        List<FlightDealResponse> all = generateAll(request);
-        Map<String, Integer> indexById = buildIndex(all);
-
-        int startIndex = startIndexOf(cursor, indexById);
-        int endIndex = Math.min(startIndex + size, all.size());
-        List<FlightDealResponse> items = all.subList(startIndex, endIndex);
-        boolean hasNext = endIndex < all.size();
-        String nextCursor = hasNext ? items.get(items.size() - 1).id() : null;
-
-        return new FlightDealSearchResponse(items, new FlightDealSearchMeta(nextCursor, hasNext, all.size()));
-    }
-
-    private static List<FlightDealResponse> generateAll(FlightSearchRequestValidator.ValidatedRequest request) {
-        return IntStream.range(0, TOTAL_COUNT)
-                .mapToObj(index -> dealAt(index, request))
+    static List<FlightDealResponse> generateAll(FlightSearchRequestDto request, String sessionToken, int totalSize) {
+        return IntStream.range(0, totalSize)
+                .mapToObj(index -> dealAt(index, request, sessionToken))
                 .toList();
     }
 
-    private static Map<String, Integer> buildIndex(List<FlightDealResponse> all) {
-        Map<String, Integer> indexById = new LinkedHashMap<>();
-        for (int i = 0; i < all.size(); i++) {
-            indexById.put(all.get(i).id(), i);
-        }
-        return indexById;
-    }
-
-    private static int startIndexOf(String cursor, Map<String, Integer> indexById) {
-        if (cursor == null) {
-            return 0;
-        }
-
-        Integer index = indexById.get(cursor);
-        if (index == null) {
-            throw new FlightDealNotFoundException(cursor);
-        }
-        return index + 1;
-    }
-
-    private static FlightDealResponse dealAt(int index, FlightSearchRequestValidator.ValidatedRequest request) {
+    private static FlightDealResponse dealAt(int index, FlightSearchRequestDto request, String sessionToken) {
         Destination destination = destinationAt(index, request);
         int nights = nightsAt(index, request);
         LocalDate departureDate = departureDateAt(index, request);
@@ -107,9 +65,9 @@ final class FlightSearchMockFixture {
         int amount = BASE_PRICE + (index % PRICE_CYCLE) * PRICE_STEP;
         int departureDuration = BASE_DURATION_MINUTES + (index % 5) * 10;
         int arrivalDuration = BASE_DURATION_MINUTES + (index % 4) * 10;
-        int departureTransferCount = request.includeTransfer() && index % 3 == 0 ? 1 : 0;
-        int arrivalTransferCount = request.includeTransfer() && index % 4 == 0 ? 1 : 0;
-        String id = idOf(index);
+        int departureTransferCount = request.isIncludeTransfer() && index % 3 == 0 ? 1 : 0;
+        int arrivalTransferCount = request.isIncludeTransfer() && index % 4 == 0 ? 1 : 0;
+        String id = idOf(sessionToken, index);
 
         FlightDealResponse.Leg departure = legAt(
                 departureDate.atTime(9, 20).atOffset(KST),
@@ -138,7 +96,7 @@ final class FlightSearchMockFixture {
                 LEG_TIME_FORMAT.format(departureFrom), LEG_TIME_FORMAT.format(departTo), duration, transferCount);
     }
 
-    private static Destination destinationAt(int index, FlightSearchRequestValidator.ValidatedRequest request) {
+    private static Destination destinationAt(int index, FlightSearchRequestDto request) {
         if (StringUtils.hasText(request.destination())) {
             String code = request.destination().toUpperCase(Locale.ROOT);
             return DESTINATIONS.stream()
@@ -149,21 +107,20 @@ final class FlightSearchMockFixture {
         return DESTINATIONS.get(index % DESTINATIONS.size());
     }
 
-    private static int nightsAt(int index, FlightSearchRequestValidator.ValidatedRequest request) {
-        List<Integer> nights = request.nights();
+    private static int nightsAt(int index, FlightSearchRequestDto request) {
+        List<Integer> nights = request.parsedNights();
         return nights.get(index % nights.size());
     }
 
-    private static LocalDate departureDateAt(int index, FlightSearchRequestValidator.ValidatedRequest request) {
-        long rangeDays = ChronoUnit.DAYS.between(request.dateFrom(), request.dateTo()) + 1;
+    private static LocalDate departureDateAt(int index, FlightSearchRequestDto request) {
+        LocalDate dateFrom = request.parsedDateFrom();
+        long rangeDays = ChronoUnit.DAYS.between(dateFrom, request.parsedDateTo()) + 1;
         long offset = index % rangeDays;
-        return request.dateFrom().plusDays(offset);
+        return dateFrom.plusDays(offset);
     }
 
-    private static String idOf(int index) {
-        return Base64.getUrlEncoder()
-                .withoutPadding()
-                .encodeToString(String.valueOf(index).getBytes(StandardCharsets.UTF_8));
+    private static String idOf(String sessionToken, int index) {
+        return "%s_%04d".formatted(sessionToken, index + 1);
     }
 
     private record Destination(String code, String name, ZoneOffset offset) {}

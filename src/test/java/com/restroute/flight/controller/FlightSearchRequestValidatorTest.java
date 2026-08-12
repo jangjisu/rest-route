@@ -1,11 +1,10 @@
 package com.restroute.flight.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.restroute.flight.controller.exception.InvalidFlightSearchException;
 import com.restroute.flight.controller.response.FlightApiError;
-import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,38 +12,26 @@ import org.junit.jupiter.api.Test;
 class FlightSearchRequestValidatorTest {
 
     @Test
-    @DisplayName("전부 유효하면 파싱된 요청을 반환한다")
-    void validate_returnsParsedRequest_whenAllValid() {
-        FlightSearchRequestValidator.ValidatedRequest result = FlightSearchRequestValidator.validate(
-                "ICN",
-                "OSA",
-                "2099-01-10",
-                "2099-02-10",
-                List.of("3", "4"),
-                List.of("JAPAN"),
-                List.of("INCLUDE_WEEKEND"),
-                "true");
-
-        assertThat(result.origin()).isEqualTo("ICN");
-        assertThat(result.destination()).isEqualTo("OSA");
-        assertThat(result.dateFrom()).isEqualTo(LocalDate.of(2099, 1, 10));
-        assertThat(result.dateTo()).isEqualTo(LocalDate.of(2099, 2, 10));
-        assertThat(result.nights()).containsExactly(3, 4);
-        assertThat(result.filter()).containsExactly("JAPAN");
-        assertThat(result.dayOption()).containsExactly("INCLUDE_WEEKEND");
-        assertThat(result.includeTransfer()).isTrue();
+    @DisplayName("전부 유효하면 예외를 던지지 않는다")
+    void validate_doesNotThrow_whenAllValid() {
+        assertThatCode(() -> FlightSearchRequestValidator.validate(
+                        "ICN",
+                        "OSA",
+                        "2099-01-10",
+                        "2099-02-10",
+                        List.of("3", "4"),
+                        List.of("JAPAN"),
+                        List.of("INCLUDE_WEEKEND"),
+                        "true"))
+                .doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("destination/filter/dayOption/includeTransfer 없이도(옵션) 통과하고 includeTransfer는 false가 기본값이다")
+    @DisplayName("destination/filter/dayOption/includeTransfer 없이도(옵션) 통과한다")
     void validate_passesWithoutOptionalFields() {
-        FlightSearchRequestValidator.ValidatedRequest result = FlightSearchRequestValidator.validate(
-                "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null);
-
-        assertThat(result.destination()).isNull();
-        assertThat(result.filter()).isNull();
-        assertThat(result.dayOption()).isNull();
-        assertThat(result.includeTransfer()).isFalse();
+        assertThatCode(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null))
+                .doesNotThrowAnyException();
     }
 
     @Test
