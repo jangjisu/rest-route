@@ -50,15 +50,13 @@ final class FlightSearchMockFixture {
 
     private FlightSearchMockFixture() {}
 
-    static List<FlightDealResponse> generateAll(
-            FlightSearchRequestValidator.ValidatedRequest request, String sessionToken, int totalSize) {
+    static List<FlightDealResponse> generateAll(FlightSearchRequestDto request, String sessionToken, int totalSize) {
         return IntStream.range(0, totalSize)
                 .mapToObj(index -> dealAt(index, request, sessionToken))
                 .toList();
     }
 
-    private static FlightDealResponse dealAt(
-            int index, FlightSearchRequestValidator.ValidatedRequest request, String sessionToken) {
+    private static FlightDealResponse dealAt(int index, FlightSearchRequestDto request, String sessionToken) {
         Destination destination = destinationAt(index, request);
         int nights = nightsAt(index, request);
         LocalDate departureDate = departureDateAt(index, request);
@@ -67,8 +65,8 @@ final class FlightSearchMockFixture {
         int amount = BASE_PRICE + (index % PRICE_CYCLE) * PRICE_STEP;
         int departureDuration = BASE_DURATION_MINUTES + (index % 5) * 10;
         int arrivalDuration = BASE_DURATION_MINUTES + (index % 4) * 10;
-        int departureTransferCount = request.includeTransfer() && index % 3 == 0 ? 1 : 0;
-        int arrivalTransferCount = request.includeTransfer() && index % 4 == 0 ? 1 : 0;
+        int departureTransferCount = request.isIncludeTransfer() && index % 3 == 0 ? 1 : 0;
+        int arrivalTransferCount = request.isIncludeTransfer() && index % 4 == 0 ? 1 : 0;
         String id = idOf(sessionToken, index);
 
         FlightDealResponse.Leg departure = legAt(
@@ -98,7 +96,7 @@ final class FlightSearchMockFixture {
                 LEG_TIME_FORMAT.format(departureFrom), LEG_TIME_FORMAT.format(departTo), duration, transferCount);
     }
 
-    private static Destination destinationAt(int index, FlightSearchRequestValidator.ValidatedRequest request) {
+    private static Destination destinationAt(int index, FlightSearchRequestDto request) {
         if (StringUtils.hasText(request.destination())) {
             String code = request.destination().toUpperCase(Locale.ROOT);
             return DESTINATIONS.stream()
@@ -109,15 +107,16 @@ final class FlightSearchMockFixture {
         return DESTINATIONS.get(index % DESTINATIONS.size());
     }
 
-    private static int nightsAt(int index, FlightSearchRequestValidator.ValidatedRequest request) {
-        List<Integer> nights = request.nights();
+    private static int nightsAt(int index, FlightSearchRequestDto request) {
+        List<Integer> nights = request.parsedNights();
         return nights.get(index % nights.size());
     }
 
-    private static LocalDate departureDateAt(int index, FlightSearchRequestValidator.ValidatedRequest request) {
-        long rangeDays = ChronoUnit.DAYS.between(request.dateFrom(), request.dateTo()) + 1;
+    private static LocalDate departureDateAt(int index, FlightSearchRequestDto request) {
+        LocalDate dateFrom = request.parsedDateFrom();
+        long rangeDays = ChronoUnit.DAYS.between(dateFrom, request.parsedDateTo()) + 1;
         long offset = index % rangeDays;
-        return request.dateFrom().plusDays(offset);
+        return dateFrom.plusDays(offset);
     }
 
     private static String idOf(String sessionToken, int index) {

@@ -11,8 +11,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * 항공권 검색 요청을 grouped_prices 호출에 필요한 형태로 파싱/검증한다.
- * 개별 필드에서 걸리는 대로 바로 던지지 않고 전부 모아서 한 번에 알려준다.
+ * 항공권 검색 조건의 required 여부와 실제 값 형식을 검증한다. {@link FlightSearchRequestDto}의
+ * 생성자가 이 클래스를 호출해서 유효성을 확인한다 — 개별 필드에서 걸리는 대로 바로 던지지 않고
+ * 전부 모아서 한 번에 알려준다.
  */
 final class FlightSearchRequestValidator {
 
@@ -23,32 +24,30 @@ final class FlightSearchRequestValidator {
 
     private FlightSearchRequestValidator() {}
 
-    static ValidatedRequest validate(
+    static void validate(
             String origin,
             String destination,
-            String dateFromRaw,
-            String dateToRaw,
-            List<String> nightsRaw,
+            String dateFrom,
+            String dateTo,
+            List<String> nights,
             List<String> filter,
             List<String> dayOption,
-            String includeTransferRaw) {
+            String includeTransfer) {
         List<FlightApiError.Detail> details = new ArrayList<>();
 
         validateOrigin(origin, details);
         validateDestination(destination, details);
-        LocalDate dateFrom = validateDateFrom(dateFromRaw, details);
-        LocalDate dateTo = validateRequiredDate("dateTo", dateToRaw, details);
-        validateDateRange(dateFrom, dateTo, details);
-        List<Integer> nights = validateNights(nightsRaw, details);
+        LocalDate parsedDateFrom = validateDateFrom(dateFrom, details);
+        LocalDate parsedDateTo = validateRequiredDate("dateTo", dateTo, details);
+        validateDateRange(parsedDateFrom, parsedDateTo, details);
+        validateNights(nights, details);
         validateFilter(filter, details);
         validateDayOption(dayOption, details);
-        boolean includeTransfer = validateIncludeTransfer(includeTransferRaw, details);
+        validateIncludeTransfer(includeTransfer, details);
 
         if (!details.isEmpty()) {
             throw new InvalidFlightSearchException(details);
         }
-
-        return new ValidatedRequest(origin, destination, dateFrom, dateTo, nights, filter, dayOption, includeTransfer);
     }
 
     private static void validateOrigin(String origin, List<FlightApiError.Detail> details) {
@@ -80,10 +79,6 @@ final class FlightSearchRequestValidator {
             details.add(new FlightApiError.Detail(field, "REQUIRED"));
             return null;
         }
-        return parseDate(field, raw, details);
-    }
-
-    private static LocalDate parseDate(String field, String raw, List<FlightApiError.Detail> details) {
         try {
             return LocalDate.parse(raw);
         } catch (DateTimeParseException e) {
@@ -105,22 +100,17 @@ final class FlightSearchRequestValidator {
         }
     }
 
-    private static List<Integer> validateNights(List<String> nightsRaw, List<FlightApiError.Detail> details) {
+    private static void validateNights(List<String> nightsRaw, List<FlightApiError.Detail> details) {
         if (CollectionUtils.isEmpty(nightsRaw)) {
             details.add(new FlightApiError.Detail("nights", "REQUIRED"));
-            return List.of();
+            return;
         }
-
-        List<Integer> nights = new ArrayList<>();
         for (String raw : nightsRaw) {
             Integer value = parseNights(raw);
             if (value == null || value < MIN_NIGHTS || value > MAX_NIGHTS) {
                 details.add(new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE"));
-                continue;
             }
-            nights.add(value);
         }
-        return nights;
     }
 
     private static Integer parseNights(String raw) {
@@ -171,27 +161,10 @@ final class FlightSearchRequestValidator {
         }
     }
 
-    private static boolean validateIncludeTransfer(String raw, List<FlightApiError.Detail> details) {
-        if (!StringUtils.hasText(raw)) {
-            return false;
-        }
-        if ("true".equals(raw)) {
-            return true;
-        }
-        if ("false".equals(raw)) {
-            return false;
+    private static void validateIncludeTransfer(String raw, List<FlightApiError.Detail> details) {
+        if (!StringUtils.hasText(raw) || "true".equals(raw) || "false".equals(raw)) {
+            return;
         }
         details.add(new FlightApiError.Detail("includeTransfer", "INVALID_INCLUDE_TRANSFER"));
-        return false;
     }
-
-    record ValidatedRequest(
-            String origin,
-            String destination,
-            LocalDate dateFrom,
-            LocalDate dateTo,
-            List<Integer> nights,
-            List<String> filter,
-            List<String> dayOption,
-            boolean includeTransfer) {}
 }

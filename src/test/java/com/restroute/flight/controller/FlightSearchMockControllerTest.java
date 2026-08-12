@@ -28,7 +28,8 @@ class FlightSearchMockControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new FlightSearchMockController(new FlightDealSessionStore()))
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                        new FlightSearchMockController(new FlightSearchService(new FlightDealSessionStore())))
                 .setControllerAdvice(new FlightExceptionHandler())
                 .build();
     }
@@ -82,6 +83,20 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
+    @DisplayName("totalSize가 범위를 벗어나면 컨트롤러가 조용히 클램프한다")
+    void searchMock_clampsOutOfRangeTotalSize() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3")
+                        .param("totalSize", "5000")
+                        .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.meta.totalCount").value(1000));
+    }
+
+    @Test
     @DisplayName("includeTransfer가 없으면(기본 false) 모든 항목이 직항(transferCount=0)이다")
     void searchMock_defaultsToDirectOnlyWhenIncludeTransferOmitted() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
@@ -125,19 +140,19 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
-    @DisplayName("필수 파라미터가 아예 없으면 Spring이 먼저 걸러서 VALIDATION_FAILED와 그 필드 하나만 반환한다")
-    void searchMock_returnsValidationFailedForMissingRequiredParam() throws Exception {
+    @DisplayName("필수 파라미터가 여러 개 없으면 DTO 생성자가 한 번에 모아서 VALIDATION_FAILED로 반환한다")
+    void searchMock_returnsValidationFailedForMissingRequiredParams() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.error.details.length()").value(1))
+                .andExpect(jsonPath("$.error.details.length()").value(4))
                 .andExpect(jsonPath("$.error.details[0].field").value("origin"))
                 .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
     }
 
     @Test
-    @DisplayName("필수 파라미터가 값은 왔지만 빈 문자열이면 validator가 REQUIRED로 잡는다")
+    @DisplayName("필수 파라미터가 값은 왔지만 빈 문자열이면 DTO 생성자가 REQUIRED로 잡는다")
     void searchMock_returnsValidationFailedForBlankRequiredParam() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", "")
@@ -152,8 +167,8 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
-    @DisplayName("형식이 이상한 커서(세션 토큰을 못 뽑음)는 에러 없이 새 세션 첫 페이지로 처리된다")
-    void searchMock_startsNewSessionForMalformedCursor() throws Exception {
+    @DisplayName("형식이 이상한 커서(세션 토큰을 못 뽑음)는 DEAL_NOT_FOUND 에러를 반환한다")
+    void searchMock_returnsDealNotFoundForMalformedCursor() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
                         .param("dateFrom", VALID_DATE_FROM)
@@ -161,8 +176,8 @@ class FlightSearchMockControllerTest {
                         .param("nights", "3")
                         .param("cursor", "not-a-real-cursor")
                         .param("size", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].destination.code").value("FUK"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"));
     }
 
     @Test
@@ -196,8 +211,8 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
-    @DisplayName("검색 조건이 달라지면 이전 cursor는 무시되고 에러 없이 새 세션 첫 페이지부터 다시 시작한다")
-    void searchMock_startsNewSessionWhenSearchConditionsChange() throws Exception {
+    @DisplayName("검색 조건이 달라진 채로 이전 cursor를 재사용하면 DEAL_NOT_FOUND 에러를 반환한다")
+    void searchMock_returnsDealNotFoundWhenSearchConditionsChange() throws Exception {
         String firstPageBody = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
                         .param("dateFrom", VALID_DATE_FROM)
@@ -219,10 +234,8 @@ class FlightSearchMockControllerTest {
                         .param("totalSize", "10")
                         .param("cursor", cursorFromDifferentConditions)
                         .param("size", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].destination.code").value("FUK"))
-                .andExpect(jsonPath("$.data.items[0].nights").value(4))
-                .andExpect(jsonPath("$.data.meta.totalCount").value(10));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"));
     }
 
     @Test

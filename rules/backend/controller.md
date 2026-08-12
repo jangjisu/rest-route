@@ -15,6 +15,9 @@
 
 ## ApiResponse 구조
 
+컨트롤러는 항상 `ResponseEntity<XxxResponse<T>>` 형태로 응답한다 — 여기서 `XxxResponse`는
+"이 도메인에 정의된 응답 봉투 타입"을 뜻하며, 기본값은 공용 `ApiResponse`다.
+
 ```json
 {
   "code": "SUCCESS",
@@ -22,6 +25,11 @@
   "data": { ... }
 }
 ```
+
+도메인이 공용 `ApiResponse`와 다른 자기 응답 봉투를 별도로 정의했다면(예:
+`flight.controller.response.FlightApiResponse`의 `{data, error}` 구조), 그 도메인
+컨트롤러는 공용 `ApiResponse` 대신 그 타입을 따른다. 새 봉투 타입을 도입할 때는 그 도메인
+패키지 안에 정의하고, 왜 공용 `ApiResponse`를 안 쓰는지 클래스 Javadoc에 남긴다.
 
 ## ResponseCode 정의
 
