@@ -3,6 +3,7 @@ package com.restroute.flight.controller;
 import com.restroute.flight.controller.response.FlightApiResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,11 +17,16 @@ import org.springframework.web.bind.annotation.RestController;
  * 프로파일 제한 없이 항상 활성화된다.
  */
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/flights")
 public class FlightSearchMockController {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 50;
+    private static final int DEFAULT_TOTAL_SIZE = 77;
+    private static final int MAX_TOTAL_SIZE = 1000;
+
+    private final FlightDealSessionStore sessionStore;
 
     /**
      * 필수 값이 잘못된 경우 {@link FlightExceptionHandler}에서 처리한다.
@@ -33,7 +39,10 @@ public class FlightSearchMockController {
      * @param filter 지역권 필터(옵션). 값: JAPAN, SOUTHEAST_ASIA, GUAM_SAIPAN
      * @param dayOption 날짜 조건(옵션, 복수 선택 시 AND). 값: INCLUDE_WEEKEND, EXCLUDE_WEEKEND_INCLUDE_HOLIDAY
      * @param includeTransfer 경유 포함 여부(옵션, 기본 false=직항만)
-     * @param cursor 이전 응답의 meta.nextCursor를 그대로 넘기면 그다음부터 이어서 반환
+     * @param totalSize 이번 검색에서 총 몇 건 생성할지(모킹 전용, 옵션, 기본 77, 최대 1000 — size처럼 범위만
+     *     넘으면 조용히 잘라내고 별도 에러는 없음)
+     * @param cursor 이전 응답의 meta.nextCursor를 그대로 넘기면 그다음부터 이어서 반환. 검색 조건이 바뀌었거나
+     *     세션이 만료됐으면 에러 없이 새 세션으로 처음부터 다시 시작한다.
      * @param size 한 번에 받을 개수(기본 20, 최대 50)
      */
     @GetMapping("/search/mock")
@@ -46,13 +55,15 @@ public class FlightSearchMockController {
             @RequestParam(required = false) List<String> filter,
             @RequestParam(required = false) List<String> dayOption,
             @RequestParam(required = false) String includeTransfer,
+            @RequestParam(required = false, defaultValue = "" + DEFAULT_TOTAL_SIZE) int totalSize,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false, defaultValue = "" + DEFAULT_PAGE_SIZE) int size) {
         FlightSearchRequestValidator.ValidatedRequest validated = FlightSearchRequestValidator.validate(
                 origin, destination, dateFrom, dateTo, nights, filter, dayOption, includeTransfer);
         int boundedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int boundedTotalSize = Math.min(Math.max(totalSize, 1), MAX_TOTAL_SIZE);
 
         return ResponseEntity.ok(
-                FlightApiResponse.success(FlightSearchMockFixture.page(validated, cursor, boundedSize)));
+                FlightApiResponse.success(sessionStore.page(validated, boundedTotalSize, cursor, boundedSize)));
     }
 }
