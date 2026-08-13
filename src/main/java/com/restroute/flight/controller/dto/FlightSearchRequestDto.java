@@ -2,8 +2,11 @@ package com.restroute.flight.controller.dto;
 
 import com.restroute.flight.controller.exception.InvalidFlightSearchException;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
+import org.springframework.util.CollectionUtils;
 
 /**
  * 컨트롤러가 쿼리 파라미터로부터 그대로 바인딩받는 검색 조건 DTO. 생성자가
@@ -31,6 +34,7 @@ public record FlightSearchRequestDto(
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MIN_PAGE_SIZE = 1;
     private static final int MAX_PAGE_SIZE = 50;
+    private static final int MIN_NIGHTS = 1;
 
     public FlightSearchRequestDto {
         FlightSearchRequestValidator.validate(
@@ -45,7 +49,15 @@ public record FlightSearchRequestDto(
         return LocalDate.parse(dateTo);
     }
 
+    /**
+     * nights가 없으면 dateFrom~dateTo 기간 전체를 1박부터 최대박까지 조회 대상으로 본다
+     * (예: 기간이 8일이면 1~8박).
+     */
     public List<Integer> parsedNights() {
+        if (CollectionUtils.isEmpty(nights)) {
+            long maxNights = Math.max(MIN_NIGHTS, ChronoUnit.DAYS.between(parsedDateFrom(), parsedDateTo()));
+            return IntStream.rangeClosed(MIN_NIGHTS, (int) maxNights).boxed().toList();
+        }
         return nights.stream().map(Integer::parseInt).toList();
     }
 

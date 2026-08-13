@@ -35,6 +35,33 @@ class FlightSearchRequestDtoTest {
     }
 
     @Test
+    @DisplayName("nights가 없으면(null) parsedNights()는 dateFrom~dateTo 기간만큼 1박부터 전체를 반환한다")
+    void parsedNights_defaultsToDateRange_whenNightsIsNull() {
+        FlightSearchRequestDto result = new FlightSearchRequestDto(
+                "ICN", "OSA", "2099-01-10", "2099-01-18", null, null, null, null, null, null);
+
+        assertThat(result.parsedNights()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+    }
+
+    @Test
+    @DisplayName("nights가 빈 리스트여도 parsedNights()는 dateFrom~dateTo 기간만큼 반환한다")
+    void parsedNights_defaultsToDateRange_whenNightsIsEmpty() {
+        FlightSearchRequestDto result = new FlightSearchRequestDto(
+                "ICN", "OSA", "2099-01-10", "2099-01-23", List.of(), null, null, null, null, null);
+
+        assertThat(result.parsedNights()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
+    }
+
+    @Test
+    @DisplayName("dateFrom과 dateTo가 같은 날이어도 parsedNights()는 최소 1박은 반환한다")
+    void parsedNights_defaultsToAtLeastOneNight_whenSameDayRange() {
+        FlightSearchRequestDto result = new FlightSearchRequestDto(
+                "ICN", "OSA", "2099-01-10", "2099-01-10", null, null, null, null, null, null);
+
+        assertThat(result.parsedNights()).containsExactly(1);
+    }
+
+    @Test
     @DisplayName("생성자는 검증을 FlightSearchRequestValidator에 위임한다 — 실패하면 그대로 전파된다")
     void constructor_delegatesValidationAndPropagatesFailure() {
         assertThatThrownBy(() -> new FlightSearchRequestDto(

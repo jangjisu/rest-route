@@ -146,9 +146,36 @@ class FlightSearchMockControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.error.details.length()").value(4))
+                .andExpect(jsonPath("$.error.details.length()").value(3))
                 .andExpect(jsonPath("$.error.details[0].field").value("origin"))
                 .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
+    }
+
+    @Test
+    @DisplayName("nights를 생략하면 dateFrom~dateTo 기간(1~31박) 전체를 대상으로 순회하며 정상 응답한다")
+    void searchMock_defaultsToDateRangeNightsWhenOmitted() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].nights").value(1))
+                .andExpect(jsonPath("$.data.items[9].nights").value(10));
+    }
+
+    @Test
+    @DisplayName("nights를 생략했을 때 기간이 좁으면 그 기간만큼만 순회한다(고정 10이 아님)")
+    void searchMock_cyclesWithinNarrowerDateRangeWhenNightsOmitted() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", "2099-01-15")
+                        .param("size", "6"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].nights").value(1))
+                .andExpect(jsonPath("$.data.items[4].nights").value(5))
+                .andExpect(jsonPath("$.data.items[5].nights").value(1));
     }
 
     @Test

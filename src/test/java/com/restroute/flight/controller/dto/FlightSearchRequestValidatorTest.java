@@ -115,13 +115,11 @@ class FlightSearchRequestValidatorTest {
     }
 
     @Test
-    @DisplayName("nights가 비어있으면 REQUIRED를 반환한다")
-    void validate_flagsMissingNights() {
-        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+    @DisplayName("nights가 비어있어도(옵션) 통과한다")
+    void validate_passesWithoutNights() {
+        assertThatCode(() -> FlightSearchRequestValidator.validate(
                         "ICN", null, "2099-01-10", "2099-02-10", List.of(), null, null, null))
-                .isInstanceOf(InvalidFlightSearchException.class)
-                .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("nights", "REQUIRED")));
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -186,7 +184,6 @@ class FlightSearchRequestValidatorTest {
                 .isEqualTo(List.of(
                         new FlightApiError.Detail("origin", "REQUIRED"),
                         new FlightApiError.Detail("dateFrom", "REQUIRED"),
-                        new FlightApiError.Detail("dateTo", "REQUIRED"),
-                        new FlightApiError.Detail("nights", "REQUIRED")));
+                        new FlightApiError.Detail("dateTo", "REQUIRED")));
     }
 }
