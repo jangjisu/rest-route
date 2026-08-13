@@ -1,11 +1,7 @@
 package com.restroute.flight.client;
 
 import com.restroute.flight.client.exception.TravelpayoutsApiException;
-import com.restroute.flight.client.response.TravelpayoutsAirlineItem;
-import com.restroute.flight.client.response.TravelpayoutsCityItem;
-import com.restroute.flight.client.response.TravelpayoutsCountryItem;
 import com.restroute.flight.client.response.TravelpayoutsGroupedPricesResponse;
-import java.util.List;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,18 +39,6 @@ public class TravelpayoutsClient {
                         maxTripDuration,
                         CURRENCY_KRW,
                         apiToken));
-    }
-
-    public List<TravelpayoutsCityItem> citiesData() {
-        return fetch("cities data", travelpayoutsFeignClient::citiesData);
-    }
-
-    public List<TravelpayoutsCountryItem> countriesData() {
-        return fetch("countries data", travelpayoutsFeignClient::countriesData);
-    }
-
-    public List<TravelpayoutsAirlineItem> airlinesData() {
-        return fetch("airlines data", travelpayoutsFeignClient::airlinesData);
     }
 
     private <T> T fetch(String requestDescription, Supplier<T> request) {

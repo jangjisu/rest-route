@@ -1,6 +1,5 @@
 package com.restroute.flight.domain;
 
-import com.restroute.flight.client.response.TravelpayoutsCountryItem;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -45,9 +44,5 @@ public class FlightCountryEntity {
         this.code = code;
         this.korName = korName;
         this.engName = engName;
-    }
-
-    public static FlightCountryEntity from(TravelpayoutsCountryItem item) {
-        return new FlightCountryEntity(item.code(), item.name(), item.engName());
     }
 }
