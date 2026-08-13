@@ -14,8 +14,9 @@ import lombok.NoArgsConstructor;
 /**
  * 항공권 검색용 공항 참조 데이터 (Travelpayouts /data/ko/airports.json 기준, 취항 공항만).
  * cities.json은 도시 단위 코드만 있어 ICN/KIX 같은 실제 공항코드가 없었는데, 이 엔티티가
- * 그 갭을 메운다. korName은 Travelpayouts 자체 커버리지(약 29%)에 Wikidata(P238) 보강을
- * 더해 약 47%까지 채워져 있다. engName은 항상 채워진다.
+ * 그 갭을 메운다. korName/engName 모두 전량 채워진다 — Travelpayouts 자체 커버리지에
+ * Wikidata(P238) 보강, 그리고도 남는 나머지는 수동으로 채워 넣었다(자세한 소스/파이프라인은
+ * {@code rules/backend/flight.md} 참고).
  */
 @Getter
 @Entity

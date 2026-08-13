@@ -39,9 +39,9 @@ class FlightAirlineStartupInitializerTest {
     private FlightAirlineStartupInitializer flightAirlineStartupInitializer;
 
     @Test
-    @DisplayName("서버 시작 시 SQL 시드 로딩을 위임하고 결과를 기록한 뒤 캐시를 채운다")
+    @DisplayName("서버 시작 시 SQL 재시딩을 위임하고 결과를 기록한 뒤 캐시를 채운다")
     void run_logsSeedCountWhenAirlinesSaved(CapturedOutput output) {
-        when(flightReferenceDataSeeder.seedIfEmpty(eq("data/flight-airline-seed.sql"), any()))
+        when(flightReferenceDataSeeder.reseed(eq("data/flight-airline-seed.sql"), any(), any()))
                 .thenReturn(1159);
 
         flightAirlineStartupInitializer.run(applicationArguments);
@@ -51,21 +51,9 @@ class FlightAirlineStartupInitializerTest {
     }
 
     @Test
-    @DisplayName("이미 데이터가 있으면 건너뛰었다고 기록하고도 캐시는 채운다")
-    void run_logsSkippedWhenAlreadySeeded() {
-        when(flightReferenceDataSeeder.seedIfEmpty(eq("data/flight-airline-seed.sql"), any()))
-                .thenReturn(0);
-
-        assertThatCode(() -> flightAirlineStartupInitializer.run(applicationArguments))
-                .doesNotThrowAnyException();
-
-        verify(flightAirlineNameCache).refresh();
-    }
-
-    @Test
     @DisplayName("시딩 실패가 앱 시작으로 전파되지 않아도 캐시는 채운다")
     void run_doesNotPropagateSeedingFailure(CapturedOutput output) {
-        when(flightReferenceDataSeeder.seedIfEmpty(eq("data/flight-airline-seed.sql"), any()))
+        when(flightReferenceDataSeeder.reseed(eq("data/flight-airline-seed.sql"), any(), any()))
                 .thenThrow(new IllegalStateException("sql error"));
 
         assertThatCode(() -> flightAirlineStartupInitializer.run(applicationArguments))
