@@ -11,12 +11,13 @@ class FlightCityResponseTest {
     @Test
     @DisplayName("엔티티 필드를 응답 DTO로 그대로 매핑한다")
     void from_mapsEntityFields() {
-        FlightCityEntity entity = new FlightCityEntity("OSA", "Osaka", "JP");
+        FlightCityEntity entity = new FlightCityEntity("OSA", "오사카", "Osaka", "JP");
 
         FlightCityResponse response = FlightCityResponse.from(entity);
 
         assertThat(response.code()).isEqualTo("OSA");
-        assertThat(response.name()).isEqualTo("Osaka");
+        assertThat(response.korName()).isEqualTo("오사카");
+        assertThat(response.engName()).isEqualTo("Osaka");
         assertThat(response.countryCode()).isEqualTo("JP");
     }
 }

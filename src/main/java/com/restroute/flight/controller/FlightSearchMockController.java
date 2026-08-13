@@ -1,7 +1,9 @@
 package com.restroute.flight.controller;
 
+import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightApiResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
+import com.restroute.flight.service.FlightSearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

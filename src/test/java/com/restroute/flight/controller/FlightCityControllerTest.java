@@ -34,14 +34,15 @@ class FlightCityControllerTest {
     @Test
     @DisplayName("GET /api/flights/cities는 keyword 파라미터를 그대로 서비스에 전달한다")
     void search_delegatesKeywordToService() throws Exception {
-        FlightCityResponse osaka = new FlightCityResponse("OSA", "Osaka", "JP");
-        when(flightCityQueryService.search("osaka")).thenReturn(List.of(osaka));
+        FlightCityResponse osaka = new FlightCityResponse("OSA", "오사카", "Osaka", "JP");
+        when(flightCityQueryService.search("오사카")).thenReturn(List.of(osaka));
 
-        mockMvc.perform(get("/api/flights/cities").param("keyword", "osaka"))
+        mockMvc.perform(get("/api/flights/cities").param("keyword", "오사카"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.data[0].code").value("OSA"))
-                .andExpect(jsonPath("$.data[0].name").value("Osaka"));
+                .andExpect(jsonPath("$.data[0].korName").value("오사카"))
+                .andExpect(jsonPath("$.data[0].engName").value("Osaka"));
     }
 
     @Test

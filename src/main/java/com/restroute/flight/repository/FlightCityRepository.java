@@ -9,5 +9,6 @@ public interface FlightCityRepository extends JpaRepository<FlightCityEntity, Lo
 
     Optional<FlightCityEntity> findByCode(String code);
 
-    List<FlightCityEntity> findAllByNameContainingIgnoreCaseOrderByNameAsc(String name);
+    List<FlightCityEntity> findAllByKorNameContainingIgnoreCaseOrEngNameContainingIgnoreCaseOrderByKorNameAsc(
+            String korNameKeyword, String engNameKeyword);
 }
