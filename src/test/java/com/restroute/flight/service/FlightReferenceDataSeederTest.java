@@ -30,25 +30,34 @@ class FlightReferenceDataSeederTest {
 
     @Test
     @DisplayName("테이블이 비어있으면 SQL 파일을 읽어 insert하고 최종 행 수를 반환한다")
-    void seedIfEmpty_insertsWhenTableIsEmpty() {
-        int savedCount = flightReferenceDataSeeder.seedIfEmpty("test-seed/sample-seed.sql", this::currentCount);
+    void reseed_insertsWhenTableIsEmpty() {
+        int savedCount = flightReferenceDataSeeder.reseed("test-seed/sample-seed.sql", this::clearSample, this::currentCount);
 
         assertThat(savedCount).isEqualTo(2);
         assertThat(currentCount()).isEqualTo(2);
     }
 
     @Test
-    @DisplayName("이미 데이터가 있으면 SQL을 실행하지 않고 0을 반환한다")
-    void seedIfEmpty_skipsWhenTableAlreadyHasData() throws SQLException {
+    @DisplayName("이미 데이터가 있어도 기존 데이터를 지우고 SQL 파일을 다시 읽어 insert한다")
+    void reseed_clearsExistingDataBeforeInserting() throws SQLException {
         try (Connection connection = dataSource.getConnection();
                 Statement statement = connection.createStatement()) {
-            statement.execute("INSERT INTO sample (code) VALUES ('EXISTING')");
+            statement.execute("INSERT INTO sample (code) VALUES ('STALE')");
         }
 
-        int savedCount = flightReferenceDataSeeder.seedIfEmpty("test-seed/sample-seed.sql", this::currentCount);
+        int savedCount = flightReferenceDataSeeder.reseed("test-seed/sample-seed.sql", this::clearSample, this::currentCount);
 
-        assertThat(savedCount).isZero();
-        assertThat(currentCount()).isEqualTo(1);
+        assertThat(savedCount).isEqualTo(2);
+        assertThat(currentCount()).isEqualTo(2);
+    }
+
+    private void clearSample() {
+        try (Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement()) {
+            statement.execute("DELETE FROM sample");
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private long currentCount() {

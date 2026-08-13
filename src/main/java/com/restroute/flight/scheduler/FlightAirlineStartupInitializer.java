@@ -29,18 +29,12 @@ public class FlightAirlineStartupInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         try {
-            logStartupResult(flightReferenceDataSeeder.seedIfEmpty(SEED_SQL_PATH, flightAirlineRepository::count));
+            int savedCount = flightReferenceDataSeeder.reseed(
+                    SEED_SQL_PATH, flightAirlineRepository::deleteAllInBatch, flightAirlineRepository::count);
+            log.info("Initial flight airline seeding completed. savedCount={}", savedCount);
         } catch (RuntimeException e) {
             log.error("Initial flight airline seeding failed. cause={}", e.getMessage(), e);
         }
         flightAirlineNameCache.refresh();
-    }
-
-    private static void logStartupResult(int savedCount) {
-        if (savedCount > 0) {
-            log.info("Initial flight airline seeding completed. savedCount={}", savedCount);
-            return;
-        }
-        log.info("Initial flight airline seeding skipped because flight_airline table already has data.");
     }
 }

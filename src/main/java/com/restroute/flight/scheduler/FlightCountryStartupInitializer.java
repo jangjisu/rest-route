@@ -29,18 +29,12 @@ public class FlightCountryStartupInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         try {
-            logStartupResult(flightReferenceDataSeeder.seedIfEmpty(SEED_SQL_PATH, flightCountryRepository::count));
+            int savedCount = flightReferenceDataSeeder.reseed(
+                    SEED_SQL_PATH, flightCountryRepository::deleteAllInBatch, flightCountryRepository::count);
+            log.info("Initial flight country seeding completed. savedCount={}", savedCount);
         } catch (RuntimeException e) {
             log.error("Initial flight country seeding failed. cause={}", e.getMessage(), e);
         }
         flightCountryNameCache.refresh();
-    }
-
-    private static void logStartupResult(int savedCount) {
-        if (savedCount > 0) {
-            log.info("Initial flight country seeding completed. savedCount={}", savedCount);
-            return;
-        }
-        log.info("Initial flight country seeding skipped because flight_country table already has data.");
     }
 }
