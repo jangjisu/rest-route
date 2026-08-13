@@ -102,7 +102,6 @@ final class FlightSearchRequestValidator {
 
     private static void validateNights(List<String> nightsRaw, List<FlightApiError.Detail> details) {
         if (CollectionUtils.isEmpty(nightsRaw)) {
-            details.add(new FlightApiError.Detail("nights", "REQUIRED"));
             return;
         }
         for (String raw : nightsRaw) {
