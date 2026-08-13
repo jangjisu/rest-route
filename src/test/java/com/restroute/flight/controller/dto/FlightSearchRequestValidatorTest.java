@@ -22,15 +22,16 @@ class FlightSearchRequestValidatorTest {
                         List.of("3", "4"),
                         List.of("JAPAN"),
                         List.of("INCLUDE_WEEKEND"),
-                        "true"))
+                        "true",
+                        "DATE"))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("destination/filter/dayOption/includeTransfer 없이도(옵션) 통과한다")
+    @DisplayName("destination/filter/dayOption/includeTransfer/sort 없이도(옵션) 통과한다")
     void validate_passesWithoutOptionalFields() {
         assertThatCode(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null))
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null, null))
                 .doesNotThrowAnyException();
     }
 
@@ -38,7 +39,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("origin이 없으면 REQUIRED를 반환한다")
     void validate_flagsMissingOrigin() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        null, null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null))
+                        null, null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("origin", "REQUIRED")));
@@ -48,7 +49,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("origin이 IATA 코드 형식이 아니면 INVALID_IATA_CODE를 반환한다")
     void validate_flagsInvalidOriginFormat() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "seoul", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null))
+                        "seoul", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("origin", "INVALID_IATA_CODE")));
@@ -58,7 +59,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("destination이 있는데 IATA 코드 형식이 아니면 INVALID_IATA_CODE를 반환한다")
     void validate_flagsInvalidDestinationFormat() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", "osaka", "2099-01-10", "2099-02-10", List.of("3"), null, null, null))
+                        "ICN", "osaka", "2099-01-10", "2099-02-10", List.of("3"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("destination", "INVALID_IATA_CODE")));
@@ -68,7 +69,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("dateFrom이 없으면 REQUIRED를 반환한다")
     void validate_flagsMissingDateFrom() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, null, "2099-02-10", List.of("3"), null, null, null))
+                        "ICN", null, null, "2099-02-10", List.of("3"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "REQUIRED")));
@@ -78,7 +79,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("dateFrom 형식이 이상하면 INVALID_DATE_FORMAT을 반환한다")
     void validate_flagsInvalidDateFromFormat() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099/01/10", "2099-02-10", List.of("3"), null, null, null))
+                        "ICN", null, "2099/01/10", "2099-02-10", List.of("3"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "INVALID_DATE_FORMAT")));
@@ -88,7 +89,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("dateFrom이 과거면 PAST_DATE_NOT_ALLOWED를 반환한다")
     void validate_flagsPastDateFrom() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2000-01-01", "2000-01-10", List.of("3"), null, null, null))
+                        "ICN", null, "2000-01-01", "2000-01-10", List.of("3"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "PAST_DATE_NOT_ALLOWED")));
@@ -98,7 +99,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("dateTo가 dateFrom보다 빠르면 BEFORE_DATE_FROM을 반환한다")
     void validate_flagsReversedDateRange() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-02-10", "2099-01-10", List.of("3"), null, null, null))
+                        "ICN", null, "2099-02-10", "2099-01-10", List.of("3"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("dateTo", "BEFORE_DATE_FROM")));
@@ -108,7 +109,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("날짜 범위가 3개월을 넘으면 DATE_RANGE_TOO_WIDE를 반환한다")
     void validate_flagsDateRangeTooWide() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-01-01", "2099-06-01", List.of("3"), null, null, null))
+                        "ICN", null, "2099-01-01", "2099-06-01", List.of("3"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("dateTo", "DATE_RANGE_TOO_WIDE")));
@@ -118,7 +119,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("nights가 비어있어도(옵션) 통과한다")
     void validate_passesWithoutNights() {
         assertThatCode(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-01-10", "2099-02-10", List.of(), null, null, null))
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of(), null, null, null, null))
                 .doesNotThrowAnyException();
     }
 
@@ -126,7 +127,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("nights에 숫자가 아닌 값이 있으면 INVALID_NIGHTS_VALUE를 반환한다")
     void validate_flagsInvalidNightsValue() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-01-10", "2099-02-10", List.of("three"), null, null, null))
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("three"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE")));
@@ -136,7 +137,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("nights가 1 미만이거나 90 초과면 INVALID_NIGHTS_VALUE를 반환한다")
     void validate_flagsOutOfRangeNightsValue() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-01-10", "2099-02-10", List.of("0", "91"), null, null, null))
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("0", "91"), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(
@@ -148,7 +149,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("filter에 알 수 없는 값이 있으면 INVALID_FILTER를 반환한다")
     void validate_flagsUnknownFilter() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), List.of("EUROPE"), null, null))
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), List.of("EUROPE"), null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("filter", "INVALID_FILTER")));
@@ -158,7 +159,15 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("dayOption에 알 수 없는 값이 있으면 INVALID_DAY_OPTION을 반환한다")
     void validate_flagsUnknownDayOption() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, List.of("HOLIDAY_ONLY"), null))
+                        "ICN",
+                        null,
+                        "2099-01-10",
+                        "2099-02-10",
+                        List.of("3"),
+                        null,
+                        List.of("HOLIDAY_ONLY"),
+                        null,
+                        null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("dayOption", "INVALID_DAY_OPTION")));
@@ -168,17 +177,38 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("includeTransfer가 true/false가 아니면 INVALID_INCLUDE_TRANSFER를 반환한다")
     void validate_flagsInvalidIncludeTransfer() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, "yes"))
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, "yes", null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("includeTransfer", "INVALID_INCLUDE_TRANSFER")));
     }
 
     @Test
+    @DisplayName("sort가 PRICE/DATE가 아니면 INVALID_SORT를 반환한다")
+    void validate_flagsInvalidSort() {
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null, "CHEAPEST"))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("sort", "INVALID_SORT")));
+    }
+
+    @Test
+    @DisplayName("sort가 PRICE/DATE면 통과한다")
+    void validate_passesKnownSortValues() {
+        assertThatCode(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null, "PRICE"))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> FlightSearchRequestValidator.validate(
+                        "ICN", null, "2099-01-10", "2099-02-10", List.of("3"), null, null, null, "DATE"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     @DisplayName("여러 필드가 동시에 잘못되면 전부 모아서 반환한다")
     void validate_collectsMultipleDetailsAtOnce() {
-        assertThatThrownBy(() ->
-                        FlightSearchRequestValidator.validate(null, null, null, null, List.of(), null, null, null))
+        assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
+                        null, null, null, null, List.of(), null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(

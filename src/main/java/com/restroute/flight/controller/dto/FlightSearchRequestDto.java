@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * 컨트롤러가 쿼리 파라미터로부터 그대로 바인딩받는 검색 조건 DTO. 생성자가
@@ -28,6 +29,7 @@ public record FlightSearchRequestDto(
         List<String> filter,
         List<String> dayOption,
         String includeTransfer,
+        String sort,
         String cursor,
         String size) {
 
@@ -38,7 +40,7 @@ public record FlightSearchRequestDto(
 
     public FlightSearchRequestDto {
         FlightSearchRequestValidator.validate(
-                origin, destination, dateFrom, dateTo, nights, filter, dayOption, includeTransfer);
+                origin, destination, dateFrom, dateTo, nights, filter, dayOption, includeTransfer, sort);
     }
 
     public LocalDate parsedDateFrom() {
@@ -63,6 +65,14 @@ public record FlightSearchRequestDto(
 
     public boolean isIncludeTransfer() {
         return "true".equals(includeTransfer);
+    }
+
+    /** sort가 없으면 PRICE(최저가순)가 기본값이다. */
+    public FlightDealSort parsedSort() {
+        if (!StringUtils.hasText(sort)) {
+            return FlightDealSort.PRICE;
+        }
+        return FlightDealSort.valueOf(sort);
     }
 
     /** cursor가 없으면 첫 요청(새로 조회해야 함), 있으면 이전 페이지에 이어가는 요청이다. */
@@ -101,11 +111,12 @@ public record FlightSearchRequestDto(
                 && Objects.equals(nights, other.nights)
                 && Objects.equals(filter, other.filter)
                 && Objects.equals(dayOption, other.dayOption)
-                && Objects.equals(includeTransfer, other.includeTransfer);
+                && Objects.equals(includeTransfer, other.includeTransfer)
+                && Objects.equals(sort, other.sort);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(origin, destination, dateFrom, dateTo, nights, filter, dayOption, includeTransfer);
+        return Objects.hash(origin, destination, dateFrom, dateTo, nights, filter, dayOption, includeTransfer, sort);
     }
 }

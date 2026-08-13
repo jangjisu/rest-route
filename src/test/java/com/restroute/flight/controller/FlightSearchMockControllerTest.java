@@ -10,7 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.flight.service.FlightSearchService;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -125,6 +127,70 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
+    @DisplayName("sort가 없으면(기본 PRICE) 가격 오름차순으로 정렬된 결과를 반환한다")
+    void searchMock_sortsByPriceAscendingByDefault() throws Exception {
+        String body = mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3")
+                        .param("totalSize", "30")
+                        .param("size", "30"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        JsonNode items = objectMapper.readTree(body).at("/data/items");
+        List<Integer> prices = new ArrayList<>();
+        for (JsonNode item : items) {
+            prices.add(item.at("/price/amount").asInt());
+        }
+
+        assertThat(prices).isSorted();
+    }
+
+    @Test
+    @DisplayName("sort=DATE면 출발일 오름차순으로 정렬된 결과를 반환한다")
+    void searchMock_sortsByDepartureDateAscending_whenSortIsDate() throws Exception {
+        String body = mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3")
+                        .param("sort", "DATE")
+                        .param("totalSize", "30")
+                        .param("size", "30"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        JsonNode items = objectMapper.readTree(body).at("/data/items");
+        List<String> departures = new ArrayList<>();
+        for (JsonNode item : items) {
+            departures.add(item.at("/departure/departureFrom").asText());
+        }
+
+        assertThat(departures).isSorted();
+    }
+
+    @Test
+    @DisplayName("sort가 PRICE/DATE가 아니면 VALIDATION_FAILED로 INVALID_SORT를 반환한다")
+    void searchMock_returnsValidationFailedForInvalidSort() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3")
+                        .param("sort", "CHEAPEST"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.error.details[0].field").value("sort"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_SORT"));
+    }
+
+    @Test
     @DisplayName("destination을 지정하면 모든 항목이 그 목적지로 고정된다")
     void searchMock_fixesDestinationWhenGiven() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
@@ -154,28 +220,51 @@ class FlightSearchMockControllerTest {
     @Test
     @DisplayName("nights를 생략하면 dateFrom~dateTo 기간(1~31박) 전체를 대상으로 순회하며 정상 응답한다")
     void searchMock_defaultsToDateRangeNightsWhenOmitted() throws Exception {
-        mockMvc.perform(get("/api/flights/search/mock")
+        String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
-                        .param("size", "10"))
+                        .param("totalSize", "31")
+                        .param("size", "31"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].nights").value(1))
-                .andExpect(jsonPath("$.data.items[9].nights").value(10));
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(nightsValuesOf(body)).isEqualTo(rangeSet(1, 31));
     }
 
     @Test
     @DisplayName("nights를 생략했을 때 기간이 좁으면 그 기간만큼만 순회한다(고정 10이 아님)")
     void searchMock_cyclesWithinNarrowerDateRangeWhenNightsOmitted() throws Exception {
-        mockMvc.perform(get("/api/flights/search/mock")
+        String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", "2099-01-15")
-                        .param("size", "6"))
+                        .param("totalSize", "10")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].nights").value(1))
-                .andExpect(jsonPath("$.data.items[4].nights").value(5))
-                .andExpect(jsonPath("$.data.items[5].nights").value(1));
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(nightsValuesOf(body)).isEqualTo(rangeSet(1, 5));
+    }
+
+    private Set<Integer> nightsValuesOf(String responseBody) throws Exception {
+        Set<Integer> nights = new HashSet<>();
+        for (JsonNode item : objectMapper.readTree(responseBody).at("/data/items")) {
+            nights.add(item.at("/nights").asInt());
+        }
+        return nights;
+    }
+
+    private static Set<Integer> rangeSet(int startInclusive, int endInclusive) {
+        Set<Integer> range = new HashSet<>();
+        for (int i = startInclusive; i <= endInclusive; i++) {
+            range.add(i);
+        }
+        return range;
     }
 
     @Test
