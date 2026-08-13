@@ -17,7 +17,10 @@ public class FlightCityQueryService {
     @Transactional(readOnly = true)
     public List<FlightCityResponse> search(String keyword) {
         if (StringUtils.hasText(keyword)) {
-            return flightCityRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc(keyword).stream()
+            return flightCityRepository
+                    .findAllByKorNameContainingIgnoreCaseOrEngNameContainingIgnoreCaseOrderByKorNameAsc(
+                            keyword, keyword)
+                    .stream()
                     .map(FlightCityResponse::from)
                     .toList();
         }

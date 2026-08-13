@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.restroute.flight.service.FlightSearchService;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,8 +29,7 @@ class FlightSearchMockControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                        new FlightSearchMockController(new FlightSearchService(new FlightDealSessionStore())))
+        mockMvc = MockMvcBuilders.standaloneSetup(new FlightSearchMockController(new FlightSearchService()))
                 .setControllerAdvice(new FlightExceptionHandler())
                 .build();
     }

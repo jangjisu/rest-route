@@ -46,7 +46,7 @@ application-secret.properties
 .env
 
 ### H2 file DB (local data) ###
-data/
+/data/
 
 ### Runtime logs ###
 logs/
@@ -68,3 +68,4 @@ harness/runs/history/
 
 ### Brainstorming visual companion (local mockups) ###
 .superpowers/
+.gstack/

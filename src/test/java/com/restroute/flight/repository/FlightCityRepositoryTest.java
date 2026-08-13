@@ -21,12 +21,12 @@ class FlightCityRepositoryTest {
     @Test
     @DisplayName("IATA 코드로 도시를 조회한다")
     void findByCode_returnsMatchingCity() {
-        flightCityRepository.save(new FlightCityEntity("OSA", "Osaka", "JP"));
+        flightCityRepository.save(new FlightCityEntity("OSA", "오사카", "Osaka", "JP"));
 
         Optional<FlightCityEntity> result = flightCityRepository.findByCode("OSA");
 
         assertThat(result).isPresent();
-        assertThat(result.get().getName()).isEqualTo("Osaka");
+        assertThat(result.get().getKorName()).isEqualTo("오사카");
     }
 
     @Test
@@ -38,15 +38,30 @@ class FlightCityRepositoryTest {
     }
 
     @Test
-    @DisplayName("이름 부분 일치로 도시를 가나다순 정렬해 조회한다")
-    void findAllByNameContaining_returnsSortedMatches() {
+    @DisplayName("korName 부분 일치로 도시를 검색한다")
+    void findAllByNameContaining_matchesKorName() {
         flightCityRepository.saveAll(List.of(
-                new FlightCityEntity("FUK", "Fukuoka", "JP"),
-                new FlightCityEntity("OSA", "Osaka", "JP"),
-                new FlightCityEntity("BKK", "Bangkok", "TH")));
+                new FlightCityEntity("FUK", "후쿠오카", "Fukuoka", "JP"),
+                new FlightCityEntity("OSA", "오사카", "Osaka", "JP"),
+                new FlightCityEntity("BKK", "방콕", "Bangkok", "TH")));
 
-        List<FlightCityEntity> result = flightCityRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc("o");
+        List<FlightCityEntity> result =
+                flightCityRepository.findAllByKorNameContainingIgnoreCaseOrEngNameContainingIgnoreCaseOrderByKorNameAsc(
+                        "오사카", "오사카");
 
-        assertThat(result).extracting(FlightCityEntity::getCode).containsExactly("BKK", "FUK", "OSA");
+        assertThat(result).extracting(FlightCityEntity::getCode).containsExactly("OSA");
+    }
+
+    @Test
+    @DisplayName("korName이 없는 도시도 engName 부분 일치로 검색된다")
+    void findAllByNameContaining_matchesEngNameWhenKorNameMissing() {
+        flightCityRepository.saveAll(List.of(
+                new FlightCityEntity("YHR", null, "Chevery", "CA"), new FlightCityEntity("OSA", "오사카", "Osaka", "JP")));
+
+        List<FlightCityEntity> result =
+                flightCityRepository.findAllByKorNameContainingIgnoreCaseOrEngNameContainingIgnoreCaseOrderByKorNameAsc(
+                        "chevery", "chevery");
+
+        assertThat(result).extracting(FlightCityEntity::getCode).containsExactly("YHR");
     }
 }

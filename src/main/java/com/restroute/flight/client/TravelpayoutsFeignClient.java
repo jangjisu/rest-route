@@ -1,6 +1,8 @@
 package com.restroute.flight.client;
 
+import com.restroute.flight.client.response.TravelpayoutsAirlineItem;
 import com.restroute.flight.client.response.TravelpayoutsCityItem;
+import com.restroute.flight.client.response.TravelpayoutsCountryItem;
 import com.restroute.flight.client.response.TravelpayoutsGroupedPricesResponse;
 import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -14,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface TravelpayoutsFeignClient {
 
     String GROUPED_PRICES_PATH = "/aviasales/v3/grouped_prices";
-    String CITIES_DATA_PATH = "/data/cities.json";
+    String CITIES_DATA_PATH = "/data/ko/cities.json";
+    String COUNTRIES_DATA_PATH = "/data/ko/countries.json";
+    String AIRLINES_DATA_PATH = "/data/airlines.json";
 
     @GetMapping(GROUPED_PRICES_PATH)
     TravelpayoutsGroupedPricesResponse groupedPrices(
@@ -28,4 +32,10 @@ public interface TravelpayoutsFeignClient {
 
     @GetMapping(CITIES_DATA_PATH)
     List<TravelpayoutsCityItem> citiesData();
+
+    @GetMapping(COUNTRIES_DATA_PATH)
+    List<TravelpayoutsCountryItem> countriesData();
+
+    @GetMapping(AIRLINES_DATA_PATH)
+    List<TravelpayoutsAirlineItem> airlinesData();
 }

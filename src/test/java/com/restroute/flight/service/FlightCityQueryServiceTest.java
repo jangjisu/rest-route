@@ -28,13 +28,14 @@ class FlightCityQueryServiceTest {
     }
 
     @Test
-    @DisplayName("keyword가 있으면 이름 부분 일치로 검색한다")
-    void search_byKeyword_searchesByName() {
-        FlightCityEntity osaka = new FlightCityEntity("OSA", "Osaka", "JP");
-        when(flightCityRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc("osaka"))
+    @DisplayName("keyword가 있으면 korName/engName 부분 일치로 검색한다")
+    void search_byKeyword_searchesByKorOrEngName() {
+        FlightCityEntity osaka = new FlightCityEntity("OSA", "오사카", "Osaka", "JP");
+        when(flightCityRepository.findAllByKorNameContainingIgnoreCaseOrEngNameContainingIgnoreCaseOrderByKorNameAsc(
+                        "오사카", "오사카"))
                 .thenReturn(List.of(osaka));
 
-        List<FlightCityResponse> result = flightCityQueryService.search("osaka");
+        List<FlightCityResponse> result = flightCityQueryService.search("오사카");
 
         assertThat(result).extracting(FlightCityResponse::code).containsExactly("OSA");
     }
@@ -42,7 +43,7 @@ class FlightCityQueryServiceTest {
     @Test
     @DisplayName("keyword가 없으면 전체 목록을 조회한다")
     void search_returnsAll_whenKeywordMissing() {
-        FlightCityEntity osaka = new FlightCityEntity("OSA", "Osaka", "JP");
+        FlightCityEntity osaka = new FlightCityEntity("OSA", "오사카", "Osaka", "JP");
         when(flightCityRepository.findAll()).thenReturn(List.of(osaka));
 
         List<FlightCityResponse> result = flightCityQueryService.search(null);
