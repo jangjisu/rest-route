@@ -61,8 +61,42 @@ class FlightSearchServiceTest {
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
+    @Test
+    @DisplayName("sort가 없으면(기본 PRICE) 가격 오름차순으로 정렬된 결과를 반환한다")
+    void search_sortsByPriceAscending_whenSortIsDefault() {
+        FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", null), 30);
+
+        List<Integer> prices =
+                response.items().stream().map(item -> item.price().amount()).toList();
+        assertThat(prices).isSorted();
+    }
+
+    @Test
+    @DisplayName("sort=DATE면 출발일 오름차순으로 정렬된 결과를 반환한다")
+    void search_sortsByDepartureDateAscending_whenSortIsDate() {
+        FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", "DATE"), 30);
+
+        List<String> departures =
+                response.items().stream().map(item -> item.departure().departureFrom()).toList();
+        assertThat(departures).isSorted();
+    }
+
     private static FlightSearchRequestDto request(String cursor, String nights, String size) {
+        return requestWithSort(cursor, nights, size, null);
+    }
+
+    private static FlightSearchRequestDto requestWithSort(String cursor, String nights, String size, String sort) {
         return new FlightSearchRequestDto(
-                VALID_ORIGIN, null, VALID_DATE_FROM, VALID_DATE_TO, List.of(nights), null, null, null, cursor, size);
+                VALID_ORIGIN,
+                null,
+                VALID_DATE_FROM,
+                VALID_DATE_TO,
+                List.of(nights),
+                null,
+                null,
+                null,
+                sort,
+                cursor,
+                size);
     }
 }

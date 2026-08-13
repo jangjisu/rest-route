@@ -32,7 +32,8 @@ final class FlightSearchRequestValidator {
             List<String> nights,
             List<String> filter,
             List<String> dayOption,
-            String includeTransfer) {
+            String includeTransfer,
+            String sort) {
         List<FlightApiError.Detail> details = new ArrayList<>();
 
         validateOrigin(origin, details);
@@ -44,6 +45,7 @@ final class FlightSearchRequestValidator {
         validateFilter(filter, details);
         validateDayOption(dayOption, details);
         validateIncludeTransfer(includeTransfer, details);
+        validateSort(sort, details);
 
         if (!details.isEmpty()) {
             throw new InvalidFlightSearchException(details);
@@ -165,5 +167,21 @@ final class FlightSearchRequestValidator {
             return;
         }
         details.add(new FlightApiError.Detail("includeTransfer", "INVALID_INCLUDE_TRANSFER"));
+    }
+
+    private static void validateSort(String sort, List<FlightApiError.Detail> details) {
+        if (!StringUtils.hasText(sort) || isKnownSort(sort)) {
+            return;
+        }
+        details.add(new FlightApiError.Detail("sort", "INVALID_SORT"));
+    }
+
+    private static boolean isKnownSort(String sort) {
+        try {
+            FlightDealSort.valueOf(sort);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }

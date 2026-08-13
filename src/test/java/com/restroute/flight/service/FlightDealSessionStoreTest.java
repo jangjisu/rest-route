@@ -96,6 +96,6 @@ class FlightDealSessionStoreTest {
 
     private static FlightSearchRequestDto request(String nights) {
         return new FlightSearchRequestDto(
-                "ICN", null, "2099-01-10", "2099-02-10", List.of(nights), null, null, null, null, null);
+                "ICN", null, "2099-01-10", "2099-02-10", List.of(nights), null, null, null, null, null, null);
     }
 }
