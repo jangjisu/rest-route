@@ -1878,7 +1878,7 @@ function renderRoutePolylines(routes, selectedIndex) {
     });
 }
 
-function renderRouteOptionCards(routes, selectedIndex) {
+export function renderRouteOptionCards(routes, selectedIndex) {
     const container = document.getElementById('routeOptions');
     if (!container) {
         return;
@@ -1895,10 +1895,12 @@ function renderRouteOptionCards(routes, selectedIndex) {
         const card = document.createElement('button');
         card.type = 'button';
         card.className = `route-option${index === selectedIndex ? ' selected' : ''}`;
+        card.setAttribute('aria-pressed', String(index === selectedIndex));
         card.innerHTML = `
             <span class="route-option-label">경로 ${index + 1}</span>
             <p class="route-option-summary">${formatRouteOptionSummary(route)}</p>
             <p class="route-option-toll">${formatRouteTollFare(route?.summary?.tollFareWon)}</p>
+            <span class="route-option-arrow" aria-hidden="true">→</span>
         `;
         card.addEventListener('click', () => selectRoute(index));
         container.appendChild(card);

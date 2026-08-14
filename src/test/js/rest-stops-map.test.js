@@ -55,6 +55,35 @@ test('formatRouteOptionSummary keeps toll out of the duration and distance line'
     assert.equal(formatRouteOptionSummary({}), '');
 });
 
+test('route option cards expose selection state and a visual action arrow', () => {
+    const previousDocument = globalThis.document;
+    const container = createFakeElement(['d-none']);
+    globalThis.document = {
+        createElement: () => ({
+            attributes: new Map(),
+            setAttribute(name, value) {
+                this.attributes.set(name, String(value));
+            },
+            addEventListener() {}
+        }),
+        getElementById: (id) => (id === 'routeOptions' ? container : null)
+    };
+
+    try {
+        assert.equal(typeof restStopsMap.renderRouteOptionCards, 'function');
+        restStopsMap.renderRouteOptionCards([
+            { summary: { durationSeconds: 7200, distanceMeters: 150000, tollFareWon: 12000 } },
+            { summary: { durationSeconds: 7500, distanceMeters: 160000, tollFareWon: 9000 } }
+        ], 1);
+
+        assert.equal(container.children[0].attributes.get('aria-pressed'), 'false');
+        assert.equal(container.children[1].attributes.get('aria-pressed'), 'true');
+        assert.match(container.children[0].innerHTML, /route-option-arrow/);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+});
+
 test('routeRestStopFilterCounts counts each availability from the current route', () => {
     const restStops = [
         {

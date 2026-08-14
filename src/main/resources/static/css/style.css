@@ -585,12 +585,13 @@ body.global-loading-open {
 }
 
 .route-option {
+    position: relative;
     flex: 1 1 0;
     min-width: 8.5rem;
     border: 1.5px solid oklch(90% 0.01 75);
     border-radius: 12px;
     background-color: var(--rr-color-surface);
-    padding: 0.6rem 0.7rem;
+    padding: 0.6rem 2.2rem 0.6rem 0.7rem;
     text-align: left;
     cursor: pointer;
     transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
@@ -599,6 +600,11 @@ body.global-loading-open {
 
 .route-option:hover {
     border-color: oklch(80% 0.04 220);
+}
+
+.route-option:focus-visible {
+    outline: 3px solid oklch(78% 0.09 220 / 0.55);
+    outline-offset: 2px;
 }
 
 .route-option.selected {
@@ -633,6 +639,21 @@ body.global-loading-open {
     font-size: 0.82rem;
     font-weight: 700;
     line-height: 1.4;
+}
+
+.route-option-arrow {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    color: var(--rr-color-text-secondary);
+    font-size: 1rem;
+    transform: translateY(-50%);
+}
+
+.route-option:hover .route-option-arrow,
+.route-option:focus-visible .route-option-arrow,
+.route-option.selected .route-option-arrow {
+    color: var(--rr-color-primary);
 }
 
 .route-direction-alternative-notice {
@@ -1902,7 +1923,7 @@ body.global-loading-open {
     }
 
     .route-point-row:not(.route-origin-row) {
-        grid-template-columns: 42px repeat(2, minmax(0, 1fr));
+        grid-template-columns: 42px minmax(0, 13fr) minmax(0, 7fr);
     }
 
     .route-point-row:not(.route-origin-row) .route-point-label {
@@ -1915,6 +1936,14 @@ body.global-loading-open {
 
     .route-point-row:not(.route-origin-row) .btn {
         grid-column: auto;
+        min-height: 44px;
+    }
+
+    .route-destination-search-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
     }
 
     .route-point-value,

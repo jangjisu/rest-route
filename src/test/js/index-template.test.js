@@ -14,3 +14,20 @@ test('route result modal provides a rest stop filter container', async () => {
 
     assert.match(template, /id="routeRestStopFilters"/);
 });
+
+test('destination route actions expose emphasized search and map button hooks', async () => {
+    const template = await readFile('src/main/resources/templates/index.html', 'utf8');
+
+    assert.match(
+        template,
+        /id="routeDestinationSearchButton"\s+class="btn btn-primary route-destination-search-button"/
+    );
+    assert.match(
+        template,
+        /id="routeDestinationSearchButton"[\s\S]*?<i class="bi bi-search" aria-hidden="true"><\/i>[\s\S]*?검색/
+    );
+    assert.match(
+        template,
+        /id="routeDestinationMapButton"\s+class="btn btn-outline-secondary route-destination-map-button"/
+    );
+});
