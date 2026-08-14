@@ -825,7 +825,12 @@ body.global-loading-open {
     margin: 0.8rem 1.25rem 0;
     padding-bottom: 0.15rem;
     overflow-x: auto;
-    scrollbar-width: thin;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.route-rest-stop-filters::-webkit-scrollbar {
+    display: none;
 }
 
 .route-rest-stop-filter {
