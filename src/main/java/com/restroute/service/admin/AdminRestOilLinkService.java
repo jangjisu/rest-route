@@ -33,6 +33,7 @@ public class AdminRestOilLinkService {
     @Transactional(readOnly = true)
     public List<AdminRestOilLinkSummaryResponse> findAll() {
         List<RestStopEntity> restStops = restStopRepository.findAll();
+        Map<String, Boolean> overriddenByStandardRestCode = overriddenByStandardRestCode();
         Map<String, RestOilPriceEntity> oilPriceByServiceAreaCode = restOilPriceRepository.findAll().stream()
                 .filter(oilPrice -> StringUtils.hasText(oilPrice.getRestStopServiceAreaCode()))
                 .collect(Collectors.toMap(
@@ -41,8 +42,23 @@ public class AdminRestOilLinkService {
                         (first, second) -> second));
         return restStops.stream()
                 .map(restStop -> AdminRestOilLinkSummaryResponse.from(
-                        restStop, oilPriceByServiceAreaCode.get(restStop.getServiceAreaCode())))
+                        restStop,
+                        oilPriceByServiceAreaCode.get(restStop.getServiceAreaCode()),
+                        isAdminOverridden(
+                                oilPriceByServiceAreaCode.get(restStop.getServiceAreaCode()),
+                                overriddenByStandardRestCode)))
                 .toList();
+    }
+
+    private Map<String, Boolean> overriddenByStandardRestCode() {
+        return restOilRepository.findAll().stream()
+                .filter(oil -> StringUtils.hasText(oil.getStandardRestCode()))
+                .collect(Collectors.toMap(
+                        RestOilEntity::getStandardRestCode, RestOilEntity::isAdminOverridden, Boolean::logicalOr));
+    }
+
+    private boolean isAdminOverridden(RestOilPriceEntity oilPrice, Map<String, Boolean> overriddenByStandardRestCode) {
+        return oilPrice != null && overriddenByStandardRestCode.getOrDefault(oilPrice.getServiceAreaCode2(), false);
     }
 
     @Transactional(readOnly = true)
@@ -90,34 +106,38 @@ public class AdminRestOilLinkService {
         restStopRepository
                 .findByServiceAreaCode(serviceAreaCode)
                 .orElseThrow(() -> RestStopNotFoundException.forServiceAreaCode(serviceAreaCode));
-        oilPrice.applyAdminLink(serviceAreaCode);
-        cascadeToRestOil(oilPrice, oil -> oil.applyAdminLink(serviceAreaCode));
-        return AdminOilStationLinkResponse.from(oilPrice, linkedRestStopName(oilPrice));
+        oilPrice.updateRestStopServiceAreaCode(serviceAreaCode);
+        List<RestOilEntity> oils = cascadeToRestOil(oilPrice, oil -> oil.applyAdminLink(serviceAreaCode));
+        return AdminOilStationLinkResponse.from(oilPrice, linkedRestStopName(oilPrice), isAdminOverridden(oils));
     }
 
     @Transactional
     public AdminOilStationLinkResponse unlink(Long oilPriceId) {
         RestOilPriceEntity oilPrice = requireOilPrice(oilPriceId);
-        oilPrice.clearAdminLink();
-        cascadeToRestOil(oilPrice, RestOilEntity::clearAdminLink);
-        return AdminOilStationLinkResponse.from(oilPrice, linkedRestStopName(oilPrice));
+        oilPrice.updateRestStopServiceAreaCode(null);
+        List<RestOilEntity> oils = cascadeToRestOil(oilPrice, RestOilEntity::clearAdminLink);
+        return AdminOilStationLinkResponse.from(oilPrice, linkedRestStopName(oilPrice), isAdminOverridden(oils));
     }
 
     @Transactional
     public AdminOilStationLinkResponse clearOverride(Long oilPriceId) {
         RestOilPriceEntity oilPrice = requireOilPrice(oilPriceId);
-        oilPrice.releaseToAutoMatching();
-        cascadeToRestOil(oilPrice, RestOilEntity::releaseToAutoMatching);
-        return AdminOilStationLinkResponse.from(oilPrice, linkedRestStopName(oilPrice));
+        List<RestOilEntity> oils = cascadeToRestOil(oilPrice, RestOilEntity::releaseToAutoMatching);
+        return AdminOilStationLinkResponse.from(oilPrice, linkedRestStopName(oilPrice), isAdminOverridden(oils));
     }
 
-    private void cascadeToRestOil(RestOilPriceEntity oilPrice, Consumer<RestOilEntity> action) {
+    private List<RestOilEntity> cascadeToRestOil(RestOilPriceEntity oilPrice, Consumer<RestOilEntity> action) {
         if (!StringUtils.hasText(oilPrice.getServiceAreaCode2())) {
-            return;
+            return List.of();
         }
-        restOilRepository
-                .findAllByStandardRestCodeOrderByIdAsc(oilPrice.getServiceAreaCode2())
-                .forEach(action);
+        List<RestOilEntity> oils =
+                restOilRepository.findAllByStandardRestCodeOrderByIdAsc(oilPrice.getServiceAreaCode2());
+        oils.forEach(action);
+        return oils;
+    }
+
+    private boolean isAdminOverridden(List<RestOilEntity> oils) {
+        return oils.stream().anyMatch(RestOilEntity::isAdminOverridden);
     }
 
     private String linkedRestStopName(RestOilPriceEntity oilPrice) {

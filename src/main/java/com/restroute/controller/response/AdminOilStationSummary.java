@@ -10,13 +10,13 @@ public record AdminOilStationSummary(
         String direction,
         boolean adminOverridden) {
 
-    public static AdminOilStationSummary from(RestOilPriceEntity entity) {
+    public static AdminOilStationSummary from(RestOilPriceEntity entity, boolean adminOverridden) {
         return new AdminOilStationSummary(
                 entity.getId(),
                 entity.getServiceAreaName(),
                 entity.getRouteName(),
                 entity.getServiceAreaAddress(),
                 entity.getDirection(),
-                entity.isAdminOverridden());
+                adminOverridden);
     }
 }

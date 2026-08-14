@@ -246,20 +246,21 @@ class RestStopServiceAreaCodeBackfillServiceTest {
     }
 
     @Test
-    @DisplayName("관리자가 연결을 잠근 주유소 가격 정보는 배치가 다시 자동 매칭해도 값을 바꾸지 않는다")
-    void backfill_skipsRestOilPriceRowsLockedByAdmin() {
+    @DisplayName("주유소 가격 연결은 관리자가 잠근 rest_oil 연결을 기준으로 다시 채운다")
+    void backfill_derivesRestOilPriceLinkFromCanonicalRestOilRows() {
         restStopRepository.save(RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001")));
         restStopRepository.save(RestStopEntity.from(restStopItem("002", "다른휴게소", "A00099")));
-        restOilRepository.save(RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소")));
+        RestOilEntity canonicalOil = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+        canonicalOil.applyAdminLink("A00099");
+        restOilRepository.save(canonicalOil);
         RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
-        oilPrice.applyAdminLink("A00099");
+        oilPrice.updateRestStopServiceAreaCode("A00001");
         restOilPriceRepository.save(oilPrice);
 
         backfillService.backfill();
 
         RestOilPriceEntity reloaded = restOilPriceRepository.findAll().get(0);
         assertThat(reloaded.getRestStopServiceAreaCode()).isEqualTo("A00099");
-        assertThat(reloaded.isAdminOverridden()).isTrue();
     }
 
     @Test
