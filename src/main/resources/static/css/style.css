@@ -627,6 +627,14 @@ body.global-loading-open {
     line-height: 1.4;
 }
 
+.route-option-toll {
+    margin: 0.15rem 0 0;
+    color: var(--rr-color-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
 .route-direction-alternative-notice {
     margin: 1rem 1.25rem 0;
     padding: 0.65rem 0.75rem;
@@ -810,6 +818,53 @@ body.global-loading-open {
     padding-left: 0;
 }
 
+.route-rest-stop-filters {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.4rem;
+    margin: 0.8rem 1.25rem 0;
+    padding-bottom: 0.15rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.route-rest-stop-filter {
+    flex: 0 0 auto;
+    min-height: 2rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid oklch(88% 0.02 220);
+    border-radius: 999px;
+    background-color: var(--rr-color-surface);
+    color: var(--rr-color-text-secondary);
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.route-rest-stop-filter:hover,
+.route-rest-stop-filter:focus-visible {
+    border-color: var(--rr-color-primary);
+    outline: none;
+}
+
+.route-rest-stop-filter.selected {
+    border-color: var(--rr-color-primary);
+    background-color: var(--rr-color-primary);
+    color: #fff;
+}
+
+.route-result-empty {
+    padding: 1.5rem 1rem;
+    border: 1px dashed oklch(88% 0.01 75);
+    border-radius: 14px;
+    color: var(--rr-color-text-secondary);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
 .route-result-item {
     padding: 0.85rem;
     border: 1px solid oklch(92% 0.01 75);
@@ -908,6 +963,34 @@ body.global-loading-open {
     gap: 0.55rem;
 }
 
+.route-result-heading {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.route-result-availability {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.35rem;
+}
+
+.route-result-availability-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid oklch(88% 0.04 220);
+    border-radius: 999px;
+    background-color: oklch(94% 0.03 220);
+    color: oklch(42% 0.09 220);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
 .route-result-rank {
     display: inline-flex;
     flex: 0 0 1.55rem;
@@ -943,13 +1026,6 @@ body.global-loading-open {
     font-weight: 700;
     line-height: 1.2;
     overflow-wrap: anywhere;
-}
-
-.route-result-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-top: 0.35rem;
 }
 
 .route-result-tag {
@@ -1062,7 +1138,6 @@ body.global-loading-open {
 .route-result-traffic {
     display: inline-flex;
     align-items: center;
-    margin-top: 0.3rem;
     padding: 0.15rem 0.4rem;
     border-radius: 999px;
     font-size: 0.72rem;
