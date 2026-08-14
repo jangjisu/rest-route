@@ -15,6 +15,7 @@ import {
     formatText,
     hasFoodMenu,
     hasFoodSections,
+    hasRenderableRestStopDetail,
     isMissingValue,
     normalizeSalesRankingStoreName,
     orderFoodMenus,
@@ -43,6 +44,14 @@ const SEOUL_CENTER = {
 };
 const DEFAULT_ZOOM = 11;
 const MOBILE_DETAIL_SHEET_MEDIA = '(max-width: 991.98px)';
+const ROUTE_REST_STOP_FILTERS = [
+    { key: 'all', label: '전체', title: '경로상 휴게소' },
+    { key: 'fuel', label: '주유 가능', title: '주유 가능한 휴게소' },
+    { key: 'food', label: '먹거리', title: '먹거리가 있는 휴게소' },
+    { key: 'theme', label: '테마', title: '테마가 있는 휴게소' },
+    { key: 'event', label: '이벤트', title: '이벤트 진행 중인 휴게소' },
+    { key: 'ev', label: 'EV 충전', title: 'EV 충전 가능한 휴게소' }
+];
 
 const GEOLOCATION_OPTIONS = {
     enableHighAccuracy: false,
@@ -71,6 +80,7 @@ let routePolylines = [];
 let routeMarkers = [];
 let currentRouteData;
 let selectedRouteIndex = 0;
+let selectedRouteRestStopFilter = 'all';
 let allRestStopMarkers = [];
 let markerMode = 'all';
 let originMarker;
@@ -558,10 +568,11 @@ function renderDetailState(state) {
             showApiUnavailableAlert();
         }
 
-        status.textContent = '';
-        status.classList.add('d-none');
-        content.classList.remove('d-none');
         renderDetail(state.data);
+        const emptyMessage = restStopDetailEmptyMessage(state.data, state.externalUnavailable);
+        status.textContent = emptyMessage;
+        status.classList.toggle('d-none', emptyMessage === '');
+        content.classList.toggle('d-none', emptyMessage !== '');
         updateSelectedPopup(
             { unitName: state.data.unitName || selectedRestStopName, routeName: state.data.routeName },
             { status: 'success', tags: availableDataTags(state.data) }
@@ -577,6 +588,15 @@ function renderDetailState(state) {
     status.classList.remove('d-none');
     status.textContent = detailStatusMessage(state.status);
     updateSelectedPopup({ unitName: selectedRestStopName }, popupOptionsForState(state.status));
+}
+
+export function restStopDetailEmptyMessage(detail, externalUnavailable = false) {
+    if (hasRenderableRestStopDetail(detail)) {
+        return '';
+    }
+    return externalUnavailable
+        ? '상세 정보를 불러오지 못했습니다.'
+        : '이 휴게소의 상세 정보를 준비하고 있습니다.';
 }
 
 function popupOptionsForState(status) {
@@ -1778,6 +1798,7 @@ function renderRoute(data) {
     clearRouteOverlays();
     currentRouteData = data;
     selectedRouteIndex = 0;
+    selectedRouteRestStopFilter = 'all';
     renderRouteSelection();
     openRouteResultModal();
     setMarkerMode('route');
@@ -1868,7 +1889,7 @@ function renderRoutePolylines(routes, selectedIndex) {
     });
 }
 
-function renderRouteOptionCards(routes, selectedIndex) {
+export function renderRouteOptionCards(routes, selectedIndex) {
     const container = document.getElementById('routeOptions');
     if (!container) {
         return;
@@ -1885,9 +1906,11 @@ function renderRouteOptionCards(routes, selectedIndex) {
         const card = document.createElement('button');
         card.type = 'button';
         card.className = `route-option${index === selectedIndex ? ' selected' : ''}`;
+        card.setAttribute('aria-pressed', String(index === selectedIndex));
         card.innerHTML = `
             <span class="route-option-label">경로 ${index + 1}</span>
             <p class="route-option-summary">${formatRouteOptionSummary(route)}</p>
+            <p class="route-option-toll">${formatRouteTollFare(route?.summary?.tollFareWon)}</p>
         `;
         card.addEventListener('click', () => selectRoute(index));
         container.appendChild(card);
@@ -1958,20 +1981,117 @@ function renderRouteList(restStops, nationalOilPriceSummary = currentNationalOil
         return;
     }
 
+    const filteredRestStops = filterRouteRestStops(restStops, selectedRouteRestStopFilter);
     renderDirectionAlternativeNotice(restStops);
     renderNationalOilPriceSummary(nationalOilPriceSummary);
-    renderRouteResultTitle(restStops.length);
+    renderRouteRestStopFilters(restStops);
+    renderRouteResultTitle(filteredRestStops.length, selectedRouteRestStopFilter);
     list.replaceChildren();
-    restStops.forEach((restStop, index) => list.appendChild(createRouteResultItem(restStop, index)));
+    if (filteredRestStops.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'route-result-empty';
+        empty.textContent = '선택한 조건에 맞는 휴게소가 없습니다.';
+        list.appendChild(empty);
+        return;
+    }
+    filteredRestStops.forEach((restStop, index) => list.appendChild(createRouteResultItem(restStop, index)));
 }
 
-function renderRouteResultTitle(count) {
+function renderRouteResultTitle(count, filterKey = 'all') {
     const title = document.getElementById('routeResultModalTitle');
     if (!title) {
         return;
     }
 
-    title.textContent = count > 0 ? `경로상 휴게소 (${count}곳)` : '경로상 휴게소';
+    const filter = ROUTE_REST_STOP_FILTERS.find((item) => item.key === filterKey)
+        ?? ROUTE_REST_STOP_FILTERS[0];
+    title.textContent = `${filter.title} (${count}곳)`;
+}
+
+function renderRouteRestStopFilters(restStops) {
+    const container = document.getElementById('routeRestStopFilters');
+    if (!container) {
+        return;
+    }
+
+    const counts = routeRestStopFilterCounts(restStops);
+    container.replaceChildren();
+    container.classList.toggle('d-none', counts.all === 0);
+    ROUTE_REST_STOP_FILTERS.forEach((filter) => {
+        const button = document.createElement('button');
+        const selected = filter.key === selectedRouteRestStopFilter;
+        button.type = 'button';
+        button.className = `route-rest-stop-filter${selected ? ' selected' : ''}`;
+        button.setAttribute('aria-pressed', String(selected));
+        button.textContent = `${filter.label} ${counts[filter.key]}`;
+        button.addEventListener('click', () => {
+            if (filter.key === selectedRouteRestStopFilter) {
+                return;
+            }
+            selectedRouteRestStopFilter = filter.key;
+            renderRouteList(currentRouteRestStops, currentNationalOilPriceSummary);
+        });
+        container.appendChild(button);
+    });
+}
+
+function routeRestStopMatchesFilter(restStop, filterKey) {
+    const summary = restStop?.comparisonSummary;
+    if (filterKey === 'fuel') {
+        return Boolean(summary) && [summary.gasolinePrice, summary.dieselPrice, summary.lpgPrice]
+            .some((price) => !isMissingValue(price));
+    }
+    if (filterKey === 'food') {
+        return Number(summary?.foodMenuCount) > 0;
+    }
+    if (filterKey === 'theme') {
+        return restStop?.hasTheme === true;
+    }
+    if (filterKey === 'event') {
+        return restStop?.hasEvent === true;
+    }
+    if (filterKey === 'ev') {
+        return restStop?.hasEvCharger === true;
+    }
+    return true;
+}
+
+export function filterRouteRestStops(restStops, filterKey) {
+    const items = Array.isArray(restStops) ? restStops : [];
+    const knownFilter = ROUTE_REST_STOP_FILTERS.some((filter) => filter.key === filterKey);
+    if (!knownFilter || filterKey === 'all') {
+        return items;
+    }
+    return items.filter((restStop) => routeRestStopMatchesFilter(restStop, filterKey));
+}
+
+export function routeRestStopFilterCounts(restStops) {
+    const items = Array.isArray(restStops) ? restStops : [];
+    return Object.fromEntries(ROUTE_REST_STOP_FILTERS.map((filter) => [
+        filter.key,
+        filter.key === 'all' ? items.length : filterRouteRestStops(items, filter.key).length
+    ]));
+}
+
+export function routeRestStopAvailabilityLabels(restStop) {
+    return [
+        ['fuel', '주유 가능'],
+        ['food', '먹거리'],
+        ['theme', '테마'],
+        ['event', '이벤트'],
+        ['ev', 'EV 충전']
+    ]
+        .filter(([filterKey]) => routeRestStopMatchesFilter(restStop, filterKey))
+        .map(([, label]) => label);
+}
+
+export function routeRestStopCardBadges(restStop) {
+    return [
+        ...routeRestStopAvailabilityLabels(restStop)
+            .map((label) => ({ label, kind: 'availability' })),
+        ...routeRecommendationLabels(restStop)
+            .map((label) => ({ label, kind: 'recommendation' }))
+    ];
 }
 
 function renderDirectionAlternativeNotice(restStops) {
@@ -2189,8 +2309,7 @@ export function formatRouteOptionSummary(route) {
 
     return [
         formatRouteDuration(summary.durationSeconds),
-        formatRouteDistance(summary.distanceMeters),
-        formatRouteTollFare(summary.tollFareWon)
+        formatRouteDistance(summary.distanceMeters)
     ]
         .filter((part) => part !== '')
         .join(' · ');
@@ -2346,9 +2465,12 @@ function routeResultFuelItems(restStop) {
         }));
 }
 
-function createRouteResultItem(restStop, index) {
+export function createRouteResultItem(restStop, index, onSelect = selectRouteRestStop) {
     const item = document.createElement('li');
     item.className = 'route-result-item';
+    item.tabIndex = 0;
+    item.setAttribute('role', 'button');
+    item.setAttribute('aria-label', `${formatText(restStop?.unitName, '이름 정보 없음')} 상세정보 보기`);
 
     let appendTarget = item;
     const image = createRouteRestStopImage(document, restStop);
@@ -2375,63 +2497,45 @@ function createRouteResultItem(restStop, index) {
     const name = document.createElement('p');
     name.className = 'route-result-name';
     name.textContent = formatText(restStop?.unitName, '이름 정보 없음');
-    header.appendChild(name);
-    appendTarget.appendChild(header);
-
-    if (restStop?.hasDirectionAlternative === true) {
-        const badge = document.createElement('span');
-        badge.className = 'route-direction-alternative-badge';
-        badge.textContent = '상·하행 후보';
-        appendTarget.appendChild(badge);
-    }
-
-    if (restStop?.hasTheme === true) {
-        const themeBadge = document.createElement('span');
-        themeBadge.className = 'route-result-theme-badge';
-        themeBadge.textContent = '테마';
-        appendTarget.appendChild(themeBadge);
-    }
-
-    if (restStop?.hasEvent === true) {
-        const eventBadge = document.createElement('span');
-        eventBadge.className = 'route-result-event-badge';
-        eventBadge.textContent = '이벤트 진행중';
-        appendTarget.appendChild(eventBadge);
-    }
+    const heading = document.createElement('div');
+    heading.className = 'route-result-heading';
+    heading.appendChild(name);
 
     const nearbyTraffic = routeNearbyTrafficBadge(restStop);
     if (nearbyTraffic) {
         const trafficBadge = document.createElement('span');
         trafficBadge.className = `route-result-traffic route-result-traffic-${nearbyTraffic.key}`;
         trafficBadge.textContent = `인근 ${nearbyTraffic.label}`;
-        appendTarget.appendChild(trafficBadge);
+        heading.appendChild(trafficBadge);
     }
+    header.appendChild(heading);
+    appendTarget.appendChild(header);
 
-    const recommendationLabels = routeRecommendationLabels(restStop);
-    if (recommendationLabels.length > 0) {
-        const tags = document.createElement('div');
-        tags.className = 'route-result-tags';
-        recommendationLabels.forEach((label) => {
-            const tag = document.createElement('span');
-            tag.className = 'route-result-tag';
-            tag.textContent = label;
-            tags.appendChild(tag);
+    const cardBadges = routeRestStopCardBadges(restStop);
+    if (restStop?.hasDirectionAlternative === true || cardBadges.length > 0) {
+        const availability = document.createElement('div');
+        availability.className = 'route-result-availability';
+        if (restStop?.hasDirectionAlternative === true) {
+            const badge = document.createElement('span');
+            badge.className = 'route-direction-alternative-badge';
+            badge.textContent = '상·하행 후보';
+            availability.appendChild(badge);
+        }
+        cardBadges.forEach(({ label, kind }) => {
+            const badge = document.createElement('span');
+            badge.className = kind === 'availability'
+                ? 'route-result-availability-badge'
+                : 'route-result-tag';
+            badge.textContent = label;
+            availability.appendChild(badge);
         });
-        appendTarget.appendChild(tags);
+        appendTarget.appendChild(availability);
     }
 
     const meta = document.createElement('p');
     meta.className = 'route-result-meta';
     meta.textContent = formatText(restStop?.routeName, '노선 정보 없음');
     appendTarget.appendChild(meta);
-
-    const evChargerLabel = formatEvChargerAvailability(restStop);
-    if (evChargerLabel) {
-        const evCharger = document.createElement('span');
-        evCharger.className = 'route-result-ev-charger';
-        evCharger.textContent = evChargerLabel;
-        appendTarget.appendChild(evCharger);
-    }
 
     const fuels = routeResultFuelItems(restStop);
     if (fuels.length > 0) {
@@ -2470,7 +2574,21 @@ function createRouteResultItem(restStop, index) {
         appendTarget.appendChild(summary);
     }
 
-    item.addEventListener('click', () => selectRouteRestStop(restStop));
+    const arrow = document.createElement('span');
+    arrow.className = 'route-result-action-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '→';
+    item.appendChild(arrow);
+
+    const select = () => onSelect(restStop);
+    item.addEventListener('click', select);
+    item.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+        event.preventDefault();
+        select();
+    });
 
     return item;
 }
@@ -2537,6 +2655,7 @@ function clearRouteOverlays() {
     currentNationalOilPriceSummary = null;
     currentRouteData = undefined;
     selectedRouteIndex = 0;
+    selectedRouteRestStopFilter = 'all';
 
     const routeOptions = document.getElementById('routeOptions');
     if (routeOptions) {

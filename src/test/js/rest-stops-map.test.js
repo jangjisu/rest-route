@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import * as restStopsMap from '../../main/resources/static/js/rest-stops-map.js';
 
 import {
     canRequestRouteAutomatically,
@@ -19,6 +20,7 @@ import {
     renderNationalOilPriceState,
     renderOilInfo,
     renderThemeBadges,
+    restStopDetailEmptyMessage,
     routeMapSelectionMessage,
     routeNearbyTrafficBadge,
     routePointLabel,
@@ -26,6 +28,18 @@ import {
     shouldRequestRouteAutomatically,
     shouldShowRouteResultBackButton
 } from '../../main/resources/static/js/rest-stops-map.js';
+
+test('restStopDetailEmptyMessage guides only rest stops without renderable related detail', () => {
+    assert.equal(
+        restStopDetailEmptyMessage({ unitName: '목감(서울)휴게소', routeName: '서해안선' }),
+        '이 휴게소의 상세 정보를 준비하고 있습니다.'
+    );
+    assert.equal(restStopDetailEmptyMessage({ address: '경기도 시흥시' }), '');
+    assert.equal(
+        restStopDetailEmptyMessage({ unitName: '목감(서울)휴게소' }, true),
+        '상세 정보를 불러오지 못했습니다.'
+    );
+});
 
 test('formatRouteDuration formats seconds as hours and minutes', () => {
     assert.equal(formatRouteDuration(12000), '3시간 20분');
@@ -48,10 +62,182 @@ test('formatRouteTollFare formats won or 무료', () => {
     assert.equal(formatRouteTollFare(undefined), '무료');
 });
 
-test('formatRouteOptionSummary joins duration/distance/toll with a separator', () => {
+test('formatRouteOptionSummary keeps toll out of the duration and distance line', () => {
     const route = { summary: { durationSeconds: 12000, distanceMeters: 250000, tollFareWon: 4500 } };
-    assert.equal(formatRouteOptionSummary(route), '3시간 20분 · 250km · 톨비 4,500원');
+    assert.equal(formatRouteOptionSummary(route), '3시간 20분 · 250km');
     assert.equal(formatRouteOptionSummary({}), '');
+});
+
+test('route option cards expose selection state without a detail action arrow', () => {
+    const previousDocument = globalThis.document;
+    const container = createFakeElement(['d-none']);
+    globalThis.document = {
+        createElement: () => ({
+            attributes: new Map(),
+            setAttribute(name, value) {
+                this.attributes.set(name, String(value));
+            },
+            addEventListener() {}
+        }),
+        getElementById: (id) => (id === 'routeOptions' ? container : null)
+    };
+
+    try {
+        assert.equal(typeof restStopsMap.renderRouteOptionCards, 'function');
+        restStopsMap.renderRouteOptionCards([
+            { summary: { durationSeconds: 7200, distanceMeters: 150000, tollFareWon: 12000 } },
+            { summary: { durationSeconds: 7500, distanceMeters: 160000, tollFareWon: 9000 } }
+        ], 1);
+
+        assert.equal(container.children[0].attributes.get('aria-pressed'), 'false');
+        assert.equal(container.children[1].attributes.get('aria-pressed'), 'true');
+        assert.doesNotMatch(container.children[0].innerHTML, /route-option-arrow/);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+});
+
+test('route rest stop cards expose detail navigation to pointer and keyboard users', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = { createElement: () => createFakeElement() };
+    let selectedCount = 0;
+
+    try {
+        assert.equal(typeof restStopsMap.createRouteResultItem, 'function');
+        const item = restStopsMap.createRouteResultItem({
+            unitName: '목감(서울)휴게소',
+            routeName: '서해안선'
+        }, 0, () => {
+            selectedCount += 1;
+        });
+
+        assert.equal(item.attributes.get('role'), 'button');
+        assert.equal(item.tabIndex, 0);
+        assert.equal(item.attributes.get('aria-label'), '목감(서울)휴게소 상세정보 보기');
+        assert.equal(item.children.some((child) => child.className === 'route-result-action-arrow'), true);
+
+        item.eventListeners.get('click')({});
+        item.eventListeners.get('keydown')({ key: 'Enter', preventDefault() {} });
+        item.eventListeners.get('keydown')({ key: ' ', preventDefault() {} });
+        item.eventListeners.get('keydown')({ key: 'Escape', preventDefault() {} });
+        assert.equal(selectedCount, 3);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+});
+
+test('routeRestStopFilterCounts counts each availability from the current route', () => {
+    const restStops = [
+        {
+            serviceAreaCode: 'A',
+            comparisonSummary: {
+                gasolinePrice: '1,800원',
+                dieselPrice: null,
+                lpgPrice: null,
+                foodMenuCount: 2
+            },
+            hasTheme: true,
+            hasEvent: false,
+            hasEvCharger: false
+        },
+        {
+            serviceAreaCode: 'B',
+            comparisonSummary: {
+                gasolinePrice: null,
+                dieselPrice: null,
+                lpgPrice: null,
+                foodMenuCount: 0
+            },
+            hasTheme: false,
+            hasEvent: true,
+            hasEvCharger: true
+        },
+        {
+            serviceAreaCode: 'C',
+            comparisonSummary: {
+                gasolinePrice: null,
+                dieselPrice: null,
+                lpgPrice: '1,100원',
+                foodMenuCount: 1
+            },
+            hasTheme: true,
+            hasEvent: false,
+            hasEvCharger: false
+        }
+    ];
+
+    assert.deepEqual(restStopsMap.routeRestStopFilterCounts(restStops), {
+        all: 3,
+        fuel: 2,
+        food: 2,
+        theme: 2,
+        event: 1,
+        ev: 1
+    });
+});
+
+test('filterRouteRestStops returns only rest stops matching the selected filter', () => {
+    const restStops = [
+        {
+            serviceAreaCode: 'A',
+            comparisonSummary: { gasolinePrice: '1,800원', foodMenuCount: 0 },
+            hasTheme: false,
+            hasEvent: false,
+            hasEvCharger: false
+        },
+        {
+            serviceAreaCode: 'B',
+            comparisonSummary: { gasolinePrice: null, foodMenuCount: 1 },
+            hasTheme: false,
+            hasEvent: false,
+            hasEvCharger: false
+        }
+    ];
+
+    assert.deepEqual(
+        restStopsMap.filterRouteRestStops(restStops, 'fuel').map((restStop) => restStop.serviceAreaCode),
+        ['A']
+    );
+    assert.deepEqual(
+        restStopsMap.filterRouteRestStops(restStops, 'food').map((restStop) => restStop.serviceAreaCode),
+        ['B']
+    );
+    assert.deepEqual(restStopsMap.filterRouteRestStops(restStops, 'unknown'), restStops);
+});
+
+test('routeRestStopAvailabilityLabels returns card chips in display order', () => {
+    assert.deepEqual(restStopsMap.routeRestStopAvailabilityLabels({
+        comparisonSummary: { gasolinePrice: '1,800원', foodMenuCount: 2 },
+        hasTheme: true,
+        hasEvent: true,
+        hasEvCharger: true
+    }), ['주유 가능', '먹거리', '테마', '이벤트', 'EV 충전']);
+
+    assert.deepEqual(restStopsMap.routeRestStopAvailabilityLabels({
+        comparisonSummary: { gasolinePrice: null, dieselPrice: null, lpgPrice: null, foodMenuCount: 0 },
+        hasTheme: false,
+        hasEvent: false,
+        hasEvCharger: false
+    }), []);
+});
+
+test('routeRestStopCardBadges keeps availability and recommendation chips in one ordered collection', () => {
+    assert.deepEqual(restStopsMap.routeRestStopCardBadges({
+        comparisonSummary: { gasolinePrice: '1,800원', foodMenuCount: 2 },
+        hasTheme: false,
+        hasEvent: false,
+        hasEvCharger: true,
+        recommendationTags: [
+            { key: 'has-food', label: '먹거리 있음' },
+            { key: 'large-parking', label: '주차장 큼' }
+        ]
+    }), [
+        { label: '주유 가능', kind: 'availability' },
+        { label: '먹거리', kind: 'availability' },
+        { label: 'EV 충전', kind: 'availability' },
+        { label: '먹거리 있음', kind: 'recommendation' },
+        { label: '주차장 큼', kind: 'recommendation' }
+    ]);
 });
 
 test('formatEvChargerAvailability only displays an indicator for true values', () => {
@@ -69,7 +255,9 @@ test('formatEvChargerCount only displays positive charger counts', () => {
 function createFakeElement(classNames = []) {
     const classes = new Set(classNames);
     return {
+        attributes: new Map(),
         children: [],
+        eventListeners: new Map(),
         textContent: '',
         classList: {
             add: (className) => classes.add(className),
@@ -87,6 +275,12 @@ function createFakeElement(classNames = []) {
         },
         appendChild(child) {
             this.children.push(child);
+        },
+        addEventListener(name, listener) {
+            this.eventListeners.set(name, listener);
+        },
+        setAttribute(name, value) {
+            this.attributes.set(name, String(value));
         },
         replaceChildren(...children) {
             this.children = children;

@@ -8,3 +8,26 @@ test('index exposes CSRF token and header name metadata', async () => {
     assert.match(template, /<meta name="_csrf" th:content="\$\{_csrf\?\.token}">/);
     assert.match(template, /<meta name="_csrf_header" th:content="\$\{_csrf\?\.headerName}">/);
 });
+
+test('route result modal provides a rest stop filter container', async () => {
+    const template = await readFile('src/main/resources/templates/index.html', 'utf8');
+
+    assert.match(template, /id="routeRestStopFilters"/);
+});
+
+test('destination route actions expose emphasized search and map button hooks', async () => {
+    const template = await readFile('src/main/resources/templates/index.html', 'utf8');
+
+    assert.match(
+        template,
+        /id="routeDestinationSearchButton"\s+class="btn btn-primary route-destination-search-button"/
+    );
+    assert.match(
+        template,
+        /id="routeDestinationSearchButton"[\s\S]*?<i class="bi bi-search" aria-hidden="true"><\/i>[\s\S]*?검색/
+    );
+    assert.match(
+        template,
+        /id="routeDestinationMapButton"\s+class="btn btn-outline-secondary route-destination-map-button"/
+    );
+});
