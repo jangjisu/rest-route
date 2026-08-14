@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Build stage ---
-FROM eclipse-temurin:17-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 
 # 의존성 캐시 레이어: 빌드 스크립트와 wrapper 를 먼저 복사
@@ -14,7 +14,7 @@ COPY src src
 RUN ./gradlew bootJar --no-daemon -x test
 
 # --- Runtime stage ---
-FROM eclipse-temurin:17-jre AS runtime
+FROM eclipse-temurin:25-jre AS runtime
 WORKDIR /app
 
 # H2 file DB 저장 위치 (compose 에서 volume 마운트)

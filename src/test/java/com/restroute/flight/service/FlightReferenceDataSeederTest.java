@@ -31,7 +31,8 @@ class FlightReferenceDataSeederTest {
     @Test
     @DisplayName("테이블이 비어있으면 SQL 파일을 읽어 insert하고 최종 행 수를 반환한다")
     void reseed_insertsWhenTableIsEmpty() {
-        int savedCount = flightReferenceDataSeeder.reseed("test-seed/sample-seed.sql", this::clearSample, this::currentCount);
+        int savedCount =
+                flightReferenceDataSeeder.reseed("test-seed/sample-seed.sql", this::clearSample, this::currentCount);
 
         assertThat(savedCount).isEqualTo(2);
         assertThat(currentCount()).isEqualTo(2);
@@ -45,7 +46,8 @@ class FlightReferenceDataSeederTest {
             statement.execute("INSERT INTO sample (code) VALUES ('STALE')");
         }
 
-        int savedCount = flightReferenceDataSeeder.reseed("test-seed/sample-seed.sql", this::clearSample, this::currentCount);
+        int savedCount =
+                flightReferenceDataSeeder.reseed("test-seed/sample-seed.sql", this::clearSample, this::currentCount);
 
         assertThat(savedCount).isEqualTo(2);
         assertThat(currentCount()).isEqualTo(2);

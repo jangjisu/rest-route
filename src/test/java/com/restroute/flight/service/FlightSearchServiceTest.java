@@ -76,8 +76,9 @@ class FlightSearchServiceTest {
     void search_sortsByDepartureDateAscending_whenSortIsDate() {
         FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", "DATE"), 30);
 
-        List<String> departures =
-                response.items().stream().map(item -> item.departure().departureFrom()).toList();
+        List<String> departures = response.items().stream()
+                .map(item -> item.departure().departureFrom())
+                .toList();
         assertThat(departures).isSorted();
     }
 

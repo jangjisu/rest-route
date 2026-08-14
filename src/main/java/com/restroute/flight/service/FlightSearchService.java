@@ -63,7 +63,9 @@ public class FlightSearchService {
     private static Comparator<FlightDealResponse> comparatorFor(FlightDealSort sort) {
         return switch (sort) {
             case PRICE -> Comparator.comparingInt(deal -> deal.price().amount());
-            case DATE -> Comparator.comparing(deal -> OffsetDateTime.parse(deal.departure().departureFrom()));
+            case DATE ->
+                Comparator.comparing(
+                        deal -> OffsetDateTime.parse(deal.departure().departureFrom()));
         };
     }
 }
