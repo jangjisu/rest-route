@@ -20,6 +20,7 @@ import {
     renderNationalOilPriceState,
     renderOilInfo,
     renderThemeBadges,
+    restStopDetailEmptyMessage,
     routeMapSelectionMessage,
     routeNearbyTrafficBadge,
     routePointLabel,
@@ -27,6 +28,18 @@ import {
     shouldRequestRouteAutomatically,
     shouldShowRouteResultBackButton
 } from '../../main/resources/static/js/rest-stops-map.js';
+
+test('restStopDetailEmptyMessage guides only rest stops without renderable related detail', () => {
+    assert.equal(
+        restStopDetailEmptyMessage({ unitName: '목감(서울)휴게소', routeName: '서해안선' }),
+        '이 휴게소의 상세 정보를 준비하고 있습니다.'
+    );
+    assert.equal(restStopDetailEmptyMessage({ address: '경기도 시흥시' }), '');
+    assert.equal(
+        restStopDetailEmptyMessage({ unitName: '목감(서울)휴게소' }, true),
+        '상세 정보를 불러오지 못했습니다.'
+    );
+});
 
 test('formatRouteDuration formats seconds as hours and minutes', () => {
     assert.equal(formatRouteDuration(12000), '3시간 20분');

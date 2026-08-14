@@ -15,6 +15,7 @@ import {
     formatText,
     hasFoodMenu,
     hasFoodSections,
+    hasRenderableRestStopDetail,
     isMissingValue,
     normalizeSalesRankingStoreName,
     orderFoodMenus,
@@ -567,10 +568,11 @@ function renderDetailState(state) {
             showApiUnavailableAlert();
         }
 
-        status.textContent = '';
-        status.classList.add('d-none');
-        content.classList.remove('d-none');
         renderDetail(state.data);
+        const emptyMessage = restStopDetailEmptyMessage(state.data, state.externalUnavailable);
+        status.textContent = emptyMessage;
+        status.classList.toggle('d-none', emptyMessage === '');
+        content.classList.toggle('d-none', emptyMessage !== '');
         updateSelectedPopup(
             { unitName: state.data.unitName || selectedRestStopName, routeName: state.data.routeName },
             { status: 'success', tags: availableDataTags(state.data) }
@@ -586,6 +588,15 @@ function renderDetailState(state) {
     status.classList.remove('d-none');
     status.textContent = detailStatusMessage(state.status);
     updateSelectedPopup({ unitName: selectedRestStopName }, popupOptionsForState(state.status));
+}
+
+export function restStopDetailEmptyMessage(detail, externalUnavailable = false) {
+    if (hasRenderableRestStopDetail(detail)) {
+        return '';
+    }
+    return externalUnavailable
+        ? '상세 정보를 불러오지 못했습니다.'
+        : '이 휴게소의 상세 정보를 준비하고 있습니다.';
 }
 
 function popupOptionsForState(status) {

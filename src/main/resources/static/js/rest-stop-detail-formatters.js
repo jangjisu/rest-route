@@ -246,6 +246,35 @@ export function availableDataTags(detail) {
     return DATA_TAG_DEFINITIONS.filter((tag) => present[tag.key]);
 }
 
+export function hasRenderableRestStopDetail(detail) {
+    if (!detail || typeof detail !== 'object') {
+        return false;
+    }
+
+    const hasTextDetail = [
+        detail.detailImageUrl,
+        detail.address,
+        detail.direction,
+        detail.convenience,
+        detail.maintenanceYn,
+        detail.truckSaYn
+    ].some((value) => !isMissingValue(value));
+    const evChargerCount = Number(detail.evChargerCount);
+    const hasEvCharger = Number.isFinite(evChargerCount) && evChargerCount > 0;
+    const hasSalesRanking = !isMissingValue(detail.salesRanking?.baseYearMonth)
+        && (sortSalesRankingStores(detail.salesRanking?.storeRankings).length > 0
+            || sortSalesRankingProducts(detail.salesRanking?.products).length > 0);
+
+    return hasTextDetail
+        || hasParkingInfo(detail)
+        || hasEvCharger
+        || hasThemes(detail.themes)
+        || hasEvents(detail.events)
+        || hasFoodMenu(detail.foodMenu)
+        || hasOilInfo(detail.oilInfo)
+        || hasSalesRanking;
+}
+
 export function formatRefreshedAt(value) {
     if (isMissingValue(value)) {
         return '최근 갱신: 갱신 정보 없음';

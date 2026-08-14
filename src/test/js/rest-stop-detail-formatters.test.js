@@ -20,6 +20,7 @@ import {
     hasFoodSections,
     hasOilInfo,
     hasParkingInfo,
+    hasRenderableRestStopDetail,
     hasThemes,
     isMissingValue,
     orderFoodMenus,
@@ -254,4 +255,60 @@ test('availableDataTags omits categories without data', () => {
 test('availableDataTags returns empty array for missing detail', () => {
     assert.deepEqual(availableDataTags(null), []);
     assert.deepEqual(availableDataTags({}), []);
+});
+
+test('hasRenderableRestStopDetail is false when only rest_stop basic fields are present', () => {
+    assert.equal(hasRenderableRestStopDetail({
+        serviceAreaCode: 'A00001',
+        unitName: '목감(서울)휴게소',
+        routeName: '서해안선',
+        xValue: '126.0000',
+        yValue: '37.0000',
+        stdRestCd: '000001',
+        evChargerCount: 0,
+        themes: [],
+        events: [],
+        foodMenu: { menus: [], sections: [] },
+        oilInfo: null
+    }), false);
+});
+
+test('hasRenderableRestStopDetail detects each type of displayed related detail', () => {
+    const details = [
+        { detailImageUrl: '/api/rest-stops/A00001/images/detail' },
+        { address: '경기도 시흥시' },
+        { direction: '서울' },
+        { convenience: '수유실' },
+        { maintenanceYn: 'O' },
+        { truckSaYn: 'X' },
+        { compactCarParkingCount: 0 },
+        { evChargerCount: 1 },
+        { themes: [{ name: '테마' }] },
+        { events: [{ name: '이벤트' }] },
+        { foodMenu: { menus: [{ foodName: '우동' }] } },
+        { oilInfo: { gasolinePrice: '1,800원' } },
+        { salesRanking: { baseYearMonth: '2026-06', products: [{ rank: 1, productName: '우동' }] } }
+    ];
+
+    details.forEach((detail) => assert.equal(hasRenderableRestStopDetail(detail), true));
+});
+
+test('hasRenderableRestStopDetail ignores empty related detail containers', () => {
+    assert.equal(hasRenderableRestStopDetail({
+        detailImageUrl: ' ',
+        address: null,
+        direction: '',
+        convenience: undefined,
+        maintenanceYn: null,
+        truckSaYn: '',
+        compactCarParkingCount: null,
+        fullSizeCarParkingCount: null,
+        disabledParkingCount: null,
+        evChargerCount: 0,
+        themes: [],
+        events: [],
+        foodMenu: { menus: [] },
+        oilInfo: {},
+        salesRanking: { baseYearMonth: null, storeRankings: [], products: [] }
+    }), false);
 });
