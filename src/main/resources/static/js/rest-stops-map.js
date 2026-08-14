@@ -1900,7 +1900,6 @@ export function renderRouteOptionCards(routes, selectedIndex) {
             <span class="route-option-label">경로 ${index + 1}</span>
             <p class="route-option-summary">${formatRouteOptionSummary(route)}</p>
             <p class="route-option-toll">${formatRouteTollFare(route?.summary?.tollFareWon)}</p>
-            <span class="route-option-arrow" aria-hidden="true">→</span>
         `;
         card.addEventListener('click', () => selectRoute(index));
         container.appendChild(card);
@@ -2455,9 +2454,12 @@ function routeResultFuelItems(restStop) {
         }));
 }
 
-function createRouteResultItem(restStop, index) {
+export function createRouteResultItem(restStop, index, onSelect = selectRouteRestStop) {
     const item = document.createElement('li');
     item.className = 'route-result-item';
+    item.tabIndex = 0;
+    item.setAttribute('role', 'button');
+    item.setAttribute('aria-label', `${formatText(restStop?.unitName, '이름 정보 없음')} 상세정보 보기`);
 
     let appendTarget = item;
     const image = createRouteRestStopImage(document, restStop);
@@ -2561,7 +2563,21 @@ function createRouteResultItem(restStop, index) {
         appendTarget.appendChild(summary);
     }
 
-    item.addEventListener('click', () => selectRouteRestStop(restStop));
+    const arrow = document.createElement('span');
+    arrow.className = 'route-result-action-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '→';
+    item.appendChild(arrow);
+
+    const select = () => onSelect(restStop);
+    item.addEventListener('click', select);
+    item.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+        event.preventDefault();
+        select();
+    });
 
     return item;
 }

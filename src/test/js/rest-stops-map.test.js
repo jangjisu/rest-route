@@ -55,7 +55,7 @@ test('formatRouteOptionSummary keeps toll out of the duration and distance line'
     assert.equal(formatRouteOptionSummary({}), '');
 });
 
-test('route option cards expose selection state and a visual action arrow', () => {
+test('route option cards expose selection state without a detail action arrow', () => {
     const previousDocument = globalThis.document;
     const container = createFakeElement(['d-none']);
     globalThis.document = {
@@ -78,7 +78,36 @@ test('route option cards expose selection state and a visual action arrow', () =
 
         assert.equal(container.children[0].attributes.get('aria-pressed'), 'false');
         assert.equal(container.children[1].attributes.get('aria-pressed'), 'true');
-        assert.match(container.children[0].innerHTML, /route-option-arrow/);
+        assert.doesNotMatch(container.children[0].innerHTML, /route-option-arrow/);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+});
+
+test('route rest stop cards expose detail navigation to pointer and keyboard users', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = { createElement: () => createFakeElement() };
+    let selectedCount = 0;
+
+    try {
+        assert.equal(typeof restStopsMap.createRouteResultItem, 'function');
+        const item = restStopsMap.createRouteResultItem({
+            unitName: '목감(서울)휴게소',
+            routeName: '서해안선'
+        }, 0, () => {
+            selectedCount += 1;
+        });
+
+        assert.equal(item.attributes.get('role'), 'button');
+        assert.equal(item.tabIndex, 0);
+        assert.equal(item.attributes.get('aria-label'), '목감(서울)휴게소 상세정보 보기');
+        assert.equal(item.children.some((child) => child.className === 'route-result-action-arrow'), true);
+
+        item.eventListeners.get('click')({});
+        item.eventListeners.get('keydown')({ key: 'Enter', preventDefault() {} });
+        item.eventListeners.get('keydown')({ key: ' ', preventDefault() {} });
+        item.eventListeners.get('keydown')({ key: 'Escape', preventDefault() {} });
+        assert.equal(selectedCount, 3);
     } finally {
         globalThis.document = previousDocument;
     }
@@ -213,7 +242,9 @@ test('formatEvChargerCount only displays positive charger counts', () => {
 function createFakeElement(classNames = []) {
     const classes = new Set(classNames);
     return {
+        attributes: new Map(),
         children: [],
+        eventListeners: new Map(),
         textContent: '',
         classList: {
             add: (className) => classes.add(className),
@@ -231,6 +262,12 @@ function createFakeElement(classNames = []) {
         },
         appendChild(child) {
             this.children.push(child);
+        },
+        addEventListener(name, listener) {
+            this.eventListeners.set(name, listener);
+        },
+        setAttribute(name, value) {
+            this.attributes.set(name, String(value));
         },
         replaceChildren(...children) {
             this.children = children;

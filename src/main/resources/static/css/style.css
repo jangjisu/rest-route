@@ -585,13 +585,12 @@ body.global-loading-open {
 }
 
 .route-option {
-    position: relative;
     flex: 1 1 0;
     min-width: 8.5rem;
     border: 1.5px solid oklch(90% 0.01 75);
     border-radius: 12px;
     background-color: var(--rr-color-surface);
-    padding: 0.6rem 2.2rem 0.6rem 0.7rem;
+    padding: 0.6rem 0.7rem;
     text-align: left;
     cursor: pointer;
     transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
@@ -639,21 +638,6 @@ body.global-loading-open {
     font-size: 0.82rem;
     font-weight: 700;
     line-height: 1.4;
-}
-
-.route-option-arrow {
-    position: absolute;
-    top: 50%;
-    right: 0.75rem;
-    color: var(--rr-color-text-secondary);
-    font-size: 1rem;
-    transform: translateY(-50%);
-}
-
-.route-option:hover .route-option-arrow,
-.route-option:focus-visible .route-option-arrow,
-.route-option.selected .route-option-arrow {
-    color: var(--rr-color-primary);
 }
 
 .route-direction-alternative-notice {
@@ -892,7 +876,8 @@ body.global-loading-open {
 }
 
 .route-result-item {
-    padding: 0.85rem;
+    position: relative;
+    padding: 0.85rem 2.75rem 0.85rem 0.85rem;
     border: 1px solid oklch(92% 0.01 75);
     border-radius: 14px;
     background-color: var(--rr-color-surface);
@@ -904,6 +889,26 @@ body.global-loading-open {
 .route-result-item:hover {
     border-color: #bfd2f4;
     box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+}
+
+.route-result-item:focus-visible {
+    border-color: var(--rr-color-primary);
+    outline: 3px solid oklch(78% 0.09 220 / 0.55);
+    outline-offset: 2px;
+}
+
+.route-result-action-arrow {
+    position: absolute;
+    top: 1rem;
+    right: 0.9rem;
+    color: var(--rr-color-text-secondary);
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.route-result-item:hover .route-result-action-arrow,
+.route-result-item:focus-visible .route-result-action-arrow {
+    color: var(--rr-color-primary);
 }
 
 .route-result-item-with-image {
@@ -1802,7 +1807,7 @@ body.global-loading-open {
     }
 
     #routeResultModal .route-result-item {
-        padding: 1rem;
+        padding: 1rem 3rem 1rem 1rem;
     }
 
     #routeResultModal .route-result-name {
