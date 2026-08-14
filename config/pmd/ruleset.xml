@@ -7,11 +7,19 @@
 
     <rule ref="category/java/bestpractices.xml">
         <exclude name="GuardLogStatement"/>
-        <exclude name="JUnitAssertionsShouldIncludeMessage"/>
+        <!-- PMD 7.26.0에서 JUnitAssertionsShouldIncludeMessage가 UnitTestAssertionsShouldIncludeMessage로
+        대체됐다(구 이름은 더 이상 카테고리에 포함되지 않아 exclude가 안 먹힘) -->
+        <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
+        <!-- PMD 7.26.0에서 새로 추가된 규칙. Feign 클라이언트 인터페이스는 동적 프록시로
+        구현되는 선언적 HTTP 클라이언트라 메서드가 1개인 게 "지금 이 API가 엔드포인트
+        하나만 쓴다"는 우연일 뿐, 람다로 쓸 의도가 아니다 — @FunctionalInterface를
+        붙이면 오히려 "메서드 추가하면 안 됨"이라는 잘못된 신호를 준다. -->
+        <exclude name="ImplicitFunctionalInterface"/>
     </rule>
     <rule ref="category/java/errorprone.xml">
-        <exclude name="BeanMembersShouldSerialize"/>
-        <exclude name="DataflowAnomalyAnalysis"/>
+        <!-- PMD 7.26.0에서 BeanMembersShouldSerialize가 NonSerializableClass로 대체됐다 -->
+        <exclude name="NonSerializableClass"/>
+        <!-- DataflowAnomalyAnalysis는 PMD 7.26.0에서 규칙 자체가 제거됐다 -->
         <!-- record의 accessor 메서드는 관례상 필드명과 같아야 하므로 이 프로젝트에서는 오탐 -->
         <exclude name="AvoidFieldNameMatchingMethodName"/>
         <!--
@@ -21,5 +29,11 @@
         EI/EI2 제외와 같은 이유).
         -->
         <exclude name="MissingSerialVersionUID"/>
+        <!-- PMD 7.26.0에서 새로 추가된 규칙. 외부 API 클라이언트가 예상 못한 실패를
+        도메인 예외로 감싸 다시 던지거나(ExApiClient 등), 스케줄러/시작 초기화가
+        독립적인 동기화 작업 하나의 실패를 로그만 남기고 나머지 작업은 계속 돌게
+        하는(RestStopScheduler, *StartupInitializer 등) 의도적 패턴이다 — 특정
+        예외마다 다른 조치가 필요해지면 그때 세분화한다. -->
+        <exclude name="AvoidCatchingGenericException"/>
     </rule>
 </ruleset>
