@@ -175,4 +175,28 @@ class RestStopAggregateQueryServiceTest {
 
         verify(restStopQueryService).findByServiceAreaCodesAndAdminOverridden(null, false);
     }
+
+    @Test
+    @DisplayName("미리 조회해둔 RestStopEntity 목록을 받으면 RestStopQueryService를 다시 호출하지 않는다")
+    void findByRestStops_doesNotQueryRestStopsAgain() {
+        RestStopEntity restStop = restStop("A00001");
+
+        Map<String, RestStopAggregate> result =
+                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(restStop), null);
+
+        assertThat(result).containsOnlyKeys("A00001");
+        assertThat(result.get("A00001").restStop()).isEqualTo(restStop);
+        verify(restStopQueryService, org.mockito.Mockito.never())
+                .findByServiceAreaCodesAndAdminOverridden(any(), any());
+    }
+
+    @Test
+    @DisplayName("미리 조회해둔 목록이 비어있으면 빈 맵을 반환하고 나머지 조회는 하지 않는다")
+    void findByRestStops_returnsEmptyMapWhenGivenListIsEmpty() {
+        Map<String, RestStopAggregate> result =
+                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(), null);
+
+        assertThat(result).isEmpty();
+        verify(restStopRelatedInfoQueryService, org.mockito.Mockito.never()).findAllByRestStops(any(), any());
+    }
 }

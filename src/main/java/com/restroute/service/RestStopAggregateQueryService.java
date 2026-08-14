@@ -40,6 +40,17 @@ public class RestStopAggregateQueryService {
             Collection<String> serviceAreaCodes, Boolean adminOverridden) {
         List<RestStopEntity> restStops =
                 restStopQueryService.findByServiceAreaCodesAndAdminOverridden(serviceAreaCodes, adminOverridden);
+        return findByRestStopsAndAdminOverridden(restStops, adminOverridden);
+    }
+
+    /**
+     * 호출부가 이미 조회해둔 {@link RestStopEntity} 목록으로 집계한다 — 위 메서드가 매번 새로
+     * 조회하는 것과 달리, 같은 요청 안에서 이미 가진 엔티티를 재사용해 중복 조회를 없앨 때 쓴다.
+     * restStops를 어떤 기준으로 걸렀는지는 호출부 책임이고, 여기서는 그대로 신뢰해서 쓴다.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, RestStopAggregate> findByRestStopsAndAdminOverridden(
+            List<RestStopEntity> restStops, Boolean adminOverridden) {
         if (restStops.isEmpty()) {
             return Map.of();
         }
