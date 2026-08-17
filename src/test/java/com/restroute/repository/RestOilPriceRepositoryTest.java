@@ -79,17 +79,16 @@ class RestOilPriceRepositoryTest {
     }
 
     @Test
-    @DisplayName("override=false만 지정하면 관리자가 override하지 않은 가격 정보만 조회한다")
-    void findByRestStopServiceAreaCodesAndAdminOverridden_excludesOverriddenRowsWhenFalse() {
-        RestOilPriceEntity notOverridden = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
-        notOverridden.updateRestStopServiceAreaCode("A00001");
-        RestOilPriceEntity overridden = RestOilPriceEntity.from(restOilPriceItem("000006", "기흥(부산)주유소"));
-        overridden.applyAdminLink("A00002");
-        restOilPriceRepository.saveAll(List.of(notOverridden, overridden));
+    @DisplayName("휴게소 코드 목록에 연결된 가격 정보를 모두 조회한다")
+    void findAllByRestStopServiceAreaCodeIn_returnsMappedRows() {
+        RestOilPriceEntity included = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
+        included.updateRestStopServiceAreaCode("A00001");
+        RestOilPriceEntity excluded = RestOilPriceEntity.from(restOilPriceItem("000006", "기흥(부산)주유소"));
+        excluded.updateRestStopServiceAreaCode("A00002");
+        restOilPriceRepository.saveAll(List.of(included, excluded));
 
-        List<RestOilPriceEntity> result =
-                restOilPriceRepository.findByRestStopServiceAreaCodesAndAdminOverridden(null, false);
+        List<RestOilPriceEntity> result = restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(List.of("A00001"));
 
-        assertThat(result).containsExactly(notOverridden);
+        assertThat(result).containsExactly(included);
     }
 }

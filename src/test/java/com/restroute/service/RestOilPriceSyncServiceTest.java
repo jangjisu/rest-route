@@ -14,6 +14,7 @@ import com.restroute.client.exception.ExApiException;
 import com.restroute.client.response.RestOilPriceItem;
 import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.repository.RestOilPriceRepository;
+import com.restroute.service.backfill.RestOilPriceServiceAreaCodeBackfiller;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -44,14 +45,17 @@ class RestOilPriceSyncServiceTest {
     @Mock
     private TransactionTemplate transactionTemplate;
 
+    @Mock
+    private RestOilPriceServiceAreaCodeBackfiller restOilPriceBackfiller;
+
     private final Clock clock = Clock.fixed(Instant.parse("2026-06-15T22:30:00Z"), ZoneId.of("Asia/Seoul"));
 
     private RestOilPriceSyncService restOilPriceSyncService;
 
     @BeforeEach
     void setUp() {
-        restOilPriceSyncService =
-                new RestOilPriceSyncService(exApiClient, restOilPriceRepository, transactionTemplate, clock);
+        restOilPriceSyncService = new RestOilPriceSyncService(
+                exApiClient, restOilPriceRepository, restOilPriceBackfiller, transactionTemplate, clock);
     }
 
     @Test
@@ -98,6 +102,7 @@ class RestOilPriceSyncServiceTest {
         verify(exApiClient).getCurStateStation(1);
         verify(exApiClient).getCurStateStation(2);
         verify(exApiClient).getCurStateStation(3);
+        verify(restOilPriceBackfiller).backfill();
         List<RestOilPriceEntity> savedEntities = captureSavedEntities();
         assertThat(savedEntities)
                 .extracting(RestOilPriceEntity::getServiceAreaCode2)
@@ -126,6 +131,7 @@ class RestOilPriceSyncServiceTest {
 
         assertThat(savedCount).isEqualTo(2);
         verify(restOilPriceRepository, never()).deleteAllInBatch();
+        verify(restOilPriceBackfiller).backfill();
         List<RestOilPriceEntity> savedEntities = captureSavedEntities();
         assertThat(savedEntities)
                 .extracting(RestOilPriceEntity::getServiceAreaCode2)
@@ -168,7 +174,7 @@ class RestOilPriceSyncServiceTest {
 
         assertThat(savedCount).isZero();
         verify(restOilPriceRepository).deleteAllInBatch();
-        verify(restOilPriceRepository).saveAll(List.of());
+        verify(restOilPriceRepository).saveAllAndFlush(List.of());
     }
 
     private void runTransactionCallback() {
@@ -184,7 +190,7 @@ class RestOilPriceSyncServiceTest {
     @SuppressWarnings("unchecked")
     private List<RestOilPriceEntity> captureSavedEntities() {
         ArgumentCaptor<Iterable<RestOilPriceEntity>> captor = ArgumentCaptor.forClass(Iterable.class);
-        verify(restOilPriceRepository).saveAll(captor.capture());
+        verify(restOilPriceRepository).saveAllAndFlush(captor.capture());
 
         List<RestOilPriceEntity> entities = new ArrayList<>();
         captor.getValue().forEach(entities::add);

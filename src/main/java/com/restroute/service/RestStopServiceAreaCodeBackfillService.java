@@ -5,7 +5,6 @@ import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.repository.EvChargerRepository;
 import com.restroute.repository.EvChargerStationMappingRepository;
-import com.restroute.repository.RestOilRepository;
 import com.restroute.repository.RestStopDetailRepository;
 import com.restroute.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
 import com.restroute.service.backfill.RestEventServiceAreaCodeBackfiller;
@@ -44,7 +43,6 @@ public class RestStopServiceAreaCodeBackfillService {
 
     private final RestStopQueryService restStopQueryService;
     private final RestStopDetailRepository restStopDetailRepository;
-    private final RestOilRepository restOilRepository;
     private final EvChargerRepository evChargerRepository;
     private final EvChargerStationMappingRepository evChargerStationMappingRepository;
     private final EvChargerStationMappingCalculator evChargerStationMappingCalculator;
@@ -69,7 +67,7 @@ public class RestStopServiceAreaCodeBackfillService {
         int highwayServiceAreaInfoMappedCount = highwayServiceAreaInfoBackfiller.backfill(restStopServiceAreaCodes);
         int restFoodMappedCount = restFoodBackfiller.backfill(serviceAreaCodeByStdRestCd);
         int restOilMappedCount = restOilBackfiller.backfill(serviceAreaCodeByOilKey);
-        int restOilPriceMappedCount = restOilPriceBackfiller.backfill(mapByOilStandardRestCode());
+        int restOilPriceMappedCount = restOilPriceBackfiller.backfill();
         int evChargerMappedCount = backfillEvChargerMappings(restStops);
         int productSalesRankMappedCount = productSalesRankBackfiller.backfill(restStops);
         int storeSalesRankMappedCount = storeSalesRankBackfiller.backfill(restStops);
@@ -148,16 +146,6 @@ public class RestStopServiceAreaCodeBackfillService {
                         restStop -> oilRestStopKey(
                                 restStop.getRouteNo(), RestOilEntity.normalizeStationName(restStop.getUnitName())),
                         RestStopEntity::getServiceAreaCode,
-                        (first, second) -> first));
-    }
-
-    private Map<String, String> mapByOilStandardRestCode() {
-        return restOilRepository.findAll().stream()
-                .filter(restOil -> StringUtils.hasText(restOil.getStandardRestCode()))
-                .filter(restOil -> StringUtils.hasText(restOil.getRestStopServiceAreaCode()))
-                .collect(Collectors.toMap(
-                        RestOilEntity::getStandardRestCode,
-                        RestOilEntity::getRestStopServiceAreaCode,
                         (first, second) -> first));
     }
 

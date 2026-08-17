@@ -2,6 +2,7 @@ package com.restroute.domain;
 
 import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.restroute.client.response.RestOilPriceItem;
 import java.time.LocalDateTime;
@@ -77,37 +78,9 @@ class RestOilPriceEntityTest {
     }
 
     @Test
-    @DisplayName("applyAdminLink는 연결 대상 휴게소를 설정하고 잠금 플래그를 켠다")
-    void applyAdminLink_setsRestStopAndLocksRow() {
-        RestOilPriceEntity entity = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
-
-        entity.applyAdminLink("A00001");
-
-        assertThat(entity.getRestStopServiceAreaCode()).isEqualTo("A00001");
-        assertThat(entity.isAdminOverridden()).isTrue();
-    }
-
-    @Test
-    @DisplayName("clearAdminLink는 연결을 비우고 잠금 플래그를 켠다")
-    void clearAdminLink_clearsRestStopAndLocksRow() {
-        RestOilPriceEntity entity = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
-        entity.applyAdminLink("A00001");
-
-        entity.clearAdminLink();
-
-        assertThat(entity.getRestStopServiceAreaCode()).isNull();
-        assertThat(entity.isAdminOverridden()).isTrue();
-    }
-
-    @Test
-    @DisplayName("releaseToAutoMatching은 잠금만 풀고 현재 연결 값은 그대로 둔다")
-    void releaseToAutoMatching_unlocksRowWithoutChangingLink() {
-        RestOilPriceEntity entity = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
-        entity.applyAdminLink("A00001");
-
-        entity.releaseToAutoMatching();
-
-        assertThat(entity.getRestStopServiceAreaCode()).isEqualTo("A00001");
-        assertThat(entity.isAdminOverridden()).isFalse();
+    @DisplayName("주유 가격 행은 관리자 잠금 상태를 별도로 소유하지 않는다")
+    void doesNotOwnAdminOverrideState() {
+        assertThatThrownBy(() -> RestOilPriceEntity.class.getDeclaredField("adminOverridden"))
+                .isInstanceOf(NoSuchFieldException.class);
     }
 }

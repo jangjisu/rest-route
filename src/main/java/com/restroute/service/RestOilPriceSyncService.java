@@ -5,6 +5,7 @@ import com.restroute.client.response.RestOilPriceItem;
 import com.restroute.client.response.RestOilPriceResponse;
 import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.repository.RestOilPriceRepository;
+import com.restroute.service.backfill.RestOilPriceServiceAreaCodeBackfiller;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ public class RestOilPriceSyncService {
 
     private final ExApiClient exApiClient;
     private final RestOilPriceRepository restOilPriceRepository;
+    private final RestOilPriceServiceAreaCodeBackfiller restOilPriceBackfiller;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
 
@@ -81,19 +83,21 @@ public class RestOilPriceSyncService {
     private void saveRestOilPrices(List<RestOilPriceItem> items, boolean allPagesFetched) {
         if (!allPagesFetched) {
             upsertRestOilPrices(items);
+            restOilPriceBackfiller.backfill();
             return;
         }
 
         restOilPriceRepository.deleteAllInBatch();
         LocalDateTime refreshedAt = LocalDateTime.now(clock);
-        restOilPriceRepository.saveAll(items.stream()
+        restOilPriceRepository.saveAllAndFlush(items.stream()
                 .map(item -> RestOilPriceEntity.from(item, refreshedAt))
                 .toList());
+        restOilPriceBackfiller.backfill();
     }
 
     private void upsertRestOilPrices(List<RestOilPriceItem> items) {
         LocalDateTime refreshedAt = LocalDateTime.now(clock);
-        restOilPriceRepository.saveAll(
+        restOilPriceRepository.saveAllAndFlush(
                 items.stream().map(item -> upsertOne(item, refreshedAt)).toList());
     }
 

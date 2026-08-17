@@ -61,9 +61,12 @@ class AdminRestOilLinkServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001"));
         RestStopEntity unlinkedRestStop = RestStopEntity.from(restStopItem("002", "마장휴게소", "A00099"));
         RestOilPriceEntity linkedOilPrice = oilPriceWithId(1L, "000002", "서울만남(부산)주유소");
-        linkedOilPrice.applyAdminLink("A00001");
+        linkedOilPrice.updateRestStopServiceAreaCode("A00001");
+        RestOilEntity canonicalOil = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+        canonicalOil.applyAdminLink("A00001");
         RestOilPriceEntity unmatchedOilPrice = oilPriceWithId(2L, "000006", "미매칭주유소");
         when(restStopRepository.findAll()).thenReturn(List.of(restStop, unlinkedRestStop));
+        when(restOilRepository.findAll()).thenReturn(List.of(canonicalOil));
         when(restOilPriceRepository.findAll()).thenReturn(List.of(linkedOilPrice, unmatchedOilPrice));
 
         List<AdminRestOilLinkSummaryResponse> result = service.findAll();
@@ -87,9 +90,9 @@ class AdminRestOilLinkServiceTest {
     void findAll_keepsLastOilPriceWhenServiceAreaCodeIsDuplicated() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001"));
         RestOilPriceEntity first = oilPriceWithId(1L, "000002", "먼저조회된주유소");
-        first.applyAdminLink("A00001");
+        first.updateRestStopServiceAreaCode("A00001");
         RestOilPriceEntity last = oilPriceWithId(2L, "000006", "나중조회된주유소");
-        last.applyAdminLink("A00001");
+        last.updateRestStopServiceAreaCode("A00001");
         when(restStopRepository.findAll()).thenReturn(List.of(restStop));
         when(restOilPriceRepository.findAll()).thenReturn(List.of(first, last));
 
@@ -105,7 +108,7 @@ class AdminRestOilLinkServiceTest {
     @DisplayName("이름으로 주유소를 검색하면 이미 연결된 휴게소명을 배치 조회로 함께 반환한다(N+1 방지)")
     void search_returnsMatchesWithLinkedRestStopName() {
         RestOilPriceEntity linkedOilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
-        linkedOilPrice.applyAdminLink("A00099");
+        linkedOilPrice.updateRestStopServiceAreaCode("A00099");
         RestOilPriceEntity unlinkedOilPrice = oilPriceWithId(2L, "000006", "SK에너지 마장주유소(하행)");
         when(restOilPriceRepository.findAllByServiceAreaNameContainingIgnoreCaseOrderByIdAsc("마장"))
                 .thenReturn(List.of(linkedOilPrice, unlinkedOilPrice));
@@ -220,7 +223,7 @@ class AdminRestOilLinkServiceTest {
     @DisplayName("연결 해제하면 대상 휴게소가 비워지고 잠금 상태가 되며, rest_oil 편의시설 행도 함께 해제된다")
     void unlink_clearsRestStopAndLocksRowAndCascadesToRestOil() {
         RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
-        oilPrice.applyAdminLink("A00099");
+        oilPrice.updateRestStopServiceAreaCode("A00099");
         when(restOilPriceRepository.findById(1L)).thenReturn(Optional.of(oilPrice));
         RestOilEntity siblingOil = RestOilEntity.from(restOilItem("000002", "SK에너지 마장주유소"));
         siblingOil.applyAdminLink("A00099");
@@ -238,7 +241,7 @@ class AdminRestOilLinkServiceTest {
     @DisplayName("잠금을 해제하면 자동 매칭 대상으로 돌아가며, rest_oil 편의시설 행도 함께 풀린다")
     void clearOverride_unlocksRowAndCascadesToRestOil() {
         RestOilPriceEntity oilPrice = oilPriceWithId(1L, "000002", "SK에너지 마장주유소");
-        oilPrice.applyAdminLink("A00099");
+        oilPrice.updateRestStopServiceAreaCode("A00099");
         when(restOilPriceRepository.findById(1L)).thenReturn(Optional.of(oilPrice));
         RestOilEntity siblingOil = RestOilEntity.from(restOilItem("000002", "SK에너지 마장주유소"));
         siblingOil.applyAdminLink("A00099");

@@ -231,8 +231,7 @@ class RestStopRelatedInfoQueryServiceTest {
                 .thenReturn(List.of(info));
         when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
                 .thenReturn(List.of(oilConvenience));
-        when(restOilPriceRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
-                .thenReturn(List.of(oilPrice));
+        when(restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(oilPrice));
         when(restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
                 .thenReturn(List.of(food));
         when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(theme));
@@ -286,8 +285,7 @@ class RestStopRelatedInfoQueryServiceTest {
                 .thenReturn(List.of());
         when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
                 .thenReturn(List.of());
-        when(restOilPriceRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
-                .thenReturn(List.of());
+        when(restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
         when(restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
                 .thenReturn(List.of());
         when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
@@ -315,7 +313,7 @@ class RestStopRelatedInfoQueryServiceTest {
     }
 
     @Test
-    @DisplayName("adminOverridden=false를 넘기면 detail/oil/oilPrice/food 각각에 그대로 전달한다(테마/이벤트는 override 개념이 없어 영향 없음)")
+    @DisplayName("adminOverridden=false는 잠금 상태를 소유한 detail/oil/food에만 전달한다")
     void findAllByRestStops_passesAdminOverriddenFilterToSupportingRepositories() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001"));
         List<String> codes = List.of("A00001");
@@ -325,8 +323,7 @@ class RestStopRelatedInfoQueryServiceTest {
                 .thenReturn(List.of());
         when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
                 .thenReturn(List.of());
-        when(restOilPriceRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
-                .thenReturn(List.of());
+        when(restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
         when(restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
                 .thenReturn(List.of());
         when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
@@ -336,7 +333,7 @@ class RestStopRelatedInfoQueryServiceTest {
 
         verify(restStopDetailRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
         verify(restOilRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
-        verify(restOilPriceRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
+        verify(restOilPriceRepository).findAllByRestStopServiceAreaCodeIn(codes);
         verify(restFoodRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
         verify(restThemeRepository).findAllByRestStopServiceAreaCodeIn(codes);
         verify(restEventRepository).findAllByRestStopServiceAreaCodeIn(codes);

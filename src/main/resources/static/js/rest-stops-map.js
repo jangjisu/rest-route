@@ -1,38 +1,16 @@
 import { hideGlobalLoading, setText, showApiUnavailableAlert, showGlobalLoading } from './utils.js';
-import {
-    availableDataTags,
-    CONVENIENCE_FALLBACK,
-    formatAvailability,
-    formatFoodBadges,
-    formatFoodCost,
-    formatFreightOperation,
-    formatOilPrice,
-    formatOperationTime,
-    formatParkingBreakdown,
-    formatRefreshedAt,
-    formatTotalParkingCount,
-    formatSalesRankingMonth,
-    formatText,
-    hasFoodMenu,
-    hasFoodSections,
-    hasRenderableRestStopDetail,
-    isMissingValue,
-    normalizeSalesRankingStoreName,
-    orderFoodMenus,
-    parseConvenience,
-    sortSalesRankingProducts,
-    sortSalesRankingStores
-} from './rest-stop-detail-formatters.js';
+import { formatText } from './rest-stop-detail-formatters.js';
 import { createRestStopDetailRequest } from './rest-stop-detail-request.js';
 import { createRouteRestStopRequest } from './route-rest-stop-request.js';
 import { createNationalOilPriceRequest } from './national-oil-price-request.js';
 import { createPlaceSearchRequest } from './place-search-request.js';
 import { createRestStopNameSearchRequest } from './rest-stop-name-search-request.js';
-import { createRouteRestStopImage, renderDetailImage } from './rest-stop-images.js';
 import {
     ROUTE_POINT_TARGET,
     createRoutePointSelection
 } from './route-point-selection.js';
+import { createRestStopDetailView } from './rest-stop-detail-view.js';
+import { createRouteRestStopView, renderNationalOilPriceState } from './route-rest-stop-view.js';
 
 const MAP_CONFIG_ENDPOINT = '/api/map-config';
 const REST_STOPS_ENDPOINT = '/api/rest-stops';
@@ -44,14 +22,6 @@ const SEOUL_CENTER = {
 };
 const DEFAULT_ZOOM = 11;
 const MOBILE_DETAIL_SHEET_MEDIA = '(max-width: 991.98px)';
-const ROUTE_REST_STOP_FILTERS = [
-    { key: 'all', label: '전체', title: '경로상 휴게소' },
-    { key: 'fuel', label: '주유 가능', title: '주유 가능한 휴게소' },
-    { key: 'food', label: '먹거리', title: '먹거리가 있는 휴게소' },
-    { key: 'theme', label: '테마', title: '테마가 있는 휴게소' },
-    { key: 'event', label: '이벤트', title: '이벤트 진행 중인 휴게소' },
-    { key: 'ev', label: 'EV 충전', title: 'EV 충전 가능한 휴게소' }
-];
 
 const GEOLOCATION_OPTIONS = {
     enableHighAccuracy: false,
@@ -62,17 +32,12 @@ const GEOLOCATION_OPTIONS = {
 let map;
 let naverMaps;
 let selectedInfoWindow;
-let selectedRestStopName = '';
-let selectedServiceAreaCode = '';
-let currentDetail;
+let detailView;
 let detailRequest;
 let detailPanelEventController;
 let mapInitializationId = 0;
 let currentLocation;
 let currentLocationMarker;
-let foodExpanded = false;
-let currentFoodMenus = [];
-let currentFoodSections = [];
 let routeRequest;
 let placeSearchRequest;
 let restStopNameSearchRequest;
@@ -80,7 +45,7 @@ let routePolylines = [];
 let routeMarkers = [];
 let currentRouteData;
 let selectedRouteIndex = 0;
-let selectedRouteRestStopFilter = 'all';
+let routeView;
 let allRestStopMarkers = [];
 let markerMode = 'all';
 let originMarker;
@@ -108,9 +73,15 @@ export async function initRestStopMap() {
     detailRequest?.invalidate();
     detailPanelEventController?.abort();
     detailPanelEventController = new globalThis.AbortController();
-    detailRequest = createRestStopDetailRequest({ onState: renderDetailState });
+    detailView = createRestStopDetailView({
+        onPopupUpdate: updateSelectedPopup,
+        onPresentationChange: updateDetailSheetPresentation,
+        refreshOilPrice: (serviceAreaCode) => detailRequest.refreshOilPrice(serviceAreaCode)
+    });
+    routeView = createRouteRestStopView({ onSelectRestStop: selectRouteRestStop });
+    detailRequest = createRestStopDetailRequest({ onState: detailView.renderState });
     routeRequest = createRouteRestStopRequest({ onState: renderRouteState });
-    nationalOilPriceRequest = createNationalOilPriceRequest({ onState: renderNationalOilPriceState });
+    nationalOilPriceRequest = createNationalOilPriceRequest({ onState: handleNationalOilPriceState });
     placeSearchRequest = createPlaceSearchRequest({ onState: renderPlaceSearchState });
     restStopNameSearchRequest = createRestStopNameSearchRequest({ onState: renderRestStopNameSearchState });
     bindDetailPanelEvents();
@@ -430,21 +401,21 @@ function bindDetailPanelEvents() {
     document.getElementById('restStopDetailRouteBack')?.addEventListener('click', returnToRouteResultModal, {
         signal: detailPanelEventController.signal
     });
-    document.getElementById('restStopOilRefreshButton')?.addEventListener('click', refreshOilInfo, {
+    document.getElementById('restStopOilRefreshButton')?.addEventListener('click', () => detailView.refreshOilInfo(), {
         signal: detailPanelEventController.signal
     });
-    document.getElementById('restStopFoodToggle')?.addEventListener('click', toggleFoodMenu, {
+    document.getElementById('restStopFoodToggle')?.addEventListener('click', () => detailView.toggleFoodMenu(), {
         signal: detailPanelEventController.signal
     });
-    document.getElementById('restStopFoodOpen')?.addEventListener('click', openFoodModal, {
+    document.getElementById('restStopFoodOpen')?.addEventListener('click', () => detailView.openFoodModal(), {
         signal: detailPanelEventController.signal
     });
-    document.getElementById('restStopFoodModalClose')?.addEventListener('click', closeFoodModal, {
+    document.getElementById('restStopFoodModalClose')?.addEventListener('click', () => detailView.closeFoodModal(), {
         signal: detailPanelEventController.signal
     });
     document.getElementById('restStopFoodModal')?.addEventListener('click', (event) => {
         if (event.target === event.currentTarget) {
-            closeFoodModal();
+            detailView.closeFoodModal();
         }
     }, { signal: detailPanelEventController.signal });
     document.addEventListener('keydown', (event) => {
@@ -503,9 +474,7 @@ function openDetailPanel(restStop, { fromRouteResult = false } = {}) {
     }
 
     detailOpenedFromRouteResult = fromRouteResult;
-    selectedRestStopName = restStop.unitName;
-    selectedServiceAreaCode = restStop.serviceAreaCode;
-    currentDetail = undefined;
+    detailView.open(restStop);
     panel.classList.remove('d-none');
     updateDetailSheetPresentation();
     detailRequest.load(restStop.serviceAreaCode);
@@ -513,7 +482,7 @@ function openDetailPanel(restStop, { fromRouteResult = false } = {}) {
 
 function closeDetailPanel({ restoreMapFocus = false } = {}) {
     detailRequest?.invalidate();
-    closeFoodModal();
+    detailView?.closeFoodModal();
 
     const panel = document.getElementById('restStopDetailPanel');
     if (panel) {
@@ -548,205 +517,6 @@ function updateRouteResultBackButton() {
 function returnToRouteResultModal() {
     closeDetailPanel();
     openRouteResultModal();
-}
-
-function renderDetailState(state) {
-    const panel = document.getElementById('restStopDetailPanel');
-    const status = document.getElementById('restStopDetailStatus');
-    const content = document.getElementById('restStopDetailContent');
-    if (!panel || !status || !content) {
-        return;
-    }
-
-    panel.classList.remove('d-none');
-    updateDetailSheetPresentation();
-    setDetailName(selectedRestStopName);
-    panel.setAttribute('aria-busy', state.status === 'loading' ? 'true' : 'false');
-
-    if (state.status === 'success') {
-        if (state.externalUnavailable) {
-            showApiUnavailableAlert();
-        }
-
-        renderDetail(state.data);
-        const emptyMessage = restStopDetailEmptyMessage(state.data, state.externalUnavailable);
-        status.textContent = emptyMessage;
-        status.classList.toggle('d-none', emptyMessage === '');
-        content.classList.toggle('d-none', emptyMessage !== '');
-        updateSelectedPopup(
-            { unitName: state.data.unitName || selectedRestStopName, routeName: state.data.routeName },
-            { status: 'success', tags: availableDataTags(state.data) }
-        );
-        return;
-    }
-
-    if (state.status === 'external-unavailable') {
-        showApiUnavailableAlert();
-    }
-
-    content.classList.add('d-none');
-    status.classList.remove('d-none');
-    status.textContent = detailStatusMessage(state.status);
-    updateSelectedPopup({ unitName: selectedRestStopName }, popupOptionsForState(state.status));
-}
-
-export function restStopDetailEmptyMessage(detail, externalUnavailable = false) {
-    if (hasRenderableRestStopDetail(detail)) {
-        return '';
-    }
-    return externalUnavailable
-        ? '상세 정보를 불러오지 못했습니다.'
-        : '이 휴게소의 상세 정보를 준비하고 있습니다.';
-}
-
-function popupOptionsForState(status) {
-    if (status === 'loading') {
-        return { status: 'loading' };
-    }
-    if (status === 'not-found') {
-        return { status: 'success', tags: [] };
-    }
-    return { status: 'error' };
-}
-
-function detailStatusMessage(status) {
-    if (status === 'loading') {
-        return '상세 정보를 불러오는 중입니다.';
-    }
-    if (status === 'not-found') {
-        return '상세 정보가 없습니다.';
-    }
-    return '상세 정보를 불러오지 못했습니다.';
-}
-
-function renderDetail(detail) {
-    currentDetail = detail;
-    renderDetailImage(document, detail);
-    setDetailName(detail.unitName, selectedRestStopName);
-    setDetailValue('restStopDetailRoute', detail.routeName, '노선 정보 없음');
-    setDetailValue('restStopDetailDirection', detail.direction, '방향 정보 없음');
-    setDetailValue('restStopDetailAddress', detail.address, '주소 정보 없음');
-    renderConvenience(detail.convenience);
-    setDetailValue('restStopDetailMaintenance', detail.maintenanceYn, '알 수 없음', formatAvailability);
-    setDetailValue('restStopDetailFreight', detail.truckSaYn, '알 수 없음', formatFreightOperation);
-    renderParkingInfo(detail.compactCarParkingCount, detail.fullSizeCarParkingCount, detail.disabledParkingCount);
-    renderEvChargerInfo(detail.evChargerCount);
-    renderThemeBadges(detail.themes);
-    renderEventSection(detail.events);
-    renderSalesRanking(detail.salesRanking);
-    renderOilInfo(detail.oilInfo);
-    renderFoodMenu(detail.foodMenu);
-}
-
-function renderSalesRanking(salesRanking) {
-    const section = document.getElementById('restStopSalesRankingSection');
-    const month = document.getElementById('restStopSalesRankingMonth');
-    const storeColumn = document.getElementById('restStopStoreRankingColumn');
-    const productColumn = document.getElementById('restStopProductRankingColumn');
-    const storeList = document.getElementById('restStopStoreRankingList');
-    const productList = document.getElementById('restStopProductRankingList');
-    if (!section || !month || !storeColumn || !productColumn || !storeList || !productList) {
-        return;
-    }
-
-    const visibleStores = sortSalesRankingStores(salesRanking?.storeRankings);
-    const visibleProducts = sortSalesRankingProducts(salesRanking?.products);
-    const hasRanking = (visibleStores.length > 0 || visibleProducts.length > 0)
-        && !isMissingValue(salesRanking?.baseYearMonth);
-    section.classList.toggle('d-none', !hasRanking);
-    if (!hasRanking) {
-        storeList.replaceChildren();
-        productList.replaceChildren();
-        storeColumn.classList.add('d-none');
-        productColumn.classList.add('d-none');
-        month.textContent = '';
-        return;
-    }
-
-    month.textContent = formatSalesRankingMonth(salesRanking.baseYearMonth);
-    storeColumn.classList.toggle('d-none', visibleStores.length === 0);
-    productColumn.classList.toggle('d-none', visibleProducts.length === 0);
-    storeList.replaceChildren(...visibleStores.map((store) => createSalesRankingItem(store, 'storeName')));
-    productList.replaceChildren(...visibleProducts.map((product) => createSalesRankingItem(product, 'productName')));
-}
-
-function createSalesRankingItem(ranking, nameKey) {
-    const item = document.createElement('li');
-    item.className = 'rest-stop-sales-ranking-item';
-
-    const rank = document.createElement('span');
-    rank.className = 'rest-stop-sales-ranking-rank';
-    rank.textContent = `${ranking.rank}`;
-    item.appendChild(rank);
-
-    const name = document.createElement('span');
-    name.className = 'rest-stop-sales-ranking-name';
-    name.textContent = nameKey === 'storeName'
-        ? normalizeSalesRankingStoreName(ranking[nameKey])
-        : ranking[nameKey];
-    item.appendChild(name);
-
-    return item;
-}
-
-function setDetailName(value, fallbackValue) {
-    const element = document.getElementById('restStopDetailName');
-    if (!element) {
-        return;
-    }
-
-    element.textContent = formatText(value, formatText(fallbackValue, '이름 정보 없음'));
-    element.classList.toggle(
-        'rest-stop-detail-missing',
-        isMissingValue(value) && isMissingValue(fallbackValue)
-    );
-}
-
-function setDetailValue(id, rawValue, fallback, formatter = (value) => formatText(value, fallback)) {
-    const element = document.getElementById(id);
-    if (!element) {
-        return;
-    }
-
-    const formattedValue = formatter(rawValue);
-    element.textContent = formattedValue;
-    element.classList.toggle('rest-stop-detail-missing', isMissingValue(rawValue));
-}
-
-function renderParkingInfo(compactCount, fullSizeCount, disabledCount) {
-    const totalElement = document.getElementById('restStopDetailTotalParking');
-    if (totalElement) {
-        const allMissing = isMissingValue(compactCount) && isMissingValue(fullSizeCount) && isMissingValue(disabledCount);
-        totalElement.textContent = formatTotalParkingCount(compactCount, fullSizeCount, disabledCount);
-        totalElement.classList.toggle('rest-stop-detail-missing', allMissing);
-    }
-
-    const breakdownElement = document.getElementById('restStopDetailParkingBreakdown');
-    if (breakdownElement) {
-        const allMissing = isMissingValue(fullSizeCount) && isMissingValue(compactCount) && isMissingValue(disabledCount);
-        breakdownElement.textContent = formatParkingBreakdown(fullSizeCount, compactCount, disabledCount);
-        breakdownElement.classList.toggle('rest-stop-detail-missing', allMissing);
-    }
-}
-
-function renderConvenience(value) {
-    const list = document.getElementById('restStopDetailConvenience');
-    const fallback = document.getElementById('restStopDetailConvenienceFallback');
-    if (!list || !fallback) {
-        return;
-    }
-
-    list.replaceChildren();
-    const conveniences = parseConvenience(value);
-    conveniences.forEach((convenience) => {
-        const item = document.createElement('li');
-        item.textContent = convenience;
-        list.appendChild(item);
-    });
-
-    list.classList.toggle('d-none', conveniences.length === 0);
-    fallback.classList.toggle('d-none', conveniences.length > 0);
-    fallback.textContent = conveniences.length === 0 ? CONVENIENCE_FALLBACK : '';
 }
 
 function bindLocateControl() {
@@ -822,253 +592,6 @@ function showLocateError(message) {
 
 function hideLocateError() {
     document.getElementById('restStopMapError')?.classList.add('d-none');
-}
-
-function renderFoodMenu(foodMenu) {
-    const openButton = document.getElementById('restStopFoodOpen');
-    if (!openButton) {
-        return;
-    }
-
-    const visible = hasFoodMenu(foodMenu);
-    openButton.classList.toggle('d-none', !visible);
-    if (!visible) {
-        currentFoodMenus = [];
-        currentFoodSections = [];
-        closeFoodModal();
-        return;
-    }
-
-    currentFoodMenus = foodMenu.menus;
-    currentFoodSections = Array.isArray(foodMenu.sections) ? foodMenu.sections : [];
-    foodExpanded = false;
-}
-
-function openFoodModal() {
-    const modal = document.getElementById('restStopFoodModal');
-    if (!modal || currentFoodMenus.length === 0) {
-        return;
-    }
-
-    foodExpanded = false;
-    renderFoodList();
-    modal.showModal();
-}
-
-function closeFoodModal() {
-    const modal = document.getElementById('restStopFoodModal');
-    if (modal?.open) {
-        modal.close();
-    }
-}
-
-function renderFoodList() {
-    const list = document.getElementById('restStopFoodList');
-    if (!list) {
-        return;
-    }
-
-    const sections = currentFoodSections.filter((section) => Array.isArray(section?.menus) && section.menus.length > 0);
-    if (!foodExpanded && sections.length > 0) {
-        list.replaceChildren();
-        sections.forEach((section) => list.appendChild(createFoodSection(section)));
-        renderFoodToggle(currentFoodMenus.length > 0);
-        return;
-    }
-
-    const representatives = currentFoodMenus.filter((menu) => menu?.representative);
-    const hasRepresentatives = representatives.length > 0;
-    const menus = foodExpanded || !hasRepresentatives ? orderFoodMenus(currentFoodMenus) : representatives;
-
-    list.replaceChildren();
-    menus.forEach((menu) => list.appendChild(createFoodMenuItem(menu)));
-    renderFoodToggle(hasFoodSections({ sections }) || (hasRepresentatives && currentFoodMenus.length > representatives.length));
-}
-
-function renderFoodToggle(canExpand) {
-    const toggle = document.getElementById('restStopFoodToggle');
-    if (!toggle) {
-        return;
-    }
-
-    toggle.classList.toggle('d-none', !canExpand);
-    toggle.setAttribute('aria-expanded', foodExpanded ? 'true' : 'false');
-    toggle.textContent = foodExpanded ? '추천 메뉴 보기' : '전체 메뉴 보기';
-}
-
-function createFoodSection(section) {
-    const item = document.createElement('li');
-    item.className = 'rest-stop-food-section';
-
-    const title = document.createElement('h4');
-    title.className = 'rest-stop-food-section-title';
-    title.textContent = formatText(section?.title, '추천 메뉴');
-    item.appendChild(title);
-
-    const list = document.createElement('ul');
-    list.className = 'rest-stop-food-section-list';
-    section.menus.forEach((menu) => list.appendChild(createFoodMenuItem(menu)));
-    item.appendChild(list);
-
-    return item;
-}
-
-function createFoodMenuItem(menu) {
-    const item = document.createElement('li');
-    item.className = 'rest-stop-food-item';
-
-    const name = document.createElement('p');
-    name.className = 'rest-stop-food-name';
-    name.textContent = formatText(menu?.foodName, '이름 정보 없음');
-    formatFoodBadges(menu).forEach((badgeLabel) => name.appendChild(createFoodBadge(badgeLabel)));
-    item.appendChild(name);
-
-    const cost = document.createElement('p');
-    cost.className = 'rest-stop-food-cost';
-    cost.textContent = formatFoodCost(menu?.foodCost);
-    item.appendChild(cost);
-
-    if (!isMissingValue(menu?.description)) {
-        const description = document.createElement('p');
-        description.className = 'rest-stop-food-description';
-        description.textContent = menu.description;
-        item.appendChild(description);
-    }
-
-    return item;
-}
-
-function createFoodBadge(label) {
-    const badge = document.createElement('span');
-    badge.className = 'rest-stop-food-badge';
-    badge.textContent = label;
-    return badge;
-}
-
-function toggleFoodMenu() {
-    foodExpanded = !foodExpanded;
-    renderFoodList();
-}
-
-async function refreshOilInfo() {
-    const button = document.getElementById('restStopOilRefreshButton');
-    const status = document.getElementById('restStopOilRefreshStatus');
-    if (!detailRequest || !button || !status) {
-        return;
-    }
-
-    button.disabled = true;
-    status.textContent = '실시간 요금을 확인하는 중입니다.';
-
-    const result = await detailRequest.refreshOilPrice(selectedServiceAreaCode);
-
-    button.disabled = false;
-    if (result.status === 'success') {
-        currentDetail = {
-            ...currentDetail,
-            oilInfo: result.data
-        };
-        renderOilInfo(result.data);
-        return;
-    }
-
-    if (result.status === 'external-unavailable') {
-        showApiUnavailableAlert();
-    }
-
-    status.textContent = oilRefreshStatusMessage(result.status);
-    status.classList.add('rest-stop-detail-missing');
-}
-
-function oilRefreshStatusMessage(status) {
-    if (status === 'not-found') {
-        return '갱신할 주유소 정보가 없습니다.';
-    }
-
-    return '요금 정보를 갱신하지 못했습니다.';
-}
-
-export function renderOilInfo(oilInfo = {}) {
-    const section = document.getElementById('restStopOilSection');
-    if (!section) {
-        return;
-    }
-
-    section.classList.remove('d-none');
-
-    setDetailValue('restStopOilGasolinePrice', oilInfo?.gasolinePrice, '정보 없음', formatOilPrice);
-    setDetailValue('restStopOilDieselPrice', oilInfo?.dieselPrice, '정보 없음', formatOilPrice);
-    setDetailValue('restStopOilLpgPrice', oilInfo?.lpgPrice, '정보 없음', formatOilPrice);
-    setDetailValue('restStopOilCompany', oilInfo?.oilCompany, '정보 없음');
-    setDetailValue('restStopOilTelNo', oilInfo?.telNo, '정보 없음');
-    renderOilRefreshStatus(oilInfo?.lastRefreshedAt);
-    renderOilConveniences(oilInfo?.oilStationConveniences);
-}
-
-function renderOilRefreshStatus(lastRefreshedAt) {
-    const status = document.getElementById('restStopOilRefreshStatus');
-    if (!status) {
-        return;
-    }
-
-    status.textContent = formatRefreshedAt(lastRefreshedAt);
-    status.classList.toggle('rest-stop-detail-missing', isMissingValue(lastRefreshedAt));
-}
-
-function renderOilConveniences(conveniences) {
-    const tags = document.getElementById('restStopOilConvenienceTags');
-    const fallback = document.getElementById('restStopOilConvenienceFallback');
-    const details = document.getElementById('restStopOilConvenienceDetails');
-    if (!tags || !fallback || !details) {
-        return;
-    }
-
-    tags.replaceChildren();
-    details.replaceChildren();
-
-    const oilConveniences = Array.isArray(conveniences) ? conveniences : [];
-    oilConveniences.forEach((convenience) => {
-        tags.appendChild(createOilConvenienceTag(convenience));
-        details.appendChild(createOilConvenienceDetail(convenience));
-    });
-
-    const hasConveniences = oilConveniences.length > 0;
-    tags.classList.toggle('d-none', !hasConveniences);
-    details.classList.toggle('d-none', !hasConveniences);
-    fallback.classList.toggle('d-none', hasConveniences);
-    fallback.textContent = hasConveniences ? '' : '주유소 편의시설 정보 없음';
-}
-
-function createOilConvenienceTag(convenience) {
-    const item = document.createElement('li');
-    item.textContent = formatText(convenience?.name, '이름 정보 없음');
-    return item;
-}
-
-function createOilConvenienceDetail(convenience) {
-    const item = document.createElement('li');
-
-    const name = document.createElement('p');
-    name.className = 'rest-stop-oil-convenience-name';
-    name.textContent = formatText(convenience?.name, '이름 정보 없음');
-    item.appendChild(name);
-
-    const description = document.createElement('p');
-    description.className = 'rest-stop-oil-convenience-description';
-    description.textContent = formatText(convenience?.description, '상세 정보 없음');
-    description.classList.toggle('rest-stop-detail-missing', isMissingValue(convenience?.description));
-    item.appendChild(description);
-
-    const time = document.createElement('p');
-    time.className = 'rest-stop-oil-convenience-time';
-    time.textContent = formatOperationTime(convenience?.startTime, convenience?.endTime);
-    time.classList.toggle(
-        'rest-stop-detail-missing',
-        isMissingValue(convenience?.startTime) || isMissingValue(convenience?.endTime)
-    );
-    item.appendChild(time);
-
-    return item;
 }
 
 function bindRouteSearch() {
@@ -1458,7 +981,7 @@ function invalidateRouteResultIfSelectionChanged(previousSignature) {
     automaticRouteRequestSignature = undefined;
     routeRequest?.invalidate();
     clearRouteOverlays();
-    renderRouteList([], null);
+    routeView.renderList([], null);
     toggleRouteResultButton(false);
     closeRouteResultModal();
 }
@@ -1759,6 +1282,17 @@ function clearRouteMapDraftMarker() {
     routeMapDraftMarker = undefined;
 }
 
+/**
+ * renderNationalOilPriceState(route-rest-stop-view.js)는 전국 평균 유가 위젯 DOM만 갱신하는
+ * 순수 렌더러다 — 필터를 다시 누를 때 쓸 최신 요약값은 이 메인 모듈과 routeView 양쪽이 각자
+ * 필요할 때 쓸 수 있게 여기서 currentNationalOilPriceSummary와 routeView 캐시를 함께 갱신한다.
+ */
+function handleNationalOilPriceState(state) {
+    currentNationalOilPriceSummary = state.status === 'success' ? state.data : null;
+    routeView.setNationalOilPriceSummary(currentNationalOilPriceSummary);
+    renderNationalOilPriceState(state);
+}
+
 function renderRouteState(state) {
     setRouteGlobalLoading(isRouteGlobalLoadingState(state), '경로를 찾는 중입니다...');
 
@@ -1777,7 +1311,7 @@ function renderRouteState(state) {
     }
 
     clearRouteOverlays();
-    renderRouteList([], null);
+    routeView.renderList([], null);
     toggleRouteResultButton(false);
     closeRouteResultModal();
     if (state.status === 'not-found') {
@@ -1798,7 +1332,7 @@ function renderRoute(data) {
     clearRouteOverlays();
     currentRouteData = data;
     selectedRouteIndex = 0;
-    selectedRouteRestStopFilter = 'all';
+    routeView.reset();
     renderRouteSelection();
     openRouteResultModal();
     setMarkerMode('route');
@@ -1821,7 +1355,7 @@ function renderRouteSelection() {
     clearRoutePolylines();
     renderRoutePolylines(routes, selectedRouteIndex);
     renderEndpointMarkers(currentRouteData?.destination);
-    renderRouteOptionCards(routes, selectedRouteIndex);
+    routeView.renderOptionCards(routes, selectedRouteIndex, selectRoute);
 
     clearRouteMarkers();
     const restStops = Array.isArray(selected?.restStops) ? selected.restStops : [];
@@ -1849,7 +1383,7 @@ function renderRouteSelection() {
     });
 
     currentRouteRestStops = restStops;
-    renderRouteList(restStops, currentNationalOilPriceSummary);
+    routeView.renderList(restStops, currentNationalOilPriceSummary);
     nationalOilPriceRequest?.load();
     const destinationName = currentRouteData?.destination?.name ?? '목적지';
     setRouteStatus(`${destinationName}까지 경로상 휴게소 ${restStops.length}곳`);
@@ -1886,34 +1420,6 @@ function renderRoutePolylines(routes, selectedIndex) {
         if (isSelected) {
             fitMapToPath(latLngs);
         }
-    });
-}
-
-export function renderRouteOptionCards(routes, selectedIndex) {
-    const container = document.getElementById('routeOptions');
-    if (!container) {
-        return;
-    }
-
-    container.replaceChildren();
-    if (routes.length <= 1) {
-        container.classList.add('d-none');
-        return;
-    }
-
-    container.classList.remove('d-none');
-    routes.forEach((route, index) => {
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = `route-option${index === selectedIndex ? ' selected' : ''}`;
-        card.setAttribute('aria-pressed', String(index === selectedIndex));
-        card.innerHTML = `
-            <span class="route-option-label">경로 ${index + 1}</span>
-            <p class="route-option-summary">${formatRouteOptionSummary(route)}</p>
-            <p class="route-option-toll">${formatRouteTollFare(route?.summary?.tollFareWon)}</p>
-        `;
-        card.addEventListener('click', () => selectRoute(index));
-        container.appendChild(card);
     });
 }
 
@@ -1975,623 +1481,6 @@ function fitMapToPath(latLngs) {
     map.fitBounds(bounds);
 }
 
-function renderRouteList(restStops, nationalOilPriceSummary = currentNationalOilPriceSummary) {
-    const list = document.getElementById('routeResultList');
-    if (!list) {
-        return;
-    }
-
-    const filteredRestStops = filterRouteRestStops(restStops, selectedRouteRestStopFilter);
-    renderDirectionAlternativeNotice(restStops);
-    renderNationalOilPriceSummary(nationalOilPriceSummary);
-    renderRouteRestStopFilters(restStops);
-    renderRouteResultTitle(filteredRestStops.length, selectedRouteRestStopFilter);
-    list.replaceChildren();
-    if (filteredRestStops.length === 0) {
-        const empty = document.createElement('li');
-        empty.className = 'route-result-empty';
-        empty.textContent = '선택한 조건에 맞는 휴게소가 없습니다.';
-        list.appendChild(empty);
-        return;
-    }
-    filteredRestStops.forEach((restStop, index) => list.appendChild(createRouteResultItem(restStop, index)));
-}
-
-function renderRouteResultTitle(count, filterKey = 'all') {
-    const title = document.getElementById('routeResultModalTitle');
-    if (!title) {
-        return;
-    }
-
-    const filter = ROUTE_REST_STOP_FILTERS.find((item) => item.key === filterKey)
-        ?? ROUTE_REST_STOP_FILTERS[0];
-    title.textContent = `${filter.title} (${count}곳)`;
-}
-
-function renderRouteRestStopFilters(restStops) {
-    const container = document.getElementById('routeRestStopFilters');
-    if (!container) {
-        return;
-    }
-
-    const counts = routeRestStopFilterCounts(restStops);
-    container.replaceChildren();
-    container.classList.toggle('d-none', counts.all === 0);
-    ROUTE_REST_STOP_FILTERS.forEach((filter) => {
-        const button = document.createElement('button');
-        const selected = filter.key === selectedRouteRestStopFilter;
-        button.type = 'button';
-        button.className = `route-rest-stop-filter${selected ? ' selected' : ''}`;
-        button.setAttribute('aria-pressed', String(selected));
-        button.textContent = `${filter.label} ${counts[filter.key]}`;
-        button.addEventListener('click', () => {
-            if (filter.key === selectedRouteRestStopFilter) {
-                return;
-            }
-            selectedRouteRestStopFilter = filter.key;
-            renderRouteList(currentRouteRestStops, currentNationalOilPriceSummary);
-        });
-        container.appendChild(button);
-    });
-}
-
-function routeRestStopMatchesFilter(restStop, filterKey) {
-    const summary = restStop?.comparisonSummary;
-    if (filterKey === 'fuel') {
-        return Boolean(summary) && [summary.gasolinePrice, summary.dieselPrice, summary.lpgPrice]
-            .some((price) => !isMissingValue(price));
-    }
-    if (filterKey === 'food') {
-        return Number(summary?.foodMenuCount) > 0;
-    }
-    if (filterKey === 'theme') {
-        return restStop?.hasTheme === true;
-    }
-    if (filterKey === 'event') {
-        return restStop?.hasEvent === true;
-    }
-    if (filterKey === 'ev') {
-        return restStop?.hasEvCharger === true;
-    }
-    return true;
-}
-
-export function filterRouteRestStops(restStops, filterKey) {
-    const items = Array.isArray(restStops) ? restStops : [];
-    const knownFilter = ROUTE_REST_STOP_FILTERS.some((filter) => filter.key === filterKey);
-    if (!knownFilter || filterKey === 'all') {
-        return items;
-    }
-    return items.filter((restStop) => routeRestStopMatchesFilter(restStop, filterKey));
-}
-
-export function routeRestStopFilterCounts(restStops) {
-    const items = Array.isArray(restStops) ? restStops : [];
-    return Object.fromEntries(ROUTE_REST_STOP_FILTERS.map((filter) => [
-        filter.key,
-        filter.key === 'all' ? items.length : filterRouteRestStops(items, filter.key).length
-    ]));
-}
-
-export function routeRestStopAvailabilityLabels(restStop) {
-    return [
-        ['fuel', '주유 가능'],
-        ['food', '먹거리'],
-        ['theme', '테마'],
-        ['event', '이벤트'],
-        ['ev', 'EV 충전']
-    ]
-        .filter(([filterKey]) => routeRestStopMatchesFilter(restStop, filterKey))
-        .map(([, label]) => label);
-}
-
-export function routeRestStopCardBadges(restStop) {
-    return [
-        ...routeRestStopAvailabilityLabels(restStop)
-            .map((label) => ({ label, kind: 'availability' })),
-        ...routeRecommendationLabels(restStop)
-            .map((label) => ({ label, kind: 'recommendation' }))
-    ];
-}
-
-function renderDirectionAlternativeNotice(restStops) {
-    const notice = document.getElementById('routeDirectionAlternativeNotice');
-    if (!notice) {
-        return;
-    }
-
-    const hasDirectionAlternative = restStops.some((restStop) => restStop?.hasDirectionAlternative === true);
-    notice.classList.toggle('d-none', !hasDirectionAlternative);
-}
-
-export function routeRecommendationLabels(restStop) {
-    if (!Array.isArray(restStop?.recommendationTags)) {
-        return [];
-    }
-    return restStop.recommendationTags
-        .map((tag) => formatText(tag?.label, ''))
-        .filter((label) => label !== '');
-}
-
-export function routeNearbyTrafficBadge(restStop) {
-    const traffic = restStop?.nearbyTraffic;
-    if (!traffic || typeof traffic !== 'object' || !traffic.key || !traffic.label) {
-        return null;
-    }
-    return { key: traffic.key, label: traffic.label };
-}
-
-export function formatOilPriceComparison(price, diffFromAverage) {
-    if (isMissingValue(price)) {
-        return '';
-    }
-
-    const delta = formatOilPriceDelta(diffFromAverage);
-    if (delta === null) {
-        return price;
-    }
-
-    return `${price} ${delta.text}`;
-}
-
-export function formatOilPriceDelta(diffFromAverage) {
-    if (!Number.isFinite(diffFromAverage)) {
-        return null;
-    }
-
-    const absoluteDiff = Math.abs(diffFromAverage).toLocaleString('ko-KR');
-    if (diffFromAverage < 0) {
-        return { text: `(-${absoluteDiff})`, tone: 'cheap' };
-    }
-    if (diffFromAverage > 0) {
-        return { text: `(+${absoluteDiff})`, tone: 'expensive' };
-    }
-    return { text: '(0)', tone: 'same' };
-}
-
-export function formatNationalOilPriceSummary(summary) {
-    if (!summary || typeof summary !== 'object') {
-        return null;
-    }
-
-    const items = [
-        ['휘발유', summary.gasoline],
-        ['경유', summary.diesel],
-        ['LPG', summary.lpg]
-    ]
-        .map(([fallbackLabel, item]) => formatNationalOilPriceItem(fallbackLabel, item))
-        .filter((item) => item !== null);
-    if (items.length === 0) {
-        return null;
-    }
-
-    return {
-        tradeDate: formatText(summary.tradeDate, '오늘'),
-        items
-    };
-}
-
-function formatNationalOilPriceItem(fallbackLabel, item) {
-    if (!item || typeof item !== 'object' || isMissingValue(item.price)) {
-        return null;
-    }
-
-    return {
-        label: fallbackLabel,
-        price: item.price,
-        ...formatNationalOilDailyDiff(item.dailyDiff)
-    };
-}
-
-function formatNationalOilDailyDiff(value) {
-    const diff = Number.parseFloat(value);
-    if (!Number.isFinite(diff)) {
-        return { dailyDiff: '-', dailyDiffTone: 'same' };
-    }
-
-    const absoluteDiff = Math.abs(diff).toLocaleString('ko-KR');
-    if (diff < 0) {
-        return { dailyDiff: `↓ ${absoluteDiff}원`, dailyDiffTone: 'favorable' };
-    }
-    if (diff > 0) {
-        return { dailyDiff: `↑ ${absoluteDiff}원`, dailyDiffTone: 'unfavorable' };
-    }
-    return { dailyDiff: '0원', dailyDiffTone: 'same' };
-}
-
-export function renderNationalOilPriceState(state) {
-    if (state.status === 'success') {
-        currentNationalOilPriceSummary = state.data;
-        renderNationalOilPriceSummary(state.data);
-        return;
-    }
-
-    if (state.status === 'external-unavailable') {
-        showApiUnavailableAlert();
-    }
-
-    currentNationalOilPriceSummary = null;
-    renderNationalOilPriceSummary(null);
-}
-
-function renderNationalOilPriceSummary(summary) {
-    const container = document.getElementById('routeNationalOilPriceSummary');
-    if (!container) {
-        return;
-    }
-
-    const formattedSummary = formatNationalOilPriceSummary(summary);
-    container.replaceChildren();
-    container.classList.toggle('d-none', formattedSummary === null);
-    if (formattedSummary === null) {
-        return;
-    }
-
-    const header = document.createElement('div');
-    header.className = 'route-national-oil-summary-header';
-
-    const title = document.createElement('p');
-    title.className = 'route-national-oil-summary-title';
-    title.textContent = '전국 평균 유가';
-    header.appendChild(title);
-
-    const date = document.createElement('p');
-    date.className = 'route-national-oil-summary-date';
-    date.textContent = formattedSummary.tradeDate;
-    header.appendChild(date);
-    container.appendChild(header);
-
-    const list = document.createElement('dl');
-    list.className = 'route-national-oil-summary-list';
-    formattedSummary.items.forEach((item) => {
-        const chip = document.createElement('div');
-        chip.className = 'route-national-oil-chip';
-
-        const term = document.createElement('dt');
-        term.textContent = item.label;
-        chip.appendChild(term);
-
-        const description = document.createElement('dd');
-        const price = document.createElement('span');
-        price.className = 'route-national-oil-chip-price';
-        price.textContent = item.price;
-        description.appendChild(price);
-
-        const diff = document.createElement('span');
-        diff.className = `route-national-oil-chip-diff route-national-oil-chip-diff-${item.dailyDiffTone}`;
-        diff.textContent = item.dailyDiff;
-        description.appendChild(diff);
-
-        chip.appendChild(description);
-        list.appendChild(chip);
-    });
-    container.appendChild(list);
-}
-
-export function formatRouteDuration(durationSeconds) {
-    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
-        return '';
-    }
-
-    const totalMinutes = Math.round(durationSeconds / 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    if (hours === 0) {
-        return `${minutes}분`;
-    }
-    if (minutes === 0) {
-        return `${hours}시간`;
-    }
-    return `${hours}시간 ${minutes}분`;
-}
-
-export function formatRouteDistance(distanceMeters) {
-    if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) {
-        return '';
-    }
-
-    const km = distanceMeters / 1000;
-    return `${km.toFixed(km < 10 ? 1 : 0)}km`;
-}
-
-export function formatRouteTollFare(tollFareWon) {
-    if (!Number.isFinite(tollFareWon) || tollFareWon <= 0) {
-        return '무료';
-    }
-    return `톨비 ${tollFareWon.toLocaleString()}원`;
-}
-
-export function formatRouteOptionSummary(route) {
-    const summary = route?.summary;
-    if (!summary || typeof summary !== 'object') {
-        return '';
-    }
-
-    return [
-        formatRouteDuration(summary.durationSeconds),
-        formatRouteDistance(summary.distanceMeters)
-    ]
-        .filter((part) => part !== '')
-        .join(' · ');
-}
-
-export function formatRouteComparisonSummary(restStop) {
-    const summary = restStop?.comparisonSummary;
-    if (!summary || typeof summary !== 'object') {
-        return [];
-    }
-
-    const priceParts = [
-        ['휘발유', summary.gasolinePrice, summary.gasolinePriceDiffFromAverage],
-        ['경유', summary.dieselPrice, summary.dieselPriceDiffFromAverage],
-        ['LPG', summary.lpgPrice, summary.lpgPriceDiffFromAverage]
-    ]
-        .map(([label, value, diff]) => [label, formatOilPriceComparison(value, diff)])
-        .filter(([, value]) => value !== '')
-        .map(([label, value]) => `${label} ${value}`);
-    const countParts = [];
-    if (Number.isFinite(summary.totalParkingCount) && summary.totalParkingCount > 0) {
-        countParts.push(`주차 ${summary.totalParkingCount.toLocaleString()}대`);
-    }
-    if (Number.isFinite(summary.foodMenuCount) && summary.foodMenuCount > 0) {
-        countParts.push(`먹거리 ${summary.foodMenuCount.toLocaleString()}개`);
-    }
-    if (Number.isFinite(summary.facilityCount) && summary.facilityCount > 0) {
-        countParts.push(`시설 ${summary.facilityCount.toLocaleString()}개`);
-    }
-
-    return [priceParts, countParts]
-        .filter((parts) => parts.length > 0)
-        .map((parts) => parts.join(' · '));
-}
-
-export function formatEvChargerAvailability(restStop) {
-    return restStop?.hasEvCharger === true ? '전기차 충전 가능' : '';
-}
-
-export function formatEvChargerCount(count) {
-    const numericCount = Number(count);
-    if (!Number.isFinite(numericCount) || numericCount <= 0) {
-        return '';
-    }
-
-    return `${numericCount.toLocaleString()}대`;
-}
-
-export function renderThemeBadges(themes) {
-    const list = document.getElementById('restStopDetailThemes');
-    if (!list) {
-        return;
-    }
-
-    list.replaceChildren();
-    const items = Array.isArray(themes) ? themes : [];
-    items.forEach((theme) => {
-        const name = typeof theme?.name === 'string' ? theme.name.trim() : '';
-        if (name === '') {
-            return;
-        }
-
-        const badge = document.createElement('li');
-        badge.className = 'rest-stop-detail-theme-badge';
-        badge.textContent = name;
-        const detail = typeof theme?.detail === 'string' ? theme.detail.trim() : '';
-        if (detail !== '') {
-            badge.title = detail;
-        }
-        list.appendChild(badge);
-    });
-
-    list.classList.toggle('d-none', list.children.length === 0);
-}
-
-export function renderEventSection(events) {
-    const section = document.getElementById('restStopDetailEventSection');
-    const list = document.getElementById('restStopDetailEventList');
-    if (!section || !list) {
-        return;
-    }
-
-    list.replaceChildren();
-    const items = Array.isArray(events) ? events : [];
-    items.forEach((event) => {
-        const name = typeof event?.name === 'string' ? event.name.trim() : '';
-        if (name === '') {
-            return;
-        }
-
-        list.appendChild(createEventItem(event, name));
-    });
-
-    section.classList.toggle('d-none', list.children.length === 0);
-}
-
-function createEventItem(event, name) {
-    const item = document.createElement('li');
-    item.className = 'rest-stop-detail-event-item';
-
-    const nameElement = document.createElement('p');
-    nameElement.className = 'rest-stop-detail-event-name';
-    nameElement.textContent = name;
-    item.appendChild(nameElement);
-
-    const period = typeof event?.period === 'string' ? event.period.trim() : '';
-    if (period !== '') {
-        const periodElement = document.createElement('p');
-        periodElement.className = 'rest-stop-detail-event-period';
-        periodElement.textContent = period;
-        item.appendChild(periodElement);
-    }
-
-    const detail = typeof event?.detail === 'string' ? event.detail.trim() : '';
-    if (detail !== '') {
-        const detailElement = document.createElement('p');
-        detailElement.className = 'rest-stop-detail-event-detail';
-        detailElement.textContent = detail;
-        item.appendChild(detailElement);
-    }
-
-    return item;
-}
-
-function renderEvChargerInfo(count) {
-    const badge = document.getElementById('restStopDetailEvCharger');
-    const value = document.getElementById('restStopDetailEvChargerText');
-    if (!badge || !value) {
-        return;
-    }
-
-    const formattedCount = formatEvChargerCount(count);
-    value.textContent = formattedCount;
-    badge.classList.toggle('d-none', formattedCount === '');
-}
-
-function routeResultFuelItems(restStop) {
-    const summary = restStop?.comparisonSummary;
-    if (!summary || typeof summary !== 'object') {
-        return [];
-    }
-
-    return [
-        ['휘발유', summary.gasolinePrice, summary.gasolinePriceDiffFromAverage],
-        ['경유', summary.dieselPrice, summary.dieselPriceDiffFromAverage],
-        ['LPG', summary.lpgPrice, summary.lpgPriceDiffFromAverage]
-    ]
-        .map(([label, price, diff]) => ({
-            label,
-            missing: isMissingValue(price),
-            price: formatText(price, 'X'),
-            delta: formatOilPriceDelta(diff)
-        }));
-}
-
-export function createRouteResultItem(restStop, index, onSelect = selectRouteRestStop) {
-    const item = document.createElement('li');
-    item.className = 'route-result-item';
-    item.tabIndex = 0;
-    item.setAttribute('role', 'button');
-    item.setAttribute('aria-label', `${formatText(restStop?.unitName, '이름 정보 없음')} 상세정보 보기`);
-
-    let appendTarget = item;
-    const image = createRouteRestStopImage(document, restStop);
-    if (image) {
-        item.classList.add('route-result-item-with-image');
-        const imageWrapper = document.createElement('div');
-        imageWrapper.className = 'route-result-image-wrapper';
-        imageWrapper.appendChild(image);
-        item.appendChild(imageWrapper);
-
-        appendTarget = document.createElement('div');
-        appendTarget.className = 'route-result-content';
-        item.appendChild(appendTarget);
-    }
-
-    const header = document.createElement('div');
-    header.className = 'route-result-item-header';
-
-    const rank = document.createElement('span');
-    rank.className = 'route-result-rank';
-    rank.textContent = String(index + 1);
-    header.appendChild(rank);
-
-    const name = document.createElement('p');
-    name.className = 'route-result-name';
-    name.textContent = formatText(restStop?.unitName, '이름 정보 없음');
-    const heading = document.createElement('div');
-    heading.className = 'route-result-heading';
-    heading.appendChild(name);
-
-    const nearbyTraffic = routeNearbyTrafficBadge(restStop);
-    if (nearbyTraffic) {
-        const trafficBadge = document.createElement('span');
-        trafficBadge.className = `route-result-traffic route-result-traffic-${nearbyTraffic.key}`;
-        trafficBadge.textContent = `인근 ${nearbyTraffic.label}`;
-        heading.appendChild(trafficBadge);
-    }
-    header.appendChild(heading);
-    appendTarget.appendChild(header);
-
-    const cardBadges = routeRestStopCardBadges(restStop);
-    if (restStop?.hasDirectionAlternative === true || cardBadges.length > 0) {
-        const availability = document.createElement('div');
-        availability.className = 'route-result-availability';
-        if (restStop?.hasDirectionAlternative === true) {
-            const badge = document.createElement('span');
-            badge.className = 'route-direction-alternative-badge';
-            badge.textContent = '상·하행 후보';
-            availability.appendChild(badge);
-        }
-        cardBadges.forEach(({ label, kind }) => {
-            const badge = document.createElement('span');
-            badge.className = kind === 'availability'
-                ? 'route-result-availability-badge'
-                : 'route-result-tag';
-            badge.textContent = label;
-            availability.appendChild(badge);
-        });
-        appendTarget.appendChild(availability);
-    }
-
-    const meta = document.createElement('p');
-    meta.className = 'route-result-meta';
-    meta.textContent = formatText(restStop?.routeName, '노선 정보 없음');
-    appendTarget.appendChild(meta);
-
-    const fuels = routeResultFuelItems(restStop);
-    if (fuels.length > 0) {
-        const fuelList = document.createElement('div');
-        fuelList.className = 'route-result-fuels';
-        fuels.forEach((fuel) => {
-            const fuelItem = document.createElement('span');
-            fuelItem.className = 'route-result-fuel';
-            const fuelLabel = document.createElement('span');
-            fuelLabel.className = 'route-result-fuel-label';
-            fuelLabel.textContent = fuel.label;
-            fuelItem.appendChild(fuelLabel);
-
-            const fuelPrice = document.createElement('span');
-            fuelPrice.className = 'route-result-fuel-price';
-            fuelPrice.classList.toggle('route-result-fuel-price-missing', fuel.missing);
-            fuelPrice.textContent = fuel.price;
-            fuelItem.appendChild(fuelPrice);
-
-            if (fuel.delta !== null) {
-                const delta = document.createElement('span');
-                delta.className = `route-result-fuel-delta route-result-fuel-delta-${fuel.delta.tone}`;
-                delta.textContent = fuel.delta.text;
-                fuelItem.appendChild(delta);
-            }
-            fuelList.appendChild(fuelItem);
-        });
-        item.appendChild(fuelList);
-    }
-
-    const countSummary = formatRouteComparisonSummary(restStop).at(1);
-    if (countSummary) {
-        const summary = document.createElement('p');
-        summary.className = 'route-result-summary';
-        summary.textContent = countSummary;
-        appendTarget.appendChild(summary);
-    }
-
-    const arrow = document.createElement('span');
-    arrow.className = 'route-result-action-arrow';
-    arrow.setAttribute('aria-hidden', 'true');
-    arrow.textContent = '→';
-    item.appendChild(arrow);
-
-    const select = () => onSelect(restStop);
-    item.addEventListener('click', select);
-    item.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') {
-            return;
-        }
-        event.preventDefault();
-        select();
-    });
-
-    return item;
-}
 
 function openRestStopPopupAt(restStop, position, { fromRouteResult = false } = {}) {
     if (selectedInfoWindow) {
@@ -2655,7 +1544,7 @@ function clearRouteOverlays() {
     currentNationalOilPriceSummary = null;
     currentRouteData = undefined;
     selectedRouteIndex = 0;
-    selectedRouteRestStopFilter = 'all';
+    routeView.reset();
 
     const routeOptions = document.getElementById('routeOptions');
     if (routeOptions) {

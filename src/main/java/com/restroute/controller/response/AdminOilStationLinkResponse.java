@@ -9,12 +9,13 @@ public record AdminOilStationLinkResponse(
         String restStopName,
         boolean adminOverridden) {
 
-    public static AdminOilStationLinkResponse from(RestOilPriceEntity entity, String restStopName) {
+    public static AdminOilStationLinkResponse from(
+            RestOilPriceEntity entity, String restStopName, boolean adminOverridden) {
         return new AdminOilStationLinkResponse(
                 entity.getId(),
                 entity.getServiceAreaName(),
                 entity.getRestStopServiceAreaCode(),
                 restStopName,
-                entity.isAdminOverridden());
+                adminOverridden);
     }
 }

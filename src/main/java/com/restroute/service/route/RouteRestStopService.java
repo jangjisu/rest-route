@@ -73,30 +73,62 @@ public class RouteRestStopService {
         List<RestStopEntity> allRestStops = restStopQueryService.findAll();
         Optional<NationalOilPriceSummary> nationalOilPriceSummary = nationalOilPriceService.getTodaySummary();
 
-        List<RouteOption> routes = IntStream.range(0, resolved.routes().size())
-                .mapToObj(routeIndex -> buildRouteOption(
-                        routeIndex,
-                        resolved.routes().get(routeIndex),
-                        allRestStops,
-                        radiusMeters,
-                        nationalOilPriceSummary))
+        List<RouteCandidate> candidates = IntStream.range(0, resolved.routes().size())
+                .mapToObj(routeIndex -> buildRouteCandidate(
+                        routeIndex, resolved.routes().get(routeIndex), allRestStops, radiusMeters))
+                .toList();
+
+        Map<String, RestStopAggregate> aggregatesByServiceAreaCode = aggregatesForCandidates(candidates, allRestStops);
+
+        List<RouteOption> routes = candidates.stream()
+                .map(candidate -> toRouteOption(candidate, aggregatesByServiceAreaCode, nationalOilPriceSummary))
                 .toList();
 
         return RouteRestStopResponse.of(resolved.destination(), routes);
     }
 
-    private RouteOption buildRouteOption(
-            int routeIndex,
-            RouteGeometry geometry,
-            List<RestStopEntity> allRestStops,
-            int radiusMeters,
-            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+    private RouteCandidate buildRouteCandidate(
+            int routeIndex, RouteGeometry geometry, List<RestStopEntity> allRestStops, int radiusMeters) {
         RoutePath path = geometry.path();
         List<RouteRestStopCandidate> matched = matchRestStopsToPath(path, radiusMeters, allRestStops);
         List<RouteRestStopItem> directionFiltered = removeUnreachableSide(matched, path);
-        List<RouteRestStopItem> restStops = buildResponseItems(directionFiltered, nationalOilPriceSummary);
-        return RouteOption.of(routeIndex, routeSummary(geometry.summary(), path), restStops);
+        return new RouteCandidate(routeIndex, geometry, directionFiltered);
     }
+
+    /**
+     * 대안 경로 전체의 후보 서비스 영역 코드를 합쳐서, 이미지/EV/테마/이벤트/상세/주유/먹거리
+     * 집계를 요청당 한 번만 조회한다 — 경로마다 반복하지 않는다. 이미 요청 초기에 조회해둔
+     * allRestStops에서 필요한 엔티티만 선별해 넘기므로 RestStopEntity를 다시 조회하지 않는다.
+     */
+    private Map<String, RestStopAggregate> aggregatesForCandidates(
+            List<RouteCandidate> candidates, List<RestStopEntity> allRestStops) {
+        Set<String> serviceAreaCodes = candidates.stream()
+                .flatMap(candidate -> candidate.items().stream())
+                .map(RouteRestStopItem::serviceAreaCode)
+                .collect(Collectors.toSet());
+        if (serviceAreaCodes.isEmpty()) {
+            return Map.of();
+        }
+
+        List<RestStopEntity> selected = allRestStops.stream()
+                .filter(restStop -> serviceAreaCodes.contains(restStop.getServiceAreaCode()))
+                .toList();
+        return restStopAggregateQueryService.findByRestStopsAndAdminOverridden(selected, null);
+    }
+
+    private RouteOption toRouteOption(
+            RouteCandidate candidate,
+            Map<String, RestStopAggregate> aggregatesByServiceAreaCode,
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+        List<RouteRestStopItem> restStops =
+                buildResponseItems(candidate.items(), aggregatesByServiceAreaCode, nationalOilPriceSummary);
+        return RouteOption.of(
+                candidate.routeIndex(),
+                routeSummary(candidate.geometry().summary(), candidate.geometry().path()),
+                restStops);
+    }
+
+    private record RouteCandidate(int routeIndex, RouteGeometry geometry, List<RouteRestStopItem> items) {}
 
     /**
      * 목적지를 정하고, 카카오 길찾기를 호출해서 대안 경로까지 포함한 경로 좌표열(RoutePath)을 만든다.
@@ -282,15 +314,13 @@ public class RouteRestStopService {
     /**
      * 5번: 방향 필터링까지 끝난 휴게소들에 이미지/EV충전/테마/이벤트/비교요약/추천태그를 붙여
      * 최종 응답으로 만든다. RouteRestStopCandidate/RestStopEntity는 더 이상 필요 없다 —
-     * serviceAreaCode가 이미 item에 있다.
+     * serviceAreaCode가 이미 item에 있다. aggregatesByServiceAreaCode는 대안 경로 전체에 대해
+     * 미리 한 번만 조회해둔 것을 그대로 받는다(경로마다 다시 조회하지 않음).
      */
     private List<RouteRestStopItem> buildResponseItems(
-            List<RouteRestStopItem> items, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        List<String> serviceAreaCodes =
-                items.stream().map(RouteRestStopItem::serviceAreaCode).toList();
-        Map<String, RestStopAggregate> aggregatesByServiceAreaCode =
-                restStopAggregateQueryService.findByServiceAreaCodesAndAdminOverridden(serviceAreaCodes, null);
-
+            List<RouteRestStopItem> items,
+            Map<String, RestStopAggregate> aggregatesByServiceAreaCode,
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         List<RouteRestStopComparison> comparisons = items.stream()
                 .map(item -> RouteRestStopComparison.of(
                         item,

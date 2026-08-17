@@ -49,9 +49,6 @@ public class RestOilPriceEntity {
     private LocalDateTime lastRefreshedAt;
     private String restStopServiceAreaCode;
 
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    private boolean adminOverridden;
-
     private RestOilPriceEntity(RestOilPriceItem item) {
         apply(item);
     }
@@ -80,21 +77,6 @@ public class RestOilPriceEntity {
 
     public void updateRestStopServiceAreaCode(String restStopServiceAreaCode) {
         this.restStopServiceAreaCode = restStopServiceAreaCode;
-    }
-
-    public void applyAdminLink(String serviceAreaCode) {
-        this.restStopServiceAreaCode = serviceAreaCode;
-        this.adminOverridden = true;
-    }
-
-    @SuppressWarnings("PMD.NullAssignment")
-    public void clearAdminLink() {
-        this.restStopServiceAreaCode = null;
-        this.adminOverridden = true;
-    }
-
-    public void releaseToAutoMatching() {
-        this.adminOverridden = false;
     }
 
     private void apply(RestOilPriceItem item) {

@@ -60,7 +60,8 @@ public class RestStopRelatedInfoQueryService {
      *
      * <p>adminOverridden이 null이면 override 여부와 상관없이 전부 조회하고, false를 넘기면
      * 관리자가 override하지 않은 행만 조회한다(각 도메인 테이블 자체의 override 필드 기준).
-     * theme/event는 override 개념이 없는 테이블이라 이 파라미터의 영향을 받지 않는다.
+     * 주유 가격은 `rest_oil`에서 파생된 연결을 사용하고 theme/event는 override 개념이 없으므로
+     * 이 파라미터의 영향을 받지 않는다.
      */
     @Transactional(readOnly = true)
     public Map<String, RestStopRelatedInfo> findAllByRestStops(
@@ -90,9 +91,7 @@ public class RestStopRelatedInfoQueryService {
                         .stream()
                         .collect(Collectors.groupingBy(RestOilEntity::getRestStopServiceAreaCode));
         Map<String, List<RestOilPriceEntity>> oilPricesByCode =
-                restOilPriceRepository
-                        .findByRestStopServiceAreaCodesAndAdminOverridden(serviceAreaCodes, adminOverridden)
-                        .stream()
+                restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(serviceAreaCodes).stream()
                         .collect(Collectors.groupingBy(RestOilPriceEntity::getRestStopServiceAreaCode));
         Map<String, List<RestFoodEntity>> foodsByCode =
                 restFoodRepository
