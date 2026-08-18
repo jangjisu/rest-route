@@ -17,35 +17,47 @@ import org.springframework.util.StringUtils;
  */
 final class FlightSearchRequestValidator {
 
-    private static final int MAX_DATE_RANGE_MONTHS = 3;
     private static final int MIN_NIGHTS = 1;
     private static final int MAX_NIGHTS = 90;
+    private static final String SUPPORTED_CURRENCY = "krw";
     private static final Pattern IATA_CODE = Pattern.compile("^[A-Za-z]{3}$");
 
     private FlightSearchRequestValidator() {}
 
     static void validate(
             String origin,
-            String destination,
+            String searchMode,
             String dateFrom,
             String dateTo,
+            String destination,
             List<String> nights,
-            List<String> filter,
-            List<String> dayOption,
+            List<String> sector,
+            String includeWeekend,
+            String includeHoliday,
             String includeTransfer,
-            String sort) {
+            String adults,
+            String children,
+            String infants,
+            String sort,
+            String currency) {
         List<FlightApiError.Detail> details = new ArrayList<>();
 
         validateOrigin(origin, details);
-        validateDestination(destination, details);
+        FlightSearchMode parsedMode = validateSearchMode(searchMode, details);
         LocalDate parsedDateFrom = validateDateFrom(dateFrom, details);
         LocalDate parsedDateTo = validateRequiredDate("dateTo", dateTo, details);
         validateDateRange(parsedDateFrom, parsedDateTo, details);
-        validateNights(nights, details);
-        validateFilter(filter, details);
-        validateDayOption(dayOption, details);
+        validateDestination(destination, details);
+        validateNights(nights, parsedMode, details);
+        validateSector(sector, destination, details);
+        validateIncludeWeekend(includeWeekend, details);
+        validateIncludeHoliday(includeHoliday, details);
         validateIncludeTransfer(includeTransfer, details);
+        validateAdults(adults, details);
+        validateChildren(children, details);
+        validateInfants(infants, details);
         validateSort(sort, details);
+        validateCurrency(currency, details);
 
         if (!details.isEmpty()) {
             throw new InvalidFlightSearchException(details);
@@ -60,6 +72,18 @@ final class FlightSearchRequestValidator {
         if (!IATA_CODE.matcher(origin).matches()) {
             details.add(new FlightApiError.Detail("origin", "INVALID_IATA_CODE"));
         }
+    }
+
+    private static FlightSearchMode validateSearchMode(String raw, List<FlightApiError.Detail> details) {
+        if (!StringUtils.hasText(raw)) {
+            details.add(new FlightApiError.Detail("searchMode", "REQUIRED"));
+            return null;
+        }
+        FlightSearchMode mode = FlightSearchMode.fromWireValue(raw);
+        if (mode == null) {
+            details.add(new FlightApiError.Detail("searchMode", "INVALID_SEARCH_MODE"));
+        }
+        return mode;
     }
 
     private static void validateDestination(String destination, List<FlightApiError.Detail> details) {
@@ -89,46 +113,44 @@ final class FlightSearchRequestValidator {
         }
     }
 
+    /** 범위 검색은 달·연도를 넘나들어도 되므로 상한을 두지 않는다 — dateTo가 dateFrom보다 이전인지만 본다. */
     private static void validateDateRange(LocalDate dateFrom, LocalDate dateTo, List<FlightApiError.Detail> details) {
         if (dateFrom == null || dateTo == null) {
             return;
         }
         if (dateTo.isBefore(dateFrom)) {
             details.add(new FlightApiError.Detail("dateTo", "BEFORE_DATE_FROM"));
-            return;
-        }
-        if (dateTo.isAfter(dateFrom.plusMonths(MAX_DATE_RANGE_MONTHS))) {
-            details.add(new FlightApiError.Detail("dateTo", "DATE_RANGE_TOO_WIDE"));
         }
     }
 
-    private static void validateNights(List<String> nightsRaw, List<FlightApiError.Detail> details) {
+    private static void validateNights(
+            List<String> nightsRaw, FlightSearchMode mode, List<FlightApiError.Detail> details) {
         if (CollectionUtils.isEmpty(nightsRaw)) {
             return;
         }
+        if (mode == FlightSearchMode.FIXED) {
+            details.add(new FlightApiError.Detail("nights", "NIGHTS_NOT_ALLOWED_IN_FIXED_MODE"));
+            return;
+        }
         for (String raw : nightsRaw) {
-            Integer value = parseNights(raw);
+            Integer value = parseIntOrNull(raw);
             if (value == null || value < MIN_NIGHTS || value > MAX_NIGHTS) {
                 details.add(new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE"));
             }
         }
     }
 
-    private static Integer parseNights(String raw) {
-        try {
-            return Integer.parseInt(raw);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static void validateFilter(List<String> filter, List<FlightApiError.Detail> details) {
-        if (CollectionUtils.isEmpty(filter)) {
+    private static void validateSector(List<String> sector, String destination, List<FlightApiError.Detail> details) {
+        if (CollectionUtils.isEmpty(sector)) {
             return;
         }
-        for (String region : filter) {
+        if (StringUtils.hasText(destination)) {
+            details.add(new FlightApiError.Detail("sector", "SECTOR_DESTINATION_CONFLICT"));
+            return;
+        }
+        for (String region : sector) {
             if (!isKnownRegion(region)) {
-                details.add(new FlightApiError.Detail("filter", "INVALID_FILTER"));
+                details.add(new FlightApiError.Detail("sector", "INVALID_SECTOR"));
             }
         }
     }
@@ -142,24 +164,18 @@ final class FlightSearchRequestValidator {
         }
     }
 
-    private static void validateDayOption(List<String> dayOption, List<FlightApiError.Detail> details) {
-        if (CollectionUtils.isEmpty(dayOption)) {
+    private static void validateIncludeWeekend(String raw, List<FlightApiError.Detail> details) {
+        if (!StringUtils.hasText(raw) || "true".equals(raw) || "false".equals(raw)) {
             return;
         }
-        for (String option : dayOption) {
-            if (!isKnownDayOption(option)) {
-                details.add(new FlightApiError.Detail("dayOption", "INVALID_DAY_OPTION"));
-            }
-        }
+        details.add(new FlightApiError.Detail("includeWeekend", "INVALID_INCLUDE_WEEKEND"));
     }
 
-    private static boolean isKnownDayOption(String option) {
-        try {
-            FlightDayOption.valueOf(option);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
+    private static void validateIncludeHoliday(String raw, List<FlightApiError.Detail> details) {
+        if (!StringUtils.hasText(raw) || "true".equals(raw) || "false".equals(raw)) {
+            return;
         }
+        details.add(new FlightApiError.Detail("includeHoliday", "INVALID_INCLUDE_HOLIDAY"));
     }
 
     private static void validateIncludeTransfer(String raw, List<FlightApiError.Detail> details) {
@@ -167,6 +183,37 @@ final class FlightSearchRequestValidator {
             return;
         }
         details.add(new FlightApiError.Detail("includeTransfer", "INVALID_INCLUDE_TRANSFER"));
+    }
+
+    private static void validateAdults(String raw, List<FlightApiError.Detail> details) {
+        validateNonNegativeInt("adults", raw, "INVALID_ADULTS", details);
+    }
+
+    private static void validateChildren(String raw, List<FlightApiError.Detail> details) {
+        validateNonNegativeInt("children", raw, "INVALID_CHILDREN", details);
+    }
+
+    private static void validateInfants(String raw, List<FlightApiError.Detail> details) {
+        validateNonNegativeInt("infants", raw, "INVALID_INFANTS", details);
+    }
+
+    private static void validateNonNegativeInt(
+            String field, String raw, String errorCode, List<FlightApiError.Detail> details) {
+        if (!StringUtils.hasText(raw)) {
+            return;
+        }
+        Integer value = parseIntOrNull(raw);
+        if (value == null || value < 0) {
+            details.add(new FlightApiError.Detail(field, errorCode));
+        }
+    }
+
+    private static Integer parseIntOrNull(String raw) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static void validateSort(String sort, List<FlightApiError.Detail> details) {
@@ -183,5 +230,13 @@ final class FlightSearchRequestValidator {
         } catch (IllegalArgumentException e) {
             return false;
         }
+    }
+
+    /** 지금은 krw만 받는다 — 대소문자는 구분하지 않고, 그 외 값은 전부 오류다. */
+    private static void validateCurrency(String currency, List<FlightApiError.Detail> details) {
+        if (!StringUtils.hasText(currency) || SUPPORTED_CURRENCY.equalsIgnoreCase(currency)) {
+            return;
+        }
+        details.add(new FlightApiError.Detail("currency", "INVALID_CURRENCY"));
     }
 }

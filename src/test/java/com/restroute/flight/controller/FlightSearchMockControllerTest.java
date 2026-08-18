@@ -41,6 +41,7 @@ class FlightSearchMockControllerTest {
     void searchMock_returnsFirstPageWithComputedFields() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3"))
@@ -55,11 +56,11 @@ class FlightSearchMockControllerTest {
                 .andExpect(jsonPath("$.data.items[0].departure.departureFrom").value("2099-01-10T09:20:00+09:00"))
                 .andExpect(jsonPath("$.data.items[0].departure.departTo").value("2099-01-10T10:50:00+09:00"))
                 .andExpect(jsonPath("$.data.items[0].departure.duration").value(90))
-                .andExpect(jsonPath("$.data.items[0].departure.transferCount").value(0))
+                .andExpect(jsonPath("$.data.items[0].departure.transferCount").value(1))
                 .andExpect(jsonPath("$.data.items[0].arrival.departureFrom").value("2099-01-13T13:10:00+09:00"))
                 .andExpect(jsonPath("$.data.items[0].arrival.departTo").value("2099-01-13T14:40:00+09:00"))
                 .andExpect(jsonPath("$.data.items[0].arrival.duration").value(90))
-                .andExpect(jsonPath("$.data.items[0].arrival.transferCount").value(0))
+                .andExpect(jsonPath("$.data.items[0].arrival.transferCount").value(1))
                 .andExpect(jsonPath("$.data.items[0].nights").value(3))
                 .andExpect(jsonPath("$.data.items[0].airline.code").value("LJ"))
                 .andExpect(jsonPath("$.data.items[0].airline.name").value("진에어"))
@@ -73,11 +74,12 @@ class FlightSearchMockControllerTest {
     void searchMock_generatesExactlyTotalSizeItems() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "5")
-                        .param("size", "50"))
+                        .param("limit", "50"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items.length()").value(5))
                 .andExpect(jsonPath("$.data.meta.totalCount").value(5))
@@ -89,41 +91,44 @@ class FlightSearchMockControllerTest {
     void searchMock_clampsOutOfRangeTotalSize() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "5000")
-                        .param("size", "1"))
+                        .param("limit", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.meta.totalCount").value(1000));
     }
 
     @Test
-    @DisplayName("includeTransfer가 없으면(기본 false) 모든 항목이 직항(transferCount=0)이다")
-    void searchMock_defaultsToDirectOnlyWhenIncludeTransferOmitted() throws Exception {
+    @DisplayName("includeTransfer가 없으면(기본 켜짐) 경유가 섞여 나온다")
+    void searchMock_includesTransfersByDefaultWhenOmitted() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("size", "10"))
+                        .param("limit", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[2].departure.transferCount").value(0))
-                .andExpect(jsonPath("$.data.items[3].arrival.transferCount").value(0));
+                .andExpect(jsonPath("$.data.items[0].departure.transferCount").value(1));
     }
 
     @Test
-    @DisplayName("includeTransfer=true면 경유가 섞여 나온다")
-    void searchMock_includesTransfersWhenRequested() throws Exception {
+    @DisplayName("includeTransfer=false면 모든 항목이 직항(transferCount=0)이다")
+    void searchMock_directOnlyWhenIncludeTransferFalse() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("includeTransfer", "true")
-                        .param("size", "1"))
+                        .param("includeTransfer", "false")
+                        .param("limit", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].departure.transferCount").value(1));
+                .andExpect(jsonPath("$.data.items[2].departure.transferCount").value(0))
+                .andExpect(jsonPath("$.data.items[3].arrival.transferCount").value(0));
     }
 
     @Test
@@ -131,11 +136,12 @@ class FlightSearchMockControllerTest {
     void searchMock_sortsByPriceAscendingByDefault() throws Exception {
         String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "30")
-                        .param("size", "30"))
+                        .param("limit", "30"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -155,12 +161,13 @@ class FlightSearchMockControllerTest {
     void searchMock_sortsByDepartureDateAscending_whenSortIsDate() throws Exception {
         String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("sort", "DATE")
                         .param("totalSize", "30")
-                        .param("size", "30"))
+                        .param("limit", "30"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -180,6 +187,7 @@ class FlightSearchMockControllerTest {
     void searchMock_returnsValidationFailedForInvalidSort() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
@@ -195,11 +203,12 @@ class FlightSearchMockControllerTest {
     void searchMock_fixesDestinationWhenGiven() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("destination", "OSA")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("size", "5"))
+                        .param("limit", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].destination.code").value("OSA"))
                 .andExpect(jsonPath("$.data.items[4].destination.code").value("OSA"));
@@ -212,9 +221,64 @@ class FlightSearchMockControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.error.details.length()").value(3))
+                .andExpect(jsonPath("$.error.details.length()").value(4))
                 .andExpect(jsonPath("$.error.details[0].field").value("origin"))
                 .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
+    }
+
+    @Test
+    @DisplayName("searchMode가 없으면 REQUIRED로 실패한다")
+    void searchMock_returnsValidationFailedWhenSearchModeMissing() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("searchMode"))
+                .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
+    }
+
+    @Test
+    @DisplayName("지정날짜(fixed)에 nights를 보내면 실패한다")
+    void searchMock_returnsValidationFailedWhenNightsSentInFixedMode() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "fixed")
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("nights"))
+                .andExpect(jsonPath("$.error.details[0].code").value("NIGHTS_NOT_ALLOWED_IN_FIXED_MODE"));
+    }
+
+    @Test
+    @DisplayName("destination과 sector를 함께 보내면 실패한다")
+    void searchMock_returnsValidationFailedWhenSectorCombinedWithDestination() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("destination", "OSA")
+                        .param("sector", "JAPAN"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("sector"))
+                .andExpect(jsonPath("$.error.details[0].code").value("SECTOR_DESTINATION_CONFLICT"));
+    }
+
+    @Test
+    @DisplayName("currency가 krw가 아니면 실패한다")
+    void searchMock_returnsValidationFailedWhenCurrencyNotKrw() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("currency", "usd"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("currency"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_CURRENCY"));
     }
 
     @Test
@@ -222,10 +286,11 @@ class FlightSearchMockControllerTest {
     void searchMock_defaultsToDateRangeNightsWhenOmitted() throws Exception {
         String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("totalSize", "31")
-                        .param("size", "31"))
+                        .param("limit", "31"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -239,10 +304,11 @@ class FlightSearchMockControllerTest {
     void searchMock_cyclesWithinNarrowerDateRangeWhenNightsOmitted() throws Exception {
         String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", "2099-01-15")
                         .param("totalSize", "10")
-                        .param("size", "10"))
+                        .param("limit", "10"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -272,6 +338,7 @@ class FlightSearchMockControllerTest {
     void searchMock_returnsValidationFailedForBlankRequiredParam() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", "")
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3"))
@@ -287,11 +354,12 @@ class FlightSearchMockControllerTest {
     void searchMock_returnsDealNotFoundForMalformedCursor() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("cursor", "not-a-real-cursor")
-                        .param("size", "1"))
+                        .param("limit", "1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"));
     }
@@ -301,11 +369,12 @@ class FlightSearchMockControllerTest {
     void searchMock_returnsDealNotFoundForIdMissingWithinValidSession() throws Exception {
         String firstPageBody = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "5")
-                        .param("size", "1"))
+                        .param("limit", "1"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -315,6 +384,7 @@ class FlightSearchMockControllerTest {
 
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
@@ -331,11 +401,12 @@ class FlightSearchMockControllerTest {
     void searchMock_returnsDealNotFoundWhenSearchConditionsChange() throws Exception {
         String firstPageBody = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "10")
-                        .param("size", "5"))
+                        .param("limit", "5"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -344,12 +415,13 @@ class FlightSearchMockControllerTest {
 
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "4")
                         .param("totalSize", "10")
                         .param("cursor", cursorFromDifferentConditions)
-                        .param("size", "1"))
+                        .param("limit", "1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"));
     }
@@ -366,11 +438,12 @@ class FlightSearchMockControllerTest {
         while (hasNext) {
             var requestBuilder = get("/api/flights/search/mock")
                     .param("origin", VALID_ORIGIN)
+                    .param("searchMode", "range")
                     .param("dateFrom", VALID_DATE_FROM)
                     .param("dateTo", VALID_DATE_TO)
                     .param("nights", "3")
                     .param("totalSize", "42")
-                    .param("size", "20");
+                    .param("limit", "20");
             if (cursor != null) {
                 requestBuilder = requestBuilder.param("cursor", cursor);
             }
