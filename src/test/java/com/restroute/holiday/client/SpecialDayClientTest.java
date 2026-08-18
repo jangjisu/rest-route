@@ -1,11 +1,11 @@
-package com.restroute.flight.client;
+package com.restroute.holiday.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import com.restroute.flight.client.exception.SpecialDayApiException;
-import com.restroute.flight.client.response.SpecialDayResponse;
+import com.restroute.holiday.client.exception.SpecialDayApiException;
+import com.restroute.holiday.client.response.SpecialDayResponse;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

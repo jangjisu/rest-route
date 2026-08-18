@@ -1,4 +1,4 @@
-package com.restroute.flight.domain;
+package com.restroute.holiday.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,7 +15,12 @@ import lombok.NoArgsConstructor;
 
 /**
  * 항공권 검색의 연휴 배지 계산에 쓰는 공휴일 한 건(날짜+이름). 대체공휴일은 매번 새로 지정되기
- * 때문에 고정 시딩 대신, 관리자가 admin 페이지에서 날짜를 클릭해 직접 추가/삭제한다.
+ * 때문에 고정 시딩 대신, 매일 특일 정보 API로 동기화하고 관리자가 admin 페이지에서 직접
+ * 추가/삭제도 할 수 있다.
+ *
+ * <p>{@code adminOverridden}은 이 행을 관리자가 직접 등록했는지를 나타낸다 — 배치 동기화는
+ * {@code adminOverridden=false}인(=자기가 예전에 넣은) 행만 갱신 대상으로 보고, 관리자가 직접
+ * 등록한 행은 API 응답에서 사라져도 절대 지우지 않는다.
  */
 @Getter
 @Entity
@@ -22,7 +28,7 @@ import lombok.NoArgsConstructor;
         name = "flight_holiday",
         indexes = {@Index(name = "idx_flight_holiday_date", columnList = "holidayDate", unique = true)})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class FlightHolidayEntity {
+public class HolidayEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,12 +40,31 @@ public class FlightHolidayEntity {
     @Column(nullable = false)
     private String name;
 
-    private FlightHolidayEntity(LocalDate holidayDate, String name) {
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean adminOverridden;
+
+    private HolidayEntity(LocalDate holidayDate, String name, boolean adminOverridden) {
         this.holidayDate = holidayDate;
         this.name = name;
+        this.adminOverridden = adminOverridden;
     }
 
-    public static FlightHolidayEntity of(LocalDate holidayDate, String name) {
-        return new FlightHolidayEntity(holidayDate, name);
+    /** 관리자가 admin 페이지에서 직접 등록한 행. 배치 동기화가 절대 지우지 않는다. */
+    public static HolidayEntity createdByAdmin(LocalDate holidayDate, String name) {
+        return new HolidayEntity(holidayDate, name, true);
+    }
+
+    /** 특일 정보 API 동기화가 채워 넣은 행. API 응답에서 더 이상 안 보이면 배치가 지울 수 있다. */
+    public static HolidayEntity syncedFromApi(LocalDate holidayDate, String name) {
+        return new HolidayEntity(holidayDate, name, false);
+    }
+
+    /**
+     * 토요일/일요일인지. 주말은 이 테이블과 무관하게 항상 비근무일로 판정되므로, 굳이 공휴일로
+     * 저장하지 않는다(동기화·관리자 등록 양쪽에서 이 기준으로 걸러낸다).
+     */
+    public static boolean isWeekend(LocalDate date) {
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        return dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
     }
 }

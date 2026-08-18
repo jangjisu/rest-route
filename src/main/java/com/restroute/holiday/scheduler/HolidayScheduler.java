@@ -1,6 +1,7 @@
-package com.restroute.flight.scheduler;
+package com.restroute.holiday.scheduler;
 
-import com.restroute.flight.service.FlightHolidaySyncService;
+import com.restroute.holiday.service.HolidaySyncService;
+import com.restroute.holiday.service.dto.HolidaySyncResult;
 import java.time.Clock;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +16,9 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class FlightHolidayScheduler {
+public class HolidayScheduler {
 
-    private final FlightHolidaySyncService flightHolidaySyncService;
+    private final HolidaySyncService holidaySyncService;
     private final Clock clock;
 
     @Scheduled(cron = "0 30 0 * * *", zone = "Asia/Seoul")
@@ -29,8 +30,12 @@ public class FlightHolidayScheduler {
 
     private void syncYear(int year) {
         try {
-            int savedCount = flightHolidaySyncService.syncYear(year);
-            log.info("Scheduled flight holiday sync completed. year={}, savedCount={}", year, savedCount);
+            HolidaySyncResult result = holidaySyncService.syncYear(year);
+            log.info(
+                    "Scheduled flight holiday sync completed. year={}, savedCount={}, deletedCount={}",
+                    year,
+                    result.savedCount(),
+                    result.deletedCount());
         } catch (RuntimeException e) {
             log.error("Scheduled flight holiday sync failed. year={}, cause={}", year, e.getMessage(), e);
         }

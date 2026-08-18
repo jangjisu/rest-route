@@ -1,4 +1,4 @@
-package com.restroute.flight.client.response;
+package com.restroute.holiday.client.response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

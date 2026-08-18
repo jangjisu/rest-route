@@ -19,11 +19,11 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AdminFlightHolidayService {
 
-    private final HolidayRepository flightHolidayRepository;
+    private final HolidayRepository holidayRepository;
 
     @Transactional(readOnly = true)
     public List<AdminFlightHolidayResponse> findAll() {
-        return flightHolidayRepository.findAllByOrderByHolidayDateAsc().stream()
+        return holidayRepository.findAllByOrderByHolidayDateAsc().stream()
                 .map(AdminFlightHolidayResponse::from)
                 .toList();
     }
@@ -32,19 +32,22 @@ public class AdminFlightHolidayService {
     public AdminFlightHolidayResponse create(AdminFlightHolidayRequest request) {
         LocalDate holidayDate = parseDate(request.date());
         String name = requireName(request.name());
-        if (flightHolidayRepository.existsByHolidayDate(holidayDate)) {
+        if (HolidayEntity.isWeekend(holidayDate)) {
+            throw InvalidFlightHolidayRequestException.weekendNotAllowed(holidayDate);
+        }
+        if (holidayRepository.existsByHolidayDate(holidayDate)) {
             throw DuplicateFlightHolidayException.forDate(holidayDate);
         }
-        HolidayEntity saved = flightHolidayRepository.save(HolidayEntity.of(holidayDate, name));
+        HolidayEntity saved = holidayRepository.save(HolidayEntity.createdByAdmin(holidayDate, name));
         return AdminFlightHolidayResponse.from(saved);
     }
 
     @Transactional
     public AdminFlightHolidayResponse delete(Long holidayId) {
-        HolidayEntity entity = flightHolidayRepository
+        HolidayEntity entity = holidayRepository
                 .findById(holidayId)
                 .orElseThrow(() -> FlightHolidayNotFoundException.forId(holidayId));
-        flightHolidayRepository.delete(entity);
+        holidayRepository.delete(entity);
         return AdminFlightHolidayResponse.from(entity);
     }
 

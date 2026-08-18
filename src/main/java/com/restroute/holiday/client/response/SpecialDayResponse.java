@@ -1,4 +1,4 @@
-package com.restroute.flight.client.response;
+package com.restroute.holiday.client.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;

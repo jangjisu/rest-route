@@ -1,4 +1,4 @@
-package com.restroute.flight.client.exception;
+package com.restroute.holiday.client.exception;
 
 import com.restroute.common.ExternalApiException;
 

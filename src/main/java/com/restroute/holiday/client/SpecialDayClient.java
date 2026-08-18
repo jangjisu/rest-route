@@ -1,7 +1,7 @@
-package com.restroute.flight.client;
+package com.restroute.holiday.client;
 
-import com.restroute.flight.client.exception.SpecialDayApiException;
-import com.restroute.flight.client.response.SpecialDayResponse;
+import com.restroute.holiday.client.exception.SpecialDayApiException;
+import com.restroute.holiday.client.response.SpecialDayResponse;
 import java.util.List;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
