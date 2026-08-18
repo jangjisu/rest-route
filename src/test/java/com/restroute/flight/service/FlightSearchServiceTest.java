@@ -2,9 +2,19 @@ package com.restroute.flight.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.exception.FlightDealNotFoundException;
+import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
 import java.time.LocalDate;
 import java.util.List;
@@ -56,10 +66,111 @@ class FlightSearchServiceTest {
     }
 
     @Test
-    @DisplayName("totalSize가 null이면(실제 연동) 아직 미구현이라 예외를 던진다")
-    void search_throwsForRealModeNotYetImplemented() {
-        assertThatThrownBy(() -> service.search(request(null, "3", null)))
-                .isInstanceOf(UnsupportedOperationException.class);
+    @DisplayName("totalSize가 null이면(실제 연동) RANGE는 rangeExecutor를 통해 매핑/필터/최저가 표시까지 거친다")
+    void search_usesRangeExecutorAndFullPipeline_whenSearchModeIsRange() {
+        FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
+        FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
+        FlightRangeSearchResponseMapper responseMapper = mock(FlightRangeSearchResponseMapper.class);
+        FlightDealPostFilter postFilter = mock(FlightDealPostFilter.class);
+        FlightSearchService realService = new FlightSearchService(
+                new FlightDealSessionStore(), rangeExecutor, fixedExecutor, responseMapper, postFilter);
+        FlightSearchRequestDto request = request(null, "3", null);
+
+        TravelpayoutsPriceItem rawItem = rawItem();
+        when(rangeExecutor.execute(eq(VALID_ORIGIN), any(), eq(request.parsedDateFrom()), eq(request.parsedDateTo())))
+                .thenReturn(List.of(rawItem));
+        FlightDealResponse mapped = dealWithPrice(89000);
+        when(responseMapper.mapAll(eq(List.of(rawItem)), anyString())).thenReturn(List.of(mapped));
+        when(postFilter.apply(anyList(), eq(request))).thenReturn(List.of(mapped));
+
+        FlightDealSearchResponse response = realService.search(request, null);
+
+        assertThat(response.items())
+                .extracting(FlightDealResponse::price)
+                .containsExactly(new FlightDealResponse.Price(89000, "KRW"));
+        assertThat(response.items().get(0).isLowestInRange()).isTrue();
+        verify(fixedExecutor, never()).execute(any());
+    }
+
+    @Test
+    @DisplayName("totalSize가 null이면(실제 연동) FIXED는 fixedExecutor를 통해 조회한다")
+    void search_usesFixedExecutor_whenSearchModeIsFixed() {
+        FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
+        FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
+        FlightRangeSearchResponseMapper responseMapper = mock(FlightRangeSearchResponseMapper.class);
+        FlightDealPostFilter postFilter = mock(FlightDealPostFilter.class);
+        FlightSearchService realService = new FlightSearchService(
+                new FlightDealSessionStore(), rangeExecutor, fixedExecutor, responseMapper, postFilter);
+        FlightSearchRequestDto request = fixedRequest();
+
+        when(fixedExecutor.execute(request)).thenReturn(List.of());
+        when(responseMapper.mapAll(anyList(), anyString())).thenReturn(List.of());
+        when(postFilter.apply(anyList(), eq(request))).thenReturn(List.of());
+
+        realService.search(request, null);
+
+        verify(fixedExecutor).execute(request);
+        verify(rangeExecutor, never()).execute(any(), any(), any(), any());
+    }
+
+    private static TravelpayoutsPriceItem rawItem() {
+        return new TravelpayoutsPriceItem(
+                "SEL",
+                "OSA",
+                "ICN",
+                "KIX",
+                89000,
+                "LJ",
+                "1",
+                "2026-09-15T09:00:00+09:00",
+                "2026-09-18T09:00:00+09:00",
+                0,
+                0,
+                90,
+                90,
+                90,
+                "gate",
+                "link");
+    }
+
+    private static FlightDealResponse dealWithPrice(int amount) {
+        FlightDealResponse.Leg leg =
+                new FlightDealResponse.Leg("2026-09-15T09:00:00+09:00", "2026-09-15T10:30:00+09:00", 90, 0);
+        return new FlightDealResponse(
+                "T_0001",
+                new FlightDealResponse.Destination("KIX", "오사카"),
+                leg,
+                leg,
+                3,
+                new FlightDealResponse.Holiday(0, List.of(), 0),
+                new FlightDealResponse.Airline("LJ", "진에어", false),
+                new FlightDealResponse.Price(amount, "KRW"),
+                false,
+                "gate",
+                "link",
+                null);
+    }
+
+    private static FlightSearchRequestDto fixedRequest() {
+        return new FlightSearchRequestDto(
+                VALID_ORIGIN,
+                "fixed",
+                VALID_DATE_FROM,
+                LocalDate.now().plusDays(13).toString(),
+                "OSA",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     @Test
