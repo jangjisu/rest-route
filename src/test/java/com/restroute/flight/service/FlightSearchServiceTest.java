@@ -77,27 +77,34 @@ class FlightSearchServiceTest {
         FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", "DATE"), 30);
 
         List<String> departures = response.items().stream()
-                .map(item -> item.departure().departureFrom())
+                .map(item -> item.departure().departAt())
                 .toList();
         assertThat(departures).isSorted();
     }
 
-    private static FlightSearchRequestDto request(String cursor, String nights, String size) {
-        return requestWithSort(cursor, nights, size, null);
+    private static FlightSearchRequestDto request(String cursor, String nights, String limit) {
+        return requestWithSort(cursor, nights, limit, null);
     }
 
-    private static FlightSearchRequestDto requestWithSort(String cursor, String nights, String size, String sort) {
+    private static FlightSearchRequestDto requestWithSort(String cursor, String nights, String limit, String sort) {
         return new FlightSearchRequestDto(
                 VALID_ORIGIN,
-                null,
+                "range",
                 VALID_DATE_FROM,
                 VALID_DATE_TO,
+                null,
                 List.of(nights),
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
                 sort,
                 cursor,
-                size);
+                limit,
+                null,
+                null);
     }
 }

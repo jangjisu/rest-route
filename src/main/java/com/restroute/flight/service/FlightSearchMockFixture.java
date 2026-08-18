@@ -47,14 +47,52 @@ final class FlightSearchMockFixture {
             new Airline("TW", "티웨이항공"),
             new Airline("WE", "타이스마일항공"));
 
-    private static final List<String> GATES = List.of("Trip.com", "Kupi.com", "Mytrip.com");
+    /** 예약처는 지금 Aviasales 하나뿐이다 — mock도 실제와 동일하게 고정값을 쓴다. */
+    private static final String GATE_NAME = "Aviasales";
+
+    /** 실제 공휴일 달력 연동 전까지는 항상 0/빈 값이다 — 연휴 배지 계산은 별도 작업. */
+    private static final FlightDealResponse.Holiday NO_HOLIDAY = new FlightDealResponse.Holiday(0, List.of(), 0);
 
     private FlightSearchMockFixture() {}
 
     static List<FlightDealResponse> generateAll(FlightSearchRequestDto request, String sessionToken, int totalSize) {
-        return IntStream.range(0, totalSize)
+        List<FlightDealResponse> items = IntStream.range(0, totalSize)
                 .mapToObj(index -> dealAt(index, request, sessionToken))
                 .toList();
+        return markLowestInRange(items);
+    }
+
+    /** 가격 기준 전체 최저가 한 건에만 isLowestInRange를 true로 표시한다(동가면 첫 항목 하나만). */
+    private static List<FlightDealResponse> markLowestInRange(List<FlightDealResponse> items) {
+        if (items.isEmpty()) {
+            return items;
+        }
+        int lowestIndex = 0;
+        for (int i = 1; i < items.size(); i++) {
+            if (items.get(i).price().amount() < items.get(lowestIndex).price().amount()) {
+                lowestIndex = i;
+            }
+        }
+        int finalLowestIndex = lowestIndex;
+        return IntStream.range(0, items.size())
+                .mapToObj(i -> i == finalLowestIndex ? withLowestInRange(items.get(i)) : items.get(i))
+                .toList();
+    }
+
+    private static FlightDealResponse withLowestInRange(FlightDealResponse deal) {
+        return new FlightDealResponse(
+                deal.id(),
+                deal.destination(),
+                deal.departure(),
+                deal.arrival(),
+                deal.nights(),
+                deal.holiday(),
+                deal.airline(),
+                deal.price(),
+                true,
+                deal.gateName(),
+                deal.bookingLink(),
+                deal.seatsLeft());
     }
 
     private static FlightDealResponse dealAt(int index, FlightSearchRequestDto request, String sessionToken) {
@@ -84,17 +122,20 @@ final class FlightSearchMockFixture {
                 departure,
                 arrival,
                 nights,
-                new FlightDealResponse.Airline(airline.code(), airline.name()),
+                NO_HOLIDAY,
+                new FlightDealResponse.Airline(airline.code(), airline.name(), true),
                 new FlightDealResponse.Price(amount, "KRW"),
-                GATES.get(index % GATES.size()),
-                "https://www.aviasales.com/search/mock-" + id);
+                false,
+                GATE_NAME,
+                "https://www.aviasales.com/search/mock-" + id,
+                null);
     }
 
     private static FlightDealResponse.Leg legAt(
-            OffsetDateTime departureFrom, ZoneOffset arrivalOffset, int duration, int transferCount) {
-        OffsetDateTime departTo = departureFrom.plusMinutes(duration).withOffsetSameInstant(arrivalOffset);
+            OffsetDateTime departAt, ZoneOffset arrivalOffset, int duration, int transferCount) {
+        OffsetDateTime arriveAt = departAt.plusMinutes(duration).withOffsetSameInstant(arrivalOffset);
         return new FlightDealResponse.Leg(
-                LEG_TIME_FORMAT.format(departureFrom), LEG_TIME_FORMAT.format(departTo), duration, transferCount);
+                LEG_TIME_FORMAT.format(departAt), LEG_TIME_FORMAT.format(arriveAt), duration, transferCount);
     }
 
     private static Destination destinationAt(int index, FlightSearchRequestDto request) {

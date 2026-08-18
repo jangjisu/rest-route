@@ -43,9 +43,9 @@ public class FlightSearchService {
     public FlightDealSearchResponse search(FlightSearchRequestDto request, Integer totalSize) {
         if (request.isFirstRequest()) {
             return sessionStore.create(
-                    request, totalSize, request.boundedSize(), token -> fetch(request, totalSize, token));
+                    request, totalSize, request.boundedLimit(), token -> fetch(request, totalSize, token));
         }
-        return sessionStore.find(request, totalSize, request.cursor(), request.boundedSize());
+        return sessionStore.find(request, totalSize, request.cursor(), request.boundedLimit());
     }
 
     private List<FlightDealResponse> fetch(FlightSearchRequestDto request, Integer totalSize, String token) {
@@ -65,7 +65,7 @@ public class FlightSearchService {
             case PRICE -> Comparator.comparingInt(deal -> deal.price().amount());
             case DATE ->
                 Comparator.comparing(
-                        deal -> OffsetDateTime.parse(deal.departure().departureFrom()));
+                        deal -> OffsetDateTime.parse(deal.departure().departAt()));
         };
     }
 }

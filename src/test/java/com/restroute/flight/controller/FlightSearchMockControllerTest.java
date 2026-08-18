@@ -41,31 +41,72 @@ class FlightSearchMockControllerTest {
     void searchMock_returnsFirstPageWithComputedFields() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error").value(nullValue()))
-                .andExpect(jsonPath("$.data.items.length()").value(20))
-                .andExpect(jsonPath("$.data.meta.totalCount").value(77))
-                .andExpect(jsonPath("$.data.meta.hasNext").value(true))
-                .andExpect(jsonPath("$.data.items[0].id").value(matchesPattern("^[A-Za-z0-9]{4}_0001$")))
-                .andExpect(jsonPath("$.data.items[0].destination.code").value("FUK"))
-                .andExpect(jsonPath("$.data.items[0].destination.name").value("후쿠오카"))
-                .andExpect(jsonPath("$.data.items[0].departure.departureFrom").value("2099-01-10T09:20:00+09:00"))
-                .andExpect(jsonPath("$.data.items[0].departure.departTo").value("2099-01-10T10:50:00+09:00"))
-                .andExpect(jsonPath("$.data.items[0].departure.duration").value(90))
-                .andExpect(jsonPath("$.data.items[0].departure.transferCount").value(0))
-                .andExpect(jsonPath("$.data.items[0].arrival.departureFrom").value("2099-01-13T13:10:00+09:00"))
-                .andExpect(jsonPath("$.data.items[0].arrival.departTo").value("2099-01-13T14:40:00+09:00"))
-                .andExpect(jsonPath("$.data.items[0].arrival.duration").value(90))
-                .andExpect(jsonPath("$.data.items[0].arrival.transferCount").value(0))
-                .andExpect(jsonPath("$.data.items[0].nights").value(3))
-                .andExpect(jsonPath("$.data.items[0].airline.code").value("LJ"))
-                .andExpect(jsonPath("$.data.items[0].airline.name").value("진에어"))
-                .andExpect(jsonPath("$.data.items[0].price.amount").value(89000))
-                .andExpect(jsonPath("$.data.items[0].price.currency").value("KRW"))
-                .andExpect(jsonPath("$.data.items[0].gateName").value("Trip.com"));
+                .andExpect(jsonPath("$.data.length()").value(20))
+                .andExpect(jsonPath("$.meta.totalCount").value(77))
+                .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.locale").value("ko"))
+                .andExpect(jsonPath("$.meta.currency").value("krw"))
+                .andExpect(jsonPath("$.meta.fetchedAt").exists())
+                .andExpect(jsonPath("$.data[0].id").value(matchesPattern("^[A-Za-z0-9]{4}_0001$")))
+                .andExpect(jsonPath("$.data[0].destination.code").value("FUK"))
+                .andExpect(jsonPath("$.data[0].destination.name").value("후쿠오카"))
+                .andExpect(jsonPath("$.data[0].departure.departAt").value("2099-01-10T09:20:00+09:00"))
+                .andExpect(jsonPath("$.data[0].departure.arriveAt").value("2099-01-10T10:50:00+09:00"))
+                .andExpect(jsonPath("$.data[0].departure.duration").value(90))
+                .andExpect(jsonPath("$.data[0].departure.transferCount").value(1))
+                .andExpect(jsonPath("$.data[0].arrival.departAt").value("2099-01-13T13:10:00+09:00"))
+                .andExpect(jsonPath("$.data[0].arrival.arriveAt").value("2099-01-13T14:40:00+09:00"))
+                .andExpect(jsonPath("$.data[0].arrival.duration").value(90))
+                .andExpect(jsonPath("$.data[0].arrival.transferCount").value(1))
+                .andExpect(jsonPath("$.data[0].nights").value(3))
+                .andExpect(jsonPath("$.data[0].holiday.count").value(0))
+                .andExpect(jsonPath("$.data[0].holiday.names.length()").value(0))
+                .andExpect(jsonPath("$.data[0].holiday.annualLeaveDays").value(0))
+                .andExpect(jsonPath("$.data[0].airline.code").value("LJ"))
+                .andExpect(jsonPath("$.data[0].airline.name").value("진에어"))
+                .andExpect(jsonPath("$.data[0].airline.isLowCost").value(true))
+                .andExpect(jsonPath("$.data[0].price.amount").value(89000))
+                .andExpect(jsonPath("$.data[0].price.currency").value("KRW"))
+                .andExpect(jsonPath("$.data[0].isLowestInRange").value(true))
+                .andExpect(jsonPath("$.data[0].gateName").value("Aviasales"))
+                .andExpect(jsonPath("$.data[0].seatsLeft").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("가격 기준 전체 최저가는 정확히 한 건에만 isLowestInRange=true가 붙는다")
+    void searchMock_marksExactlyOneItemAsLowestInRange() throws Exception {
+        String body = mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3")
+                        .param("totalSize", "30")
+                        .param("limit", "30"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        JsonNode items = objectMapper.readTree(body).at("/data");
+        int lowestCount = 0;
+        int minPrice = Integer.MAX_VALUE;
+        for (JsonNode item : items) {
+            minPrice = Math.min(minPrice, item.at("/price/amount").asInt());
+            if (item.at("/isLowestInRange").asBoolean()) {
+                lowestCount++;
+            }
+        }
+
+        assertThat(lowestCount).isEqualTo(1);
+        int finalMinPrice = minPrice;
+        assertThat(items.get(0).at("/price/amount").asInt()).isEqualTo(finalMinPrice);
     }
 
     @Test
@@ -73,15 +114,16 @@ class FlightSearchMockControllerTest {
     void searchMock_generatesExactlyTotalSizeItems() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "5")
-                        .param("size", "50"))
+                        .param("limit", "50"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items.length()").value(5))
-                .andExpect(jsonPath("$.data.meta.totalCount").value(5))
-                .andExpect(jsonPath("$.data.meta.hasNext").value(false));
+                .andExpect(jsonPath("$.data.length()").value(5))
+                .andExpect(jsonPath("$.meta.totalCount").value(5))
+                .andExpect(jsonPath("$.meta.hasNext").value(false));
     }
 
     @Test
@@ -89,41 +131,44 @@ class FlightSearchMockControllerTest {
     void searchMock_clampsOutOfRangeTotalSize() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "5000")
-                        .param("size", "1"))
+                        .param("limit", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.meta.totalCount").value(1000));
+                .andExpect(jsonPath("$.meta.totalCount").value(1000));
     }
 
     @Test
-    @DisplayName("includeTransfer가 없으면(기본 false) 모든 항목이 직항(transferCount=0)이다")
-    void searchMock_defaultsToDirectOnlyWhenIncludeTransferOmitted() throws Exception {
+    @DisplayName("includeTransfer가 없으면(기본 켜짐) 경유가 섞여 나온다")
+    void searchMock_includesTransfersByDefaultWhenOmitted() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("size", "10"))
+                        .param("limit", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[2].departure.transferCount").value(0))
-                .andExpect(jsonPath("$.data.items[3].arrival.transferCount").value(0));
+                .andExpect(jsonPath("$.data[0].departure.transferCount").value(1));
     }
 
     @Test
-    @DisplayName("includeTransfer=true면 경유가 섞여 나온다")
-    void searchMock_includesTransfersWhenRequested() throws Exception {
+    @DisplayName("includeTransfer=false면 모든 항목이 직항(transferCount=0)이다")
+    void searchMock_directOnlyWhenIncludeTransferFalse() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("includeTransfer", "true")
-                        .param("size", "1"))
+                        .param("includeTransfer", "false")
+                        .param("limit", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].departure.transferCount").value(1));
+                .andExpect(jsonPath("$.data[2].departure.transferCount").value(0))
+                .andExpect(jsonPath("$.data[3].arrival.transferCount").value(0));
     }
 
     @Test
@@ -131,17 +176,18 @@ class FlightSearchMockControllerTest {
     void searchMock_sortsByPriceAscendingByDefault() throws Exception {
         String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "30")
-                        .param("size", "30"))
+                        .param("limit", "30"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        JsonNode items = objectMapper.readTree(body).at("/data/items");
+        JsonNode items = objectMapper.readTree(body).at("/data");
         List<Integer> prices = new ArrayList<>();
         for (JsonNode item : items) {
             prices.add(item.at("/price/amount").asInt());
@@ -155,39 +201,41 @@ class FlightSearchMockControllerTest {
     void searchMock_sortsByDepartureDateAscending_whenSortIsDate() throws Exception {
         String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("sort", "DATE")
                         .param("totalSize", "30")
-                        .param("size", "30"))
+                        .param("limit", "30"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        JsonNode items = objectMapper.readTree(body).at("/data/items");
+        JsonNode items = objectMapper.readTree(body).at("/data");
         List<String> departures = new ArrayList<>();
         for (JsonNode item : items) {
-            departures.add(item.at("/departure/departureFrom").asText());
+            departures.add(item.at("/departure/departAt").asText());
         }
 
         assertThat(departures).isSorted();
     }
 
     @Test
-    @DisplayName("sort가 PRICE/DATE가 아니면 VALIDATION_FAILED로 INVALID_SORT를 반환한다")
+    @DisplayName("sort가 PRICE/DATE가 아니면 validation_failed로 invalid_sort를 반환한다")
     void searchMock_returnsValidationFailedForInvalidSort() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("sort", "CHEAPEST"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.error.code").value("validation_failed"))
                 .andExpect(jsonPath("$.error.details[0].field").value("sort"))
-                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_SORT"));
+                .andExpect(jsonPath("$.error.details[0].code").value("invalid_sort"));
     }
 
     @Test
@@ -195,26 +243,83 @@ class FlightSearchMockControllerTest {
     void searchMock_fixesDestinationWhenGiven() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("destination", "OSA")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("size", "5"))
+                        .param("limit", "5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].destination.code").value("OSA"))
-                .andExpect(jsonPath("$.data.items[4].destination.code").value("OSA"));
+                .andExpect(jsonPath("$.data[0].destination.code").value("OSA"))
+                .andExpect(jsonPath("$.data[4].destination.code").value("OSA"));
     }
 
     @Test
-    @DisplayName("필수 파라미터가 여러 개 없으면 DTO 생성자가 한 번에 모아서 VALIDATION_FAILED로 반환한다")
+    @DisplayName("필수 파라미터가 여러 개 없으면 DTO 생성자가 한 번에 모아서 validation_failed로 반환한다")
     void searchMock_returnsValidationFailedForMissingRequiredParams() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data").value(nullValue()))
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.error.details.length()").value(3))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("validation_failed"))
+                .andExpect(jsonPath("$.error.details.length()").value(4))
                 .andExpect(jsonPath("$.error.details[0].field").value("origin"))
-                .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
+                .andExpect(jsonPath("$.error.details[0].code").value("required"));
+    }
+
+    @Test
+    @DisplayName("searchMode가 없으면 required로 실패한다")
+    void searchMock_returnsValidationFailedWhenSearchModeMissing() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("searchMode"))
+                .andExpect(jsonPath("$.error.details[0].code").value("required"));
+    }
+
+    @Test
+    @DisplayName("지정날짜(fixed)에 nights를 보내면 실패한다")
+    void searchMock_returnsValidationFailedWhenNightsSentInFixedMode() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "fixed")
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("nights", "3"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("nights"))
+                .andExpect(jsonPath("$.error.details[0].code").value("nights_not_allowed_in_fixed_mode"));
+    }
+
+    @Test
+    @DisplayName("destination과 sector를 함께 보내면 실패한다")
+    void searchMock_returnsValidationFailedWhenSectorCombinedWithDestination() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("destination", "OSA")
+                        .param("sector", "JAPAN"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("sector"))
+                .andExpect(jsonPath("$.error.details[0].code").value("sector_destination_conflict"));
+    }
+
+    @Test
+    @DisplayName("currency가 krw가 아니면 실패한다")
+    void searchMock_returnsValidationFailedWhenCurrencyNotKrw() throws Exception {
+        mockMvc.perform(get("/api/flights/search/mock")
+                        .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
+                        .param("dateFrom", VALID_DATE_FROM)
+                        .param("dateTo", VALID_DATE_TO)
+                        .param("currency", "usd"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("currency"))
+                .andExpect(jsonPath("$.error.details[0].code").value("invalid_currency"));
     }
 
     @Test
@@ -222,10 +327,11 @@ class FlightSearchMockControllerTest {
     void searchMock_defaultsToDateRangeNightsWhenOmitted() throws Exception {
         String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("totalSize", "31")
-                        .param("size", "31"))
+                        .param("limit", "31"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -239,10 +345,11 @@ class FlightSearchMockControllerTest {
     void searchMock_cyclesWithinNarrowerDateRangeWhenNightsOmitted() throws Exception {
         String body = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", "2099-01-15")
                         .param("totalSize", "10")
-                        .param("size", "10"))
+                        .param("limit", "10"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -253,7 +360,7 @@ class FlightSearchMockControllerTest {
 
     private Set<Integer> nightsValuesOf(String responseBody) throws Exception {
         Set<Integer> nights = new HashSet<>();
-        for (JsonNode item : objectMapper.readTree(responseBody).at("/data/items")) {
+        for (JsonNode item : objectMapper.readTree(responseBody).at("/data")) {
             nights.add(item.at("/nights").asInt());
         }
         return nights;
@@ -268,53 +375,57 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
-    @DisplayName("필수 파라미터가 값은 왔지만 빈 문자열이면 DTO 생성자가 REQUIRED로 잡는다")
+    @DisplayName("필수 파라미터가 값은 왔지만 빈 문자열이면 DTO 생성자가 required로 잡는다")
     void searchMock_returnsValidationFailedForBlankRequiredParam() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", "")
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.error.code").value("validation_failed"))
                 .andExpect(jsonPath("$.error.details.length()").value(1))
                 .andExpect(jsonPath("$.error.details[0].field").value("origin"))
-                .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
+                .andExpect(jsonPath("$.error.details[0].code").value("required"));
     }
 
     @Test
-    @DisplayName("형식이 이상한 커서(세션 토큰을 못 뽑음)는 DEAL_NOT_FOUND 에러를 반환한다")
+    @DisplayName("형식이 이상한 커서(세션 토큰을 못 뽑음)는 deal_not_found 에러를 반환한다")
     void searchMock_returnsDealNotFoundForMalformedCursor() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("cursor", "not-a-real-cursor")
-                        .param("size", "1"))
+                        .param("limit", "1"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"));
+                .andExpect(jsonPath("$.error.code").value("deal_not_found"));
     }
 
     @Test
-    @DisplayName("유효한 세션 안에 실제로 없는 id가 오면 DEAL_NOT_FOUND 에러를 반환한다")
+    @DisplayName("유효한 세션 안에 실제로 없는 id가 오면 deal_not_found 에러를 반환한다")
     void searchMock_returnsDealNotFoundForIdMissingWithinValidSession() throws Exception {
         String firstPageBody = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "5")
-                        .param("size", "1"))
+                        .param("limit", "1"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
         String firstItemId =
-                objectMapper.readTree(firstPageBody).at("/data/items/0/id").asText();
+                objectMapper.readTree(firstPageBody).at("/data/0/id").asText();
         String sessionToken = firstItemId.substring(0, firstItemId.indexOf('_'));
 
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
@@ -322,36 +433,38 @@ class FlightSearchMockControllerTest {
                         .param("cursor", sessionToken + "_9999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.data").value(nullValue()))
-                .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.code").value("deal_not_found"))
                 .andExpect(jsonPath("$.error.message").value("Deal not found or already expired"));
     }
 
     @Test
-    @DisplayName("검색 조건이 달라진 채로 이전 cursor를 재사용하면 DEAL_NOT_FOUND 에러를 반환한다")
+    @DisplayName("검색 조건이 달라진 채로 이전 cursor를 재사용하면 deal_not_found 에러를 반환한다")
     void searchMock_returnsDealNotFoundWhenSearchConditionsChange() throws Exception {
         String firstPageBody = mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("totalSize", "10")
-                        .param("size", "5"))
+                        .param("limit", "5"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
         String cursorFromDifferentConditions =
-                objectMapper.readTree(firstPageBody).at("/data/meta/nextCursor").asText();
+                objectMapper.readTree(firstPageBody).at("/meta/nextCursor").asText();
 
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
+                        .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "4")
                         .param("totalSize", "10")
                         .param("cursor", cursorFromDifferentConditions)
-                        .param("size", "1"))
+                        .param("limit", "1"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("DEAL_NOT_FOUND"));
+                .andExpect(jsonPath("$.error.code").value("deal_not_found"));
     }
 
     @Test
@@ -366,11 +479,12 @@ class FlightSearchMockControllerTest {
         while (hasNext) {
             var requestBuilder = get("/api/flights/search/mock")
                     .param("origin", VALID_ORIGIN)
+                    .param("searchMode", "range")
                     .param("dateFrom", VALID_DATE_FROM)
                     .param("dateTo", VALID_DATE_TO)
                     .param("nights", "3")
                     .param("totalSize", "42")
-                    .param("size", "20");
+                    .param("limit", "20");
             if (cursor != null) {
                 requestBuilder = requestBuilder.param("cursor", cursor);
             }
@@ -381,14 +495,14 @@ class FlightSearchMockControllerTest {
                     .getResponse()
                     .getContentAsString();
             JsonNode json = objectMapper.readTree(body);
-            JsonNode items = json.at("/data/items");
+            JsonNode items = json.at("/data");
             for (JsonNode item : items) {
                 assertThat(seenIds.add(item.get("id").asText())).isTrue();
             }
 
             lastPageSize = items.size();
-            hasNext = json.at("/data/meta/hasNext").asBoolean();
-            cursor = hasNext ? json.at("/data/meta/nextCursor").asText() : null;
+            hasNext = json.at("/meta/hasNext").asBoolean();
+            cursor = hasNext ? json.at("/meta/nextCursor").asText() : null;
             pageCount++;
         }
 
