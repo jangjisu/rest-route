@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * RANGE 검색 하나를 실제로 몇 번, 어떤 파라미터로 Travelpayouts에 물어볼지 정한다.
@@ -50,7 +49,7 @@ final class FlightRangeSearchPlanner {
     private FlightRangeSearchPlanner() {}
 
     static FlightRangeSearchPlan plan(FlightSearchRequestDto request) {
-        List<String> destinations = destinationsOf(request);
+        List<String> destinations = FlightSearchDestinations.resolve(request);
         List<String> months = monthsOf(request.parsedDateFrom(), request.parsedDateTo());
         int destinationCount = Math.max(1, destinations.size());
 
@@ -63,14 +62,6 @@ final class FlightRangeSearchPlanner {
         }
 
         return new FlightRangeSearchPlan(destinations, months, List.of(rangeWindowOf(request.parsedNights())));
-    }
-
-    /** destination을 직접 지정했으면 그거 하나, sector면 그 sector들의 국가 목록, 둘 다 없으면 빈 목록(생략). */
-    private static List<String> destinationsOf(FlightSearchRequestDto request) {
-        if (StringUtils.hasText(request.destination())) {
-            return List.of(request.destination());
-        }
-        return FlightSectorCountries.countriesOf(request.sector());
     }
 
     /** dateFrom~dateTo가 걸치는 달력상 월을 순서대로 "yyyy-MM"로 나열한다(양 끝 달 포함). */
