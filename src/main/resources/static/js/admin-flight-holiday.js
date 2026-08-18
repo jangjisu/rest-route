@@ -19,10 +19,33 @@ export function isoDate(year, month, day) {
 }
 
 /**
- * 달력 한 칸씩을 순서대로 나열한다. 1일 이전의 빈 칸은 null로 채운다 —
- * 렌더링 쪽에서 null이면 숨김/비활성 칸으로 그리면 된다.
+ * 매년 날짜가 고정된 국경일/공휴일만 담는다 — 설날·추석·부처님오신날처럼 음력 기준이거나,
+ * 대체공휴일처럼 그때그때 지정되는 날짜는 여기 못 넣는다(변환 데이터나 관리자 등록이 따로
+ * 필요). 달력에는 "참고용"으로만 표시하고, 실제 등록 여부와는 무관하다.
  */
-export function buildCalendarCells(year, month, holidayNameByDate) {
+export const FIXED_NATIONAL_HOLIDAYS = [
+    { month: 1, day: 1, name: '신정' },
+    { month: 3, day: 1, name: '삼일절' },
+    { month: 5, day: 5, name: '어린이날' },
+    { month: 6, day: 6, name: '현충일' },
+    { month: 8, day: 15, name: '광복절' },
+    { month: 10, day: 3, name: '개천절' },
+    { month: 10, day: 9, name: '한글날' },
+    { month: 12, day: 25, name: '성탄절' }
+];
+
+export function fixedHolidayNameByDate(year) {
+    return new Map(
+        FIXED_NATIONAL_HOLIDAYS.map((holiday) => [isoDate(year, holiday.month - 1, holiday.day), holiday.name])
+    );
+}
+
+/**
+ * 달력 한 칸씩을 순서대로 나열한다. 1일 이전의 빈 칸은 null로 채운다 —
+ * 렌더링 쪽에서 null이면 숨김/비활성 칸으로 그리면 된다. 요일은 첫 칸의 요일(leadingBlanks)에서
+ * 이어서 계산하므로 매 칸마다 Date를 새로 만들 필요가 없다.
+ */
+export function buildCalendarCells(year, month, holidayNameByDate, referenceNameByDate = new Map()) {
     const leadingBlanks = firstWeekdayOfMonth(year, month);
     const totalDays = daysInMonth(year, month);
     const cells = [];
@@ -31,7 +54,14 @@ export function buildCalendarCells(year, month, holidayNameByDate) {
     }
     for (let day = 1; day <= totalDays; day++) {
         const date = isoDate(year, month, day);
-        cells.push({ day, date, holidayName: holidayNameByDate.get(date) ?? null });
+        const weekday = (leadingBlanks + day - 1) % 7;
+        cells.push({
+            day,
+            date,
+            isWeekend: weekday === 0 || weekday === 6,
+            holidayName: holidayNameByDate.get(date) ?? null,
+            referenceName: referenceNameByDate.get(date) ?? null
+        });
     }
     return cells;
 }
@@ -102,21 +132,35 @@ export function initializeAdminFlightHoliday(document, {
         number.textContent = String(cell.day);
         button.appendChild(number);
 
+        if (cell.isWeekend) {
+            button.classList.add('is-weekend');
+        }
+
         if (cell.holidayName) {
             button.classList.add('has-holiday');
             const name = document.createElement('span');
             name.className = 'flight-holiday-day-name';
             name.textContent = cell.holidayName;
             button.appendChild(name);
+        } else if (cell.referenceName) {
+            button.classList.add('is-reference-holiday');
+            const name = document.createElement('span');
+            name.className = 'flight-holiday-day-name flight-holiday-day-name--reference';
+            name.textContent = cell.referenceName;
+            button.appendChild(name);
         }
 
-        button.addEventListener('click', () => openModal(cell.date));
+        if (cell.isWeekend) {
+            button.disabled = true;
+        } else {
+            button.addEventListener('click', () => openModal(cell.date, cell.referenceName));
+        }
         return button;
     }
 
     function renderCalendar() {
         monthLabelEl.textContent = monthLabel(viewYear, viewMonth);
-        const cells = buildCalendarCells(viewYear, viewMonth, holidayNameByDate());
+        const cells = buildCalendarCells(viewYear, viewMonth, holidayNameByDate(), fixedHolidayNameByDate(viewYear));
         grid.replaceChildren(...cells.map((cell) => createDayCell(cell)));
     }
 
@@ -132,7 +176,7 @@ export function initializeAdminFlightHoliday(document, {
         renderCalendar();
     }
 
-    function openModal(date) {
+    function openModal(date, suggestedName = null) {
         selectedDate = date;
         modalDate.textContent = date;
         const existing = holidayByDate(date);
@@ -144,7 +188,7 @@ export function initializeAdminFlightHoliday(document, {
         } else {
             addView.hidden = false;
             removeView.hidden = true;
-            nameInput.value = '';
+            nameInput.value = suggestedName ?? '';
         }
         modal.showModal();
     }

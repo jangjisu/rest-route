@@ -196,7 +196,11 @@ h1 { margin: 0; font-size: 28px; letter-spacing: -.7px; }
 .flight-holiday-day:hover { border-color: var(--accent); }
 .flight-holiday-day.is-outside-month { visibility: hidden; }
 .flight-holiday-day.has-holiday { background: var(--soft); border-color: var(--accent); }
+.flight-holiday-day.is-reference-holiday { border-style: dashed; }
+.flight-holiday-day.is-weekend { background: var(--canvas); color: var(--muted); cursor: not-allowed; }
+.flight-holiday-day.is-weekend:hover { border-color: var(--line); }
 .flight-holiday-day-number { font-size: 12.5px; font-weight: 700; }
+.flight-holiday-day-name--reference { color: var(--muted); font-weight: 500; }
 .flight-holiday-day-name { font-size: 11px; color: var(--accent); font-weight: 700; word-break: keep-all; }
 .flight-holiday-modal-date { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
 .flight-holiday-input { display: block; width: 100%; margin: 6px 0 14px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
