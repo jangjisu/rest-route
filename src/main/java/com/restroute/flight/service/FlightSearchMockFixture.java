@@ -59,40 +59,7 @@ final class FlightSearchMockFixture {
         List<FlightDealResponse> items = IntStream.range(0, totalSize)
                 .mapToObj(index -> dealAt(index, request, sessionToken))
                 .toList();
-        return markLowestInRange(items);
-    }
-
-    /** 가격 기준 전체 최저가 한 건에만 isLowestInRange를 true로 표시한다(동가면 첫 항목 하나만). */
-    private static List<FlightDealResponse> markLowestInRange(List<FlightDealResponse> items) {
-        if (items.isEmpty()) {
-            return items;
-        }
-        int lowestIndex = 0;
-        for (int i = 1; i < items.size(); i++) {
-            if (items.get(i).price().amount() < items.get(lowestIndex).price().amount()) {
-                lowestIndex = i;
-            }
-        }
-        int finalLowestIndex = lowestIndex;
-        return IntStream.range(0, items.size())
-                .mapToObj(i -> i == finalLowestIndex ? withLowestInRange(items.get(i)) : items.get(i))
-                .toList();
-    }
-
-    private static FlightDealResponse withLowestInRange(FlightDealResponse deal) {
-        return new FlightDealResponse(
-                deal.id(),
-                deal.destination(),
-                deal.departure(),
-                deal.arrival(),
-                deal.nights(),
-                deal.holiday(),
-                deal.airline(),
-                deal.price(),
-                true,
-                deal.gateName(),
-                deal.bookingLink(),
-                deal.seatsLeft());
+        return FlightDealResponses.markLowestInRange(items);
     }
 
     private static FlightDealResponse dealAt(int index, FlightSearchRequestDto request, String sessionToken) {
