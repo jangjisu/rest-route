@@ -137,49 +137,49 @@ final class FlightSearchRequestValidator {
 
     private void validateOrigin() {
         if (!StringUtils.hasText(origin)) {
-            details.add(new FlightApiError.Detail("origin", "REQUIRED"));
+            details.add(new FlightApiError.Detail("origin", "required"));
             return;
         }
         if (!IATA_CODE.matcher(origin).matches()) {
-            details.add(new FlightApiError.Detail("origin", "INVALID_IATA_CODE"));
+            details.add(new FlightApiError.Detail("origin", "invalid_iata_code"));
         }
     }
 
     private FlightSearchMode validateSearchMode() {
         if (!StringUtils.hasText(searchMode)) {
-            details.add(new FlightApiError.Detail("searchMode", "REQUIRED"));
+            details.add(new FlightApiError.Detail("searchMode", "required"));
             return null;
         }
         FlightSearchMode mode = FlightSearchMode.fromWireValue(searchMode);
         if (mode == null) {
-            details.add(new FlightApiError.Detail("searchMode", "INVALID_SEARCH_MODE"));
+            details.add(new FlightApiError.Detail("searchMode", "invalid_search_mode"));
         }
         return mode;
     }
 
     private void validateDestination() {
         if (StringUtils.hasText(destination) && !IATA_CODE.matcher(destination).matches()) {
-            details.add(new FlightApiError.Detail("destination", "INVALID_IATA_CODE"));
+            details.add(new FlightApiError.Detail("destination", "invalid_iata_code"));
         }
     }
 
     private LocalDate validateDateFrom() {
         LocalDate parsed = validateRequiredDate("dateFrom", dateFrom);
         if (parsed != null && parsed.isBefore(LocalDate.now())) {
-            details.add(new FlightApiError.Detail("dateFrom", "PAST_DATE_NOT_ALLOWED"));
+            details.add(new FlightApiError.Detail("dateFrom", "past_date_not_allowed"));
         }
         return parsed;
     }
 
     private LocalDate validateRequiredDate(String field, String raw) {
         if (!StringUtils.hasText(raw)) {
-            details.add(new FlightApiError.Detail(field, "REQUIRED"));
+            details.add(new FlightApiError.Detail(field, "required"));
             return null;
         }
         try {
             return LocalDate.parse(raw);
         } catch (DateTimeParseException e) {
-            details.add(new FlightApiError.Detail(field, "INVALID_DATE_FORMAT"));
+            details.add(new FlightApiError.Detail(field, "invalid_date_format"));
             return null;
         }
     }
@@ -190,7 +190,7 @@ final class FlightSearchRequestValidator {
             return;
         }
         if (parsedDateTo.isBefore(parsedDateFrom)) {
-            details.add(new FlightApiError.Detail("dateTo", "BEFORE_DATE_FROM"));
+            details.add(new FlightApiError.Detail("dateTo", "before_date_from"));
         }
     }
 
@@ -199,13 +199,13 @@ final class FlightSearchRequestValidator {
             return;
         }
         if (mode == FlightSearchMode.FIXED) {
-            details.add(new FlightApiError.Detail("nights", "NIGHTS_NOT_ALLOWED_IN_FIXED_MODE"));
+            details.add(new FlightApiError.Detail("nights", "nights_not_allowed_in_fixed_mode"));
             return;
         }
         for (String raw : nights) {
             Integer value = parseIntOrNull(raw);
             if (value == null || value < MIN_NIGHTS || value > MAX_NIGHTS) {
-                details.add(new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE"));
+                details.add(new FlightApiError.Detail("nights", "invalid_nights_value"));
             }
         }
     }
@@ -215,12 +215,12 @@ final class FlightSearchRequestValidator {
             return;
         }
         if (StringUtils.hasText(destination)) {
-            details.add(new FlightApiError.Detail("sector", "SECTOR_DESTINATION_CONFLICT"));
+            details.add(new FlightApiError.Detail("sector", "sector_destination_conflict"));
             return;
         }
         for (String region : sector) {
             if (!isKnownRegion(region)) {
-                details.add(new FlightApiError.Detail("sector", "INVALID_SECTOR"));
+                details.add(new FlightApiError.Detail("sector", "invalid_sector"));
             }
         }
     }
@@ -238,14 +238,14 @@ final class FlightSearchRequestValidator {
         if (!StringUtils.hasText(includeWeekend) || "true".equals(includeWeekend) || "false".equals(includeWeekend)) {
             return;
         }
-        details.add(new FlightApiError.Detail("includeWeekend", "INVALID_INCLUDE_WEEKEND"));
+        details.add(new FlightApiError.Detail("includeWeekend", "invalid_include_weekend"));
     }
 
     private void validateIncludeHoliday() {
         if (!StringUtils.hasText(includeHoliday) || "true".equals(includeHoliday) || "false".equals(includeHoliday)) {
             return;
         }
-        details.add(new FlightApiError.Detail("includeHoliday", "INVALID_INCLUDE_HOLIDAY"));
+        details.add(new FlightApiError.Detail("includeHoliday", "invalid_include_holiday"));
     }
 
     private void validateIncludeTransfer() {
@@ -254,19 +254,19 @@ final class FlightSearchRequestValidator {
                 || "false".equals(includeTransfer)) {
             return;
         }
-        details.add(new FlightApiError.Detail("includeTransfer", "INVALID_INCLUDE_TRANSFER"));
+        details.add(new FlightApiError.Detail("includeTransfer", "invalid_include_transfer"));
     }
 
     private void validateAdults() {
-        validateNonNegativeInt("adults", adults, "INVALID_ADULTS");
+        validateNonNegativeInt("adults", adults, "invalid_adults");
     }
 
     private void validateChildren() {
-        validateNonNegativeInt("children", children, "INVALID_CHILDREN");
+        validateNonNegativeInt("children", children, "invalid_children");
     }
 
     private void validateInfants() {
-        validateNonNegativeInt("infants", infants, "INVALID_INFANTS");
+        validateNonNegativeInt("infants", infants, "invalid_infants");
     }
 
     private void validateNonNegativeInt(String field, String raw, String errorCode) {
@@ -291,7 +291,7 @@ final class FlightSearchRequestValidator {
         if (!StringUtils.hasText(sort) || isKnownSort(sort)) {
             return;
         }
-        details.add(new FlightApiError.Detail("sort", "INVALID_SORT"));
+        details.add(new FlightApiError.Detail("sort", "invalid_sort"));
     }
 
     private static boolean isKnownSort(String sort) {
@@ -308,6 +308,6 @@ final class FlightSearchRequestValidator {
         if (!StringUtils.hasText(currency) || SUPPORTED_CURRENCY.equalsIgnoreCase(currency)) {
             return;
         }
-        details.add(new FlightApiError.Detail("currency", "INVALID_CURRENCY"));
+        details.add(new FlightApiError.Detail("currency", "invalid_currency"));
     }
 }

@@ -27,29 +27,31 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class FlightExceptionHandler {
 
+    private static final String VALIDATION_FAILED_MESSAGE = "입력값을 확인해 주세요";
+
     @ExceptionHandler(FlightDealNotFoundException.class)
     public ResponseEntity<FlightApiResponse<Void>> handleDealNotFound(FlightDealNotFoundException e) {
         log.warn("Flight deal not found: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(FlightApiResponse.error(
-                        FlightApiError.of("DEAL_NOT_FOUND", "Deal not found or already expired")));
+                        FlightApiError.of("deal_not_found", "Deal not found or already expired")));
     }
 
     @ExceptionHandler(InvalidFlightSearchException.class)
     public ResponseEntity<FlightApiResponse<Void>> handleInvalidSearch(InvalidFlightSearchException e) {
         log.warn("Invalid flight search request: {}", e.details());
-        String message = e.details().size() + " fields are invalid";
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(FlightApiResponse.error(new FlightApiError("VALIDATION_FAILED", message, e.details())));
+                .body(FlightApiResponse.error(
+                        new FlightApiError("validation_failed", VALIDATION_FAILED_MESSAGE, e.details())));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<FlightApiResponse<Void>> handleMissingRequestParameter(
             MissingServletRequestParameterException e) {
         log.warn("Missing required flight search parameter: {}", e.getParameterName());
-        List<FlightApiError.Detail> details = List.of(new FlightApiError.Detail(e.getParameterName(), "REQUIRED"));
+        List<FlightApiError.Detail> details = List.of(new FlightApiError.Detail(e.getParameterName(), "required"));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(FlightApiResponse.error(
-                        new FlightApiError("VALIDATION_FAILED", "1 fields are invalid", details)));
+                        new FlightApiError("validation_failed", VALIDATION_FAILED_MESSAGE, details)));
     }
 }

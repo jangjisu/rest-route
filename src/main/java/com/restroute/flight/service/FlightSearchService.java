@@ -65,7 +65,7 @@ public class FlightSearchService {
             case PRICE -> Comparator.comparingInt(deal -> deal.price().amount());
             case DATE ->
                 Comparator.comparing(
-                        deal -> OffsetDateTime.parse(deal.departure().departureFrom()));
+                        deal -> OffsetDateTime.parse(deal.departure().departAt()));
         };
     }
 }

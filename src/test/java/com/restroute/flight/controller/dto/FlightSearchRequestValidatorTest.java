@@ -62,7 +62,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.origin(null)))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("origin", "REQUIRED")));
+                .isEqualTo(List.of(new FlightApiError.Detail("origin", "required")));
     }
 
     @Test
@@ -71,7 +71,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.origin("seoul")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("origin", "INVALID_IATA_CODE")));
+                .isEqualTo(List.of(new FlightApiError.Detail("origin", "invalid_iata_code")));
     }
 
     @Test
@@ -80,7 +80,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.searchMode(null)))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("searchMode", "REQUIRED")));
+                .isEqualTo(List.of(new FlightApiError.Detail("searchMode", "required")));
     }
 
     @Test
@@ -89,7 +89,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.searchMode("FIXED")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("searchMode", "INVALID_SEARCH_MODE")));
+                .isEqualTo(List.of(new FlightApiError.Detail("searchMode", "invalid_search_mode")));
     }
 
     @Test
@@ -98,7 +98,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.destination("osaka")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("destination", "INVALID_IATA_CODE")));
+                .isEqualTo(List.of(new FlightApiError.Detail("destination", "invalid_iata_code")));
     }
 
     @Test
@@ -107,7 +107,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.dateFrom(null)))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "REQUIRED")));
+                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "required")));
     }
 
     @Test
@@ -116,7 +116,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.dateFrom("2099/01/10")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "INVALID_DATE_FORMAT")));
+                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "invalid_date_format")));
     }
 
     @Test
@@ -126,7 +126,7 @@ class FlightSearchRequestValidatorTest {
                         builder -> builder.dateFrom("2000-01-01").dateTo("2000-01-10")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "PAST_DATE_NOT_ALLOWED")));
+                .isEqualTo(List.of(new FlightApiError.Detail("dateFrom", "past_date_not_allowed")));
     }
 
     @Test
@@ -136,7 +136,7 @@ class FlightSearchRequestValidatorTest {
                         builder -> builder.dateFrom("2099-02-10").dateTo("2099-01-10")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("dateTo", "BEFORE_DATE_FROM")));
+                .isEqualTo(List.of(new FlightApiError.Detail("dateTo", "before_date_from")));
     }
 
     @Test
@@ -160,7 +160,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.nights(List.of("three"))))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE")));
+                .isEqualTo(List.of(new FlightApiError.Detail("nights", "invalid_nights_value")));
     }
 
     @Test
@@ -170,8 +170,8 @@ class FlightSearchRequestValidatorTest {
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(
-                        new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE"),
-                        new FlightApiError.Detail("nights", "INVALID_NIGHTS_VALUE")));
+                        new FlightApiError.Detail("nights", "invalid_nights_value"),
+                        new FlightApiError.Detail("nights", "invalid_nights_value")));
     }
 
     @Test
@@ -181,7 +181,7 @@ class FlightSearchRequestValidatorTest {
                         builder -> builder.searchMode("fixed").nights(List.of("3"))))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("nights", "NIGHTS_NOT_ALLOWED_IN_FIXED_MODE")));
+                .isEqualTo(List.of(new FlightApiError.Detail("nights", "nights_not_allowed_in_fixed_mode")));
     }
 
     @Test
@@ -190,7 +190,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.sector(List.of("EUROPE"))))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("sector", "INVALID_SECTOR")));
+                .isEqualTo(List.of(new FlightApiError.Detail("sector", "invalid_sector")));
     }
 
     @Test
@@ -200,7 +200,7 @@ class FlightSearchRequestValidatorTest {
                         validMinimalExcept(builder -> builder.destination("OSA").sector(List.of("JAPAN"))))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("sector", "SECTOR_DESTINATION_CONFLICT")));
+                .isEqualTo(List.of(new FlightApiError.Detail("sector", "sector_destination_conflict")));
     }
 
     @Test
@@ -209,7 +209,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.includeWeekend("yes")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("includeWeekend", "INVALID_INCLUDE_WEEKEND")));
+                .isEqualTo(List.of(new FlightApiError.Detail("includeWeekend", "invalid_include_weekend")));
     }
 
     @Test
@@ -218,7 +218,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.includeHoliday("yes")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("includeHoliday", "INVALID_INCLUDE_HOLIDAY")));
+                .isEqualTo(List.of(new FlightApiError.Detail("includeHoliday", "invalid_include_holiday")));
     }
 
     @Test
@@ -227,7 +227,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.includeTransfer("yes")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("includeTransfer", "INVALID_INCLUDE_TRANSFER")));
+                .isEqualTo(List.of(new FlightApiError.Detail("includeTransfer", "invalid_include_transfer")));
     }
 
     @Test
@@ -236,15 +236,15 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.adults("-1")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("adults", "INVALID_ADULTS")));
+                .isEqualTo(List.of(new FlightApiError.Detail("adults", "invalid_adults")));
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.children("abc")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("children", "INVALID_CHILDREN")));
+                .isEqualTo(List.of(new FlightApiError.Detail("children", "invalid_children")));
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.infants("-2")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("infants", "INVALID_INFANTS")));
+                .isEqualTo(List.of(new FlightApiError.Detail("infants", "invalid_infants")));
     }
 
     @Test
@@ -253,7 +253,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.sort("CHEAPEST")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("sort", "INVALID_SORT")));
+                .isEqualTo(List.of(new FlightApiError.Detail("sort", "invalid_sort")));
     }
 
     @Test
@@ -271,7 +271,7 @@ class FlightSearchRequestValidatorTest {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.currency("usd")))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("currency", "INVALID_CURRENCY")));
+                .isEqualTo(List.of(new FlightApiError.Detail("currency", "invalid_currency")));
     }
 
     @Test
@@ -289,10 +289,10 @@ class FlightSearchRequestValidatorTest {
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(
-                        new FlightApiError.Detail("origin", "REQUIRED"),
-                        new FlightApiError.Detail("searchMode", "REQUIRED"),
-                        new FlightApiError.Detail("dateFrom", "REQUIRED"),
-                        new FlightApiError.Detail("dateTo", "REQUIRED")));
+                        new FlightApiError.Detail("origin", "required"),
+                        new FlightApiError.Detail("searchMode", "required"),
+                        new FlightApiError.Detail("dateFrom", "required"),
+                        new FlightApiError.Detail("dateTo", "required")));
     }
 
     private static void validMinimalExcept(java.util.function.Consumer<ValidateArgs> customize) {

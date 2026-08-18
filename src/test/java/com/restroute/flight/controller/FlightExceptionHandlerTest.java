@@ -18,7 +18,7 @@ class FlightExceptionHandlerTest {
     private final FlightExceptionHandler handler = new FlightExceptionHandler();
 
     @Test
-    @DisplayName("커서를 찾을 수 없으면 404와 DEAL_NOT_FOUND 에러를 반환한다")
+    @DisplayName("커서를 찾을 수 없으면 404와 deal_not_found 에러를 반환한다")
     void handleDealNotFound_returnsNotFoundError() {
         ResponseEntity<FlightApiResponse<Void>> response =
                 handler.handleDealNotFound(new FlightDealNotFoundException("bogus"));
@@ -26,16 +26,17 @@ class FlightExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isNull();
-        assertThat(response.getBody().error().code()).isEqualTo("DEAL_NOT_FOUND");
+        assertThat(response.getBody().meta()).isNull();
+        assertThat(response.getBody().error().code()).isEqualTo("deal_not_found");
         assertThat(response.getBody().error().message()).isEqualTo("Deal not found or already expired");
     }
 
     @Test
-    @DisplayName("검증 실패는 400과 VALIDATION_FAILED, 필드별 details를 반환한다")
+    @DisplayName("검증 실패는 400과 validation_failed, 필드별 details를 반환한다")
     void handleInvalidSearch_returnsValidationFailedError() {
         List<FlightApiError.Detail> details = List.of(
-                new FlightApiError.Detail("origin", "INVALID_IATA_CODE"),
-                new FlightApiError.Detail("dateFrom", "PAST_DATE_NOT_ALLOWED"));
+                new FlightApiError.Detail("origin", "invalid_iata_code"),
+                new FlightApiError.Detail("dateFrom", "past_date_not_allowed"));
 
         ResponseEntity<FlightApiResponse<Void>> response =
                 handler.handleInvalidSearch(new InvalidFlightSearchException(details));
@@ -43,13 +44,14 @@ class FlightExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isNull();
-        assertThat(response.getBody().error().code()).isEqualTo("VALIDATION_FAILED");
-        assertThat(response.getBody().error().message()).isEqualTo("2 fields are invalid");
+        assertThat(response.getBody().meta()).isNull();
+        assertThat(response.getBody().error().code()).isEqualTo("validation_failed");
+        assertThat(response.getBody().error().message()).isEqualTo("입력값을 확인해 주세요");
         assertThat(response.getBody().error().details()).isEqualTo(details);
     }
 
     @Test
-    @DisplayName("필수 파라미터가 아예 없으면 400과 VALIDATION_FAILED, 그 필드 하나만 담긴 details를 반환한다")
+    @DisplayName("필수 파라미터가 아예 없으면 400과 validation_failed, 그 필드 하나만 담긴 details를 반환한다")
     void handleMissingRequestParameter_returnsValidationFailedError() {
         ResponseEntity<FlightApiResponse<Void>> response =
                 handler.handleMissingRequestParameter(new MissingServletRequestParameterException("origin", "String"));
@@ -57,8 +59,9 @@ class FlightExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isNull();
-        assertThat(response.getBody().error().code()).isEqualTo("VALIDATION_FAILED");
+        assertThat(response.getBody().meta()).isNull();
+        assertThat(response.getBody().error().code()).isEqualTo("validation_failed");
         assertThat(response.getBody().error().details())
-                .isEqualTo(List.of(new FlightApiError.Detail("origin", "REQUIRED")));
+                .isEqualTo(List.of(new FlightApiError.Detail("origin", "required")));
     }
 }

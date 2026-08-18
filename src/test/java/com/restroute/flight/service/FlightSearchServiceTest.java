@@ -77,7 +77,7 @@ class FlightSearchServiceTest {
         FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", "DATE"), 30);
 
         List<String> departures = response.items().stream()
-                .map(item -> item.departure().departureFrom())
+                .map(item -> item.departure().departAt())
                 .toList();
         assertThat(departures).isSorted();
     }
