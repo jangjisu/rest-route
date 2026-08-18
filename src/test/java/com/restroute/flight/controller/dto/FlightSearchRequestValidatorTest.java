@@ -209,6 +209,19 @@ class FlightSearchRequestValidatorTest {
     }
 
     @Test
+    @DisplayName("sector가 알려진 지역권(일본/동남아/중화권/괌사이판)이면 통과한다")
+    void validate_passesKnownSectorValues() {
+        assertThatCode(() -> validMinimalExcept(builder -> builder.sector(List.of("JAPAN"))))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> validMinimalExcept(builder -> builder.sector(List.of("SOUTHEAST_ASIA"))))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> validMinimalExcept(builder -> builder.sector(List.of("GREATER_CHINA"))))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> validMinimalExcept(builder -> builder.sector(List.of("GUAM_SAIPAN"))))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     @DisplayName("destination과 sector를 함께 보내면 SECTOR_DESTINATION_CONFLICT를 반환한다")
     void validate_flagsSectorCombinedWithDestination() {
         assertThatThrownBy(() ->
