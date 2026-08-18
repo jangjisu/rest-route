@@ -7,6 +7,9 @@ import com.restroute.flight.controller.response.FlightDealSearchMeta;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,7 @@ class FlightDealSessionStore {
     private static final Duration DEFAULT_TTL = Duration.ofSeconds(300);
     private static final String TOKEN_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final int TOKEN_LENGTH = 4;
+    private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
     private final Map<String, CachedSession> sessions = new ConcurrentHashMap<>();
     private final Duration ttl;
@@ -53,19 +57,21 @@ class FlightDealSessionStore {
     FlightDealSearchResponse create(FlightSearchRequestDto request, Integer totalSize, int size, Fetcher fetcher) {
         String token = reserveToken();
         List<FlightDealResponse> items = fetcher.fetch(token);
-        save(token, request, totalSize, items);
-        return toResponse(items, 0, size);
+        OffsetDateTime fetchedAt = OffsetDateTime.now(KST);
+        save(token, request, totalSize, items, fetchedAt);
+        return toResponse(items, 0, size, request, fetchedAt);
     }
 
     /**
      * cursor로 세션을 찾아 이어지는 페이지를 반환한다. 세션을 못 찾으면(형식 이상·만료·조건
      * 불일치 포함) "존재하지 않으면 실패"가 고정 규칙이라 {@link FlightDealNotFoundException}을
-     * 던진다.
+     * 던진다. fetchedAt은 세션이 처음 만들어진 시점 값을 그대로 이어 쓴다 — 같은 검색의
+     * 페이지들은 전부 "언제 조회됐는지"가 같아야 한다.
      */
     FlightDealSearchResponse find(FlightSearchRequestDto request, Integer totalSize, String cursor, int size) {
         CachedSession session = requireSession(request, totalSize, cursor);
         int startIndex = indexOf(session, cursor) + 1;
-        return toResponse(session.items(), startIndex, size);
+        return toResponse(session.items(), startIndex, size, request, session.fetchedAt());
     }
 
     @FunctionalInterface
@@ -81,10 +87,15 @@ class FlightDealSessionStore {
         return token;
     }
 
-    private void save(String token, FlightSearchRequestDto request, Integer totalSize, List<FlightDealResponse> items) {
+    private void save(
+            String token,
+            FlightSearchRequestDto request,
+            Integer totalSize,
+            List<FlightDealResponse> items,
+            OffsetDateTime fetchedAt) {
         Map<String, Integer> indexById = buildIndex(items);
         CachedSession session = new CachedSession(
-                request, totalSize, items, indexById, Instant.now().plus(ttl));
+                request, totalSize, items, indexById, Instant.now().plus(ttl), fetchedAt);
         sessions.put(token, session);
     }
 
@@ -150,12 +161,24 @@ class FlightDealSessionStore {
         return indexById;
     }
 
-    private static FlightDealSearchResponse toResponse(List<FlightDealResponse> items, int startIndex, int size) {
+    private static FlightDealSearchResponse toResponse(
+            List<FlightDealResponse> items,
+            int startIndex,
+            int size,
+            FlightSearchRequestDto request,
+            OffsetDateTime fetchedAt) {
         int endIndex = Math.min(startIndex + size, items.size());
         List<FlightDealResponse> page = items.subList(startIndex, endIndex);
         boolean hasNext = endIndex < items.size();
         String nextCursor = hasNext ? page.get(page.size() - 1).id() : null;
-        return FlightDealSearchResponse.of(page, FlightDealSearchMeta.of(nextCursor, hasNext, items.size()));
+        FlightDealSearchMeta meta = FlightDealSearchMeta.of(
+                nextCursor,
+                hasNext,
+                items.size(),
+                request.parsedLocale(),
+                request.parsedCurrency(),
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(fetchedAt));
+        return FlightDealSearchResponse.of(page, meta);
     }
 
     private record CachedSession(
@@ -163,7 +186,8 @@ class FlightDealSessionStore {
             Integer totalSize,
             List<FlightDealResponse> items,
             Map<String, Integer> indexById,
-            Instant expiresAt) {
+            Instant expiresAt,
+            OffsetDateTime fetchedAt) {
 
         boolean matches(FlightSearchRequestDto otherRequest, Integer otherTotalSize) {
             return Objects.equals(totalSize, otherTotalSize) && request.equals(otherRequest);

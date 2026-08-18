@@ -2,8 +2,10 @@ package com.restroute.flight.controller;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightApiResponse;
+import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
 import com.restroute.flight.service.FlightSearchService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,19 +38,21 @@ public class FlightSearchMockController {
     private final FlightSearchService flightSearchService;
 
     /**
-     * @param request 검색 조건(origin/destination/dateFrom/dateTo/nights/filter/dayOption/includeTransfer/sort)과
-     *     페이지네이션(cursor/size)을 쿼리 파라미터로부터 바인딩받은 DTO. 유효하지 않으면
+     * @param request 검색 조건(origin/searchMode/dateFrom/dateTo/destination/nights/sector/includeWeekend/
+     *     includeHoliday/includeTransfer/adults/children/infants/sort/locale/currency)과
+     *     페이지네이션(cursor/limit)을 쿼리 파라미터로부터 바인딩받은 DTO. 유효하지 않으면
      *     {@link FlightExceptionHandler}가 처리한다.
-     * @param totalSize 이번 검색에서 총 몇 건 생성할지(모킹 전용, 옵션, 기본 77, 최대 1000 — size처럼 범위만
+     * @param totalSize 이번 검색에서 총 몇 건 생성할지(모킹 전용, 옵션, 기본 77, 최대 1000 — limit처럼 범위만
      *     넘으면 조용히 잘라내고 별도 에러는 없음). totalSize는 실제 API 계약에 없는 모킹 전용 값이라
      *     DTO에 넣지 않고 여기서만 클램핑한다.
      */
     @GetMapping("/search/mock")
-    public ResponseEntity<FlightApiResponse<FlightDealSearchResponse>> searchMock(
+    public ResponseEntity<FlightApiResponse<List<FlightDealResponse>>> searchMock(
             @ModelAttribute FlightSearchRequestDto request,
             @RequestParam(required = false, defaultValue = "" + DEFAULT_TOTAL_SIZE) int totalSize) {
         int boundedTotalSize = Math.min(Math.max(totalSize, MIN_TOTAL_SIZE), MAX_TOTAL_SIZE);
 
-        return ResponseEntity.ok(FlightApiResponse.success(flightSearchService.search(request, boundedTotalSize)));
+        FlightDealSearchResponse result = flightSearchService.search(request, boundedTotalSize);
+        return ResponseEntity.ok(FlightApiResponse.success(result.items(), result.meta()));
     }
 }
