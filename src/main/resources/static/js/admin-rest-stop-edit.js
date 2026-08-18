@@ -5,19 +5,13 @@ import {
     fetchEditableRestStop,
     saveEditableRestStop
 } from './admin-rest-stop-edit-request.js';
+import { csrfFrom } from './admin-common.js';
 
 function createOption(document, restStop) {
     const option = document.createElement('option');
     option.value = restStop.serviceAreaCode;
     option.textContent = `${restStop.unitName || '이름 정보 없음'} · ${restStop.serviceAreaCode}`;
     return option;
-}
-
-function csrfFrom(form) {
-    return {
-        headerName: form.dataset.csrfHeader || 'X-CSRF-TOKEN',
-        token: form.querySelector('input[name="_csrf"]')?.value || ''
-    };
 }
 
 function ynToChecked(value) {

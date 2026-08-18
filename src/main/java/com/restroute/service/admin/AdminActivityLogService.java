@@ -31,6 +31,8 @@ public class AdminActivityLogService {
     private static final String OIL_STATION_LINKED_MESSAGE = "%s 주유소를 %s에 연결했습니다.";
     private static final String OIL_STATION_UNLINKED_MESSAGE = "%s 주유소의 연결을 해제했습니다.";
     private static final String OIL_STATION_OVERRIDE_CLEARED_MESSAGE = "%s 주유소를 자동 매칭으로 되돌렸습니다.";
+    private static final String FLIGHT_HOLIDAY_ADDED_MESSAGE = "공휴일(%s %s)을 추가했습니다.";
+    private static final String FLIGHT_HOLIDAY_DELETED_MESSAGE = "공휴일(%s)을 삭제했습니다.";
 
     private final AdminActivityLogRepository adminActivityLogRepository;
     private final Clock clock;
@@ -118,6 +120,16 @@ public class AdminActivityLogService {
     @Transactional
     public void logOilStationOverrideCleared(Authentication authentication, String oilStationName) {
         saveLog(authentication, String.format(OIL_STATION_OVERRIDE_CLEARED_MESSAGE, oilStationName));
+    }
+
+    @Transactional
+    public void logFlightHolidayAdded(Authentication authentication, String date, String name) {
+        saveLog(authentication, String.format(FLIGHT_HOLIDAY_ADDED_MESSAGE, date, name));
+    }
+
+    @Transactional
+    public void logFlightHolidayDeleted(Authentication authentication, String date) {
+        saveLog(authentication, String.format(FLIGHT_HOLIDAY_DELETED_MESSAGE, date));
     }
 
     @Transactional(readOnly = true)
