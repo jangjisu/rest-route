@@ -30,4 +30,9 @@ public class AdminController {
     public String restStopOilLinks() {
         return "admin-rest-stop-oil-links";
     }
+
+    @GetMapping("/admin/flights/holidays")
+    public String flightHolidays() {
+        return "admin-flight-holidays";
+    }
 }

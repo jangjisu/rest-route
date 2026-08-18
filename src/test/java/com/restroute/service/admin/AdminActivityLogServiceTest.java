@@ -217,6 +217,26 @@ class AdminActivityLogServiceTest {
     }
 
     @Test
+    @DisplayName("공휴일 추가를 기록한다")
+    void logFlightHolidayAdded_savesEntryWithDateAndName() {
+        when(authentication.getName()).thenReturn("admin");
+        adminActivityLogService.logFlightHolidayAdded(authentication, "2026-09-26", "대체공휴일");
+
+        AdminActivityLogEntity saved = captureSavedEntity();
+        assertThat(saved.getMessage()).isEqualTo("공휴일(2026-09-26 대체공휴일)을 추가했습니다.");
+    }
+
+    @Test
+    @DisplayName("공휴일 삭제를 기록한다")
+    void logFlightHolidayDeleted_savesEntryWithDate() {
+        when(authentication.getName()).thenReturn("admin");
+        adminActivityLogService.logFlightHolidayDeleted(authentication, "2026-09-26");
+
+        AdminActivityLogEntity saved = captureSavedEntity();
+        assertThat(saved.getMessage()).isEqualTo("공휴일(2026-09-26)을 삭제했습니다.");
+    }
+
+    @Test
     @DisplayName("최근 활동 로그를 레포지토리에서 그대로 반환한다")
     void findRecent_delegatesToRepository() {
         AdminActivityLogEntity entity = AdminActivityLogEntity.of("admin", "메시지", java.time.LocalDateTime.now());

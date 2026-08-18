@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>항공권 공휴일 관리 | rest-route</title>
+    <link href="/css/admin_style.css" rel="stylesheet">
+</head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/admin-shell :: sidebar(active='flight-holidays')}"></aside>
+    <main>
+        <header th:replace="~{fragments/admin-shell :: header(title='항공권 공휴일 관리')}"></header>
+        <div class="content">
+            <div class="workspace">
+                <section class="panel flight-holiday-panel" aria-labelledby="flightHolidayHeading">
+                    <div class="panel-head">
+                        <div>
+                            <h2 id="flightHolidayHeading">항공권 공휴일 관리</h2>
+                            <p>날짜를 클릭해서 공휴일을 추가하거나 삭제합니다. 대체공휴일처럼 매번 새로 지정되는 날짜도 여기서 바로 반영할 수 있습니다.</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <p id="flightHolidayStatus" class="helper" aria-live="polite"></p>
+
+                        <div class="flight-holiday-calendar-nav">
+                            <button id="flightHolidayPrevMonth" class="secondary" type="button" aria-label="이전 달">←</button>
+                            <strong id="flightHolidayMonthLabel"></strong>
+                            <button id="flightHolidayNextMonth" class="secondary" type="button" aria-label="다음 달">→</button>
+                        </div>
+
+                        <div class="flight-holiday-weekday-row">
+                            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                        </div>
+                        <div id="flightHolidayCalendarGrid" class="flight-holiday-calendar-grid"></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+<div id="flightHolidayCsrfSource" hidden th:data-csrf-header="${_csrf.headerName}">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+</div>
+<dialog id="flightHolidayModal" class="food-edit-modal" aria-labelledby="flightHolidayModalTitle">
+    <div class="food-edit-modal-header">
+        <h3 id="flightHolidayModalTitle">공휴일</h3>
+        <button id="flightHolidayModalClose" class="btn-close" type="button" aria-label="닫기">
+            <i aria-hidden="true">&times;</i>
+        </button>
+    </div>
+    <p id="flightHolidayModalDate" class="flight-holiday-modal-date"></p>
+    <div id="flightHolidayModalAddView">
+        <label for="flightHolidayNameInput">공휴일 이름</label>
+        <input id="flightHolidayNameInput" class="flight-holiday-input" type="text" placeholder="예: 대체공휴일">
+        <button id="flightHolidayAddButton" class="primary" type="button">추가</button>
+    </div>
+    <div id="flightHolidayModalRemoveView" hidden>
+        <p id="flightHolidayExistingName" class="flight-holiday-existing-name"></p>
+        <button id="flightHolidayDeleteButton" class="danger" type="button">삭제</button>
+    </div>
+</dialog>
+<th:block th:replace="~{fragments/admin-shell :: chrome}"></th:block>
+<script type="module" src="/js/admin-flight-holiday-page.js" defer></script>
+</body>
+</html>
