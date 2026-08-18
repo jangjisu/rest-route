@@ -10,6 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.flight.service.FlightSearchService;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,9 +25,26 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class FlightSearchMockControllerTest {
 
+    private static final ZoneOffset KST = ZoneOffset.ofHours(9);
+    private static final DateTimeFormatter LEG_TIME_FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
     private static final String VALID_ORIGIN = "ICN";
-    private static final String VALID_DATE_FROM = "2099-01-10";
-    private static final String VALID_DATE_TO = "2099-02-10";
+    private static final LocalDate VALID_DATE_FROM_DATE = LocalDate.now().plusDays(10);
+    private static final String VALID_DATE_FROM = VALID_DATE_FROM_DATE.toString();
+    private static final String VALID_DATE_TO =
+            VALID_DATE_FROM_DATE.plusDays(31).toString();
+
+    /** 첫 항목(index 0)의 예상 출/도착 시각 — {@link com.restroute.flight.service.FlightSearchMockFixture}의
+     * 계산식(09:20 출발, 90분 소요, 3박 뒤 13:10 귀국)을 그대로 재현한다. */
+    private static final String EXPECTED_DEPARTURE_DEPART_AT =
+            LEG_TIME_FORMAT.format(VALID_DATE_FROM_DATE.atTime(9, 20).atOffset(KST));
+
+    private static final String EXPECTED_DEPARTURE_ARRIVE_AT = LEG_TIME_FORMAT.format(
+            VALID_DATE_FROM_DATE.atTime(9, 20).atOffset(KST).plusMinutes(90));
+    private static final String EXPECTED_ARRIVAL_DEPART_AT = LEG_TIME_FORMAT.format(
+            VALID_DATE_FROM_DATE.plusDays(3).atTime(13, 10).atOffset(KST));
+    private static final String EXPECTED_ARRIVAL_ARRIVE_AT = LEG_TIME_FORMAT.format(
+            VALID_DATE_FROM_DATE.plusDays(3).atTime(13, 10).atOffset(KST).plusMinutes(90));
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -56,12 +76,12 @@ class FlightSearchMockControllerTest {
                 .andExpect(jsonPath("$.data[0].id").value(matchesPattern("^[A-Za-z0-9]{4}_0001$")))
                 .andExpect(jsonPath("$.data[0].destination.code").value("FUK"))
                 .andExpect(jsonPath("$.data[0].destination.name").value("후쿠오카"))
-                .andExpect(jsonPath("$.data[0].departure.departAt").value("2099-01-10T09:20:00+09:00"))
-                .andExpect(jsonPath("$.data[0].departure.arriveAt").value("2099-01-10T10:50:00+09:00"))
+                .andExpect(jsonPath("$.data[0].departure.departAt").value(EXPECTED_DEPARTURE_DEPART_AT))
+                .andExpect(jsonPath("$.data[0].departure.arriveAt").value(EXPECTED_DEPARTURE_ARRIVE_AT))
                 .andExpect(jsonPath("$.data[0].departure.duration").value(90))
                 .andExpect(jsonPath("$.data[0].departure.transferCount").value(1))
-                .andExpect(jsonPath("$.data[0].arrival.departAt").value("2099-01-13T13:10:00+09:00"))
-                .andExpect(jsonPath("$.data[0].arrival.arriveAt").value("2099-01-13T14:40:00+09:00"))
+                .andExpect(jsonPath("$.data[0].arrival.departAt").value(EXPECTED_ARRIVAL_DEPART_AT))
+                .andExpect(jsonPath("$.data[0].arrival.arriveAt").value(EXPECTED_ARRIVAL_ARRIVE_AT))
                 .andExpect(jsonPath("$.data[0].arrival.duration").value(90))
                 .andExpect(jsonPath("$.data[0].arrival.transferCount").value(1))
                 .andExpect(jsonPath("$.data[0].nights").value(3))
@@ -347,7 +367,7 @@ class FlightSearchMockControllerTest {
                         .param("origin", VALID_ORIGIN)
                         .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
-                        .param("dateTo", "2099-01-15")
+                        .param("dateTo", VALID_DATE_FROM_DATE.plusDays(5).toString())
                         .param("totalSize", "10")
                         .param("limit", "10"))
                 .andExpect(status().isOk())

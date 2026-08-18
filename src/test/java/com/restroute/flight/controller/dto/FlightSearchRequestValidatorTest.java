@@ -5,11 +5,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.restroute.flight.controller.exception.InvalidFlightSearchException;
 import com.restroute.flight.controller.response.FlightApiError;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class FlightSearchRequestValidatorTest {
+
+    private static String futureDate(int daysFromToday) {
+        return LocalDate.now().plusDays(daysFromToday).toString();
+    }
 
     @Test
     @DisplayName("전부 유효하면 예외를 던지지 않는다")
@@ -17,8 +22,8 @@ class FlightSearchRequestValidatorTest {
         assertThatCode(() -> FlightSearchRequestValidator.validate(
                         "ICN",
                         "range",
-                        "2099-01-10",
-                        "2099-02-10",
+                        futureDate(10),
+                        futureDate(41),
                         "OSA",
                         List.of("3", "4"),
                         null,
@@ -40,8 +45,8 @@ class FlightSearchRequestValidatorTest {
         assertThatCode(() -> FlightSearchRequestValidator.validate(
                         "ICN",
                         "range",
-                        "2099-01-10",
-                        "2099-02-10",
+                        futureDate(10),
+                        futureDate(41),
                         null,
                         null,
                         null,
@@ -133,17 +138,27 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("dateTo가 dateFrom보다 빠르면 BEFORE_DATE_FROM을 반환한다")
     void validate_flagsReversedDateRange() {
         assertThatThrownBy(() -> validMinimalExcept(
-                        builder -> builder.dateFrom("2099-02-10").dateTo("2099-01-10")))
+                        builder -> builder.dateFrom(futureDate(20)).dateTo(futureDate(10))))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(new FlightApiError.Detail("dateTo", "before_date_from")));
     }
 
     @Test
-    @DisplayName("날짜 범위가 3개월을 넘어도(더 이상 상한이 없어) 통과한다")
-    void validate_passesWhenDateRangeSpansManyMonths() {
-        assertThatCode(() -> validMinimalExcept(
-                        builder -> builder.dateFrom("2099-01-01").dateTo("2100-06-01")))
+    @DisplayName("dateTo가 오늘로부터 3개월을 넘으면 DATE_RANGE_TOO_WIDE를 반환한다")
+    void validate_flagsDateRangeExceedingThreeMonths() {
+        assertThatThrownBy(() -> validMinimalExcept(builder -> builder.dateFrom(futureDate(10))
+                        .dateTo(LocalDate.now().plusMonths(3).plusDays(1).toString())))
+                .isInstanceOf(InvalidFlightSearchException.class)
+                .extracting(e -> ((InvalidFlightSearchException) e).details())
+                .isEqualTo(List.of(new FlightApiError.Detail("dateTo", "date_range_too_wide")));
+    }
+
+    @Test
+    @DisplayName("dateTo가 정확히 오늘로부터 3개월이면(경계값) 통과한다")
+    void validate_passesWhenDateRangeIsExactlyThreeMonths() {
+        assertThatCode(() -> validMinimalExcept(builder -> builder.dateFrom(futureDate(1))
+                        .dateTo(LocalDate.now().plusMonths(3).toString())))
                 .doesNotThrowAnyException();
     }
 
@@ -305,8 +320,8 @@ class FlightSearchRequestValidatorTest {
     private static final class ValidateArgs {
         private String origin = "ICN";
         private String searchMode = "range";
-        private String dateFrom = "2099-01-10";
-        private String dateTo = "2099-02-10";
+        private String dateFrom = futureDate(10);
+        private String dateTo = futureDate(41);
         private String destination;
         private List<String> nights = List.of("3");
         private List<String> sector;

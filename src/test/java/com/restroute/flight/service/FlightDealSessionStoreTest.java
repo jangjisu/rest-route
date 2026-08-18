@@ -7,6 +7,7 @@ import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -98,8 +99,8 @@ class FlightDealSessionStoreTest {
         return new FlightSearchRequestDto(
                 "ICN",
                 "range",
-                "2099-01-10",
-                "2099-02-10",
+                LocalDate.now().plusDays(10).toString(),
+                LocalDate.now().plusDays(41).toString(),
                 null,
                 List.of(nights),
                 null,

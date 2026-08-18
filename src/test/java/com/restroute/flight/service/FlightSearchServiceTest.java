@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,8 +14,8 @@ import org.junit.jupiter.api.Test;
 class FlightSearchServiceTest {
 
     private static final String VALID_ORIGIN = "ICN";
-    private static final String VALID_DATE_FROM = "2099-01-10";
-    private static final String VALID_DATE_TO = "2099-02-10";
+    private static final String VALID_DATE_FROM = LocalDate.now().plusDays(10).toString();
+    private static final String VALID_DATE_TO = LocalDate.now().plusDays(41).toString();
 
     private final FlightSearchService service = new FlightSearchService(new FlightDealSessionStore());
 
