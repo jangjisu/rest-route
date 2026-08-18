@@ -118,29 +118,10 @@ class FlightRangeSearchResponseMapperTest {
     }
 
     @Test
-    @DisplayName("가격 기준 전체 최저가 한 건에만 isLowestInRange가 true다")
-    void mapAll_marksOnlyOverallLowestPrice() {
-        TravelpayoutsPriceItem cheaper = new TravelpayoutsPriceItem(
-                "SEL",
-                "OSA",
-                "ICN",
-                "KIX",
-                50000,
-                "LJ",
-                "999",
-                "2026-09-20T09:20:00+09:00",
-                "2026-09-23T13:10:00+09:00",
-                0,
-                0,
-                999,
-                90,
-                90,
-                "Aviasales",
-                "https://example.com/cheaper");
+    @DisplayName("isLowestInRange는 여기서 표시하지 않는다 — 필터를 다 거친 다음 별도로 표시해야 한다")
+    void mapAll_neverMarksLowestInRange() {
+        List<FlightDealResponse> result = mapper.mapAll(List.of(item(), item()), "TOK1");
 
-        List<FlightDealResponse> result = mapper.mapAll(List.of(item(), cheaper), "TOK1");
-
-        assertThat(result.get(0).isLowestInRange()).isFalse();
-        assertThat(result.get(1).isLowestInRange()).isTrue();
+        assertThat(result).extracting(FlightDealResponse::isLowestInRange).containsExactly(false, false);
     }
 }

@@ -36,12 +36,16 @@ class FlightRangeSearchResponseMapper {
     private final FlightAirportNameCache airportNameCache;
     private final FlightAirlineNameCache airlineNameCache;
 
-    /** id는 세션 토큰 + 순번으로 매긴다(mock과 동일한 형식) — 전체 최저가 표시도 여기서 함께 붙인다. */
+    /**
+     * id는 세션 토큰 + 순번으로 매긴다(mock과 동일한 형식). 전체 최저가 표시({@link
+     * FlightDealResponses#markLowestInRange})는 여기서 하지 않는다 — 이후 필터(주말/공휴일
+     * 제외 등)를 거치면서 최저가였던 항목이 빠질 수 있어, 필터까지 다 적용한 다음에 표시해야
+     * 한다.
+     */
     List<FlightDealResponse> mapAll(List<TravelpayoutsPriceItem> items, String sessionToken) {
-        List<FlightDealResponse> mapped = IntStream.range(0, items.size())
+        return IntStream.range(0, items.size())
                 .mapToObj(index -> mapOne(items.get(index), idOf(sessionToken, index)))
                 .toList();
-        return FlightDealResponses.markLowestInRange(mapped);
     }
 
     private FlightDealResponse mapOne(TravelpayoutsPriceItem item, String id) {
