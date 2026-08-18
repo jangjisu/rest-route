@@ -2,8 +2,8 @@ package com.restroute.service.admin;
 
 import com.restroute.controller.request.AdminFlightHolidayRequest;
 import com.restroute.controller.response.AdminFlightHolidayResponse;
-import com.restroute.flight.domain.FlightHolidayEntity;
-import com.restroute.flight.repository.FlightHolidayRepository;
+import com.restroute.holiday.domain.HolidayEntity;
+import com.restroute.holiday.repository.HolidayRepository;
 import com.restroute.service.admin.exception.DuplicateFlightHolidayException;
 import com.restroute.service.admin.exception.FlightHolidayNotFoundException;
 import com.restroute.service.admin.exception.InvalidFlightHolidayRequestException;
@@ -19,7 +19,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AdminFlightHolidayService {
 
-    private final FlightHolidayRepository flightHolidayRepository;
+    private final HolidayRepository flightHolidayRepository;
 
     @Transactional(readOnly = true)
     public List<AdminFlightHolidayResponse> findAll() {
@@ -35,13 +35,13 @@ public class AdminFlightHolidayService {
         if (flightHolidayRepository.existsByHolidayDate(holidayDate)) {
             throw DuplicateFlightHolidayException.forDate(holidayDate);
         }
-        FlightHolidayEntity saved = flightHolidayRepository.save(FlightHolidayEntity.of(holidayDate, name));
+        HolidayEntity saved = flightHolidayRepository.save(HolidayEntity.of(holidayDate, name));
         return AdminFlightHolidayResponse.from(saved);
     }
 
     @Transactional
     public AdminFlightHolidayResponse delete(Long holidayId) {
-        FlightHolidayEntity entity = flightHolidayRepository
+        HolidayEntity entity = flightHolidayRepository
                 .findById(holidayId)
                 .orElseThrow(() -> FlightHolidayNotFoundException.forId(holidayId));
         flightHolidayRepository.delete(entity);

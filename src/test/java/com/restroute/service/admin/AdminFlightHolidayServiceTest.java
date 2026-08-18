@@ -8,8 +8,8 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.controller.request.AdminFlightHolidayRequest;
 import com.restroute.controller.response.AdminFlightHolidayResponse;
-import com.restroute.flight.domain.FlightHolidayEntity;
-import com.restroute.flight.repository.FlightHolidayRepository;
+import com.restroute.holiday.domain.HolidayEntity;
+import com.restroute.holiday.repository.HolidayRepository;
 import com.restroute.service.admin.exception.DuplicateFlightHolidayException;
 import com.restroute.service.admin.exception.FlightHolidayNotFoundException;
 import com.restroute.service.admin.exception.InvalidFlightHolidayRequestException;
@@ -28,7 +28,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class AdminFlightHolidayServiceTest {
 
     @Mock
-    private FlightHolidayRepository flightHolidayRepository;
+    private HolidayRepository flightHolidayRepository;
 
     private AdminFlightHolidayService service;
 
@@ -37,8 +37,8 @@ class AdminFlightHolidayServiceTest {
         service = new AdminFlightHolidayService(flightHolidayRepository);
     }
 
-    private static FlightHolidayEntity entityWithId(Long id, LocalDate date, String name) {
-        FlightHolidayEntity entity = FlightHolidayEntity.of(date, name);
+    private static HolidayEntity entityWithId(Long id, LocalDate date, String name) {
+        HolidayEntity entity = HolidayEntity.of(date, name);
         ReflectionTestUtils.setField(entity, "id", id);
         return entity;
     }
@@ -61,7 +61,7 @@ class AdminFlightHolidayServiceTest {
     void create_savesNewHoliday() {
         when(flightHolidayRepository.existsByHolidayDate(LocalDate.of(2026, 9, 26)))
                 .thenReturn(false);
-        when(flightHolidayRepository.save(any(FlightHolidayEntity.class)))
+        when(flightHolidayRepository.save(any(HolidayEntity.class)))
                 .thenReturn(entityWithId(5L, LocalDate.of(2026, 9, 26), "대체공휴일"));
 
         AdminFlightHolidayResponse result = service.create(new AdminFlightHolidayRequest("2026-09-26", "대체공휴일"));
@@ -105,7 +105,7 @@ class AdminFlightHolidayServiceTest {
     @Test
     @DisplayName("존재하는 id면 공휴일을 삭제하고 삭제된 정보를 반환한다")
     void delete_removesHolidayAndReturnsIt() {
-        FlightHolidayEntity entity = entityWithId(5L, LocalDate.of(2026, 9, 26), "대체공휴일");
+        HolidayEntity entity = entityWithId(5L, LocalDate.of(2026, 9, 26), "대체공휴일");
         when(flightHolidayRepository.findById(5L)).thenReturn(Optional.of(entity));
 
         AdminFlightHolidayResponse result = service.delete(5L);
