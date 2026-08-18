@@ -1,3 +1,5 @@
+import { csrfFrom } from './admin-common.js';
+
 const REST_STOPS_ENDPOINT = '/api/rest-stops';
 const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png']);
@@ -96,13 +98,6 @@ function createOption(document, restStop) {
     option.value = restStop.serviceAreaCode;
     option.textContent = `${restStop.unitName || '이름 정보 없음'} · ${restStop.serviceAreaCode}`;
     return option;
-}
-
-function csrfFrom(form) {
-    return {
-        headerName: form.dataset.csrfHeader || 'X-CSRF-TOKEN',
-        token: form.querySelector('input[name="_csrf"]')?.value || ''
-    };
 }
 
 export function initializeAdminRestStopImage(document, {

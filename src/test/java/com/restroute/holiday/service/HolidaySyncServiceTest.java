@@ -24,6 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HolidaySyncServiceTest {
 
+    private static final LocalDate YEAR_START = LocalDate.of(2026, 1, 1);
+    private static final LocalDate YEAR_END = LocalDate.of(2026, 12, 31);
+
     @Mock
     private SpecialDayClient specialDayClient;
 
@@ -38,9 +41,7 @@ class HolidaySyncServiceTest {
     }
 
     private static void stubExistingHolidays(HolidayRepository repository, LocalDate... existingDates) {
-        for (LocalDate date : existingDates) {
-            when(repository.existsByHolidayDate(date)).thenReturn(true);
-        }
+        when(repository.findHolidayDatesBetween(YEAR_START, YEAR_END)).thenReturn(List.of(existingDates));
     }
 
     @Test
@@ -51,10 +52,8 @@ class HolidaySyncServiceTest {
         SpecialDayResponse.Item notActuallyOff = new SpecialDayResponse.Item("20260706", "제헌절", "N");
         when(specialDayClient.restDaysOfYear(2026))
                 .thenReturn(List.of(substituteHoliday, alreadyRegistered, notActuallyOff));
-        when(holidayRepository.existsByHolidayDate(LocalDate.of(2026, 8, 17))).thenReturn(false);
         stubExistingHolidays(holidayRepository, LocalDate.of(2026, 1, 1));
-        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(
-                        LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(YEAR_START, YEAR_END))
                 .thenReturn(List.of());
 
         HolidaySyncResult result = service.syncYear(2026);
@@ -69,12 +68,25 @@ class HolidaySyncServiceTest {
     }
 
     @Test
-    @DisplayName("공공기관 휴일이 아닌(isHoliday=N) 항목은 저장하지 않는다")
+    @DisplayName("공공기관 휴일이 아닌(isHoliday=N) 항목만 있으면 동기화 자체를 건너뛴다")
     void syncYear_skipsNonHolidayItems() {
         when(specialDayClient.restDaysOfYear(2026))
                 .thenReturn(List.of(new SpecialDayResponse.Item("20260706", "제헌절", "N")));
-        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(
-                        LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+
+        HolidaySyncResult result = service.syncYear(2026);
+
+        assertThat(result.savedCount()).isEqualTo(0);
+        assertThat(result.deletedCount()).isEqualTo(0);
+        verify(holidayRepository, never()).save(any());
+        verify(holidayRepository, never()).deleteAll(any());
+    }
+
+    @Test
+    @DisplayName("응답의 실제 공휴일이 전부 주말이어도, 실제 공휴일 자체는 있었으므로 정상적으로 동기화를 진행한다")
+    void syncYear_skipsActualHolidaysThatFallOnWeekend() {
+        SpecialDayResponse.Item liberationDaySaturday = new SpecialDayResponse.Item("20260815", "광복절", "Y");
+        when(specialDayClient.restDaysOfYear(2026)).thenReturn(List.of(liberationDaySaturday));
+        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(YEAR_START, YEAR_END))
                 .thenReturn(List.of());
 
         HolidaySyncResult result = service.syncYear(2026);
@@ -84,28 +96,28 @@ class HolidaySyncServiceTest {
     }
 
     @Test
-    @DisplayName("실제 공휴일(isHoliday=Y)이어도 주말이면 저장하지 않는다 — 주말은 이미 무조건 비근무일이다")
-    void syncYear_skipsActualHolidaysThatFallOnWeekend() {
-        SpecialDayResponse.Item liberationDaySaturday = new SpecialDayResponse.Item("20260815", "광복절", "Y");
-        when(specialDayClient.restDaysOfYear(2026)).thenReturn(List.of(liberationDaySaturday));
-        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(
-                        LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
-                .thenReturn(List.of());
+    @DisplayName("특일 정보 API가 실제 공휴일을 하나도 반환하지 않으면(장애 의심) 동기화를 건너뛰고 아무것도 지우지 않는다")
+    void syncYear_skipsEntireSyncWhenApiReturnsNoActualHolidays() {
+        when(specialDayClient.restDaysOfYear(2026)).thenReturn(List.of());
 
         HolidaySyncResult result = service.syncYear(2026);
 
         assertThat(result.savedCount()).isEqualTo(0);
-        verify(holidayRepository, never()).existsByHolidayDate(LocalDate.of(2026, 8, 15));
+        assertThat(result.deletedCount()).isEqualTo(0);
+        verify(holidayRepository, never()).findAllByHolidayDateBetweenAndAdminOverriddenFalse(any(), any());
+        verify(holidayRepository, never()).findHolidayDatesBetween(any(), any());
         verify(holidayRepository, never()).save(any());
+        verify(holidayRepository, never()).deleteAll(any());
     }
 
     @Test
     @DisplayName("배치가 예전에 넣은 행 중 오늘 응답에 더 이상 없는 날짜는 삭제하고 삭제 건수를 반환한다")
     void syncYear_deletesStaleSyncedHolidaysNoLongerInApiResponse() {
         HolidayEntity staleSyncedHoliday = HolidayEntity.syncedFromApi(LocalDate.of(2026, 7, 6), "제헌절");
-        when(specialDayClient.restDaysOfYear(2026)).thenReturn(List.of());
-        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(
-                        LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+        when(specialDayClient.restDaysOfYear(2026))
+                .thenReturn(List.of(new SpecialDayResponse.Item("20260101", "신정", "Y")));
+        stubExistingHolidays(holidayRepository, LocalDate.of(2026, 1, 1));
+        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(YEAR_START, YEAR_END))
                 .thenReturn(List.of(staleSyncedHoliday));
 
         HolidaySyncResult result = service.syncYear(2026);
@@ -117,9 +129,10 @@ class HolidaySyncServiceTest {
     @Test
     @DisplayName("관리자가 직접 등록한 행은 오늘 응답에 없어도 삭제 대상에서 아예 제외된다")
     void syncYear_neverConsidersAdminCreatedHolidaysForDeletion() {
-        when(specialDayClient.restDaysOfYear(2026)).thenReturn(List.of());
-        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(
-                        LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+        when(specialDayClient.restDaysOfYear(2026))
+                .thenReturn(List.of(new SpecialDayResponse.Item("20260101", "신정", "Y")));
+        stubExistingHolidays(holidayRepository, LocalDate.of(2026, 1, 1));
+        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(YEAR_START, YEAR_END))
                 .thenReturn(List.of());
 
         HolidaySyncResult result = service.syncYear(2026);
@@ -135,8 +148,7 @@ class HolidaySyncServiceTest {
         when(specialDayClient.restDaysOfYear(2026))
                 .thenReturn(List.of(new SpecialDayResponse.Item("20260817", "대체공휴일(광복절)", "Y")));
         stubExistingHolidays(holidayRepository, LocalDate.of(2026, 8, 17));
-        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(
-                        LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(YEAR_START, YEAR_END))
                 .thenReturn(List.of(stillCurrentHoliday));
 
         HolidaySyncResult result = service.syncYear(2026);
@@ -151,8 +163,7 @@ class HolidaySyncServiceTest {
         HolidayEntity legacyWeekendHoliday = HolidayEntity.syncedFromApi(LocalDate.of(2026, 8, 15), "광복절");
         when(specialDayClient.restDaysOfYear(2026))
                 .thenReturn(List.of(new SpecialDayResponse.Item("20260815", "광복절", "Y")));
-        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(
-                        LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+        when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(YEAR_START, YEAR_END))
                 .thenReturn(List.of(legacyWeekendHoliday));
 
         HolidaySyncResult result = service.syncYear(2026);

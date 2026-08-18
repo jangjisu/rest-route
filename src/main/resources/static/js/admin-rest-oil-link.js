@@ -5,15 +5,9 @@ import {
     searchOilStations,
     unlinkOilStation
 } from './admin-rest-oil-link-request.js';
+import { csrfFrom } from './admin-common.js';
 
 const DEFAULT_DEBOUNCE_MS = 250;
-
-function csrfFrom(source) {
-    return {
-        headerName: source.dataset.csrfHeader || 'X-CSRF-TOKEN',
-        token: source.querySelector('input[name="_csrf"]')?.value || ''
-    };
-}
 
 export function initializeAdminRestOilLink(document, {
     fetchImpl = fetch,

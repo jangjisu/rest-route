@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { setGlobalLoading, showToast } from '../../main/resources/static/js/admin-common.js';
+import { csrfFrom, setGlobalLoading, showToast } from '../../main/resources/static/js/admin-common.js';
 
 test('shows and removes a toast through the shared toast helper', async () => {
     const toast = { textContent: '', className: '' };
@@ -26,4 +26,19 @@ test('toggles the shared loading overlay on and off', () => {
 
     assert.equal(overlay.visible, true);
     assert.equal(message.textContent, '처리 중입니다.');
+});
+
+test('csrfFrom reads header name and token from the source element', () => {
+    const source = {
+        dataset: { csrfHeader: 'X-Custom-Header' },
+        querySelector: () => ({ value: 'token-value' })
+    };
+
+    assert.deepEqual(csrfFrom(source), { headerName: 'X-Custom-Header', token: 'token-value' });
+});
+
+test('csrfFrom falls back to defaults when header/token are missing', () => {
+    const source = { dataset: {}, querySelector: () => null };
+
+    assert.deepEqual(csrfFrom(source), { headerName: 'X-CSRF-TOKEN', token: '' });
 });

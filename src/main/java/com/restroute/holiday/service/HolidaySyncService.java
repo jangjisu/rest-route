@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>주말은 이미 무조건 비근무일로 판정되므로, API 응답에 있어도 저장하지 않는다(연차/공휴일
  * 배지 계산에 이 테이블을 조회 목적이 아니라 판정 목적으로만 쓰기 때문에 중복 저장할 이유가 없다).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HolidaySyncService {
@@ -36,22 +38,33 @@ public class HolidaySyncService {
 
     @Transactional
     public HolidaySyncResult syncYear(int year) {
-        List<HolidayCandidate> candidates = specialDayClient.restDaysOfYear(year).stream()
+        List<SpecialDayResponse.Item> actualHolidayItems = specialDayClient.restDaysOfYear(year).stream()
                 .filter(SpecialDayResponse.Item::isActualHoliday)
+                .toList();
+
+        if (actualHolidayItems.isEmpty()) {
+            log.warn(
+                    "Special day API returned no actual holidays for year={}; skipping sync to avoid mass delete.",
+                    year);
+            return HolidaySyncResult.of(0, 0);
+        }
+
+        List<HolidayCandidate> candidates = actualHolidayItems.stream()
                 .map(item -> new HolidayCandidate(LocalDate.parse(item.locdate(), LOCDATE_FORMAT), item.dateName()))
                 .filter(candidate -> !HolidayEntity.isWeekend(candidate.date()))
                 .toList();
         Set<LocalDate> apiDates =
                 candidates.stream().map(HolidayCandidate::date).collect(Collectors.toSet());
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+        Set<LocalDate> existingDates = Set.copyOf(holidayRepository.findHolidayDatesBetween(yearStart, yearEnd));
 
-        int deletedCount = deleteStaleSyncedHolidays(year, apiDates);
-        int savedCount = saveNewHolidays(candidates);
+        int deletedCount = deleteStaleSyncedHolidays(yearStart, yearEnd, apiDates);
+        int savedCount = saveNewHolidays(candidates, existingDates);
         return HolidaySyncResult.of(savedCount, deletedCount);
     }
 
-    private int deleteStaleSyncedHolidays(int year, Set<LocalDate> apiDates) {
-        LocalDate yearStart = LocalDate.of(year, 1, 1);
-        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+    private int deleteStaleSyncedHolidays(LocalDate yearStart, LocalDate yearEnd, Set<LocalDate> apiDates) {
         List<HolidayEntity> staleHolidays =
                 holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(yearStart, yearEnd).stream()
                         .filter(holiday -> !apiDates.contains(holiday.getHolidayDate()))
@@ -60,10 +73,10 @@ public class HolidaySyncService {
         return staleHolidays.size();
     }
 
-    private int saveNewHolidays(List<HolidayCandidate> candidates) {
+    private int saveNewHolidays(List<HolidayCandidate> candidates, Set<LocalDate> existingDates) {
         int savedCount = 0;
         for (HolidayCandidate candidate : candidates) {
-            if (holidayRepository.existsByHolidayDate(candidate.date())) {
+            if (existingDates.contains(candidate.date())) {
                 continue;
             }
             holidayRepository.save(HolidayEntity.syncedFromApi(candidate.date(), candidate.name()));

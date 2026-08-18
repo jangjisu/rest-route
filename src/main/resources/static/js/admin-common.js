@@ -17,6 +17,13 @@ export function showToast(document, message, type = 'success', duration = TOAST_
     }, duration);
 }
 
+export function csrfFrom(source) {
+    return {
+        headerName: source.dataset.csrfHeader || 'X-CSRF-TOKEN',
+        token: source.querySelector('input[name="_csrf"]')?.value || ''
+    };
+}
+
 export function setGlobalLoading(document, isLoading, message = '처리 중입니다.') {
     const overlay = document.getElementById('adminLoadingOverlay');
     if (!overlay) {

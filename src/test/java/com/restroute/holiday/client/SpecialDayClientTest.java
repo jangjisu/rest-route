@@ -81,6 +81,19 @@ class SpecialDayClientTest {
     }
 
     @Test
+    @DisplayName("resultCode는 성공인데 body가 null이면 NPE 대신 SpecialDayApiException을 던진다")
+    void restDaysOfYear_throwsWhenBodyIsNull() {
+        SpecialDayResponse response = new SpecialDayResponse(
+                new SpecialDayResponse.Response(new SpecialDayResponse.Header("00", "OK"), null));
+        when(specialDayFeignClient.getRestDeInfo("2026", 100, 1, "json", "test-key"))
+                .thenReturn(response);
+
+        assertThatThrownBy(() -> specialDayClient.restDaysOfYear(2026))
+                .isInstanceOf(SpecialDayApiException.class)
+                .hasMessageContaining("빈 응답");
+    }
+
+    @Test
     @DisplayName("items가 비어있으면(item 리스트가 null이어도) 빈 리스트를 반환한다")
     void restDaysOfYear_returnsEmptyListWhenNoItems() {
         SpecialDayResponse response = new SpecialDayResponse(new SpecialDayResponse.Response(

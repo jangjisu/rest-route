@@ -37,7 +37,11 @@ public class SpecialDayClient {
         if (!header.isSuccess()) {
             throw new SpecialDayApiException(requestDescription, header.resultMsg());
         }
-        return response.response().body().itemsOrEmpty();
+        SpecialDayResponse.Body body = response.response().body();
+        if (body == null) {
+            throw new SpecialDayApiException(requestDescription, "빈 응답");
+        }
+        return body.itemsOrEmpty();
     }
 
     private SpecialDayResponse fetch(String requestDescription, Supplier<SpecialDayResponse> request) {

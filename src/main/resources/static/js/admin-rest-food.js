@@ -9,6 +9,7 @@ import {
     saveAdminRestFoodImage,
     updateAdminRestFood
 } from './admin-rest-food-request.js';
+import { csrfFrom } from './admin-common.js';
 
 const EMPTY_FOOD_LIST_MESSAGE = '등록된 메뉴가 없습니다.';
 
@@ -17,13 +18,6 @@ function createOption(document, restStop) {
     option.value = restStop.serviceAreaCode;
     option.textContent = `${restStop.unitName || '이름 정보 없음'} · ${restStop.serviceAreaCode}`;
     return option;
-}
-
-function csrfFrom(form) {
-    return {
-        headerName: form.dataset.csrfHeader || 'X-CSRF-TOKEN',
-        token: form.querySelector('input[name="_csrf"]')?.value || ''
-    };
 }
 
 export function initializeAdminRestFood(document, {

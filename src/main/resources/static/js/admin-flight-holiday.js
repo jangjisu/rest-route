@@ -1,4 +1,5 @@
 import { addFlightHoliday, deleteFlightHoliday, fetchFlightHolidays } from './admin-flight-holiday-request.js';
+import { csrfFrom } from './admin-common.js';
 
 export function monthLabel(year, month) {
     return `${year}년 ${month + 1}월`;
@@ -64,13 +65,6 @@ export function buildCalendarCells(year, month, holidayNameByDate, referenceName
         });
     }
     return cells;
-}
-
-function csrfFrom(source) {
-    return {
-        headerName: source.dataset.csrfHeader || 'X-CSRF-TOKEN',
-        token: source.querySelector('input[name="_csrf"]')?.value || ''
-    };
 }
 
 export function initializeAdminFlightHoliday(document, {
@@ -227,7 +221,7 @@ export function initializeAdminFlightHoliday(document, {
         }
         const result = await addFlightHoliday(selectedDate, name, pageCsrf(), fetchImpl);
         if (result.status !== 'success') {
-            onNotice('공휴일 추가에 실패했습니다.', 'error');
+            onNotice(result.message || '공휴일 추가에 실패했습니다.', 'error');
             return;
         }
         onNotice('공휴일을 추가했습니다.');

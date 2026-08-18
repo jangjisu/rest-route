@@ -230,6 +230,46 @@ test('추가 버튼을 누르면 서버에 저장하고 목록을 새로고침�
     assert.equal(dayCell(document, 10).classList.contains('has-holiday'), true);
 });
 
+test('추가가 서버에서 거부되면(400) 서버가 준 구체적인 메시지를 보여준다', async () => {
+    const document = flightHolidayDocument();
+    const fetchImpl = async (url, init) => {
+        if (init?.method === 'POST') {
+            return {
+                ok: false,
+                status: 400,
+                json: async () => ({ code: 'INVALID_REQUEST', message: '주말은 공휴일로 등록할 수 없습니다.' })
+            };
+        }
+        return holidaysResponse([]);
+    };
+    const notices = [];
+
+    await initAndLoad(document, fetchImpl, { onNotice: (message) => notices.push(message) });
+    await dayCell(document, 10).handlers.click();
+    document.elements.get('flightHolidayNameInput').value = '임시공휴일';
+    await document.elements.get('flightHolidayAddButton').handlers.click();
+
+    assert.equal(notices.at(-1), '주말은 공휴일로 등록할 수 없습니다.');
+});
+
+test('추가가 알 수 없는 이유로 실패하면 기본 안내 메시지를 보여준다', async () => {
+    const document = flightHolidayDocument();
+    const fetchImpl = async (url, init) => {
+        if (init?.method === 'POST') {
+            return { ok: false, status: 500, json: async () => ({}) };
+        }
+        return holidaysResponse([]);
+    };
+    const notices = [];
+
+    await initAndLoad(document, fetchImpl, { onNotice: (message) => notices.push(message) });
+    await dayCell(document, 10).handlers.click();
+    document.elements.get('flightHolidayNameInput').value = '임시공휴일';
+    await document.elements.get('flightHolidayAddButton').handlers.click();
+
+    assert.equal(notices.at(-1), '공휴일 추가에 실패했습니다.');
+});
+
 test('삭제 버튼을 누르면 확인 후 서버에서 삭제하고 목록을 새로고침한다', async () => {
     const document = flightHolidayDocument();
     let holidays = [{ id: 1, date: '2026-09-25', name: '대체공휴일' }];
