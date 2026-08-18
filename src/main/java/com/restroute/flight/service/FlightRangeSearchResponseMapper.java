@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
  * <p>목적지는 도시코드가 아니라 공항코드({@code destinationAirport})를 기준으로 이름을 채운다 —
  * mock이 이미 공항코드 스타일(FUK/KIX/OKA 등)을 써왔던 것과 응답 계약을 맞추기 위해서다.
  *
- * <p>{@code isLowCost}는 지금 참조 데이터에 저비용항공사 여부 컬럼이 없어 항상 {@code false}로
- * 채운다 — 항공사 동기화 파이프라인에 그 값을 추가하는 건 이 클래스의 책임 밖이다.
+ * <p>{@code isLowCost}는 {@link FlightAirlineNameCache#isLowCost}로 채운다 — Travelpayouts
+ * {@code /data/airlines.json}의 {@code is_lowcost}를 시딩 단계에서 그대로 가져온 값이다.
  *
  * <p>{@code holiday}는 mock과 동일하게 항상 0/빈 값 스텁이다 — 실제 공휴일 배지 계산은 별도
  * 후처리 단계(포함 필터와 같은 공휴일 도메인 작업)에서 채운다.
@@ -61,7 +61,10 @@ class FlightRangeSearchResponseMapper {
                 legOf(returnAt, item.durationBack(), item.returnTransfers()),
                 nights,
                 NO_HOLIDAY,
-                new FlightDealResponse.Airline(item.airline(), airlineNameCache.findName(item.airline()), false),
+                new FlightDealResponse.Airline(
+                        item.airline(),
+                        airlineNameCache.findName(item.airline()),
+                        airlineNameCache.isLowCost(item.airline())),
                 new FlightDealResponse.Price(item.price(), "KRW"),
                 false,
                 item.gate(),

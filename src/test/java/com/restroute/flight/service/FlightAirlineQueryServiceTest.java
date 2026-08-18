@@ -30,7 +30,7 @@ class FlightAirlineQueryServiceTest {
     @Test
     @DisplayName("keyword가 있으면 korName/engName 부분 일치로 검색한다")
     void search_byKeyword_searchesByKorOrEngName() {
-        FlightAirlineEntity jejuAir = new FlightAirlineEntity("7C", "제주항공", "Jeju Air");
+        FlightAirlineEntity jejuAir = new FlightAirlineEntity("7C", "제주항공", "Jeju Air", true);
         when(flightAirlineRepository.findAllByKorNameContainingIgnoreCaseOrEngNameContainingIgnoreCaseOrderByKorNameAsc(
                         "제주", "제주"))
                 .thenReturn(List.of(jejuAir));
@@ -43,7 +43,7 @@ class FlightAirlineQueryServiceTest {
     @Test
     @DisplayName("keyword가 없으면 전체 목록을 조회한다")
     void search_returnsAll_whenKeywordMissing() {
-        FlightAirlineEntity jejuAir = new FlightAirlineEntity("7C", "제주항공", "Jeju Air");
+        FlightAirlineEntity jejuAir = new FlightAirlineEntity("7C", "제주항공", "Jeju Air", true);
         when(flightAirlineRepository.findAll()).thenReturn(List.of(jejuAir));
 
         List<FlightAirlineResponse> result = flightAirlineQueryService.search(null);

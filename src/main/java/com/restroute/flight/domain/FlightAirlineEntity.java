@@ -17,6 +17,10 @@ import lombok.NoArgsConstructor;
  * {@code from(Item)} 대신 {@link #of}로 두 값을 직접 받는다. korName/engName 모두 전량
  * 채워진다 — 두 소스가 커버하지 못한 나머지는 수동으로 채워 넣었다(자세한 소스/파이프라인은
  * {@code rules/backend/flight.md} 참고).
+ *
+ * <p>{@code isLowCost}는 Travelpayouts {@code /data/airlines.json}의 {@code is_lowcost}
+ * 필드를 코드 기준으로 그대로 가져온 값이다 — 그 소스에 없는 코드는 저비용 여부를 알 수
+ * 없다는 뜻으로 기본값 {@code false}를 쓴다.
  */
 @Getter
 @Entity
@@ -43,13 +47,17 @@ public class FlightAirlineEntity {
     @Column(nullable = false)
     private String engName;
 
-    public FlightAirlineEntity(String code, String korName, String engName) {
+    @Column(nullable = false)
+    private boolean isLowCost;
+
+    public FlightAirlineEntity(String code, String korName, String engName, boolean isLowCost) {
         this.code = code;
         this.korName = korName;
         this.engName = engName;
+        this.isLowCost = isLowCost;
     }
 
-    public static FlightAirlineEntity of(String code, String korName, String engName) {
-        return new FlightAirlineEntity(code, korName, engName);
+    public static FlightAirlineEntity of(String code, String korName, String engName, boolean isLowCost) {
+        return new FlightAirlineEntity(code, korName, engName, isLowCost);
     }
 }

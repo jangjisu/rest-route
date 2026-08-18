@@ -62,13 +62,14 @@ class FlightRangeSearchResponseMapperTest {
     }
 
     @Test
-    @DisplayName("항공사 이름을 채우고 isLowCost는 항상 false다")
-    void mapAll_fillsAirlineName_andIsLowCostAlwaysFalse() {
+    @DisplayName("항공사 이름과 저비용 여부를 캐시에서 채운다")
+    void mapAll_fillsAirlineNameAndLowCostFromCache() {
         when(airlineNameCache.findName("LJ")).thenReturn("진에어");
+        when(airlineNameCache.isLowCost("LJ")).thenReturn(true);
 
         List<FlightDealResponse> result = mapper.mapAll(List.of(item()), "TOK1");
 
-        assertThat(result.get(0).airline()).isEqualTo(new FlightDealResponse.Airline("LJ", "진에어", false));
+        assertThat(result.get(0).airline()).isEqualTo(new FlightDealResponse.Airline("LJ", "진에어", true));
     }
 
     @Test

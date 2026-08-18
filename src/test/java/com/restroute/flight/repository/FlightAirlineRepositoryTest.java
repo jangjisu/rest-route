@@ -21,7 +21,7 @@ class FlightAirlineRepositoryTest {
     @Test
     @DisplayName("IATA 코드로 항공사를 조회한다")
     void findByCode_returnsMatchingAirline() {
-        flightAirlineRepository.save(new FlightAirlineEntity("7C", "제주항공", "Jeju Air"));
+        flightAirlineRepository.save(new FlightAirlineEntity("7C", "제주항공", "Jeju Air", true));
 
         Optional<FlightAirlineEntity> result = flightAirlineRepository.findByCode("7C");
 
@@ -41,8 +41,8 @@ class FlightAirlineRepositoryTest {
     @DisplayName("korName 부분 일치로 항공사를 검색한다")
     void findAllByNameContaining_matchesKorName() {
         flightAirlineRepository.saveAll(List.of(
-                new FlightAirlineEntity("7C", "제주항공", "Jeju Air"),
-                new FlightAirlineEntity("KE", "대한항공", "Korean Air")));
+                new FlightAirlineEntity("7C", "제주항공", "Jeju Air", true),
+                new FlightAirlineEntity("KE", "대한항공", "Korean Air", false)));
 
         List<FlightAirlineEntity> result =
                 flightAirlineRepository
@@ -55,8 +55,8 @@ class FlightAirlineRepositoryTest {
     @DisplayName("korName이 없는 항공사도 engName 부분 일치로 검색된다")
     void findAllByNameContaining_matchesEngNameWhenKorNameMissing() {
         flightAirlineRepository.saveAll(List.of(
-                new FlightAirlineEntity("OI", null, "Hinterland Aviation"),
-                new FlightAirlineEntity("7C", "제주항공", "Jeju Air")));
+                new FlightAirlineEntity("OI", null, "Hinterland Aviation", false),
+                new FlightAirlineEntity("7C", "제주항공", "Jeju Air", true)));
 
         List<FlightAirlineEntity> result =
                 flightAirlineRepository
