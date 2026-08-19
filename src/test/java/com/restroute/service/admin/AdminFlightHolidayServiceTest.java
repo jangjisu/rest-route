@@ -84,10 +84,15 @@ class AdminFlightHolidayServiceTest {
     }
 
     @Test
-    @DisplayName("주말이면 요일 검증 예외를 던진다 — 주말은 이미 무조건 비근무일이라 따로 등록할 필요가 없다")
-    void create_throwsWhenDateIsWeekend() {
-        assertThatThrownBy(() -> service.create(new AdminFlightHolidayRequest("2026-09-26", "임시공휴일")))
-                .isInstanceOf(InvalidFlightHolidayRequestException.class);
+    @DisplayName("주말도 등록할 수 있다 — 연차 배지 계산이 그 이름까지 필요하다")
+    void create_allowsWeekendDate() {
+        when(holidayRepository.existsByHolidayDate(LocalDate.of(2026, 9, 26))).thenReturn(false);
+        when(holidayRepository.save(any(HolidayEntity.class)))
+                .thenReturn(entityWithId(6L, LocalDate.of(2026, 9, 26), "주말 임시공휴일"));
+
+        AdminFlightHolidayResponse result = service.create(new AdminFlightHolidayRequest("2026-09-26", "주말 임시공휴일"));
+
+        assertThat(result.date()).isEqualTo("2026-09-26");
     }
 
     @Test

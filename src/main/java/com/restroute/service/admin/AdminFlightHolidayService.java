@@ -32,9 +32,6 @@ public class AdminFlightHolidayService {
     public AdminFlightHolidayResponse create(AdminFlightHolidayRequest request) {
         LocalDate holidayDate = parseDate(request.date());
         String name = requireName(request.name());
-        if (HolidayEntity.isWeekend(holidayDate)) {
-            throw InvalidFlightHolidayRequestException.weekendNotAllowed(holidayDate);
-        }
         if (holidayRepository.existsByHolidayDate(holidayDate)) {
             throw DuplicateFlightHolidayException.forDate(holidayDate);
         }

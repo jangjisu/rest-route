@@ -237,7 +237,7 @@ test('추가가 서버에서 거부되면(400) 서버가 준 구체적인 메시
             return {
                 ok: false,
                 status: 400,
-                json: async () => ({ code: 'INVALID_REQUEST', message: '주말은 공휴일로 등록할 수 없습니다.' })
+                json: async () => ({ code: 'INVALID_REQUEST', message: '이미 등록된 날짜입니다.' })
             };
         }
         return holidaysResponse([]);
@@ -249,7 +249,7 @@ test('추가가 서버에서 거부되면(400) 서버가 준 구체적인 메시
     document.elements.get('flightHolidayNameInput').value = '임시공휴일';
     await document.elements.get('flightHolidayAddButton').handlers.click();
 
-    assert.equal(notices.at(-1), '주말은 공휴일로 등록할 수 없습니다.');
+    assert.equal(notices.at(-1), '이미 등록된 날짜입니다.');
 });
 
 test('추가가 알 수 없는 이유로 실패하면 기본 안내 메시지를 보여준다', async () => {
@@ -333,7 +333,7 @@ test('12월에서 다음 달로 넘어가면 연도가 바뀐다', async () => {
     assert.equal(document.elements.get('flightHolidayMonthLabel').textContent, '2027년 1월');
 });
 
-test('주말은 클릭할 수 없도록 비활성화된다', async () => {
+test('주말도 클릭해서 공휴일을 추가할 수 있다 — is-weekend 클래스만 표시용으로 붙는다', async () => {
     const document = flightHolidayDocument();
     const fetchImpl = async () => holidaysResponse([]);
 
@@ -341,8 +341,11 @@ test('주말은 클릭할 수 없도록 비활성화된다', async () => {
     const saturday = dayCell(document, 5);
 
     assert.equal(saturday.classList.contains('is-weekend'), true);
-    assert.equal(saturday.disabled, true);
-    assert.equal(saturday.handlers.click, undefined);
+    assert.equal(saturday.disabled, false);
+    await saturday.handlers.click();
+
+    assert.equal(document.elements.get('flightHolidayModal').open, true);
+    assert.equal(document.elements.get('flightHolidayModalAddView').hidden, false);
 });
 
 test('평일에 걸린 참고용 국경일은 클릭하면 이름이 자동으로 채워진 추가 모달이 열린다', async () => {
@@ -359,7 +362,7 @@ test('평일에 걸린 참고용 국경일은 클릭하면 이름이 자동으�
     assert.equal(document.elements.get('flightHolidayNameInput').value, '한글날');
 });
 
-test('참고용 국경일이 주말과 겹치면 주말 규칙이 우선해서 여전히 클릭할 수 없다', async () => {
+test('참고용 국경일이 주말과 겹쳐도 클릭하면 이름이 자동으로 채워진 추가 모달이 열린다', async () => {
     const document = flightHolidayDocument();
     const fetchImpl = async () => holidaysResponse([]);
 
@@ -368,6 +371,8 @@ test('참고용 국경일이 주말과 겹치면 주말 규칙이 우선해서 �
 
     assert.equal(liberationDay.classList.contains('is-weekend'), true);
     assert.equal(liberationDay.classList.contains('is-reference-holiday'), true);
-    assert.equal(liberationDay.disabled, true);
-    assert.equal(liberationDay.handlers.click, undefined);
+    await liberationDay.handlers.click();
+
+    assert.equal(document.elements.get('flightHolidayModalAddView').hidden, false);
+    assert.equal(document.elements.get('flightHolidayNameInput').value, '광복절');
 });
