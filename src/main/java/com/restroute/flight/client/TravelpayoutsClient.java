@@ -63,6 +63,9 @@ public class TravelpayoutsClient {
             if (response == null) {
                 throw new TravelpayoutsApiException(requestDescription, "빈 응답");
             }
+            if (response instanceof TravelpayoutsGroupedPricesResponse groupedPrices && !groupedPrices.success()) {
+                throw new TravelpayoutsApiException(requestDescription, "success=false");
+            }
             log.info("External API request succeeded. api={}, endpoint={}", API_NAME, requestDescription);
             return response;
         } catch (TravelpayoutsApiException e) {

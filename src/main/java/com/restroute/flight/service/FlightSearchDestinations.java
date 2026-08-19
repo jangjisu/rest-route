@@ -1,6 +1,7 @@
 package com.restroute.flight.service;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
+import java.util.Collections;
 import java.util.List;
 import org.springframework.util.StringUtils;
 
@@ -22,5 +23,14 @@ final class FlightSearchDestinations {
             return List.of(request.destination());
         }
         return FlightSectorCountries.countriesOf(request.sector());
+    }
+
+    /**
+     * {@link #resolve}가 빈 목록(생략)을 돌려주면 실행기 입장에서는 "destination 파라미터
+     * 없이 딱 한 번만 호출하라"는 뜻이다 — 그 신호를 {@code null} 하나짜리 목록으로 통일해서
+     * RANGE/FIXED 실행기가 각자 다시 구현하지 않고 여기서 한 번만 처리한다.
+     */
+    static List<String> paddedForCalls(List<String> destinations) {
+        return destinations.isEmpty() ? Collections.singletonList(null) : destinations;
     }
 }

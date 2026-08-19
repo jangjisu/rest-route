@@ -5,7 +5,6 @@ import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +31,7 @@ class FlightRangeSearchExecutor {
     }
 
     private List<Callable<List<TravelpayoutsPriceItem>>> buildCalls(String origin, FlightRangeSearchPlan plan) {
-        List<String> destinations =
-                plan.destinations().isEmpty() ? Collections.singletonList(null) : plan.destinations();
+        List<String> destinations = FlightSearchDestinations.paddedForCalls(plan.destinations());
 
         List<Callable<List<TravelpayoutsPriceItem>>> calls = new ArrayList<>();
         for (String destination : destinations) {

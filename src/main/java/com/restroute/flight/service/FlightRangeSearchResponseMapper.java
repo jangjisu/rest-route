@@ -5,7 +5,6 @@ import com.restroute.flight.cache.FlightAirportNameCache;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -21,30 +20,26 @@ import org.springframework.stereotype.Component;
  * <p>{@code isLowCost}는 {@link FlightAirlineNameCache#isLowCost}로 채운다 — Travelpayouts
  * {@code /data/airlines.json}의 {@code is_lowcost}를 시딩 단계에서 그대로 가져온 값이다.
  *
- * <p>{@code holiday}는 mock과 동일하게 항상 0/빈 값 스텁이다 — 실제 공휴일 배지 계산은 별도
- * 후처리 단계(포함 필터와 같은 공휴일 도메인 작업)에서 채운다.
+ * <p>{@code holiday}는 mock과 동일하게 항상 0/빈 값 스텁이다 — 필터 단계({@link
+ * FlightDealPostFilter})가 공휴일 여부를 실제로 조회하긴 하지만 그건 딜을 뺄지 말지 판단하는
+ * 용도일 뿐, 그 결과를 여기로 다시 채워 넣는 별도 보강 단계는 아직 없다.
  */
 @Component
 @RequiredArgsConstructor
 class FlightRangeSearchResponseMapper {
 
-    private static final DateTimeFormatter LEG_TIME_FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-
-    /** 실제 공휴일 배지 계산 전까지는 mock과 동일하게 항상 0/빈 값이다. */
-    private static final FlightDealResponse.Holiday NO_HOLIDAY = new FlightDealResponse.Holiday(0, List.of(), 0);
-
     private final FlightAirportNameCache airportNameCache;
     private final FlightAirlineNameCache airlineNameCache;
 
     /**
-     * id는 세션 토큰 + 순번으로 매긴다(mock과 동일한 형식). 전체 최저가 표시({@link
-     * FlightDealResponses#markLowestInRange})는 여기서 하지 않는다 — 이후 필터(주말/공휴일
-     * 제외 등)를 거치면서 최저가였던 항목이 빠질 수 있어, 필터까지 다 적용한 다음에 표시해야
-     * 한다.
+     * id는 세션 토큰 + 순번으로 매긴다(mock과 동일한 형식, {@link FlightDealResponses#idOf}
+     * 공유). 전체 최저가 표시({@link FlightDealResponses#markLowestInRange})는 여기서 하지
+     * 않는다 — 이후 필터(주말/공휴일 제외 등)를 거치면서 최저가였던 항목이 빠질 수 있어, 필터까지
+     * 다 적용한 다음에 표시해야 한다.
      */
     List<FlightDealResponse> mapAll(List<TravelpayoutsPriceItem> items, String sessionToken) {
         return IntStream.range(0, items.size())
-                .mapToObj(index -> mapOne(items.get(index), idOf(sessionToken, index)))
+                .mapToObj(index -> mapOne(items.get(index), FlightDealResponses.idOf(sessionToken, index)))
                 .toList();
     }
 
@@ -60,7 +55,7 @@ class FlightRangeSearchResponseMapper {
                 legOf(departureAt, item.durationTo(), item.transfers()),
                 legOf(returnAt, item.durationBack(), item.returnTransfers()),
                 nights,
-                NO_HOLIDAY,
+                FlightDealResponses.NO_HOLIDAY,
                 new FlightDealResponse.Airline(
                         item.airline(),
                         airlineNameCache.findName(item.airline()),
@@ -73,12 +68,7 @@ class FlightRangeSearchResponseMapper {
     }
 
     private static FlightDealResponse.Leg legOf(OffsetDateTime departAt, int durationMinutes, int transferCount) {
-        OffsetDateTime arriveAt = departAt.plusMinutes(durationMinutes);
-        return new FlightDealResponse.Leg(
-                LEG_TIME_FORMAT.format(departAt), LEG_TIME_FORMAT.format(arriveAt), durationMinutes, transferCount);
-    }
-
-    private static String idOf(String sessionToken, int index) {
-        return "%s_%04d".formatted(sessionToken, index + 1);
+        return FlightDealResponses.legOf(
+                departAt, departAt.plusMinutes(durationMinutes), durationMinutes, transferCount);
     }
 }

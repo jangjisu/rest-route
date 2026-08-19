@@ -3,7 +3,6 @@ package com.restroute.flight.service;
 import com.restroute.flight.client.TravelpayoutsClient;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +23,8 @@ class FlightFixedSearchExecutor {
     private final TravelpayoutsClient travelpayoutsClient;
 
     List<TravelpayoutsPriceItem> execute(FlightSearchRequestDto request) {
-        List<String> destinations = FlightSearchDestinations.resolve(request);
-        List<String> callDestinations = destinations.isEmpty() ? Collections.singletonList(null) : destinations;
+        List<String> callDestinations =
+                FlightSearchDestinations.paddedForCalls(FlightSearchDestinations.resolve(request));
 
         List<Callable<List<TravelpayoutsPriceItem>>> calls = callDestinations.stream()
                 .<Callable<List<TravelpayoutsPriceItem>>>map(destination -> () -> List.copyOf(travelpayoutsClient

@@ -187,8 +187,12 @@ final class FlightSearchRequestValidator {
 
     /**
      * dateTo가 dateFrom보다 이전이면 안 되고, 오늘로부터 {@value #MAX_DATE_RANGE_MONTHS}개월을
-     * 넘어서도 안 된다 — 실 연동에서 이 범위만큼 매달 grouped_prices를 fan-out 호출하므로,
-     * 상한이 없으면 검색 하나가 외부 API를 무제한으로 두드리게 된다.
+     * 넘어서도 안 된다 — 서비스가 애초에 오늘로부터 {@value #MAX_DATE_RANGE_MONTHS}개월 이내만
+     * 지원하기 때문이다(프론트가 이미 이 범위로 선택을 제한하고, 여기서는 API를 직접 두드리는
+     * 우회 요청도 동일하게 막는다). RANGE 모드는 부가적으로 이 범위만큼 매달 grouped_prices를
+     * fan-out 호출하므로, 상한이 없으면 검색 하나가 외부 API를 무제한으로 두드리게 된다는
+     * 이유도 겹친다 — 하지만 FIXED 모드에도 이 상한이 똑같이 적용되는 건 fan-out 방지가
+     * 아니라 서비스 스코프 제한 때문이다.
      */
     private void validateDateRange(LocalDate parsedDateFrom, LocalDate parsedDateTo) {
         if (parsedDateFrom == null || parsedDateTo == null) {

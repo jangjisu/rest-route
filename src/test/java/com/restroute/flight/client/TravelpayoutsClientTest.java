@@ -51,6 +51,18 @@ class TravelpayoutsClientTest {
     }
 
     @Test
+    @DisplayName("응답의 success가 false면 TravelpayoutsApiException을 던진다")
+    void groupedPrices_throwsWhenSuccessFalse() {
+        TravelpayoutsGroupedPricesResponse response = new TravelpayoutsGroupedPricesResponse(false, "krw", Map.of());
+        when(travelpayoutsFeignClient.groupedPrices("ICN", "OSA", "2026-08", null, null, null, "krw", "test-token"))
+                .thenReturn(response);
+
+        assertThatThrownBy(() -> travelpayoutsClient.groupedPrices("ICN", "OSA", "2026-08", null, null))
+                .isInstanceOf(TravelpayoutsApiException.class)
+                .hasMessageContaining("success=false");
+    }
+
+    @Test
     @DisplayName("호출이 런타임 예외를 던지면 TravelpayoutsApiException으로 감싼다")
     void groupedPrices_wrapsRuntimeException() {
         when(travelpayoutsFeignClient.groupedPrices("ICN", "OSA", "2026-08", null, null, null, "krw", "test-token"))
@@ -86,5 +98,19 @@ class TravelpayoutsClientTest {
                         () -> travelpayoutsClient.groupedPricesForExactDates("ICN", "OSA", "2026-09-15", "2026-09-22"))
                 .isInstanceOf(TravelpayoutsApiException.class)
                 .hasMessageContaining("빈 응답");
+    }
+
+    @Test
+    @DisplayName("groupedPricesForExactDates도 success가 false면 TravelpayoutsApiException을 던진다")
+    void groupedPricesForExactDates_throwsWhenSuccessFalse() {
+        TravelpayoutsGroupedPricesResponse response = new TravelpayoutsGroupedPricesResponse(false, "krw", Map.of());
+        when(travelpayoutsFeignClient.groupedPrices(
+                        "ICN", "OSA", "2026-09-15", "2026-09-22", null, null, "krw", "test-token"))
+                .thenReturn(response);
+
+        assertThatThrownBy(
+                        () -> travelpayoutsClient.groupedPricesForExactDates("ICN", "OSA", "2026-09-15", "2026-09-22"))
+                .isInstanceOf(TravelpayoutsApiException.class)
+                .hasMessageContaining("success=false");
     }
 }
