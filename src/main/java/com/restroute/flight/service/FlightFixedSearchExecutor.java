@@ -3,6 +3,8 @@ package com.restroute.flight.service;
 import com.restroute.flight.client.TravelpayoutsClient;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
+import com.restroute.flight.service.util.FlightParallelPriceCalls;
+import com.restroute.flight.service.util.FlightSearchDestinations;
 import java.util.List;
 import java.util.concurrent.Callable;
 import lombok.RequiredArgsConstructor;

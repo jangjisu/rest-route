@@ -1,6 +1,7 @@
-package com.restroute.flight.service;
+package com.restroute.flight.service.util;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
+import com.restroute.flight.service.dto.FlightRangeSearchPlan;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -50,14 +51,14 @@ import org.springframework.util.CollectionUtils;
  *                                                여전히 초과) → 국가별 포기, 전체만(1×3×1=3)
  * </pre>
  */
-final class FlightRangeSearchPlanner {
+public final class FlightRangeSearchPlanner {
 
     private static final int MAX_FANOUT_CALLS = 20;
     private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private FlightRangeSearchPlanner() {}
 
-    static FlightRangeSearchPlan plan(FlightSearchRequestDto request) {
+    public static FlightRangeSearchPlan plan(FlightSearchRequestDto request) {
         List<String> destinations = FlightSearchDestinations.resolve(request);
         List<String> months = monthsOf(request.parsedDateFrom(), request.parsedDateTo());
         int destinationCount = Math.max(1, destinations.size());

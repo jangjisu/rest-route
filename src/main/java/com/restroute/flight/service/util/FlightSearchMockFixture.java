@@ -1,4 +1,4 @@
-package com.restroute.flight.service;
+package com.restroute.flight.service.util;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightDealResponse;
@@ -16,10 +16,10 @@ import org.springframework.util.StringUtils;
  * 필드만으로 결정적(deterministic) 가짜 데이터를 만든다.
  *
  * <p>id는 세션 토큰(4자리) + 순번(예: "aB3x_0004")으로 구성된다. 세션별 저장/조회, cursor
- * lookup은 이 클래스가 아니라 {@link FlightDealSessionStore}가 담당한다 — 여기는 순수하게
- * "이 세션의 몇 번째 항목이 어떤 값인지"만 계산한다.
+ * lookup은 이 클래스가 아니라 세션 스토어가 담당한다 — 여기는 순수하게 "이 세션의 몇 번째
+ * 항목이 어떤 값인지"만 계산한다.
  */
-final class FlightSearchMockFixture {
+public final class FlightSearchMockFixture {
 
     private static final int BASE_PRICE = 89000;
     private static final int PRICE_STEP = 7300;
@@ -50,7 +50,8 @@ final class FlightSearchMockFixture {
 
     private FlightSearchMockFixture() {}
 
-    static List<FlightDealResponse> generateAll(FlightSearchRequestDto request, String sessionToken, int totalSize) {
+    public static List<FlightDealResponse> generateAll(
+            FlightSearchRequestDto request, String sessionToken, int totalSize) {
         List<FlightDealResponse> items = IntStream.range(0, totalSize)
                 .mapToObj(index -> dealAt(index, request, sessionToken))
                 .toList();

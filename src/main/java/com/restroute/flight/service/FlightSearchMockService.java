@@ -2,6 +2,7 @@ package com.restroute.flight.service;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightDealResponse;
+import com.restroute.flight.service.util.FlightSearchMockFixture;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

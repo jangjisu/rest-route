@@ -3,6 +3,7 @@ package com.restroute.flight.service;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightDealResponse;
+import com.restroute.flight.service.util.FlightDealResponses;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ class FlightDealAssembler {
 
     List<FlightDealResponse> assemble(
             List<TravelpayoutsPriceItem> rawItems, String token, FlightSearchRequestDto request) {
-        // Travelpayouts 원본 -> 응답 DTO 변환 (id 매기기, 공항/항공사 이름·isLowCost 채우기). holidays는 아직 빈 값.
+        // Travelpayouts 원본 -> 응답 DTO 변환 (id 매기기, 공항/항공사 이름·isLowCost 채우기)
         List<FlightDealResponse> mapped = responseMapper.mapAll(rawItems, token);
         // 사용자가 원하지 않는 항목 제거 (주말/공휴일 출발 제외, 경유 제외).
         List<FlightDealResponse> filtered = postFilter.apply(mapped, request);

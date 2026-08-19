@@ -4,6 +4,7 @@ import com.restroute.flight.cache.FlightAirlineNameCache;
 import com.restroute.flight.cache.FlightAirportNameCache;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.response.FlightDealResponse;
+import com.restroute.flight.service.util.FlightDealResponses;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;

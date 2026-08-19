@@ -1,8 +1,9 @@
-package com.restroute.flight.service;
+package com.restroute.flight.service.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
+import com.restroute.flight.service.dto.FlightRangeSearchPlan;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;

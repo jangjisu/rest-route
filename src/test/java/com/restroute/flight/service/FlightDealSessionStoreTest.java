@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
+import com.restroute.flight.service.util.FlightSearchMockFixture;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;

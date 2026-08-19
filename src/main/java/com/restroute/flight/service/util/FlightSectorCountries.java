@@ -1,4 +1,4 @@
-package com.restroute.flight.service;
+package com.restroute.flight.service.util;
 
 import com.restroute.flight.controller.dto.FlightRegion;
 import java.util.LinkedHashSet;

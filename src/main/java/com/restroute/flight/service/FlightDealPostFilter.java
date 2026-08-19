@@ -2,6 +2,7 @@ package com.restroute.flight.service;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightDealResponse;
+import com.restroute.flight.service.util.FlightDealResponses;
 import com.restroute.holiday.domain.HolidayEntity;
 import com.restroute.holiday.repository.HolidayRepository;
 import java.time.LocalDate;

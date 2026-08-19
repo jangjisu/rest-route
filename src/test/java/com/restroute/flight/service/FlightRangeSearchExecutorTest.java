@@ -13,6 +13,7 @@ import com.restroute.flight.client.TravelpayoutsClient;
 import com.restroute.flight.client.exception.TravelpayoutsApiException;
 import com.restroute.flight.client.response.TravelpayoutsGroupedPricesResponse;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
+import com.restroute.flight.service.dto.FlightRangeSearchPlan;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;

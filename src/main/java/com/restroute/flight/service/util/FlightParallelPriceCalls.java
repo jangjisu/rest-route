@@ -1,4 +1,4 @@
-package com.restroute.flight.service;
+package com.restroute.flight.service.util;
 
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import java.util.ArrayList;
@@ -23,11 +23,11 @@ import java.util.concurrent.Future;
  * 잡혀서 중복으로 올 수 있다 — destinationAirport·departureAt·returnAt·flightNumber가 모두
  * 같으면 같은 항공권으로 보고 더 싼 쪽만 남긴다.
  */
-final class FlightParallelPriceCalls {
+public final class FlightParallelPriceCalls {
 
     private FlightParallelPriceCalls() {}
 
-    static List<TravelpayoutsPriceItem> runAll(List<Callable<List<TravelpayoutsPriceItem>>> calls) {
+    public static List<TravelpayoutsPriceItem> runAll(List<Callable<List<TravelpayoutsPriceItem>>> calls) {
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<List<TravelpayoutsPriceItem>>> futures =
                     calls.stream().map(executor::submit).toList();
