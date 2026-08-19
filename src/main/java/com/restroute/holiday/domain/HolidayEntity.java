@@ -60,8 +60,9 @@ public class HolidayEntity {
     }
 
     /**
-     * 토요일/일요일인지. 주말은 이 테이블과 무관하게 항상 비근무일로 판정되므로, 굳이 공휴일로
-     * 저장하지 않는다(동기화·관리자 등록 양쪽에서 이 기준으로 걸러낸다).
+     * 토요일/일요일인지. 이 테이블엔 주말에 걸리는 공휴일도 저장될 수 있다(연차 배지 계산이 그
+     * 이름까지 필요해서) — 이 메서드는 저장 여부를 거르는 용도가 아니라, 딜의 출발일이 주말인지
+     * 판정하는 용도({@link com.restroute.flight.service.FlightDealPostFilter})로 쓰인다.
      */
     public static boolean isWeekend(LocalDate date) {
         DayOfWeek dayOfWeek = date.getDayOfWeek();

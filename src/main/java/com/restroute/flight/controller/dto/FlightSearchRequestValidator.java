@@ -23,6 +23,7 @@ final class FlightSearchRequestValidator {
 
     private static final int MIN_NIGHTS = 1;
     private static final int MAX_NIGHTS = 90;
+    private static final int MAX_DATE_RANGE_MONTHS = 3;
     private static final String SUPPORTED_CURRENCY = "krw";
     private static final Pattern IATA_CODE = Pattern.compile("^[A-Za-z]{3}$");
 
@@ -184,13 +185,25 @@ final class FlightSearchRequestValidator {
         }
     }
 
-    /** 범위 검색은 달·연도를 넘나들어도 되므로 상한을 두지 않는다 — dateTo가 dateFrom보다 이전인지만 본다. */
+    /**
+     * dateTo가 dateFrom보다 이전이면 안 되고, 오늘로부터 {@value #MAX_DATE_RANGE_MONTHS}개월을
+     * 넘어서도 안 된다 — 서비스가 애초에 오늘로부터 {@value #MAX_DATE_RANGE_MONTHS}개월 이내만
+     * 지원하기 때문이다(프론트가 이미 이 범위로 선택을 제한하고, 여기서는 API를 직접 두드리는
+     * 우회 요청도 동일하게 막는다). RANGE 모드는 부가적으로 이 범위만큼 매달 grouped_prices를
+     * fan-out 호출하므로, 상한이 없으면 검색 하나가 외부 API를 무제한으로 두드리게 된다는
+     * 이유도 겹친다 — 하지만 FIXED 모드에도 이 상한이 똑같이 적용되는 건 fan-out 방지가
+     * 아니라 서비스 스코프 제한 때문이다.
+     */
     private void validateDateRange(LocalDate parsedDateFrom, LocalDate parsedDateTo) {
         if (parsedDateFrom == null || parsedDateTo == null) {
             return;
         }
         if (parsedDateTo.isBefore(parsedDateFrom)) {
             details.add(new FlightApiError.Detail("dateTo", "before_date_from"));
+            return;
+        }
+        if (parsedDateTo.isAfter(LocalDate.now().plusMonths(MAX_DATE_RANGE_MONTHS))) {
+            details.add(new FlightApiError.Detail("dateTo", "date_range_too_wide"));
         }
     }
 

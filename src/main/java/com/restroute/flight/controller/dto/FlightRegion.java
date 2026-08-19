@@ -6,5 +6,6 @@ package com.restroute.flight.controller.dto;
 public enum FlightRegion {
     JAPAN,
     SOUTHEAST_ASIA,
+    GREATER_CHINA,
     GUAM_SAIPAN
 }

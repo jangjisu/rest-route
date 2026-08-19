@@ -13,7 +13,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.stereotype.Component;
@@ -54,11 +53,11 @@ class FlightDealSessionStore {
      * 새 세션을 만든다 — 토큰 발급, {@code fetcher}로 조회, 저장, 첫 페이지 계산까지 전부
      * 여기서 처리한다.
      */
-    FlightDealSearchResponse create(FlightSearchRequestDto request, Integer totalSize, int size, Fetcher fetcher) {
+    FlightDealSearchResponse create(FlightSearchRequestDto request, int size, Fetcher fetcher) {
         String token = reserveToken();
         List<FlightDealResponse> items = fetcher.fetch(token);
         OffsetDateTime fetchedAt = OffsetDateTime.now(KST);
-        save(token, request, totalSize, items, fetchedAt);
+        save(token, request, items, fetchedAt);
         return toResponse(items, 0, size, request, fetchedAt);
     }
 
@@ -68,8 +67,8 @@ class FlightDealSessionStore {
      * 던진다. fetchedAt은 세션이 처음 만들어진 시점 값을 그대로 이어 쓴다 — 같은 검색의
      * 페이지들은 전부 "언제 조회됐는지"가 같아야 한다.
      */
-    FlightDealSearchResponse find(FlightSearchRequestDto request, Integer totalSize, String cursor, int size) {
-        CachedSession session = requireSession(request, totalSize, cursor);
+    FlightDealSearchResponse find(FlightSearchRequestDto request, String cursor, int size) {
+        CachedSession session = requireSession(request, cursor);
         int startIndex = indexOf(session, cursor) + 1;
         return toResponse(session.items(), startIndex, size, request, session.fetchedAt());
     }
@@ -88,26 +87,22 @@ class FlightDealSessionStore {
     }
 
     private void save(
-            String token,
-            FlightSearchRequestDto request,
-            Integer totalSize,
-            List<FlightDealResponse> items,
-            OffsetDateTime fetchedAt) {
+            String token, FlightSearchRequestDto request, List<FlightDealResponse> items, OffsetDateTime fetchedAt) {
         Map<String, Integer> indexById = buildIndex(items);
-        CachedSession session = new CachedSession(
-                request, totalSize, items, indexById, Instant.now().plus(ttl), fetchedAt);
+        CachedSession session =
+                new CachedSession(request, items, indexById, Instant.now().plus(ttl), fetchedAt);
         sessions.put(token, session);
     }
 
-    private CachedSession requireSession(FlightSearchRequestDto request, Integer totalSize, String cursor) {
-        CachedSession cached = tryFind(request, totalSize, cursor);
+    private CachedSession requireSession(FlightSearchRequestDto request, String cursor) {
+        CachedSession cached = tryFind(request, cursor);
         if (cached == null) {
             throw new FlightDealNotFoundException(cursor);
         }
         return cached;
     }
 
-    private CachedSession tryFind(FlightSearchRequestDto request, Integer totalSize, String cursor) {
+    private CachedSession tryFind(FlightSearchRequestDto request, String cursor) {
         String token = tokenOf(cursor);
         if (token == null) {
             return null;
@@ -120,7 +115,7 @@ class FlightDealSessionStore {
             sessions.remove(token);
             return null;
         }
-        if (!cached.matches(request, totalSize)) {
+        if (!cached.matches(request)) {
             return null;
         }
         return cached;
@@ -183,14 +178,13 @@ class FlightDealSessionStore {
 
     private record CachedSession(
             FlightSearchRequestDto request,
-            Integer totalSize,
             List<FlightDealResponse> items,
             Map<String, Integer> indexById,
             Instant expiresAt,
             OffsetDateTime fetchedAt) {
 
-        boolean matches(FlightSearchRequestDto otherRequest, Integer otherTotalSize) {
-            return Objects.equals(totalSize, otherTotalSize) && request.equals(otherRequest);
+        boolean matches(FlightSearchRequestDto otherRequest) {
+            return request.equals(otherRequest);
         }
     }
 }

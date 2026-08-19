@@ -11,14 +11,18 @@ import org.junit.jupiter.api.Test;
 
 class FlightSearchRequestDtoTest {
 
+    private static String futureDate(int daysFromToday) {
+        return LocalDate.now().plusDays(daysFromToday).toString();
+    }
+
     @Test
     @DisplayName("유효한 값이면 생성되고, 파싱된 접근자도 올바른 값을 반환한다")
     void constructor_succeeds_andExposesParsedAccessors() {
         FlightSearchRequestDto result = new FlightSearchRequestDto(
                 "ICN",
                 "range",
-                "2099-01-10",
-                "2099-02-10",
+                futureDate(10),
+                futureDate(41),
                 "OSA",
                 List.of("3", "4"),
                 null,
@@ -37,8 +41,8 @@ class FlightSearchRequestDtoTest {
         assertThat(result.origin()).isEqualTo("ICN");
         assertThat(result.parsedSearchMode()).isEqualTo(FlightSearchMode.RANGE);
         assertThat(result.destination()).isEqualTo("OSA");
-        assertThat(result.parsedDateFrom()).isEqualTo(LocalDate.of(2099, 1, 10));
-        assertThat(result.parsedDateTo()).isEqualTo(LocalDate.of(2099, 2, 10));
+        assertThat(result.parsedDateFrom()).isEqualTo(LocalDate.now().plusDays(10));
+        assertThat(result.parsedDateTo()).isEqualTo(LocalDate.now().plusDays(41));
         assertThat(result.parsedNights()).containsExactly(3, 4);
         assertThat(result.isIncludeWeekend()).isTrue();
         assertThat(result.isIncludeHoliday()).isTrue();
@@ -62,7 +66,7 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("nights가 없으면(null) parsedNights()는 dateFrom~dateTo 기간만큼 1박부터 전체를 반환한다")
     void parsedNights_defaultsToDateRange_whenNightsIsNull() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-01-18", null);
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(18), null);
 
         assertThat(result.parsedNights()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
     }
@@ -70,7 +74,7 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("nights가 빈 리스트여도 parsedNights()는 dateFrom~dateTo 기간만큼 반환한다")
     void parsedNights_defaultsToDateRange_whenNightsIsEmpty() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-01-23", List.of());
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(23), List.of());
 
         assertThat(result.parsedNights()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
     }
@@ -78,23 +82,25 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("dateFrom과 dateTo가 같은 날이어도 parsedNights()는 최소 1박은 반환한다")
     void parsedNights_defaultsToAtLeastOneNight_whenSameDayRange() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-01-10", null);
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(10), null);
 
         assertThat(result.parsedNights()).containsExactly(1);
     }
 
     @Test
-    @DisplayName("dateFrom~dateTo가 여러 달·연도를 넘어도(더 이상 상한이 없어) 정상 생성된다")
-    void constructor_succeeds_whenDateRangeSpansManyMonths() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2100-06-30", List.of("3"));
-
-        assertThat(result.parsedDateTo()).isEqualTo(LocalDate.of(2100, 6, 30));
+    @DisplayName("dateTo가 오늘로부터 3개월을 넘으면 생성에 실패한다")
+    void constructor_throws_whenDateRangeExceedsThreeMonths() {
+        assertThatThrownBy(() -> rangeRequest(
+                        futureDate(10),
+                        LocalDate.now().plusMonths(3).plusDays(1).toString(),
+                        List.of("3")))
+                .isInstanceOf(InvalidFlightSearchException.class);
     }
 
     @Test
     @DisplayName("sort가 없으면 parsedSort()는 PRICE(최저가순)를 반환한다")
     void parsedSort_defaultsToPrice_whenSortIsMissing() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-02-10", List.of("3"));
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
 
         assertThat(result.parsedSort()).isEqualTo(FlightDealSort.PRICE);
     }
@@ -102,7 +108,7 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("includeTransfer가 없으면 경유 포함이 기본값이다")
     void isIncludeTransfer_defaultsToTrue_whenMissing() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-02-10", List.of("3"));
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
 
         assertThat(result.isIncludeTransfer()).isTrue();
     }
@@ -118,7 +124,7 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("includeWeekend/includeHoliday가 없으면 둘 다 꺼짐이 기본값이다")
     void dayFilters_defaultToFalse_whenMissing() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-02-10", List.of("3"));
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
 
         assertThat(result.isIncludeWeekend()).isFalse();
         assertThat(result.isIncludeHoliday()).isFalse();
@@ -127,7 +133,7 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("adults/children/infants가 없으면 어른 1명, 나머지 0명이 기본값이다")
     void paxCounts_defaultWhenMissing() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-02-10", List.of("3"));
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
 
         assertThat(result.parsedAdults()).isEqualTo(1);
         assertThat(result.parsedChildren()).isEqualTo(0);
@@ -137,7 +143,7 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("locale/currency가 없으면 각각 ko, krw가 기본값이다")
     void localeAndCurrency_defaultWhenMissing() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-02-10", List.of("3"));
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
 
         assertThat(result.parsedLocale()).isEqualTo("ko");
         assertThat(result.parsedCurrency()).isEqualTo("krw");
@@ -149,8 +155,8 @@ class FlightSearchRequestDtoTest {
         assertThatThrownBy(() -> new FlightSearchRequestDto(
                         null,
                         null,
-                        "2099-01-10",
-                        "2099-02-10",
+                        futureDate(10),
+                        futureDate(41),
                         null,
                         List.of("3"),
                         null,
@@ -224,8 +230,8 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("equals는 cursor/limit 외의 필드가 다르면 다르다고 본다")
     void equals_stillDiffersOnOtherFields() {
-        FlightSearchRequestDto a = rangeRequest("2099-01-10", "2099-02-10", List.of("3"));
-        FlightSearchRequestDto b = rangeRequest("2099-01-10", "2099-02-10", List.of("4"));
+        FlightSearchRequestDto a = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
+        FlightSearchRequestDto b = rangeRequest(futureDate(10), futureDate(41), List.of("4"));
 
         assertThat(a).isNotEqualTo(b);
     }
@@ -233,7 +239,7 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("cursor가 없으면 첫 요청이고, 있으면 첫 요청이 아니다")
     void isFirstRequest_reflectsCursorPresence() {
-        FlightSearchRequestDto withoutCursor = rangeRequest("2099-01-10", "2099-02-10", List.of("3"));
+        FlightSearchRequestDto withoutCursor = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
         FlightSearchRequestDto withCursor = rangeRequestWithPaging("tok_0001", null);
 
         assertThat(withoutCursor.isFirstRequest()).isTrue();
@@ -243,7 +249,7 @@ class FlightSearchRequestDtoTest {
     @Test
     @DisplayName("limit이 없으면 boundedLimit()는 기본값 20을 반환한다")
     void boundedLimit_defaultsWhenMissing() {
-        FlightSearchRequestDto result = rangeRequest("2099-01-10", "2099-02-10", List.of("3"));
+        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
 
         assertThat(result.boundedLimit()).isEqualTo(20);
     }
@@ -270,8 +276,8 @@ class FlightSearchRequestDtoTest {
 
     private static FlightSearchRequestDto rangeRequestWithPaging(String cursor, String limit) {
         return new RequestBuilder()
-                .dateFrom("2099-01-10")
-                .dateTo("2099-02-10")
+                .dateFrom(futureDate(10))
+                .dateTo(futureDate(41))
                 .nights(List.of("3"))
                 .cursor(cursor)
                 .limit(limit)
@@ -288,8 +294,8 @@ class FlightSearchRequestDtoTest {
     private static final class RequestBuilder {
         private String origin = "ICN";
         private String searchMode = "range";
-        private String dateFrom = "2099-01-10";
-        private String dateTo = "2099-02-10";
+        private String dateFrom = futureDate(10);
+        private String dateTo = futureDate(41);
         private String destination;
         private List<String> nights;
         private List<String> sector;

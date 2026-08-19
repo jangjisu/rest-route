@@ -1,11 +1,18 @@
 package com.restroute.flight.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
-import com.restroute.flight.controller.exception.FlightDealNotFoundException;
+import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,80 +20,112 @@ import org.junit.jupiter.api.Test;
 class FlightSearchServiceTest {
 
     private static final String VALID_ORIGIN = "ICN";
-    private static final String VALID_DATE_FROM = "2099-01-10";
-    private static final String VALID_DATE_TO = "2099-02-10";
-
-    private final FlightSearchService service = new FlightSearchService(new FlightDealSessionStore());
+    private static final String VALID_DATE_FROM = LocalDate.now().plusDays(10).toString();
+    private static final String VALID_DATE_TO = LocalDate.now().plusDays(41).toString();
 
     @Test
-    @DisplayName("cursor가 없으면(첫 요청) 조회해서 세션에 저장하고 첫 페이지를 반환한다")
-    void search_fetchesAndSavesOnFirstRequest() {
-        FlightDealSearchResponse response = service.search(request(null, "3", "3"), 5);
+    @DisplayName("RANGE는 rangeExecutor가 가져온 원본을 dealAssembler로 조립해 정렬까지 마친다")
+    void search_usesRangeExecutorAndAssembler_whenSearchModeIsRange() {
+        FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
+        FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
+        FlightDealAssembler dealAssembler = mock(FlightDealAssembler.class);
+        FlightSearchService service =
+                new FlightSearchService(new FlightDealSessionStore(), rangeExecutor, fixedExecutor, dealAssembler);
+        FlightSearchRequestDto request = request(null, "3", null);
 
-        assertThat(response.items()).hasSize(3);
-        assertThat(response.meta().totalCount()).isEqualTo(5);
-        assertThat(response.meta().hasNext()).isTrue();
+        TravelpayoutsPriceItem rawItem = rawItem();
+        FlightDealResponse mapped = dealWithPrice(89000);
+        when(rangeExecutor.execute(request)).thenReturn(List.of(rawItem));
+        when(dealAssembler.assemble(eq(List.of(rawItem)), any(), eq(request))).thenReturn(List.of(mapped));
+
+        FlightDealSearchResponse response = service.search(request);
+
+        assertThat(response.items())
+                .extracting(FlightDealResponse::price)
+                .containsExactly(new FlightDealResponse.Price(89000, "KRW"));
+        verify(fixedExecutor, never()).execute(any());
     }
 
     @Test
-    @DisplayName("같은 조건으로 cursor를 이어주면 세션스토어에서 찾아 이어서 반환한다")
-    void search_continuesFromSessionStoreWhenCursorMatches() {
-        FlightDealSearchResponse first = service.search(request(null, "3", "3"), 10);
-        FlightDealSearchResponse second = service.search(request(first.meta().nextCursor(), "3", "3"), 10);
+    @DisplayName("FIXED는 fixedExecutor를 통해 조회한다")
+    void search_usesFixedExecutor_whenSearchModeIsFixed() {
+        FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
+        FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
+        FlightDealAssembler dealAssembler = mock(FlightDealAssembler.class);
+        FlightSearchService service =
+                new FlightSearchService(new FlightDealSessionStore(), rangeExecutor, fixedExecutor, dealAssembler);
+        FlightSearchRequestDto request = fixedRequest();
 
-        String firstToken = first.items().get(0).id().split("_")[0];
-        assertThat(second.items().get(0).id()).isEqualTo(firstToken + "_0004");
+        when(fixedExecutor.execute(request)).thenReturn(List.of());
+        when(dealAssembler.assemble(any(), any(), eq(request))).thenReturn(List.of());
+
+        service.search(request);
+
+        verify(fixedExecutor).execute(request);
+        verify(rangeExecutor, never()).execute(any());
     }
 
-    @Test
-    @DisplayName("cursor가 있는데 세션을 못 찾으면(형식 이상/만료/조건 불일치 포함) 잘못된 요청으로 실패한다")
-    void search_failsWhenCursorCannotBeResolved() {
-        assertThatThrownBy(() -> service.search(request("not-a-real-cursor", "3", null), 5))
-                .isInstanceOf(FlightDealNotFoundException.class);
+    private static TravelpayoutsPriceItem rawItem() {
+        return new TravelpayoutsPriceItem(
+                "SEL",
+                "OSA",
+                "ICN",
+                "KIX",
+                89000,
+                "LJ",
+                "1",
+                "2026-09-15T09:00:00+09:00",
+                "2026-09-18T09:00:00+09:00",
+                0,
+                0,
+                90,
+                90,
+                90,
+                "gate",
+                "link");
     }
 
-    @Test
-    @DisplayName("검색 조건이 달라진 채로 cursor를 재사용하면 실패한다")
-    void search_failsWhenSearchConditionsChange() {
-        FlightDealSearchResponse first = service.search(request(null, "3", "3"), 10);
-
-        assertThatThrownBy(() -> service.search(request(first.meta().nextCursor(), "4", "3"), 10))
-                .isInstanceOf(FlightDealNotFoundException.class);
+    private static FlightDealResponse dealWithPrice(int amount) {
+        FlightDealResponse.Leg leg =
+                new FlightDealResponse.Leg("2026-09-15T09:00:00+09:00", "2026-09-15T10:30:00+09:00", 90, 0);
+        return new FlightDealResponse(
+                "T_0001",
+                new FlightDealResponse.Destination("KIX", "오사카"),
+                leg,
+                leg,
+                3,
+                List.of(),
+                new FlightDealResponse.Airline("LJ", "진에어", false),
+                new FlightDealResponse.Price(amount, "KRW"),
+                false,
+                "gate",
+                "link",
+                null);
     }
 
-    @Test
-    @DisplayName("totalSize가 null이면(실제 연동) 아직 미구현이라 예외를 던진다")
-    void search_throwsForRealModeNotYetImplemented() {
-        assertThatThrownBy(() -> service.search(request(null, "3", null)))
-                .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @Test
-    @DisplayName("sort가 없으면(기본 PRICE) 가격 오름차순으로 정렬된 결과를 반환한다")
-    void search_sortsByPriceAscending_whenSortIsDefault() {
-        FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", null), 30);
-
-        List<Integer> prices =
-                response.items().stream().map(item -> item.price().amount()).toList();
-        assertThat(prices).isSorted();
-    }
-
-    @Test
-    @DisplayName("sort=DATE면 출발일 오름차순으로 정렬된 결과를 반환한다")
-    void search_sortsByDepartureDateAscending_whenSortIsDate() {
-        FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", "DATE"), 30);
-
-        List<String> departures = response.items().stream()
-                .map(item -> item.departure().departAt())
-                .toList();
-        assertThat(departures).isSorted();
+    private static FlightSearchRequestDto fixedRequest() {
+        return new FlightSearchRequestDto(
+                VALID_ORIGIN,
+                "fixed",
+                VALID_DATE_FROM,
+                LocalDate.now().plusDays(13).toString(),
+                "OSA",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     private static FlightSearchRequestDto request(String cursor, String nights, String limit) {
-        return requestWithSort(cursor, nights, limit, null);
-    }
-
-    private static FlightSearchRequestDto requestWithSort(String cursor, String nights, String limit, String sort) {
         return new FlightSearchRequestDto(
                 VALID_ORIGIN,
                 "range",
@@ -101,7 +140,7 @@ class FlightSearchServiceTest {
                 null,
                 null,
                 null,
-                sort,
+                null,
                 cursor,
                 limit,
                 null,

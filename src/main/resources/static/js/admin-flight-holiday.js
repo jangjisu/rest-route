@@ -144,13 +144,7 @@ export function initializeAdminFlightHoliday(document, {
             button.appendChild(name);
         }
 
-        // 주말은 이미 무조건 비근무일로 판정되므로 공휴일로 저장하지 않는다 — 그래서 주말 칸은
-        // 항상 비활성화한다(이 테이블에 주말 날짜가 들어올 일 자체가 없다).
-        if (cell.isWeekend) {
-            button.disabled = true;
-        } else {
-            button.addEventListener('click', () => openModal(cell.date, cell.referenceName));
-        }
+        button.addEventListener('click', () => openModal(cell.date, cell.referenceName));
         return button;
     }
 

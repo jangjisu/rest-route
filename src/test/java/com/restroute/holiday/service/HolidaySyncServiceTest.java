@@ -45,7 +45,7 @@ class HolidaySyncServiceTest {
     }
 
     @Test
-    @DisplayName("아직 등록되지 않은 실제 공휴일만(평일 한정) syncedFromApi로 저장하고 저장 건수를 반환한다")
+    @DisplayName("아직 등록되지 않은 실제 공휴일만 syncedFromApi로 저장하고 저장 건수를 반환한다")
     void syncYear_savesOnlyNewActualHolidays() {
         SpecialDayResponse.Item substituteHoliday = new SpecialDayResponse.Item("20260817", "대체공휴일(광복절)", "Y");
         SpecialDayResponse.Item alreadyRegistered = new SpecialDayResponse.Item("20260101", "신정", "Y");
@@ -82,17 +82,21 @@ class HolidaySyncServiceTest {
     }
 
     @Test
-    @DisplayName("응답의 실제 공휴일이 전부 주말이어도, 실제 공휴일 자체는 있었으므로 정상적으로 동기화를 진행한다")
-    void syncYear_skipsActualHolidaysThatFallOnWeekend() {
+    @DisplayName("응답의 실제 공휴일이 주말에 걸려도 그대로 저장한다 — 연차 배지 계산이 이름까지 필요하다")
+    void syncYear_savesActualHolidaysThatFallOnWeekend() {
         SpecialDayResponse.Item liberationDaySaturday = new SpecialDayResponse.Item("20260815", "광복절", "Y");
         when(specialDayClient.restDaysOfYear(2026)).thenReturn(List.of(liberationDaySaturday));
+        stubExistingHolidays(holidayRepository);
         when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(YEAR_START, YEAR_END))
                 .thenReturn(List.of());
 
         HolidaySyncResult result = service.syncYear(2026);
 
-        assertThat(result.savedCount()).isEqualTo(0);
-        verify(holidayRepository, never()).save(any());
+        assertThat(result.savedCount()).isEqualTo(1);
+        ArgumentCaptor<HolidayEntity> captor = ArgumentCaptor.forClass(HolidayEntity.class);
+        verify(holidayRepository).save(captor.capture());
+        assertThat(captor.getValue().getHolidayDate()).isEqualTo(LocalDate.of(2026, 8, 15));
+        assertThat(captor.getValue().getName()).isEqualTo("광복절");
     }
 
     @Test
@@ -158,17 +162,18 @@ class HolidaySyncServiceTest {
     }
 
     @Test
-    @DisplayName("예전 코드가 주말에 잘못 넣어둔 행은, 그 날짜가 이제 후보에서 걸러지므로 정리(삭제)된다")
-    void syncYear_cleansUpLegacyWeekendHolidaysViaReconciliation() {
-        HolidayEntity legacyWeekendHoliday = HolidayEntity.syncedFromApi(LocalDate.of(2026, 8, 15), "광복절");
+    @DisplayName("주말에 걸린 공휴일도 오늘 응답에 여전히 있으면 삭제하지 않고 그대로 둔다")
+    void syncYear_keepsWeekendHolidayStillPresentInApiResponse() {
+        HolidayEntity weekendHoliday = HolidayEntity.syncedFromApi(LocalDate.of(2026, 8, 15), "광복절");
         when(specialDayClient.restDaysOfYear(2026))
                 .thenReturn(List.of(new SpecialDayResponse.Item("20260815", "광복절", "Y")));
+        stubExistingHolidays(holidayRepository, LocalDate.of(2026, 8, 15));
         when(holidayRepository.findAllByHolidayDateBetweenAndAdminOverriddenFalse(YEAR_START, YEAR_END))
-                .thenReturn(List.of(legacyWeekendHoliday));
+                .thenReturn(List.of(weekendHoliday));
 
         HolidaySyncResult result = service.syncYear(2026);
 
-        assertThat(result.deletedCount()).isEqualTo(1);
-        verify(holidayRepository).deleteAll(List.of(legacyWeekendHoliday));
+        assertThat(result.deletedCount()).isEqualTo(0);
+        verify(holidayRepository).deleteAll(List.of());
     }
 }

@@ -23,8 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>관리자가 admin 페이지에서 직접 등록한 행({@code adminOverridden=true})은 삭제 대상에서
  * 항상 제외한다 — 실제 값의 최종 권한은 관리자 화면에 있고, 이 동기화는 그걸 침범하지 않는다.
  *
- * <p>주말은 이미 무조건 비근무일로 판정되므로, API 응답에 있어도 저장하지 않는다(연차/공휴일
- * 배지 계산에 이 테이블을 조회 목적이 아니라 판정 목적으로만 쓰기 때문에 중복 저장할 이유가 없다).
+ * <p>주말에 걸리는 공휴일(대체공휴일 지정 전의 원래 공휴일 등)도 API 응답에 있으면 그대로
+ * 저장한다 — 연차 배지 계산이 "이 날짜가 무슨 공휴일인지" 이름까지 보여줘야 해서, 주말이라고
+ * 걸러내면 그 이름 정보가 빠진다.
  */
 @Slf4j
 @Service
@@ -51,7 +52,6 @@ public class HolidaySyncService {
 
         List<HolidayCandidate> candidates = actualHolidayItems.stream()
                 .map(item -> new HolidayCandidate(LocalDate.parse(item.locdate(), LOCDATE_FORMAT), item.dateName()))
-                .filter(candidate -> !HolidayEntity.isWeekend(candidate.date()))
                 .toList();
         Set<LocalDate> apiDates =
                 candidates.stream().map(HolidayCandidate::date).collect(Collectors.toSet());

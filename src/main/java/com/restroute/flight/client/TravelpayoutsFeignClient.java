@@ -18,6 +18,7 @@ public interface TravelpayoutsFeignClient {
             @RequestParam("origin") String origin,
             @RequestParam(value = "destination", required = false) String destination,
             @RequestParam("departure_at") String departureAt,
+            @RequestParam(value = "return_at", required = false) String returnAt,
             @RequestParam(value = "min_trip_duration", required = false) Integer minTripDuration,
             @RequestParam(value = "max_trip_duration", required = false) Integer maxTripDuration,
             @RequestParam("currency") String currency,

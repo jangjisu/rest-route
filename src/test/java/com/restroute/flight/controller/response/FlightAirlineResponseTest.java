@@ -11,7 +11,7 @@ class FlightAirlineResponseTest {
     @Test
     @DisplayName("엔티티 필드를 응답 DTO로 그대로 매핑한다")
     void from_mapsEntityFields() {
-        FlightAirlineEntity entity = new FlightAirlineEntity("7C", "제주항공", "Jeju Air");
+        FlightAirlineEntity entity = new FlightAirlineEntity("7C", "제주항공", "Jeju Air", true);
 
         FlightAirlineResponse response = FlightAirlineResponse.from(entity);
 
