@@ -16,4 +16,8 @@ public enum FlightSearchMode {
             default -> null;
         };
     }
+
+    public static boolean isRange(FlightSearchMode mode) {
+        return mode == RANGE;
+    }
 }

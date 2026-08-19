@@ -16,9 +16,6 @@ import org.springframework.stereotype.Service;
 /**
  * 항공권 실 연동 검색 진입점. 무한스크롤을 위해 첫 조회 결과를 세션에 cursor로 저장해두고,
  * 이후 요청은 그 세션을 이어서 페이지만 잘라 준다({@link FlightDealSessionStore}).
- *
- * <p>딜을 실제로 가져오는 부분만 {@link #fetchDeals}로 뽑아뒀다 — {@link FlightSearchMockService}가
- * 이 메서드만 오버라이드한다.
  */
 @Primary
 @Service
@@ -28,9 +25,7 @@ public class FlightSearchService {
     private final FlightDealSessionStore sessionStore;
     private final FlightRangeSearchExecutor rangeExecutor;
     private final FlightFixedSearchExecutor fixedExecutor;
-    private final FlightRangeSearchResponseMapper responseMapper;
-    private final FlightDealPostFilter postFilter;
-    private final FlightDealHolidayEnricher holidayEnricher;
+    private final FlightDealAssembler dealAssembler;
 
     public FlightDealSearchResponse search(FlightSearchRequestDto request) {
         if (request.isFirstRequest()) {
@@ -44,18 +39,10 @@ public class FlightSearchService {
     }
 
     protected List<FlightDealResponse> fetchDeals(FlightSearchRequestDto request, String token) {
-        List<TravelpayoutsPriceItem> rawItems = request.parsedSearchMode() == FlightSearchMode.RANGE
-                ? rangeExecutor.execute(
-                        request.origin(),
-                        FlightRangeSearchPlanner.plan(request),
-                        request.parsedDateFrom(),
-                        request.parsedDateTo())
+        List<TravelpayoutsPriceItem> rawItems = FlightSearchMode.isRange(request.parsedSearchMode())
+                ? rangeExecutor.execute(request)
                 : fixedExecutor.execute(request);
-
-        List<FlightDealResponse> mapped = responseMapper.mapAll(rawItems, token);
-        List<FlightDealResponse> filtered = postFilter.apply(mapped, request);
-        List<FlightDealResponse> withHolidays = holidayEnricher.enrich(filtered);
-        return FlightDealResponses.markLowestInRange(withHolidays);
+        return dealAssembler.assemble(rawItems, token, request);
     }
 
     static List<FlightDealResponse> sorted(List<FlightDealResponse> items, FlightDealSort sort) {

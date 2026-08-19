@@ -2,8 +2,6 @@ package com.restroute.flight.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -26,36 +24,25 @@ class FlightSearchServiceTest {
     private static final String VALID_DATE_TO = LocalDate.now().plusDays(41).toString();
 
     @Test
-    @DisplayName("RANGE는 rangeExecutor를 통해 매핑/필터/공휴일/최저가 표시까지 전부 거친다")
-    void search_usesRangeExecutorAndFullPipeline_whenSearchModeIsRange() {
+    @DisplayName("RANGE는 rangeExecutor가 가져온 원본을 dealAssembler로 조립해 정렬까지 마친다")
+    void search_usesRangeExecutorAndAssembler_whenSearchModeIsRange() {
         FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
         FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
-        FlightRangeSearchResponseMapper responseMapper = mock(FlightRangeSearchResponseMapper.class);
-        FlightDealPostFilter postFilter = mock(FlightDealPostFilter.class);
-        FlightDealHolidayEnricher holidayEnricher = mock(FlightDealHolidayEnricher.class);
-        FlightSearchService service = new FlightSearchService(
-                new FlightDealSessionStore(),
-                rangeExecutor,
-                fixedExecutor,
-                responseMapper,
-                postFilter,
-                holidayEnricher);
+        FlightDealAssembler dealAssembler = mock(FlightDealAssembler.class);
+        FlightSearchService service =
+                new FlightSearchService(new FlightDealSessionStore(), rangeExecutor, fixedExecutor, dealAssembler);
         FlightSearchRequestDto request = request(null, "3", null);
 
         TravelpayoutsPriceItem rawItem = rawItem();
-        when(rangeExecutor.execute(eq(VALID_ORIGIN), any(), eq(request.parsedDateFrom()), eq(request.parsedDateTo())))
-                .thenReturn(List.of(rawItem));
         FlightDealResponse mapped = dealWithPrice(89000);
-        when(responseMapper.mapAll(eq(List.of(rawItem)), anyString())).thenReturn(List.of(mapped));
-        when(postFilter.apply(anyList(), eq(request))).thenReturn(List.of(mapped));
-        when(holidayEnricher.enrich(List.of(mapped))).thenReturn(List.of(mapped));
+        when(rangeExecutor.execute(request)).thenReturn(List.of(rawItem));
+        when(dealAssembler.assemble(eq(List.of(rawItem)), any(), eq(request))).thenReturn(List.of(mapped));
 
         FlightDealSearchResponse response = service.search(request);
 
         assertThat(response.items())
                 .extracting(FlightDealResponse::price)
                 .containsExactly(new FlightDealResponse.Price(89000, "KRW"));
-        assertThat(response.items().get(0).isLowestInRange()).isTrue();
         verify(fixedExecutor, never()).execute(any());
     }
 
@@ -64,27 +51,18 @@ class FlightSearchServiceTest {
     void search_usesFixedExecutor_whenSearchModeIsFixed() {
         FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
         FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
-        FlightRangeSearchResponseMapper responseMapper = mock(FlightRangeSearchResponseMapper.class);
-        FlightDealPostFilter postFilter = mock(FlightDealPostFilter.class);
-        FlightDealHolidayEnricher holidayEnricher = mock(FlightDealHolidayEnricher.class);
-        FlightSearchService service = new FlightSearchService(
-                new FlightDealSessionStore(),
-                rangeExecutor,
-                fixedExecutor,
-                responseMapper,
-                postFilter,
-                holidayEnricher);
+        FlightDealAssembler dealAssembler = mock(FlightDealAssembler.class);
+        FlightSearchService service =
+                new FlightSearchService(new FlightDealSessionStore(), rangeExecutor, fixedExecutor, dealAssembler);
         FlightSearchRequestDto request = fixedRequest();
 
         when(fixedExecutor.execute(request)).thenReturn(List.of());
-        when(responseMapper.mapAll(anyList(), anyString())).thenReturn(List.of());
-        when(postFilter.apply(anyList(), eq(request))).thenReturn(List.of());
-        when(holidayEnricher.enrich(List.of())).thenReturn(List.of());
+        when(dealAssembler.assemble(any(), any(), eq(request))).thenReturn(List.of());
 
         service.search(request);
 
         verify(fixedExecutor).execute(request);
-        verify(rangeExecutor, never()).execute(any(), any(), any(), any());
+        verify(rangeExecutor, never()).execute(any());
     }
 
     private static TravelpayoutsPriceItem rawItem() {

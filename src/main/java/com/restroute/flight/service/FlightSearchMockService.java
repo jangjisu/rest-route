@@ -14,7 +14,7 @@ public class FlightSearchMockService extends FlightSearchService {
 
     @Autowired
     public FlightSearchMockService(FlightDealSessionStore sessionStore) {
-        super(sessionStore, null, null, null, null, null);
+        super(sessionStore, null, null, null);
     }
 
     public FlightSearchMockService() {
