@@ -18,9 +18,13 @@ class FlightDealAssembler {
 
     List<FlightDealResponse> assemble(
             List<TravelpayoutsPriceItem> rawItems, String token, FlightSearchRequestDto request) {
+        // Travelpayouts 원본 -> 응답 DTO 변환 (id 매기기, 공항/항공사 이름·isLowCost 채우기). holidays는 아직 빈 값.
         List<FlightDealResponse> mapped = responseMapper.mapAll(rawItems, token);
+        // 사용자가 원하지 않는 항목 제거 (주말/공휴일 출발 제외, 경유 제외).
         List<FlightDealResponse> filtered = postFilter.apply(mapped, request);
+        // 필터를 통과해 최종적으로 남은 항목에만 holidays를 실제 값으로 채운다.
         List<FlightDealResponse> withHolidays = holidayEnricher.enrich(filtered);
+        // 남은 항목 중 전체 최저가 한 건에만 isLowestInRange=true를 표시한다.
         return FlightDealResponses.markLowestInRange(withHolidays);
     }
 }
