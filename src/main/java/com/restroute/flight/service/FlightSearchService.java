@@ -29,8 +29,8 @@ import org.springframework.stereotype.Service;
  * {@link FlightRangeSearchPlanner}가 세운 계획대로 {@link FlightRangeSearchExecutor}가,
  * FIXED는 {@link FlightFixedSearchExecutor}가 각각 Travelpayouts를 호출한다. 이후
  * 매핑({@link FlightRangeSearchResponseMapper}) → 필터({@link FlightDealPostFilter}) →
- * 전체 최저가 표시({@link FlightDealResponses#markLowestInRange}) → 정렬 순서는 두 모드가
- * 공통으로 거친다.
+ * 공휴일 배지 채우기({@link FlightDealHolidayEnricher}) → 전체 최저가 표시({@link
+ * FlightDealResponses#markLowestInRange}) → 정렬 순서는 두 모드가 공통으로 거친다.
  */
 @Service
 public class FlightSearchService {
@@ -40,6 +40,7 @@ public class FlightSearchService {
     private final FlightFixedSearchExecutor fixedExecutor;
     private final FlightRangeSearchResponseMapper responseMapper;
     private final FlightDealPostFilter postFilter;
+    private final FlightDealHolidayEnricher holidayEnricher;
 
     /**
      * 스프링이 실제로 쓰는 생성자. 생성자가 여러 개라 {@code @Autowired}로 명시하지 않으면
@@ -51,12 +52,14 @@ public class FlightSearchService {
             FlightRangeSearchExecutor rangeExecutor,
             FlightFixedSearchExecutor fixedExecutor,
             FlightRangeSearchResponseMapper responseMapper,
-            FlightDealPostFilter postFilter) {
+            FlightDealPostFilter postFilter,
+            FlightDealHolidayEnricher holidayEnricher) {
         this.sessionStore = sessionStore;
         this.rangeExecutor = rangeExecutor;
         this.fixedExecutor = fixedExecutor;
         this.responseMapper = responseMapper;
         this.postFilter = postFilter;
+        this.holidayEnricher = holidayEnricher;
     }
 
     /** SessionStore를 외부에 노출하지 않고도 실제 객체로 조립해 테스트/수동 배선할 때 쓰는 편의 생성자(모킹 전용). */
@@ -66,7 +69,7 @@ public class FlightSearchService {
 
     /** 위와 동일하되 SessionStore를 직접 넘길 때 쓴다(모킹 전용 — 실제 연동 의존성은 비워둔다). */
     public FlightSearchService(FlightDealSessionStore sessionStore) {
-        this(sessionStore, null, null, null, null);
+        this(sessionStore, null, null, null, null, null);
     }
 
     /** 실제 연동 전용 진입점. */
@@ -102,7 +105,8 @@ public class FlightSearchService {
 
         List<FlightDealResponse> mapped = responseMapper.mapAll(rawItems, token);
         List<FlightDealResponse> filtered = postFilter.apply(mapped, request);
-        return FlightDealResponses.markLowestInRange(filtered);
+        List<FlightDealResponse> withHolidays = holidayEnricher.enrich(filtered);
+        return FlightDealResponses.markLowestInRange(withHolidays);
     }
 
     private static List<FlightDealResponse> sorted(List<FlightDealResponse> items, FlightDealSort sort) {

@@ -13,7 +13,7 @@ public record FlightDealResponse(
         Leg departure,
         Leg arrival,
         int nights,
-        Holiday holiday,
+        List<HolidayDay> holidays,
         Airline airline,
         Price price,
         boolean isLowestInRange,
@@ -26,10 +26,11 @@ public record FlightDealResponse(
     public record Leg(String departAt, String arriveAt, int duration, int transferCount) {}
 
     /**
-     * 연휴 배지 계산 결과. 지금은 실제 공휴일 달력 연동이 없어 mock에서는 항상 0/빈 값으로
-     * 채운다 — 실제 계산 로직(공휴일 판정, 연차 일수 산정)은 별도 작업이 필요하다.
+     * 출발일~귀국일 사이에 걸리는 비근무일(공휴일·주말) 한 건. 공휴일이면 {@code name}이 채워지고,
+     * 순수 주말(공휴일 테이블에 없는 토/일)이면 {@code name}이 {@code null}이다. 연차 사용일수
+     * 같은 파생값은 프론트에서 이 목록으로 직접 계산한다 — 여기서는 원 데이터만 내려준다.
      */
-    public record Holiday(int count, List<String> names, int annualLeaveDays) {}
+    public record HolidayDay(String date, String name) {}
 
     public record Airline(String code, String name, boolean isLowCost) {}
 

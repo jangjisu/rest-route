@@ -5,7 +5,6 @@ import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.holiday.domain.HolidayEntity;
 import com.restroute.holiday.repository.HolidayRepository;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -51,7 +50,7 @@ class FlightDealPostFilter {
 
     private static List<FlightDealResponse> withoutWeekendDepartures(List<FlightDealResponse> items) {
         return items.stream()
-                .filter(item -> !HolidayEntity.isWeekend(departureDateOf(item)))
+                .filter(item -> !HolidayEntity.isWeekend(FlightDealResponses.departureDateOf(item)))
                 .toList();
     }
 
@@ -61,15 +60,11 @@ class FlightDealPostFilter {
             return items;
         }
         List<LocalDate> departureDates =
-                items.stream().map(FlightDealPostFilter::departureDateOf).toList();
+                items.stream().map(FlightDealResponses::departureDateOf).toList();
         Set<LocalDate> holidayDates = new HashSet<>(holidayRepository.findHolidayDatesBetween(
                 Collections.min(departureDates), Collections.max(departureDates)));
         return items.stream()
-                .filter(item -> !holidayDates.contains(departureDateOf(item)))
+                .filter(item -> !holidayDates.contains(FlightDealResponses.departureDateOf(item)))
                 .toList();
-    }
-
-    private static LocalDate departureDateOf(FlightDealResponse item) {
-        return OffsetDateTime.parse(item.departure().departAt()).toLocalDate();
     }
 }

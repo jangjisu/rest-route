@@ -20,9 +20,9 @@ import org.springframework.stereotype.Component;
  * <p>{@code isLowCost}는 {@link FlightAirlineNameCache#isLowCost}로 채운다 — Travelpayouts
  * {@code /data/airlines.json}의 {@code is_lowcost}를 시딩 단계에서 그대로 가져온 값이다.
  *
- * <p>{@code holiday}는 mock과 동일하게 항상 0/빈 값 스텁이다 — 필터 단계({@link
- * FlightDealPostFilter})가 공휴일 여부를 실제로 조회하긴 하지만 그건 딜을 뺄지 말지 판단하는
- * 용도일 뿐, 그 결과를 여기로 다시 채워 넣는 별도 보강 단계는 아직 없다.
+ * <p>{@code holidays}는 여기서는 항상 빈 목록이다 — 필터({@link FlightDealPostFilter}) 이후
+ * {@link FlightDealHolidayEnricher}가 실제 값을 채운다(필터를 다 거친 뒤라야 어떤 딜이 최종
+ * 응답에 남는지 알 수 있어서, 굳이 필터 전인 여기서 미리 계산할 이유가 없다).
  */
 @Component
 @RequiredArgsConstructor
@@ -55,7 +55,7 @@ class FlightRangeSearchResponseMapper {
                 legOf(departureAt, item.durationTo(), item.transfers()),
                 legOf(returnAt, item.durationBack(), item.returnTransfers()),
                 nights,
-                FlightDealResponses.NO_HOLIDAY,
+                FlightDealResponses.NO_HOLIDAYS,
                 new FlightDealResponse.Airline(
                         item.airline(),
                         airlineNameCache.findName(item.airline()),

@@ -84,7 +84,7 @@ final class FlightSearchMockFixture {
                 departure,
                 arrival,
                 nights,
-                FlightDealResponses.NO_HOLIDAY,
+                FlightDealResponses.NO_HOLIDAYS,
                 new FlightDealResponse.Airline(airline.code(), airline.name(), true),
                 new FlightDealResponse.Price(amount, "KRW"),
                 false,

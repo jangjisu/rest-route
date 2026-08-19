@@ -98,7 +98,7 @@ class FlightRangeSearchResponseMapperTest {
     }
 
     @Test
-    @DisplayName("price/gate/link/seatsLeft/holiday는 그대로 옮기거나 스텁으로 채운다")
+    @DisplayName("price/gate/link/seatsLeft/holidays는 그대로 옮기거나 스텁으로 채운다")
     void mapAll_fillsRemainingFieldsAndStubs() {
         List<FlightDealResponse> result = mapper.mapAll(List.of(item()), "TOK1");
         FlightDealResponse deal = result.get(0);
@@ -107,7 +107,7 @@ class FlightRangeSearchResponseMapperTest {
         assertThat(deal.gateName()).isEqualTo("Aviasales");
         assertThat(deal.bookingLink()).isEqualTo("https://example.com/link");
         assertThat(deal.seatsLeft()).isNull();
-        assertThat(deal.holiday()).isEqualTo(new FlightDealResponse.Holiday(0, List.of(), 0));
+        assertThat(deal.holidays()).isEmpty();
     }
 
     @Test

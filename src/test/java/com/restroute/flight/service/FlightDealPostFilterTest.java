@@ -43,7 +43,7 @@ class FlightDealPostFilterTest {
                 departure,
                 arrival,
                 3,
-                new FlightDealResponse.Holiday(0, List.of(), 0),
+                List.of(),
                 new FlightDealResponse.Airline("LJ", "진에어", false),
                 new FlightDealResponse.Price(89000, "KRW"),
                 false,

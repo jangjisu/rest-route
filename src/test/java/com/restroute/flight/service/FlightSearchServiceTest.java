@@ -72,8 +72,14 @@ class FlightSearchServiceTest {
         FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
         FlightRangeSearchResponseMapper responseMapper = mock(FlightRangeSearchResponseMapper.class);
         FlightDealPostFilter postFilter = mock(FlightDealPostFilter.class);
+        FlightDealHolidayEnricher holidayEnricher = mock(FlightDealHolidayEnricher.class);
         FlightSearchService realService = new FlightSearchService(
-                new FlightDealSessionStore(), rangeExecutor, fixedExecutor, responseMapper, postFilter);
+                new FlightDealSessionStore(),
+                rangeExecutor,
+                fixedExecutor,
+                responseMapper,
+                postFilter,
+                holidayEnricher);
         FlightSearchRequestDto request = request(null, "3", null);
 
         TravelpayoutsPriceItem rawItem = rawItem();
@@ -82,6 +88,7 @@ class FlightSearchServiceTest {
         FlightDealResponse mapped = dealWithPrice(89000);
         when(responseMapper.mapAll(eq(List.of(rawItem)), anyString())).thenReturn(List.of(mapped));
         when(postFilter.apply(anyList(), eq(request))).thenReturn(List.of(mapped));
+        when(holidayEnricher.enrich(List.of(mapped))).thenReturn(List.of(mapped));
 
         FlightDealSearchResponse response = realService.search(request, null);
 
@@ -99,13 +106,20 @@ class FlightSearchServiceTest {
         FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
         FlightRangeSearchResponseMapper responseMapper = mock(FlightRangeSearchResponseMapper.class);
         FlightDealPostFilter postFilter = mock(FlightDealPostFilter.class);
+        FlightDealHolidayEnricher holidayEnricher = mock(FlightDealHolidayEnricher.class);
         FlightSearchService realService = new FlightSearchService(
-                new FlightDealSessionStore(), rangeExecutor, fixedExecutor, responseMapper, postFilter);
+                new FlightDealSessionStore(),
+                rangeExecutor,
+                fixedExecutor,
+                responseMapper,
+                postFilter,
+                holidayEnricher);
         FlightSearchRequestDto request = fixedRequest();
 
         when(fixedExecutor.execute(request)).thenReturn(List.of());
         when(responseMapper.mapAll(anyList(), anyString())).thenReturn(List.of());
         when(postFilter.apply(anyList(), eq(request))).thenReturn(List.of());
+        when(holidayEnricher.enrich(List.of())).thenReturn(List.of());
 
         realService.search(request, null);
 
@@ -142,7 +156,7 @@ class FlightSearchServiceTest {
                 leg,
                 leg,
                 3,
-                new FlightDealResponse.Holiday(0, List.of(), 0),
+                List.of(),
                 new FlightDealResponse.Airline("LJ", "진에어", false),
                 new FlightDealResponse.Price(amount, "KRW"),
                 false,
