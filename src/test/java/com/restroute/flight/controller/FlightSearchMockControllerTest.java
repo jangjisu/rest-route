@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class FlightSearchMockControllerTest {
 
+    private static final int MOCK_TOTAL_SIZE = 77;
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
     private static final DateTimeFormatter LEG_TIME_FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
@@ -57,7 +58,7 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
-    @DisplayName("유효한 요청이면 첫 항목이 계산된 값 그대로 채워진 첫 페이지를 반환한다 (totalSize 기본값 77)")
+    @DisplayName("유효한 요청이면 첫 항목이 계산된 값 그대로 채워진 첫 페이지를 반환한다")
     void searchMock_returnsFirstPageWithComputedFields() throws Exception {
         mockMvc.perform(get("/api/flights/search/mock")
                         .param("origin", VALID_ORIGIN)
@@ -68,7 +69,7 @@ class FlightSearchMockControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error").value(nullValue()))
                 .andExpect(jsonPath("$.data.length()").value(20))
-                .andExpect(jsonPath("$.meta.totalCount").value(77))
+                .andExpect(jsonPath("$.meta.totalCount").value(MOCK_TOTAL_SIZE))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.locale").value("ko"))
                 .andExpect(jsonPath("$.meta.currency").value("krw"))
@@ -105,8 +106,7 @@ class FlightSearchMockControllerTest {
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("totalSize", "30")
-                        .param("limit", "30"))
+                        .param("limit", String.valueOf(MOCK_TOTAL_SIZE)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -125,38 +125,6 @@ class FlightSearchMockControllerTest {
         assertThat(lowestCount).isEqualTo(1);
         int finalMinPrice = minPrice;
         assertThat(items.get(0).at("/price/amount").asInt()).isEqualTo(finalMinPrice);
-    }
-
-    @Test
-    @DisplayName("totalSize를 지정하면 그만큼만 생성된다")
-    void searchMock_generatesExactlyTotalSizeItems() throws Exception {
-        mockMvc.perform(get("/api/flights/search/mock")
-                        .param("origin", VALID_ORIGIN)
-                        .param("searchMode", "range")
-                        .param("dateFrom", VALID_DATE_FROM)
-                        .param("dateTo", VALID_DATE_TO)
-                        .param("nights", "3")
-                        .param("totalSize", "5")
-                        .param("limit", "50"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(5))
-                .andExpect(jsonPath("$.meta.totalCount").value(5))
-                .andExpect(jsonPath("$.meta.hasNext").value(false));
-    }
-
-    @Test
-    @DisplayName("totalSize가 범위를 벗어나면 컨트롤러가 조용히 클램프한다")
-    void searchMock_clampsOutOfRangeTotalSize() throws Exception {
-        mockMvc.perform(get("/api/flights/search/mock")
-                        .param("origin", VALID_ORIGIN)
-                        .param("searchMode", "range")
-                        .param("dateFrom", VALID_DATE_FROM)
-                        .param("dateTo", VALID_DATE_TO)
-                        .param("nights", "3")
-                        .param("totalSize", "5000")
-                        .param("limit", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.meta.totalCount").value(1000));
     }
 
     @Test
@@ -198,7 +166,6 @@ class FlightSearchMockControllerTest {
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("totalSize", "30")
                         .param("limit", "30"))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -224,7 +191,6 @@ class FlightSearchMockControllerTest {
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
                         .param("sort", "DATE")
-                        .param("totalSize", "30")
                         .param("limit", "30"))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -343,44 +309,47 @@ class FlightSearchMockControllerTest {
     @Test
     @DisplayName("nights를 생략하면 dateFrom~dateTo 기간(1~31박) 전체를 대상으로 순회하며 정상 응답한다")
     void searchMock_defaultsToDateRangeNightsWhenOmitted() throws Exception {
-        String body = mockMvc.perform(get("/api/flights/search/mock")
-                        .param("origin", VALID_ORIGIN)
-                        .param("searchMode", "range")
-                        .param("dateFrom", VALID_DATE_FROM)
-                        .param("dateTo", VALID_DATE_TO)
-                        .param("totalSize", "31")
-                        .param("limit", "31"))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        assertThat(nightsValuesOf(body)).isEqualTo(rangeSet(1, 31));
+        assertThat(allNightsValuesOf(VALID_DATE_TO)).isEqualTo(rangeSet(1, 31));
     }
 
     @Test
     @DisplayName("nights를 생략했을 때 기간이 좁으면 그 기간만큼만 순회한다(고정 10이 아님)")
     void searchMock_cyclesWithinNarrowerDateRangeWhenNightsOmitted() throws Exception {
-        String body = mockMvc.perform(get("/api/flights/search/mock")
-                        .param("origin", VALID_ORIGIN)
-                        .param("searchMode", "range")
-                        .param("dateFrom", VALID_DATE_FROM)
-                        .param("dateTo", VALID_DATE_FROM_DATE.plusDays(5).toString())
-                        .param("totalSize", "10")
-                        .param("limit", "10"))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        assertThat(nightsValuesOf(body)).isEqualTo(rangeSet(1, 5));
+        assertThat(allNightsValuesOf(VALID_DATE_FROM_DATE.plusDays(5).toString()))
+                .isEqualTo(rangeSet(1, 5));
     }
 
-    private Set<Integer> nightsValuesOf(String responseBody) throws Exception {
+    /** limit은 최대 50으로 잘리므로(MOCK_TOTAL_SIZE=77), 전체 nights 값을 모으려면 페이지를 끝까지 순회해야 한다. */
+    private Set<Integer> allNightsValuesOf(String dateTo) throws Exception {
         Set<Integer> nights = new HashSet<>();
-        for (JsonNode item : objectMapper.readTree(responseBody).at("/data")) {
-            nights.add(item.at("/nights").asInt());
+        String cursor = null;
+        boolean hasNext = true;
+
+        while (hasNext) {
+            var requestBuilder = get("/api/flights/search/mock")
+                    .param("origin", VALID_ORIGIN)
+                    .param("searchMode", "range")
+                    .param("dateFrom", VALID_DATE_FROM)
+                    .param("dateTo", dateTo)
+                    .param("limit", "50");
+            if (cursor != null) {
+                requestBuilder = requestBuilder.param("cursor", cursor);
+            }
+
+            String body = mockMvc.perform(requestBuilder)
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            JsonNode json = objectMapper.readTree(body);
+            for (JsonNode item : json.at("/data")) {
+                nights.add(item.at("/nights").asInt());
+            }
+
+            hasNext = json.at("/meta/hasNext").asBoolean();
+            cursor = hasNext ? json.at("/meta/nextCursor").asText() : null;
         }
+
         return nights;
     }
 
@@ -432,7 +401,6 @@ class FlightSearchMockControllerTest {
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("totalSize", "5")
                         .param("limit", "1"))
                 .andReturn()
                 .getResponse()
@@ -447,7 +415,6 @@ class FlightSearchMockControllerTest {
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("totalSize", "5")
                         .param("cursor", sessionToken + "_9999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.data").value(nullValue()))
@@ -464,7 +431,6 @@ class FlightSearchMockControllerTest {
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "3")
-                        .param("totalSize", "10")
                         .param("limit", "5"))
                 .andReturn()
                 .getResponse()
@@ -478,7 +444,6 @@ class FlightSearchMockControllerTest {
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
                         .param("nights", "4")
-                        .param("totalSize", "10")
                         .param("cursor", cursorFromDifferentConditions)
                         .param("limit", "1"))
                 .andExpect(status().isNotFound())
@@ -486,7 +451,7 @@ class FlightSearchMockControllerTest {
     }
 
     @Test
-    @DisplayName("실제 nextCursor를 계속 이어가면 중복/누락 없이 지정한 totalSize 전체를 정확히 순회한다")
+    @DisplayName("실제 nextCursor를 계속 이어가면 중복/누락 없이 77건 전체를 정확히 순회한다")
     void searchMock_paginatesThroughFullDatasetWithoutDuplicates() throws Exception {
         Set<String> seenIds = new HashSet<>();
         String cursor = null;
@@ -501,7 +466,6 @@ class FlightSearchMockControllerTest {
                     .param("dateFrom", VALID_DATE_FROM)
                     .param("dateTo", VALID_DATE_TO)
                     .param("nights", "3")
-                    .param("totalSize", "42")
                     .param("limit", "20");
             if (cursor != null) {
                 requestBuilder = requestBuilder.param("cursor", cursor);
@@ -524,8 +488,8 @@ class FlightSearchMockControllerTest {
             pageCount++;
         }
 
-        assertThat(seenIds).hasSize(42);
-        assertThat(pageCount).isEqualTo(3);
-        assertThat(lastPageSize).isEqualTo(2);
+        assertThat(seenIds).hasSize(MOCK_TOTAL_SIZE);
+        assertThat(pageCount).isEqualTo(4);
+        assertThat(lastPageSize).isEqualTo(17);
     }
 }
