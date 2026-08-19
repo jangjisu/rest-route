@@ -25,6 +25,16 @@ class FlightRangeSearchPlannerTest {
     }
 
     @Test
+    @DisplayName("destination을 직접 지정하면 예산이 남아도 전체 조회를 얹지 않는다 — 사용자가 정확히 그 하나만 원한 것이다")
+    void plan_neverAddsAggregateDestination_whenDestinationDirectlyGiven() {
+        FlightSearchRequestDto request = request(futureDate(10), futureDate(20), "OSA", null, List.of("3", "4", "5"));
+
+        FlightRangeSearchPlan plan = FlightRangeSearchPlanner.plan(request);
+
+        assertThat(plan.destinations()).containsExactly("OSA");
+    }
+
+    @Test
     @DisplayName("sector/destination이 둘 다 없으면 destinations는 빈 목록이다(생략)")
     void plan_returnsEmptyDestinations_whenNeitherGiven() {
         FlightSearchRequestDto request = request(futureDate(10), futureDate(20), null, null, List.of("3"));
@@ -42,7 +52,7 @@ class FlightRangeSearchPlannerTest {
 
         FlightRangeSearchPlan plan = FlightRangeSearchPlanner.plan(request);
 
-        assertThat(plan.destinations()).containsExactly("JP");
+        assertThat(plan.destinations()).containsExactly("JP", null);
         assertThat(plan.nightsWindows())
                 .containsExactly(
                         new FlightRangeSearchPlan.NightsWindow(3, 3),
@@ -51,7 +61,7 @@ class FlightRangeSearchPlannerTest {
     }
 
     @Test
-    @DisplayName("sector를 4개 다 고르면(9개국) nights 3개와 곱해 20을 넘어서 범위 모드로 낮춘다")
+    @DisplayName("sector를 4개 다 고르면(9개국) nights 3개와 곱해 20을 넘어서 범위 모드로 낮추고, 전체 조회를 하나 더 얹는다")
     void plan_downgradesToRangeWindow_whenExactNightsExceedsBudget() {
         FlightSearchRequestDto request = request(
                 futureDate(10),
@@ -62,8 +72,37 @@ class FlightRangeSearchPlannerTest {
 
         FlightRangeSearchPlan plan = FlightRangeSearchPlanner.plan(request);
 
-        assertThat(plan.destinations()).hasSize(9);
+        assertThat(plan.destinations()).hasSize(10).contains((String) null);
         assertThat(plan.nightsWindows()).containsExactly(new FlightRangeSearchPlan.NightsWindow(3, 5));
+    }
+
+    @Test
+    @DisplayName("sector로 여러 국가가 잡히면 예산 안에서 국가별 조회에 전체 조회를 하나 더 얹는다")
+    void plan_addsAggregateDestination_whenBudgetAllows() {
+        FlightSearchRequestDto request =
+                request(futureDate(10), futureDate(20), null, List.of("JAPAN"), List.of("3", "4", "5"));
+
+        FlightRangeSearchPlan plan = FlightRangeSearchPlanner.plan(request);
+
+        assertThat(plan.destinations()).hasSize(2).containsExactly("JP", null);
+    }
+
+    @Test
+    @DisplayName("국가별+전체를 합쳐도 예산을 넘으면 국가별 조회를 포기하고 전체 조회 하나만 한다")
+    void plan_dropsPerCountryDestinations_whenAggregateBudgetExceeded() {
+        LocalDate dateFrom = LocalDate.now();
+        LocalDate dateTo = dateFrom.plusMonths(3);
+        FlightSearchRequestDto request = request(
+                dateFrom.toString(),
+                dateTo.toString(),
+                null,
+                List.of("JAPAN", "SOUTHEAST_ASIA", "GREATER_CHINA", "GUAM_SAIPAN"),
+                List.of("3"));
+
+        FlightRangeSearchPlan plan = FlightRangeSearchPlanner.plan(request);
+
+        assertThat(plan.months()).hasSize(4);
+        assertThat(plan.destinations()).isEmpty();
     }
 
     @Test

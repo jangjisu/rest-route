@@ -26,6 +26,15 @@ final class FlightSearchDestinations {
     }
 
     /**
+     * destination을 직접 지정한 게 아니라 sector로 여러 국가가 잡힌 경우인지 알려준다 — direct
+     * destination은 사용자가 정확히 그 하나만 원한 것이므로 "전체" 조회를 덧붙이면 안 되고,
+     * sector는 지역 단위 선택이라 "전체"를 함께 보여주는 게 의미가 있다.
+     */
+    static boolean isSectorBased(FlightSearchRequestDto request) {
+        return !StringUtils.hasText(request.destination());
+    }
+
+    /**
      * {@link #resolve}가 빈 목록(생략)을 돌려주면 실행기 입장에서는 "destination 파라미터
      * 없이 딱 한 번만 호출하라"는 뜻이다 — 그 신호를 {@code null} 하나짜리 목록으로 통일해서
      * RANGE/FIXED 실행기가 각자 다시 구현하지 않고 여기서 한 번만 처리한다.
