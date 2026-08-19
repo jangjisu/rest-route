@@ -1,7 +1,6 @@
 package com.restroute.flight.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -13,7 +12,6 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
-import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
 import java.time.LocalDate;
@@ -27,53 +25,15 @@ class FlightSearchServiceTest {
     private static final String VALID_DATE_FROM = LocalDate.now().plusDays(10).toString();
     private static final String VALID_DATE_TO = LocalDate.now().plusDays(41).toString();
 
-    private final FlightSearchService service = new FlightSearchService(new FlightDealSessionStore());
-
     @Test
-    @DisplayName("cursor가 없으면(첫 요청) 조회해서 세션에 저장하고 첫 페이지를 반환한다")
-    void search_fetchesAndSavesOnFirstRequest() {
-        FlightDealSearchResponse response = service.search(request(null, "3", "3"), 5);
-
-        assertThat(response.items()).hasSize(3);
-        assertThat(response.meta().totalCount()).isEqualTo(5);
-        assertThat(response.meta().hasNext()).isTrue();
-    }
-
-    @Test
-    @DisplayName("같은 조건으로 cursor를 이어주면 세션스토어에서 찾아 이어서 반환한다")
-    void search_continuesFromSessionStoreWhenCursorMatches() {
-        FlightDealSearchResponse first = service.search(request(null, "3", "3"), 10);
-        FlightDealSearchResponse second = service.search(request(first.meta().nextCursor(), "3", "3"), 10);
-
-        String firstToken = first.items().get(0).id().split("_")[0];
-        assertThat(second.items().get(0).id()).isEqualTo(firstToken + "_0004");
-    }
-
-    @Test
-    @DisplayName("cursor가 있는데 세션을 못 찾으면(형식 이상/만료/조건 불일치 포함) 잘못된 요청으로 실패한다")
-    void search_failsWhenCursorCannotBeResolved() {
-        assertThatThrownBy(() -> service.search(request("not-a-real-cursor", "3", null), 5))
-                .isInstanceOf(FlightDealNotFoundException.class);
-    }
-
-    @Test
-    @DisplayName("검색 조건이 달라진 채로 cursor를 재사용하면 실패한다")
-    void search_failsWhenSearchConditionsChange() {
-        FlightDealSearchResponse first = service.search(request(null, "3", "3"), 10);
-
-        assertThatThrownBy(() -> service.search(request(first.meta().nextCursor(), "4", "3"), 10))
-                .isInstanceOf(FlightDealNotFoundException.class);
-    }
-
-    @Test
-    @DisplayName("totalSize가 null이면(실제 연동) RANGE는 rangeExecutor를 통해 매핑/필터/최저가 표시까지 거친다")
+    @DisplayName("RANGE는 rangeExecutor를 통해 매핑/필터/공휴일/최저가 표시까지 전부 거친다")
     void search_usesRangeExecutorAndFullPipeline_whenSearchModeIsRange() {
         FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
         FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
         FlightRangeSearchResponseMapper responseMapper = mock(FlightRangeSearchResponseMapper.class);
         FlightDealPostFilter postFilter = mock(FlightDealPostFilter.class);
         FlightDealHolidayEnricher holidayEnricher = mock(FlightDealHolidayEnricher.class);
-        FlightSearchService realService = new FlightSearchService(
+        FlightSearchService service = new FlightSearchService(
                 new FlightDealSessionStore(),
                 rangeExecutor,
                 fixedExecutor,
@@ -90,7 +50,7 @@ class FlightSearchServiceTest {
         when(postFilter.apply(anyList(), eq(request))).thenReturn(List.of(mapped));
         when(holidayEnricher.enrich(List.of(mapped))).thenReturn(List.of(mapped));
 
-        FlightDealSearchResponse response = realService.search(request, null);
+        FlightDealSearchResponse response = service.search(request);
 
         assertThat(response.items())
                 .extracting(FlightDealResponse::price)
@@ -100,14 +60,14 @@ class FlightSearchServiceTest {
     }
 
     @Test
-    @DisplayName("totalSize가 null이면(실제 연동) FIXED는 fixedExecutor를 통해 조회한다")
+    @DisplayName("FIXED는 fixedExecutor를 통해 조회한다")
     void search_usesFixedExecutor_whenSearchModeIsFixed() {
         FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
         FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
         FlightRangeSearchResponseMapper responseMapper = mock(FlightRangeSearchResponseMapper.class);
         FlightDealPostFilter postFilter = mock(FlightDealPostFilter.class);
         FlightDealHolidayEnricher holidayEnricher = mock(FlightDealHolidayEnricher.class);
-        FlightSearchService realService = new FlightSearchService(
+        FlightSearchService service = new FlightSearchService(
                 new FlightDealSessionStore(),
                 rangeExecutor,
                 fixedExecutor,
@@ -121,7 +81,7 @@ class FlightSearchServiceTest {
         when(postFilter.apply(anyList(), eq(request))).thenReturn(List.of());
         when(holidayEnricher.enrich(List.of())).thenReturn(List.of());
 
-        realService.search(request, null);
+        service.search(request);
 
         verify(fixedExecutor).execute(request);
         verify(rangeExecutor, never()).execute(any(), any(), any(), any());
@@ -187,32 +147,7 @@ class FlightSearchServiceTest {
                 null);
     }
 
-    @Test
-    @DisplayName("sort가 없으면(기본 PRICE) 가격 오름차순으로 정렬된 결과를 반환한다")
-    void search_sortsByPriceAscending_whenSortIsDefault() {
-        FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", null), 30);
-
-        List<Integer> prices =
-                response.items().stream().map(item -> item.price().amount()).toList();
-        assertThat(prices).isSorted();
-    }
-
-    @Test
-    @DisplayName("sort=DATE면 출발일 오름차순으로 정렬된 결과를 반환한다")
-    void search_sortsByDepartureDateAscending_whenSortIsDate() {
-        FlightDealSearchResponse response = service.search(requestWithSort(null, "3", "30", "DATE"), 30);
-
-        List<String> departures = response.items().stream()
-                .map(item -> item.departure().departAt())
-                .toList();
-        assertThat(departures).isSorted();
-    }
-
     private static FlightSearchRequestDto request(String cursor, String nights, String limit) {
-        return requestWithSort(cursor, nights, limit, null);
-    }
-
-    private static FlightSearchRequestDto requestWithSort(String cursor, String nights, String limit, String sort) {
         return new FlightSearchRequestDto(
                 VALID_ORIGIN,
                 "range",
@@ -227,7 +162,7 @@ class FlightSearchServiceTest {
                 null,
                 null,
                 null,
-                sort,
+                null,
                 cursor,
                 limit,
                 null,

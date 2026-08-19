@@ -4,7 +4,7 @@ import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightApiResponse;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
-import com.restroute.flight.service.FlightSearchService;
+import com.restroute.flight.service.FlightSearchMockService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +35,7 @@ public class FlightSearchMockController {
     private static final int MIN_TOTAL_SIZE = 1;
     private static final int MAX_TOTAL_SIZE = 1000;
 
-    private final FlightSearchService flightSearchService;
+    private final FlightSearchMockService flightSearchMockService;
 
     /**
      * @param request 검색 조건(origin/searchMode/dateFrom/dateTo/destination/nights/sector/includeWeekend/
@@ -52,7 +52,7 @@ public class FlightSearchMockController {
             @RequestParam(required = false, defaultValue = "" + DEFAULT_TOTAL_SIZE) int totalSize) {
         int boundedTotalSize = Math.min(Math.max(totalSize, MIN_TOTAL_SIZE), MAX_TOTAL_SIZE);
 
-        FlightDealSearchResponse result = flightSearchService.search(request, boundedTotalSize);
+        FlightDealSearchResponse result = flightSearchMockService.search(request, boundedTotalSize);
         return ResponseEntity.ok(FlightApiResponse.success(result.items(), result.meta()));
     }
 }

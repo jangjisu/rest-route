@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restroute.flight.service.FlightSearchService;
+import com.restroute.flight.service.FlightSearchMockService;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -51,7 +51,7 @@ class FlightSearchMockControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new FlightSearchMockController(new FlightSearchService()))
+        mockMvc = MockMvcBuilders.standaloneSetup(new FlightSearchMockController(new FlightSearchMockService()))
                 .setControllerAdvice(new FlightExceptionHandler())
                 .build();
     }
