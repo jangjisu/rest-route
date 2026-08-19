@@ -1,6 +1,7 @@
 package com.restroute.flight.service;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.util.StringUtils;
@@ -41,5 +42,20 @@ final class FlightSearchDestinations {
      */
     static List<String> paddedForCalls(List<String> destinations) {
         return destinations.isEmpty() ? Collections.singletonList(null) : destinations;
+    }
+
+    /**
+     * sector로 국가가 여러 개 잡혔으면(destinations가 비어있지 않으면) "전체"(destination
+     * 생략) 조회 하나를 국가별 조회에 더 얹는다 — 비어있으면(이미 "전체" 상태) 그대로 둔다.
+     * RANGE({@link FlightRangeSearchPlanner})와 FIXED({@link FlightFixedSearchExecutor})가
+     * 공유한다.
+     */
+    static List<String> withAggregate(List<String> destinations) {
+        if (destinations.isEmpty()) {
+            return destinations;
+        }
+        List<String> withAggregate = new ArrayList<>(destinations);
+        withAggregate.add(null);
+        return withAggregate;
     }
 }

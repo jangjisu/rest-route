@@ -88,12 +88,15 @@ class FlightFixedSearchExecutorTest {
     }
 
     @Test
-    @DisplayName("sector를 지정하면 그 국가 개수만큼 호출해서 합친다")
-    void execute_callsOncePerSectorCountry() {
+    @DisplayName("sector를 지정하면 그 국가 개수만큼 호출하고, 전체 조회도 하나 더 얹어서 합친다")
+    void execute_callsOncePerSectorCountry_plusAggregate() {
         FlightSearchRequestDto request = request(null, List.of("GUAM_SAIPAN"));
         when(travelpayoutsClient.groupedPricesForExactDates("ICN", "GU", request.dateFrom(), request.dateTo()))
                 .thenReturn(responseOf(item()));
         when(travelpayoutsClient.groupedPricesForExactDates("ICN", "MP", request.dateFrom(), request.dateTo()))
+                .thenReturn(responseOf());
+        when(travelpayoutsClient.groupedPricesForExactDates(
+                        eq("ICN"), isNull(), eq(request.dateFrom()), eq(request.dateTo())))
                 .thenReturn(responseOf());
 
         List<TravelpayoutsPriceItem> result = executor.execute(request);
@@ -101,6 +104,26 @@ class FlightFixedSearchExecutorTest {
         assertThat(result).hasSize(1);
         verify(travelpayoutsClient).groupedPricesForExactDates("ICN", "GU", request.dateFrom(), request.dateTo());
         verify(travelpayoutsClient).groupedPricesForExactDates("ICN", "MP", request.dateFrom(), request.dateTo());
+        verify(travelpayoutsClient)
+                .groupedPricesForExactDates(eq("ICN"), isNull(), eq(request.dateFrom()), eq(request.dateTo()));
+    }
+
+    @Test
+    @DisplayName("sector로 여러 국가 + 전체가 같은 항공권을 중복 반환하면 하나만 남긴다")
+    void execute_dedupesWhenSectorAndAggregateReturnSameFlight() {
+        FlightSearchRequestDto request = request(null, List.of("GUAM_SAIPAN"));
+        TravelpayoutsPriceItem duplicate = item();
+        when(travelpayoutsClient.groupedPricesForExactDates("ICN", "GU", request.dateFrom(), request.dateTo()))
+                .thenReturn(responseOf(duplicate));
+        when(travelpayoutsClient.groupedPricesForExactDates("ICN", "MP", request.dateFrom(), request.dateTo()))
+                .thenReturn(responseOf());
+        when(travelpayoutsClient.groupedPricesForExactDates(
+                        eq("ICN"), isNull(), eq(request.dateFrom()), eq(request.dateTo())))
+                .thenReturn(responseOf(duplicate));
+
+        List<TravelpayoutsPriceItem> result = executor.execute(request);
+
+        assertThat(result).hasSize(1);
     }
 
     @Test

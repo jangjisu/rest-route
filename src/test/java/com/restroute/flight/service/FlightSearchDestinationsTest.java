@@ -38,6 +38,18 @@ class FlightSearchDestinationsTest {
         assertThat(FlightSearchDestinations.resolve(request)).isEmpty();
     }
 
+    @Test
+    @DisplayName("국가 목록이 있으면 전체(null) 조회를 하나 더 얹는다")
+    void withAggregate_appendsNull_whenDestinationsNonEmpty() {
+        assertThat(FlightSearchDestinations.withAggregate(List.of("JP", "TH"))).containsExactly("JP", "TH", null);
+    }
+
+    @Test
+    @DisplayName("이미 빈 목록(전체 상태)이면 그대로 둔다")
+    void withAggregate_keepsEmpty_whenAlreadyAggregate() {
+        assertThat(FlightSearchDestinations.withAggregate(List.of())).isEmpty();
+    }
+
     private static FlightSearchRequestDto request(String destination, List<String> sector) {
         return new FlightSearchRequestDto(
                 "ICN",

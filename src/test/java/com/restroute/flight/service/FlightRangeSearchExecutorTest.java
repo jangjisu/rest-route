@@ -14,6 +14,7 @@ import com.restroute.flight.client.exception.TravelpayoutsApiException;
 import com.restroute.flight.client.response.TravelpayoutsGroupedPricesResponse;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -125,6 +126,22 @@ class FlightRangeSearchExecutorTest {
         assertThat(result)
                 .extracting(item -> item.departureAt().substring(0, 10))
                 .containsExactly("2026-09-15");
+    }
+
+    @Test
+    @DisplayName("국가별 조회와 전체 조회가 같은 항공권을 중복 반환하면 하나만 남긴다")
+    void execute_dedupesWhenCountryAndAggregateReturnSameFlight() {
+        FlightRangeSearchPlan plan = new FlightRangeSearchPlan(
+                Arrays.asList("JP", null), List.of("2026-09"), List.of(new FlightRangeSearchPlan.NightsWindow(3, 5)));
+        TravelpayoutsPriceItem sameFlight = itemAt("2026-09-15T09:00:00+09:00");
+        when(travelpayoutsClient.groupedPrices("ICN", "JP", "2026-09", 3, 5)).thenReturn(responseOf(sameFlight));
+        when(travelpayoutsClient.groupedPrices(eq("ICN"), isNull(), eq("2026-09"), eq(3), eq(5)))
+                .thenReturn(responseOf(sameFlight));
+
+        List<TravelpayoutsPriceItem> result =
+                executor.execute("ICN", plan, LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30));
+
+        assertThat(result).hasSize(1);
     }
 
     @Test

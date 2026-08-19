@@ -2,7 +2,9 @@ package com.restroute.flight.service;
 
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -16,6 +18,10 @@ import java.util.concurrent.Future;
  *
  * <p>호출 중 하나라도 실패하면(외부 API 오류 등) 전체를 그대로 실패시킨다 — 일부만 성공한
  * 결과를 조용히 보여주지 않는다.
+ *
+ * <p>국가별 조회와 "전체"(destination 생략) 조회를 함께 하는 경우, 같은 항공권이 양쪽에 모두
+ * 잡혀서 중복으로 올 수 있다 — destinationAirport·departureAt·returnAt·flightNumber가 모두
+ * 같으면 같은 항공권으로 보고 더 싼 쪽만 남긴다.
  */
 final class FlightParallelPriceCalls {
 
@@ -29,8 +35,29 @@ final class FlightParallelPriceCalls {
             for (Future<List<TravelpayoutsPriceItem>> future : futures) {
                 results.addAll(resultOf(future));
             }
-            return results;
+            return deduped(results);
         }
+    }
+
+    private static List<TravelpayoutsPriceItem> deduped(List<TravelpayoutsPriceItem> items) {
+        Map<String, TravelpayoutsPriceItem> cheapestByKey = new LinkedHashMap<>();
+        for (TravelpayoutsPriceItem item : items) {
+            String key = dedupKeyOf(item);
+            TravelpayoutsPriceItem existing = cheapestByKey.get(key);
+            if (existing == null || item.price() < existing.price()) {
+                cheapestByKey.put(key, item);
+            }
+        }
+        return List.copyOf(cheapestByKey.values());
+    }
+
+    private static String dedupKeyOf(TravelpayoutsPriceItem item) {
+        return String.join(
+                "|",
+                String.valueOf(item.destinationAirport()),
+                String.valueOf(item.departureAt()),
+                String.valueOf(item.returnAt()),
+                String.valueOf(item.flightNumber()));
     }
 
     /**

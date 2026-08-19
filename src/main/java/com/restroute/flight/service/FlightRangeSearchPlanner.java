@@ -96,9 +96,7 @@ final class FlightRangeSearchPlanner {
         if (!fitsWithinBudget(detailedCount, monthCount, nightsWindowCount)) {
             return List.of();
         }
-        List<String> withAggregate = new ArrayList<>(destinations);
-        withAggregate.add(null);
-        return withAggregate;
+        return FlightSearchDestinations.withAggregate(destinations);
     }
 
     /** dateFrom~dateTo가 걸치는 달력상 월을 순서대로 "yyyy-MM"로 나열한다(양 끝 달 포함). */
