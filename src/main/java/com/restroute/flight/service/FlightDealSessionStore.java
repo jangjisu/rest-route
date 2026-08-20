@@ -34,6 +34,9 @@ class FlightDealSessionStore {
     private static final int TOKEN_LENGTH = 4;
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
+    /** reserveToken()이 토큰을 원자적으로 선점하는 동안 잠깐 채워두는 자리표시자. */
+    private static final CachedSession RESERVED = new CachedSession(null, List.of(), Map.of(), Instant.MAX, null);
+
     private final Map<String, CachedSession> sessions = new ConcurrentHashMap<>();
     private final Duration ttl;
 
@@ -78,11 +81,17 @@ class FlightDealSessionStore {
         List<FlightDealResponse> fetch(String token);
     }
 
+    /**
+     * 토큰을 뽑고 그 자리에 {@link #RESERVED}를 원자적으로 선점해둔다 — putIfAbsent 하나로
+     * 확인과 선점을 한 번에 처리해서, 조회 후 나중에 저장하는 사이에 다른 요청이 같은 토큰을
+     * 골라 세션을 덮어쓰는 경합을 막는다. 실제 fetcher 호출은 초 단위로 걸릴 수 있어 그 사이의
+     * 창이 실제로 위험하다.
+     */
     private String reserveToken() {
         String token;
         do {
             token = randomToken();
-        } while (sessions.containsKey(token));
+        } while (sessions.putIfAbsent(token, RESERVED) != null);
         return token;
     }
 
@@ -108,7 +117,7 @@ class FlightDealSessionStore {
             return null;
         }
         CachedSession cached = sessions.get(token);
-        if (cached == null) {
+        if (cached == null || cached == RESERVED) {
             return null;
         }
         if (Instant.now().isAfter(cached.expiresAt())) {

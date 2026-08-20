@@ -114,9 +114,6 @@ class FlightDealAssemblerTest {
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
                 null);
     }
 }

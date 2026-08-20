@@ -2,6 +2,7 @@ package com.restroute.flight.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.restroute.flight.client.exception.TravelpayoutsApiException;
 import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.exception.InvalidFlightSearchException;
 import com.restroute.flight.controller.response.FlightApiError;
@@ -48,6 +49,19 @@ class FlightExceptionHandlerTest {
         assertThat(response.getBody().error().code()).isEqualTo("validation_failed");
         assertThat(response.getBody().error().message()).isEqualTo("입력값을 확인해 주세요");
         assertThat(response.getBody().error().details()).isEqualTo(details);
+    }
+
+    @Test
+    @DisplayName("외부 API 호출 실패는 flight 전용 봉투로 external_api_unavailable을 반환한다")
+    void handleExternalApiFailure_returnsFlightEnvelope() {
+        ResponseEntity<FlightApiResponse<Void>> response =
+                handler.handleExternalApiFailure(new TravelpayoutsApiException("grouped prices", "success=false"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isNull();
+        assertThat(response.getBody().meta()).isNull();
+        assertThat(response.getBody().error().code()).isEqualTo("external_api_unavailable");
     }
 
     @Test

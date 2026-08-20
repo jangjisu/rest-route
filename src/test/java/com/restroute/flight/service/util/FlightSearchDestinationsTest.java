@@ -66,9 +66,6 @@ class FlightSearchDestinationsTest {
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
                 null);
     }
 }

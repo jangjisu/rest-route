@@ -10,7 +10,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link TravelpayoutsPriceItem}(실 연동 원본)을 {@link FlightDealResponse}(응답 계약)로 바꾼다.
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Component;
  * {@link FlightDealHolidayEnricher}가 실제 값을 채운다(필터를 다 거친 뒤라야 어떤 딜이 최종
  * 응답에 남는지 알 수 있어서, 굳이 필터 전인 여기서 미리 계산할 이유가 없다).
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 class FlightRangeSearchResponseMapper {
@@ -39,9 +42,23 @@ class FlightRangeSearchResponseMapper {
      * 다 적용한 다음에 표시해야 한다.
      */
     List<FlightDealResponse> mapAll(List<TravelpayoutsPriceItem> items, String sessionToken) {
-        return IntStream.range(0, items.size())
-                .mapToObj(index -> mapOne(items.get(index), FlightDealResponses.idOf(sessionToken, index)))
+        List<TravelpayoutsPriceItem> withDates = items.stream()
+                .filter(FlightRangeSearchResponseMapper::hasDepartureAndReturnDates)
                 .toList();
+        return IntStream.range(0, withDates.size())
+                .mapToObj(index -> mapOne(withDates.get(index), FlightDealResponses.idOf(sessionToken, index)))
+                .toList();
+    }
+
+    /** Travelpayouts가 간혹 departure_at/return_at 없이 항목을 내려줄 때가 있다 — 그런 항목은 조용히 뺀다. */
+    private static boolean hasDepartureAndReturnDates(TravelpayoutsPriceItem item) {
+        boolean hasDates = StringUtils.hasText(item.departureAt()) && StringUtils.hasText(item.returnAt());
+        if (!hasDates) {
+            log.warn(
+                    "Travelpayouts item missing departure_at/return_at, dropping. destinationAirport={}",
+                    item.destinationAirport());
+        }
+        return hasDates;
     }
 
     private FlightDealResponse mapOne(TravelpayoutsPriceItem item, String id) {

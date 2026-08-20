@@ -36,7 +36,7 @@ import org.springframework.util.CollectionUtils;
  * 보여준다 — 국가별 조회 개수(N) + 전체(1) = N+1로 예산을 다시 확인해서, 그래도 넘지 않으면
  * 국가별+전체를 함께, 넘으면 국가별 조회를 포기하고 전체 하나만 한다.
  *
- * <p>이 순서 덕분에 최종 호출 수는 항상 {@value #MAX_FANOUT_CALLS}를 넘지 않는다 — 전체만 하는
+ * <p>이 순서 덕분에 최종 호출 수는 항상 {@link FlightSearchDestinations#MAX_FANOUT_CALLS}를 넘지 않는다 — 전체만 하는
  * 경우는 destination 축이 1이라 {@code 1 × months × nightsWindows}인데, nightsWindows는 이미
  * 1단계에서 원래 destination 개수 기준으로 예산 안에 들도록 정해졌기 때문이다. 예시(1개월
  * 기준):
@@ -53,7 +53,6 @@ import org.springframework.util.CollectionUtils;
  */
 public final class FlightRangeSearchPlanner {
 
-    private static final int MAX_FANOUT_CALLS = 20;
     private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private FlightRangeSearchPlanner() {}
@@ -63,41 +62,31 @@ public final class FlightRangeSearchPlanner {
         List<String> months = monthsOf(request.parsedDateFrom(), request.parsedDateTo());
         int destinationCount = Math.max(1, destinations.size());
 
-        List<FlightRangeSearchPlan.NightsWindow> nightsWindows;
-        boolean nightsExplicitlyGiven = !CollectionUtils.isEmpty(request.nights());
-        if (nightsExplicitlyGiven) {
-            List<FlightRangeSearchPlan.NightsWindow> exactWindows = exactWindowsOf(request.parsedNights());
-            nightsWindows = fitsWithinBudget(destinationCount, months.size(), exactWindows.size())
-                    ? exactWindows
-                    : List.of(rangeWindowOf(request.parsedNights()));
-        } else {
-            nightsWindows = List.of(rangeWindowOf(request.parsedNights()));
-        }
+        List<FlightRangeSearchPlan.NightsWindow> nightsWindows =
+                nightsWindowsFor(request, destinationCount, months.size());
 
         List<String> resolvedDestinations = FlightSearchDestinations.isSectorBased(request)
-                ? withAggregateIfBudgetAllows(destinations, months.size(), nightsWindows.size())
+                ? FlightSearchDestinations.withAggregateIfBudgetAllows(
+                        destinations, months.size() * nightsWindows.size())
                 : destinations;
         return new FlightRangeSearchPlan(resolvedDestinations, months, nightsWindows);
     }
 
     /**
-     * destination을 직접 지정한 경우는 호출하지 않는다(사용자가 정확히 그 하나만 원한 것이라
-     * "전체"를 덧붙이면 안 된다 — 호출부에서 이미 걸러진다). sector로 국가가 잡혔고 그 목록이
-     * 비어있지 않으면, "국가별 + 전체"(destination null 하나 추가)가 예산 안에 들면 그렇게 하고,
-     * 넘으면 국가별 조회를 포기하고 "전체"(빈 목록, {@link FlightSearchDestinations#paddedForCalls}가
-     * null 하나로 채워준다) 하나만 한다. sector조차 없으면(destinations 비어있음) 이미 "전체"이니
-     * 그대로 둔다.
+     * nights를 명시적으로 안 줬으면 바로 범위 모드다(자동 확장은 최대 90개까지 갈 수 있어 개별로
+     * 쪼개는 게 말이 안 된다). 명시적으로 줬으면 값 하나하나를 정확한 창으로 조회하는 개별 모드를
+     * 우선 시도하고, 예산을 넘으면 범위 모드로 낮춘다.
      */
-    private static List<String> withAggregateIfBudgetAllows(
-            List<String> destinations, int monthCount, int nightsWindowCount) {
-        if (destinations.isEmpty()) {
-            return destinations;
+    private static List<FlightRangeSearchPlan.NightsWindow> nightsWindowsFor(
+            FlightSearchRequestDto request, int destinationCount, int monthCount) {
+        if (CollectionUtils.isEmpty(request.nights())) {
+            return List.of(rangeWindowOf(request.parsedNights()));
         }
-        int detailedCount = destinations.size() + 1;
-        if (!fitsWithinBudget(detailedCount, monthCount, nightsWindowCount)) {
-            return List.of();
+        List<FlightRangeSearchPlan.NightsWindow> exactWindows = exactWindowsOf(request.parsedNights());
+        if (fitsWithinBudget(destinationCount, monthCount, exactWindows.size())) {
+            return exactWindows;
         }
-        return FlightSearchDestinations.withAggregate(destinations);
+        return List.of(rangeWindowOf(request.parsedNights()));
     }
 
     /** dateFrom~dateTo가 걸치는 달력상 월을 순서대로 "yyyy-MM"로 나열한다(양 끝 달 포함). */
@@ -126,6 +115,6 @@ public final class FlightRangeSearchPlanner {
     }
 
     private static boolean fitsWithinBudget(int destinationCount, int monthCount, int nightsWindowCount) {
-        return (long) destinationCount * monthCount * nightsWindowCount <= MAX_FANOUT_CALLS;
+        return (long) destinationCount * monthCount * nightsWindowCount <= FlightSearchDestinations.MAX_FANOUT_CALLS;
     }
 }

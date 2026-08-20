@@ -69,9 +69,6 @@ class FlightDealPostFilterTest {
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
                 null);
     }
 

@@ -119,9 +119,6 @@ class FlightSearchServiceTest {
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
                 null);
     }
 
@@ -133,9 +130,6 @@ class FlightSearchServiceTest {
                 VALID_DATE_TO,
                 null,
                 List.of(nights),
-                null,
-                null,
-                null,
                 null,
                 null,
                 null,

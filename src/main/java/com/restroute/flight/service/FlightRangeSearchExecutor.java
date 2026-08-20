@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link FlightRangeSearchPlanner}가 세운 계획대로 Travelpayouts 호출을 전부 병렬 실행하고,
@@ -38,7 +39,11 @@ class FlightRangeSearchExecutor {
                 request.parsedDateTo());
     }
 
-    /** 계획을 이미 세운 상태에서 호출·병합만 한다 — plan을 직접 주고 세밀하게 검증할 때 쓴다(테스트 전용 진입점). */
+    /**
+     * plan을 이미 세운 상태에서 호출·병합만 한다 — {@link #execute(FlightSearchRequestDto)}가
+     * 실제로 위임하는 구현 본체다. plan을 직접 주고 세밀하게 검증하고 싶은 테스트도 이 시그니처를
+     * 그대로 쓴다.
+     */
     List<TravelpayoutsPriceItem> execute(
             String origin, FlightRangeSearchPlan plan, LocalDate dateFrom, LocalDate dateTo) {
         List<TravelpayoutsPriceItem> allItems = FlightParallelPriceCalls.runAll(buildCalls(origin, plan));
@@ -62,10 +67,14 @@ class FlightRangeSearchExecutor {
         return calls;
     }
 
-    /** 달 단위로 부른 응답엔 그 달 전체가 오므로, 실제 요청한 dateFrom~dateTo 밖의 항목은 걸러낸다. */
+    /**
+     * 달 단위로 부른 응답엔 그 달 전체가 오므로, 실제 요청한 dateFrom~dateTo 밖의 항목은 걸러낸다.
+     * departure_at이 없는 항목(Travelpayouts가 간혹 그렇게 준다)도 범위를 판단할 수 없으니 뺀다.
+     */
     private static List<TravelpayoutsPriceItem> withinRange(
             List<TravelpayoutsPriceItem> items, LocalDate dateFrom, LocalDate dateTo) {
         return items.stream()
+                .filter(item -> StringUtils.hasText(item.departureAt()))
                 .filter(item -> {
                     LocalDate departureDate =
                             OffsetDateTime.parse(item.departureAt()).toLocalDate();

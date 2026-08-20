@@ -32,9 +32,6 @@ public record FlightSearchRequestDto(
         String includeWeekend,
         String includeHoliday,
         String includeTransfer,
-        String adults,
-        String children,
-        String infants,
         String sort,
         String cursor,
         String limit,
@@ -45,9 +42,6 @@ public record FlightSearchRequestDto(
     private static final int MIN_PAGE_SIZE = 1;
     private static final int MAX_PAGE_SIZE = 50;
     private static final int MIN_NIGHTS = 1;
-    private static final int DEFAULT_ADULTS = 1;
-    private static final int DEFAULT_CHILDREN = 0;
-    private static final int DEFAULT_INFANTS = 0;
     private static final String DEFAULT_LOCALE = "ko";
     private static final String DEFAULT_CURRENCY = "krw";
 
@@ -63,9 +57,6 @@ public record FlightSearchRequestDto(
                 includeWeekend,
                 includeHoliday,
                 includeTransfer,
-                adults,
-                children,
-                infants,
                 sort,
                 currency);
     }
@@ -108,18 +99,6 @@ public record FlightSearchRequestDto(
         return !"false".equals(includeTransfer);
     }
 
-    public int parsedAdults() {
-        return StringUtils.hasText(adults) ? Integer.parseInt(adults) : DEFAULT_ADULTS;
-    }
-
-    public int parsedChildren() {
-        return StringUtils.hasText(children) ? Integer.parseInt(children) : DEFAULT_CHILDREN;
-    }
-
-    public int parsedInfants() {
-        return StringUtils.hasText(infants) ? Integer.parseInt(infants) : DEFAULT_INFANTS;
-    }
-
     /** sort가 없으면 PRICE(최저가순)가 기본값이다. */
     public FlightDealSort parsedSort() {
         if (!StringUtils.hasText(sort)) {
@@ -158,6 +137,11 @@ public record FlightSearchRequestDto(
         return StringUtils.hasText(currency) ? currency.toLowerCase(Locale.ROOT) : DEFAULT_CURRENCY;
     }
 
+    /**
+     * 원본 문자열이 아니라 파싱/정규화된 값으로 비교한다 — {@code sort}처럼 생략(=기본값)과
+     * 명시적으로 기본값을 보낸 요청이 실제로는 같은 검색인데도 raw 문자열 비교면 다르다고
+     * 오판할 수 있고, {@code currency}처럼 대소문자만 다른 경우도 마찬가지다.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -167,41 +151,35 @@ public record FlightSearchRequestDto(
             return false;
         }
         return Objects.equals(origin, other.origin)
-                && Objects.equals(searchMode, other.searchMode)
+                && parsedSearchMode() == other.parsedSearchMode()
                 && Objects.equals(dateFrom, other.dateFrom)
                 && Objects.equals(dateTo, other.dateTo)
                 && Objects.equals(destination, other.destination)
                 && Objects.equals(nights, other.nights)
                 && Objects.equals(sector, other.sector)
-                && Objects.equals(includeWeekend, other.includeWeekend)
-                && Objects.equals(includeHoliday, other.includeHoliday)
-                && Objects.equals(includeTransfer, other.includeTransfer)
-                && Objects.equals(adults, other.adults)
-                && Objects.equals(children, other.children)
-                && Objects.equals(infants, other.infants)
-                && Objects.equals(sort, other.sort)
-                && Objects.equals(locale, other.locale)
-                && Objects.equals(currency, other.currency);
+                && isIncludeWeekend() == other.isIncludeWeekend()
+                && isIncludeHoliday() == other.isIncludeHoliday()
+                && isIncludeTransfer() == other.isIncludeTransfer()
+                && parsedSort() == other.parsedSort()
+                && Objects.equals(parsedLocale(), other.parsedLocale())
+                && Objects.equals(parsedCurrency(), other.parsedCurrency());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
                 origin,
-                searchMode,
+                parsedSearchMode(),
                 dateFrom,
                 dateTo,
                 destination,
                 nights,
                 sector,
-                includeWeekend,
-                includeHoliday,
-                includeTransfer,
-                adults,
-                children,
-                infants,
-                sort,
-                locale,
-                currency);
+                isIncludeWeekend(),
+                isIncludeHoliday(),
+                isIncludeTransfer(),
+                parsedSort(),
+                parsedLocale(),
+                parsedCurrency());
     }
 }

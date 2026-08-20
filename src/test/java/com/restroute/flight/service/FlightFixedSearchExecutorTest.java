@@ -55,9 +55,6 @@ class FlightFixedSearchExecutorTest {
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
                 null);
     }
 

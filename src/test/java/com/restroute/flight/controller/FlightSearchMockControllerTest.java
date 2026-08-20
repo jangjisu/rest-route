@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.flight.service.FlightSearchMockService;
+import com.restroute.holiday.domain.HolidayEntity;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -47,6 +48,20 @@ class FlightSearchMockControllerTest {
     private static final String EXPECTED_ARRIVAL_ARRIVE_AT = LEG_TIME_FORMAT.format(
             VALID_DATE_FROM_DATE.plusDays(3).atTime(13, 10).atOffset(KST).plusMinutes(90));
 
+    /** 첫 항목의 출발일~귀국일(3박) 사이 주말 수 — includeWeekend=true라 걸러지지 않고 holidays에 그대로 잡힌다. */
+    private static final int EXPECTED_WEEKEND_HOLIDAY_COUNT =
+            countWeekendDays(VALID_DATE_FROM_DATE, VALID_DATE_FROM_DATE.plusDays(3));
+
+    private static int countWeekendDays(LocalDate from, LocalDate to) {
+        int count = 0;
+        for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
+            if (HolidayEntity.isWeekend(date)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -65,7 +80,8 @@ class FlightSearchMockControllerTest {
                         .param("searchMode", "range")
                         .param("dateFrom", VALID_DATE_FROM)
                         .param("dateTo", VALID_DATE_TO)
-                        .param("nights", "3"))
+                        .param("nights", "3")
+                        .param("includeWeekend", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error").value(nullValue()))
                 .andExpect(jsonPath("$.data.length()").value(20))
@@ -86,7 +102,7 @@ class FlightSearchMockControllerTest {
                 .andExpect(jsonPath("$.data[0].arrival.duration").value(90))
                 .andExpect(jsonPath("$.data[0].arrival.transferCount").value(1))
                 .andExpect(jsonPath("$.data[0].nights").value(3))
-                .andExpect(jsonPath("$.data[0].holidays.length()").value(0))
+                .andExpect(jsonPath("$.data[0].holidays.length()").value(EXPECTED_WEEKEND_HOLIDAY_COUNT))
                 .andExpect(jsonPath("$.data[0].airline.code").value("LJ"))
                 .andExpect(jsonPath("$.data[0].airline.name").value("진에어"))
                 .andExpect(jsonPath("$.data[0].airline.isLowCost").value(true))
@@ -331,6 +347,7 @@ class FlightSearchMockControllerTest {
                     .param("searchMode", "range")
                     .param("dateFrom", VALID_DATE_FROM)
                     .param("dateTo", dateTo)
+                    .param("includeWeekend", "true")
                     .param("limit", "50");
             if (cursor != null) {
                 requestBuilder = requestBuilder.param("cursor", cursor);
@@ -466,6 +483,7 @@ class FlightSearchMockControllerTest {
                     .param("dateFrom", VALID_DATE_FROM)
                     .param("dateTo", VALID_DATE_TO)
                     .param("nights", "3")
+                    .param("includeWeekend", "true")
                     .param("limit", "20");
             if (cursor != null) {
                 requestBuilder = requestBuilder.param("cursor", cursor);

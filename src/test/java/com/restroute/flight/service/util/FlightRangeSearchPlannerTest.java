@@ -163,9 +163,6 @@ class FlightRangeSearchPlannerTest {
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
                 null);
     }
 }
