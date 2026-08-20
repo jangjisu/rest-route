@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 /**
  * Travelpayouts Data API (Aviasales) Feign Client (api.travelpayouts.com)
  */
-@FeignClient(name = "travelpayouts", url = "${travelpayouts.api.url}")
+@FeignClient(name = "travelpayouts", url = "${travelpayouts.api.url}", configuration = TravelpayoutsFeignConfig.class)
 public interface TravelpayoutsFeignClient {
 
     String GROUPED_PRICES_PATH = "/aviasales/v3/grouped_prices";
