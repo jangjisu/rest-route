@@ -1,14 +1,13 @@
 package com.restroute.flight.service;
 
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
-import com.restroute.flight.controller.dto.FlightDealSort;
 import com.restroute.flight.controller.dto.FlightSearchMode;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
-import java.time.OffsetDateTime;
-import java.util.Comparator;
+import com.restroute.flight.service.util.FlightParallelPriceCalls;
 import java.util.List;
+import java.util.concurrent.Callable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -23,38 +22,22 @@ import org.springframework.stereotype.Service;
 public class FlightSearchService {
 
     private final FlightDealSessionStore sessionStore;
-    private final FlightRangeSearchExecutor rangeExecutor;
-    private final FlightFixedSearchExecutor fixedExecutor;
+    private final FlightRangeCallPlanner rangeCallPlanner;
+    private final FlightFixedCallPlanner fixedCallPlanner;
     private final FlightDealAssembler dealAssembler;
 
     public FlightDealSearchResponse search(FlightSearchRequestDto request) {
         if (request.isFirstRequest()) {
-            return sessionStore.create(request, request.boundedLimit(), token -> fetch(request, token));
+            return sessionStore.create(request, request.boundedLimit(), () -> fetchDeals(request));
         }
         return sessionStore.find(request, request.cursor(), request.boundedLimit());
     }
 
-    private List<FlightDealResponse> fetch(FlightSearchRequestDto request, String token) {
-        return sorted(fetchDeals(request, token), request.parsedSort());
-    }
-
-    protected List<FlightDealResponse> fetchDeals(FlightSearchRequestDto request, String token) {
-        List<TravelpayoutsPriceItem> rawItems = FlightSearchMode.isRange(request.parsedSearchMode())
-                ? rangeExecutor.execute(request)
-                : fixedExecutor.execute(request);
-        return dealAssembler.assemble(rawItems, token, request);
-    }
-
-    static List<FlightDealResponse> sorted(List<FlightDealResponse> items, FlightDealSort sort) {
-        return items.stream().sorted(comparatorFor(sort)).toList();
-    }
-
-    private static Comparator<FlightDealResponse> comparatorFor(FlightDealSort sort) {
-        return switch (sort) {
-            case PRICE -> Comparator.comparingInt(deal -> deal.price().amount());
-            case DATE ->
-                Comparator.comparing(
-                        deal -> OffsetDateTime.parse(deal.departure().departAt()));
-        };
+    protected List<FlightDealResponse> fetchDeals(FlightSearchRequestDto request) {
+        List<Callable<List<TravelpayoutsPriceItem>>> calls = FlightSearchMode.isRange(request.parsedSearchMode())
+                ? rangeCallPlanner.plan(request)
+                : fixedCallPlanner.plan(request);
+        List<TravelpayoutsPriceItem> rawItems = FlightParallelPriceCalls.runAll(calls);
+        return dealAssembler.assemble(rawItems, request);
     }
 }

@@ -82,7 +82,7 @@ class FlightDealSessionStoreTest {
 
     private static FlightDealSearchResponse create(
             FlightDealSessionStore sessionStore, FlightSearchRequestDto req, int size) {
-        return sessionStore.create(req, size, token -> FlightSearchMockFixture.generateAll(req, token, TOTAL_SIZE));
+        return sessionStore.create(req, size, () -> FlightSearchMockFixture.generateAll(req, TOTAL_SIZE));
     }
 
     /** includeWeekend=true로 고정한다 — 이 클래스가 검증하는 건 세션/페이징 메커니즘이지 주말

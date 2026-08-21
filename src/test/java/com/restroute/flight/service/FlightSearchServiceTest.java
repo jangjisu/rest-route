@@ -14,6 +14,7 @@ import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -24,45 +25,49 @@ class FlightSearchServiceTest {
     private static final String VALID_DATE_TO = LocalDate.now().plusDays(41).toString();
 
     @Test
-    @DisplayName("RANGE는 rangeExecutor가 가져온 원본을 dealAssembler로 조립해 정렬까지 마친다")
-    void search_usesRangeExecutorAndAssembler_whenSearchModeIsRange() {
-        FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
-        FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
+    @DisplayName("RANGE는 rangeCallPlanner가 만든 호출을 실행해 dealAssembler로 조립한다")
+    void search_usesRangeCallPlannerAndAssembler_whenSearchModeIsRange() {
+        FlightRangeCallPlanner rangeCallPlanner = mock(FlightRangeCallPlanner.class);
+        FlightFixedCallPlanner fixedCallPlanner = mock(FlightFixedCallPlanner.class);
         FlightDealAssembler dealAssembler = mock(FlightDealAssembler.class);
-        FlightSearchService service =
-                new FlightSearchService(new FlightDealSessionStore(), rangeExecutor, fixedExecutor, dealAssembler);
+        FlightSearchService service = new FlightSearchService(
+                new FlightDealSessionStore(), rangeCallPlanner, fixedCallPlanner, dealAssembler);
         FlightSearchRequestDto request = request(null, "3", null);
 
         TravelpayoutsPriceItem rawItem = rawItem();
         FlightDealResponse mapped = dealWithPrice(89000);
-        when(rangeExecutor.execute(request)).thenReturn(List.of(rawItem));
-        when(dealAssembler.assemble(eq(List.of(rawItem)), any(), eq(request))).thenReturn(List.of(mapped));
+        when(rangeCallPlanner.plan(request)).thenReturn(List.of(callableReturning(rawItem)));
+        when(dealAssembler.assemble(List.of(rawItem), request)).thenReturn(List.of(mapped));
 
         FlightDealSearchResponse response = service.search(request);
 
         assertThat(response.items())
                 .extracting(FlightDealResponse::price)
                 .containsExactly(new FlightDealResponse.Price(89000, "KRW"));
-        verify(fixedExecutor, never()).execute(any());
+        verify(fixedCallPlanner, never()).plan(any());
     }
 
     @Test
-    @DisplayName("FIXED는 fixedExecutor를 통해 조회한다")
-    void search_usesFixedExecutor_whenSearchModeIsFixed() {
-        FlightRangeSearchExecutor rangeExecutor = mock(FlightRangeSearchExecutor.class);
-        FlightFixedSearchExecutor fixedExecutor = mock(FlightFixedSearchExecutor.class);
+    @DisplayName("FIXED는 fixedCallPlanner를 통해 호출을 만든다")
+    void search_usesFixedCallPlanner_whenSearchModeIsFixed() {
+        FlightRangeCallPlanner rangeCallPlanner = mock(FlightRangeCallPlanner.class);
+        FlightFixedCallPlanner fixedCallPlanner = mock(FlightFixedCallPlanner.class);
         FlightDealAssembler dealAssembler = mock(FlightDealAssembler.class);
-        FlightSearchService service =
-                new FlightSearchService(new FlightDealSessionStore(), rangeExecutor, fixedExecutor, dealAssembler);
+        FlightSearchService service = new FlightSearchService(
+                new FlightDealSessionStore(), rangeCallPlanner, fixedCallPlanner, dealAssembler);
         FlightSearchRequestDto request = fixedRequest();
 
-        when(fixedExecutor.execute(request)).thenReturn(List.of());
-        when(dealAssembler.assemble(any(), any(), eq(request))).thenReturn(List.of());
+        when(fixedCallPlanner.plan(request)).thenReturn(List.of());
+        when(dealAssembler.assemble(eq(List.of()), eq(request))).thenReturn(List.of());
 
         service.search(request);
 
-        verify(fixedExecutor).execute(request);
-        verify(rangeExecutor, never()).execute(any());
+        verify(fixedCallPlanner).plan(request);
+        verify(rangeCallPlanner, never()).plan(any());
+    }
+
+    private static Callable<List<TravelpayoutsPriceItem>> callableReturning(TravelpayoutsPriceItem... items) {
+        return () -> List.of(items);
     }
 
     private static TravelpayoutsPriceItem rawItem() {
@@ -89,7 +94,7 @@ class FlightSearchServiceTest {
         FlightDealResponse.Leg leg =
                 new FlightDealResponse.Leg("2026-09-15T09:00:00+09:00", "2026-09-15T10:30:00+09:00", 90, 0);
         return new FlightDealResponse(
-                "T_0001",
+                "",
                 new FlightDealResponse.Destination("KIX", "오사카"),
                 leg,
                 leg,

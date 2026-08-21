@@ -5,6 +5,7 @@ import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchMeta;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
+import com.restroute.flight.service.util.FlightDealResponses;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 import org.springframework.stereotype.Component;
 
 /**
@@ -53,15 +55,22 @@ class FlightDealSessionStore {
     }
 
     /**
-     * 새 세션을 만든다 — 토큰 발급, {@code fetcher}로 조회, 저장, 첫 페이지 계산까지 전부
-     * 여기서 처리한다.
+     * 새 세션을 만든다 — 토큰 발급, {@code fetcher}로 조회, id 부여, 저장, 첫 페이지 계산까지
+     * 전부 여기서 처리한다. 토큰은 이 클래스만 알면 되므로 {@code fetcher}에는 넘기지 않는다 —
+     * fetch 결과가 나온 뒤 이 클래스가 각 항목에 최종 id(토큰+순번)를 부여한다.
      */
     FlightDealSearchResponse create(FlightSearchRequestDto request, int size, Fetcher fetcher) {
         String token = reserveToken();
-        List<FlightDealResponse> items = fetcher.fetch(token);
+        List<FlightDealResponse> items = stampIds(fetcher.fetch(), token);
         OffsetDateTime fetchedAt = OffsetDateTime.now(KST);
         save(token, request, items, fetchedAt);
         return toResponse(items, 0, size, request, fetchedAt);
+    }
+
+    private static List<FlightDealResponse> stampIds(List<FlightDealResponse> items, String token) {
+        return IntStream.range(0, items.size())
+                .mapToObj(index -> FlightDealResponses.withId(items.get(index), FlightDealResponses.idOf(token, index)))
+                .toList();
     }
 
     /**
@@ -78,7 +87,7 @@ class FlightDealSessionStore {
 
     @FunctionalInterface
     interface Fetcher {
-        List<FlightDealResponse> fetch(String token);
+        List<FlightDealResponse> fetch();
     }
 
     /**

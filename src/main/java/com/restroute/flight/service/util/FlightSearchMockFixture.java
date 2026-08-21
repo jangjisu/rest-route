@@ -17,9 +17,9 @@ import org.springframework.util.StringUtils;
  * 프론트엔드 개발용 고정 모킹 데이터 생성기. Travelpayouts grouped_prices가 실제로 줄 수 있는
  * 필드만으로 결정적(deterministic) 가짜 데이터를 만든다.
  *
- * <p>id는 세션 토큰(4자리) + 순번(예: "aB3x_0004")으로 구성된다. 세션별 저장/조회, cursor
- * lookup은 이 클래스가 아니라 세션 스토어가 담당한다 — 여기는 순수하게 "이 세션의 몇 번째
- * 항목이 어떤 값인지"만 계산한다.
+ * <p>id는 세션 토큰을 아직 몰라서 여기서는 채우지 않는다 — 세션별 저장/조회, cursor lookup을
+ * 담당하는 세션 스토어가 최종 저장 직전에 부여한다. 여기는 순수하게 "이 세션의 몇 번째 항목이
+ * 어떤 값인지"만 계산한다.
  *
  * <p>includeWeekend는 실 경로({@link com.restroute.flight.service.FlightDealPostFilter})와
  * 동일하게 적용한다. includeHoliday는 적용하지 않는다 — 실제 공휴일 이름은 DB(HolidayRepository)에서
@@ -55,12 +55,13 @@ public final class FlightSearchMockFixture {
     /** 예약처는 지금 Aviasales 하나뿐이다 — mock도 실제와 동일하게 고정값을 쓴다. */
     private static final String GATE_NAME = "Aviasales";
 
+    private static final String PENDING_ID = "";
+
     private FlightSearchMockFixture() {}
 
-    public static List<FlightDealResponse> generateAll(
-            FlightSearchRequestDto request, String sessionToken, int totalSize) {
+    public static List<FlightDealResponse> generateAll(FlightSearchRequestDto request, int totalSize) {
         List<FlightDealResponse> items = IntStream.range(0, totalSize)
-                .mapToObj(index -> dealAt(index, request, sessionToken))
+                .mapToObj(index -> dealAt(index, request))
                 .filter(deal -> request.isIncludeWeekend() || !isWeekendDeparture(deal))
                 .toList();
         return FlightDealResponses.markLowestInRange(items);
@@ -70,7 +71,7 @@ public final class FlightSearchMockFixture {
         return HolidayEntity.isWeekend(FlightDealResponses.departureDateOf(deal));
     }
 
-    private static FlightDealResponse dealAt(int index, FlightSearchRequestDto request, String sessionToken) {
+    private static FlightDealResponse dealAt(int index, FlightSearchRequestDto request) {
         Destination destination = destinationAt(index, request);
         int nights = nightsAt(index, request);
         LocalDate departureDate = departureDateAt(index, request);
@@ -81,7 +82,6 @@ public final class FlightSearchMockFixture {
         int arrivalDuration = BASE_DURATION_MINUTES + (index % 4) * 10;
         int departureTransferCount = request.isIncludeTransfer() && index % 3 == 0 ? 1 : 0;
         int arrivalTransferCount = request.isIncludeTransfer() && index % 4 == 0 ? 1 : 0;
-        String id = FlightDealResponses.idOf(sessionToken, index);
 
         FlightDealResponse.Leg departure = legAt(
                 departureDate.atTime(9, 20).atOffset(KST),
@@ -92,7 +92,7 @@ public final class FlightSearchMockFixture {
                 returnDate.atTime(13, 10).atOffset(destination.offset()), KST, arrivalDuration, arrivalTransferCount);
 
         return new FlightDealResponse(
-                id,
+                PENDING_ID,
                 new FlightDealResponse.Destination(destination.code(), destination.name()),
                 departure,
                 arrival,
@@ -102,7 +102,7 @@ public final class FlightSearchMockFixture {
                 new FlightDealResponse.Price(amount, "KRW"),
                 false,
                 GATE_NAME,
-                "https://www.aviasales.com/search/mock-" + id,
+                "https://www.aviasales.com/search/mock-" + index,
                 null);
     }
 

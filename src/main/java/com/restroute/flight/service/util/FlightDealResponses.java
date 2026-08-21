@@ -1,9 +1,11 @@
 package com.restroute.flight.service.util;
 
+import com.restroute.flight.controller.dto.FlightDealSort;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -72,6 +74,23 @@ public final class FlightDealResponses {
                 deal.seatsLeft());
     }
 
+    /** id만 바꿔 끼울 때 쓴다 — 세션 스토어가 토큰을 확보한 뒤 최종 저장 직전에 부여한다. */
+    public static FlightDealResponse withId(FlightDealResponse deal, String id) {
+        return new FlightDealResponse(
+                id,
+                deal.destination(),
+                deal.departure(),
+                deal.arrival(),
+                deal.nights(),
+                deal.holidays(),
+                deal.airline(),
+                deal.price(),
+                deal.isLowestInRange(),
+                deal.gateName(),
+                deal.bookingLink(),
+                deal.seatsLeft());
+    }
+
     /** holidays 필드만 실제 값으로 바꿔 끼울 때 쓴다. */
     public static FlightDealResponse withHolidays(
             FlightDealResponse deal, List<FlightDealResponse.HolidayDay> holidays) {
@@ -88,5 +107,19 @@ public final class FlightDealResponses {
                 deal.gateName(),
                 deal.bookingLink(),
                 deal.seatsLeft());
+    }
+
+    /** mock/실 연동 공통 정렬 — 실 경로는 어셈블러가, mock은 mock 서비스가 마지막 단계에서 부른다. */
+    public static List<FlightDealResponse> sorted(List<FlightDealResponse> items, FlightDealSort sort) {
+        return items.stream().sorted(comparatorFor(sort)).toList();
+    }
+
+    private static Comparator<FlightDealResponse> comparatorFor(FlightDealSort sort) {
+        return switch (sort) {
+            case PRICE -> Comparator.comparingInt(deal -> deal.price().amount());
+            case DATE ->
+                Comparator.comparing(
+                        deal -> OffsetDateTime.parse(deal.departure().departAt()));
+        };
     }
 }

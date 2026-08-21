@@ -2,6 +2,7 @@ package com.restroute.flight.service;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightDealResponse;
+import com.restroute.flight.service.util.FlightDealResponses;
 import com.restroute.flight.service.util.FlightSearchMockFixture;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,8 @@ public class FlightSearchMockService extends FlightSearchService {
     }
 
     @Override
-    protected List<FlightDealResponse> fetchDeals(FlightSearchRequestDto request, String token) {
-        return FlightSearchMockFixture.generateAll(request, token, TOTAL_SIZE);
+    protected List<FlightDealResponse> fetchDeals(FlightSearchRequestDto request) {
+        List<FlightDealResponse> items = FlightSearchMockFixture.generateAll(request, TOTAL_SIZE);
+        return FlightDealResponses.sorted(items, request.parsedSort());
     }
 }

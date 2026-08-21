@@ -21,7 +21,7 @@ class FlightSearchMockFixtureTest {
     void generateAll_excludesWeekendDepartures_whenIncludeWeekendFalse() {
         FlightSearchRequestDto request = request(null);
 
-        List<FlightDealResponse> items = FlightSearchMockFixture.generateAll(request, "tok1", 77);
+        List<FlightDealResponse> items = FlightSearchMockFixture.generateAll(request, 77);
 
         assertThat(items).isNotEmpty();
         assertThat(items)
@@ -34,7 +34,7 @@ class FlightSearchMockFixtureTest {
     void generateAll_includesWeekendDepartures_whenIncludeWeekendTrue() {
         FlightSearchRequestDto request = request("true");
 
-        List<FlightDealResponse> items = FlightSearchMockFixture.generateAll(request, "tok1", 77);
+        List<FlightDealResponse> items = FlightSearchMockFixture.generateAll(request, 77);
 
         assertThat(items).hasSize(77);
         FlightDealResponse weekendItem = items.stream()
