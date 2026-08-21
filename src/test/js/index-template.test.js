@@ -15,6 +15,22 @@ test('route result modal provides a rest stop filter container', async () => {
     assert.match(template, /id="routeRestStopFilters"/);
 });
 
+test('index applies a stored or system theme before first paint to avoid a flash', async () => {
+    const template = await readFile('src/main/resources/templates/index.html', 'utf8');
+
+    assert.match(template, /localStorage\.getItem\('rr-theme'\)/);
+    assert.match(template, /matchMedia\('\(prefers-color-scheme: dark\)'\)/);
+    assert.match(template, /document\.documentElement\.setAttribute\('data-theme', theme\)/);
+});
+
+test('navbar exposes a theme toggle button with icon and label hooks', async () => {
+    const template = await readFile('src/main/resources/templates/index.html', 'utf8');
+
+    assert.match(template, /id="themeToggleButton"\s+type="button"\s+class="rr-theme-toggle"/);
+    assert.match(template, /id="themeToggleIcon"/);
+    assert.match(template, /id="themeToggleLabel"/);
+});
+
 test('destination route actions expose emphasized search and map button hooks', async () => {
     const template = await readFile('src/main/resources/templates/index.html', 'utf8');
 

@@ -6,6 +6,19 @@
     <meta name="_csrf" th:content="${_csrf?.token}">
     <meta name="_csrf_header" th:content="${_csrf?.headerName}">
     <title>rest-route</title>
+    <script>
+        (function () {
+            try {
+                var stored = window.localStorage.getItem('rr-theme');
+                var theme = stored === 'light' || stored === 'dark'
+                    ? stored
+                    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -21,6 +34,10 @@
         </span>
         <span class="rr-navbar-wordmark">rest-route</span>
     </span>
+    <button id="themeToggleButton" type="button" class="rr-theme-toggle" aria-label="다크 모드로 전환">
+        <span id="themeToggleIcon" class="rr-theme-toggle-icon" aria-hidden="true">🌙</span>
+        <span id="themeToggleLabel" class="rr-theme-toggle-label">라이트</span>
+    </button>
 </nav>
 
 <div class="container-fluid px-4 py-4">
@@ -28,7 +45,7 @@
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
             <div>
                 <h1 class="h4 mb-1">휴게소 위치 지도</h1>
-                <p class="text-secondary mb-0">전국 고속도로 휴게소 위치를 지도에서 확인합니다.</p>
+                <p class="rr-text-secondary mb-0">전국 고속도로 휴게소 위치를 지도에서 확인합니다.</p>
             </div>
             <div class="map-action-buttons d-flex align-items-center gap-2">
                 <button id="restStopLocateButton" class="btn btn-outline-primary rest-stop-locate-button"
