@@ -67,4 +67,17 @@ class HolidayRepositoryTest {
 
         assertThat(result).containsExactlyInAnyOrder(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 9, 26));
     }
+
+    @Test
+    @DisplayName("month가 주어진 목록에 속하는 공휴일만 연도 무관하게 날짜 오름차순으로 반환한다")
+    void findAllByMonthInOrderByHolidayDateAsc_filtersByMonthRegardlessOfYear() {
+        holidayRepository.saveAll(List.of(
+                HolidayEntity.syncedFromApi(LocalDate.of(2026, 9, 25), "추석"),
+                HolidayEntity.syncedFromApi(LocalDate.of(2027, 1, 1), "신정"),
+                HolidayEntity.createdByAdmin(LocalDate.of(2026, 10, 3), "개천절")));
+
+        List<HolidayEntity> result = holidayRepository.findAllByMonthInOrderByHolidayDateAsc(List.of(9, 10));
+
+        assertThat(result).extracting(HolidayEntity::getName).containsExactly("추석", "개천절");
+    }
 }
