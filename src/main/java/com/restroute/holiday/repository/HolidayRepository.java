@@ -21,4 +21,8 @@ public interface HolidayRepository extends JpaRepository<HolidayEntity, Long> {
     /** 그 해에 이미 저장된 날짜 전체(관리자 등록분 포함) — 신규 저장 후보를 거를 때 건별 조회 대신 한 번에 쓴다. */
     @Query("select h.holidayDate from HolidayEntity h where h.holidayDate between :from and :to")
     List<LocalDate> findHolidayDatesBetween(LocalDate from, LocalDate to);
+
+    /** 월(1~12) 값이 주어진 목록에 속하는 공휴일만 날짜 오름차순으로 반환한다(연도 무관). */
+    @Query("select h from HolidayEntity h where month(h.holidayDate) in :months order by h.holidayDate asc")
+    List<HolidayEntity> findAllByMonthInOrderByHolidayDateAsc(List<Integer> months);
 }
