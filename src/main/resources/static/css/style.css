@@ -80,6 +80,11 @@
     --rr-color-danger-text: #e03131;
     --rr-color-danger-strong-bg: #f3d3d3;
     --rr-color-danger-strong-text: #7a1f1f;
+
+    /* 부트스트랩 기본 컴포넌트(.form-control 등)가 우리 토큰을 따라가도록 매핑 */
+    --bs-body-color: var(--rr-color-text);
+    --bs-body-bg: var(--rr-color-bg);
+    --bs-border-color: var(--rr-color-border);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -152,6 +157,14 @@
         --rr-color-danger-text: oklch(74% 0.16 25);
         --rr-color-danger-strong-bg: oklch(24% 0.07 20);
         --rr-color-danger-strong-text: oklch(78% 0.17 20);
+
+        --bs-body-color: var(--rr-color-text);
+        --bs-body-bg: var(--rr-color-bg);
+        --bs-border-color: var(--rr-color-border);
+    }
+
+    :root:not([data-theme="light"]) .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
     }
 }
 
@@ -224,6 +237,14 @@
     --rr-color-danger-text: oklch(74% 0.16 25);
     --rr-color-danger-strong-bg: oklch(24% 0.07 20);
     --rr-color-danger-strong-text: oklch(78% 0.17 20);
+
+    --bs-body-color: var(--rr-color-text);
+    --bs-body-bg: var(--rr-color-bg);
+    --bs-border-color: var(--rr-color-border);
+}
+
+:root[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
 }
 
 /* ===== Page Loader Overlay ===== */
@@ -259,8 +280,13 @@
 /* ===== Layout ===== */
 body {
     background-color: var(--rr-color-bg);
+    color: var(--rr-color-text);
     font-family: var(--rr-font-family);
     -webkit-font-smoothing: antialiased;
+}
+
+.rr-text-secondary {
+    color: var(--rr-color-text-secondary);
 }
 
 body.rest-stop-detail-sheet-open {
@@ -648,6 +674,19 @@ body.global-loading-open {
     color: var(--rr-color-primary-text);
 }
 
+.route-point-search .btn-primary {
+    border-color: transparent;
+    background-color: var(--rr-color-primary);
+    color: var(--rr-color-on-primary);
+}
+
+.route-point-search .btn-primary:hover,
+.route-point-search .btn-primary:focus {
+    border-color: transparent;
+    background-color: var(--rr-color-primary-strong);
+    color: var(--rr-color-on-primary);
+}
+
 .route-point-search .btn-outline-secondary {
     border-color: var(--rr-color-border-control);
     background-color: var(--rr-color-surface);
@@ -763,6 +802,8 @@ body.global-loading-open {
     padding: 0;
     border: none;
     border-radius: var(--rr-radius-card);
+    background-color: var(--rr-color-surface);
+    color: var(--rr-color-text);
     box-shadow: var(--rr-shadow-card);
 }
 
@@ -986,6 +1027,8 @@ body.global-loading-open {
     padding: 0;
     border: none;
     border-radius: var(--rr-radius-card);
+    background-color: var(--rr-color-surface);
+    color: var(--rr-color-text);
     box-shadow: var(--rr-shadow-card);
 }
 
@@ -1929,6 +1972,8 @@ body.global-loading-open {
     padding: 0;
     border: none;
     border-radius: var(--rr-radius-card);
+    background-color: var(--rr-color-surface);
+    color: var(--rr-color-text);
     box-shadow: var(--rr-shadow-card);
 }
 
