@@ -7,15 +7,17 @@
     --rr-color-surface: oklch(99% 0.006 75);
     --rr-color-text: oklch(23% 0.02 60);
     --rr-color-text-secondary: oklch(50% 0.02 60);
-    --rr-color-primary: oklch(52% 0.11 220);
-    --rr-color-accent: oklch(72% 0.14 55);
+    --rr-color-primary: oklch(42% 0.09 155);
+    --rr-color-primary-strong: oklch(35% 0.10 155);
+    --rr-color-accent: oklch(70% 0.16 45);
+    --rr-color-accent-strong: oklch(60% 0.17 40);
     --rr-radius-card: 16px;
     --rr-radius-pill: 99px;
     --rr-radius-button: 9px;
     --rr-shadow-card: 0 24px 60px -20px oklch(30% 0.02 60 / 0.35);
     --rr-font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-    --rr-color-map-bg: oklch(93% 0.03 220);
-    --rr-color-map-border: oklch(88% 0.02 220);
+    --rr-color-map-bg: oklch(94% 0.025 155);
+    --rr-color-map-border: oklch(87% 0.02 155);
 
     /* ---- neutral surface / border / text (hue 75/60 family) ---- */
     --rr-color-border: oklch(91% 0.01 75);
@@ -28,7 +30,6 @@
     --rr-color-surface-subtle: #f4f7fb;
     --rr-color-surface-flat: #eef1f6;
     --rr-color-surface-hover: #f1f5f9;
-    --rr-color-neutral-strong: oklch(30% 0.02 60);
     --rr-color-text-muted: oklch(40% 0.02 60);
     --rr-color-text-strong: #172b4d;
     --rr-color-text-medium: #495057;
@@ -44,25 +45,25 @@
     --rr-color-hover-border: #bfd2f4;
     --rr-color-loader-accent: #0d6efd;
 
-    /* ---- primary family (hue 220 — becomes green in the palette pass) ---- */
-    --rr-color-primary-text: oklch(42% 0.09 220);
-    --rr-color-primary-tint: oklch(97% 0.02 220);
-    --rr-color-primary-tint-strong: oklch(93% 0.03 220);
-    --rr-color-primary-tint-alt: oklch(94% 0.03 220);
-    --rr-color-primary-border: oklch(88% 0.04 220);
-    --rr-color-primary-border-soft: oklch(88% 0.02 220);
-    --rr-color-primary-border-hover: oklch(80% 0.04 220);
-    --rr-color-primary-selected-bg: oklch(96% 0.03 220);
-    --rr-color-primary-shadow: oklch(52% 0.11 220 / 0.18);
-    --rr-color-focus-ring: oklch(78% 0.09 220 / 0.55);
+    /* ---- primary family (고속도로 이정표 그린) ---- */
+    --rr-color-primary-text: oklch(38% 0.09 155);
+    --rr-color-primary-tint: oklch(96% 0.025 155);
+    --rr-color-primary-tint-strong: oklch(92% 0.04 155);
+    --rr-color-primary-tint-alt: oklch(93% 0.035 155);
+    --rr-color-primary-border: oklch(85% 0.06 155);
+    --rr-color-primary-border-soft: oklch(87% 0.03 155);
+    --rr-color-primary-border-hover: oklch(72% 0.08 155);
+    --rr-color-primary-selected-bg: oklch(94% 0.045 155);
+    --rr-color-primary-shadow: oklch(42% 0.09 155 / 0.2);
+    --rr-color-focus-ring: oklch(70% 0.11 155 / 0.55);
 
-    /* ---- accent family (hue 55 — stays warm, gets refined in the palette pass) ---- */
-    --rr-color-accent-ring: oklch(72% 0.14 55 / 0.45);
-    --rr-color-accent-tint: oklch(95% 0.04 55);
-    --rr-color-accent-text: oklch(40% 0.12 55);
-    --rr-color-accent-border: oklch(85% 0.06 55);
-    --rr-color-event-border: oklch(90% 0.05 55);
-    --rr-color-event-tint: oklch(97% 0.02 55);
+    /* ---- accent family (노을 오렌지) ---- */
+    --rr-color-accent-ring: oklch(70% 0.16 45 / 0.45);
+    --rr-color-accent-tint: oklch(95% 0.05 50);
+    --rr-color-accent-text: oklch(45% 0.14 40);
+    --rr-color-accent-border: oklch(84% 0.08 48);
+    --rr-color-event-border: oklch(88% 0.06 55);
+    --rr-color-event-tint: oklch(96% 0.03 55);
 
     /* ---- semantic status ---- */
     --rr-color-success-bg: #e6f7e9;
@@ -79,6 +80,150 @@
     --rr-color-danger-text: #e03131;
     --rr-color-danger-strong-bg: #f3d3d3;
     --rr-color-danger-strong-text: #7a1f1f;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --rr-color-bg: oklch(15% 0.012 70);
+        --rr-color-surface: oklch(20% 0.014 70);
+        --rr-color-text: oklch(94% 0.01 70);
+        --rr-color-text-secondary: oklch(70% 0.015 70);
+        --rr-color-primary: oklch(72% 0.13 155);
+        --rr-color-primary-strong: oklch(80% 0.12 155);
+        --rr-color-accent: oklch(75% 0.15 45);
+        --rr-color-accent-strong: oklch(80% 0.14 45);
+        --rr-shadow-card: 0 24px 60px -20px oklch(0% 0 0 / 0.55);
+        --rr-color-map-bg: oklch(24% 0.03 155);
+        --rr-color-map-border: oklch(34% 0.03 155);
+
+        --rr-color-border: oklch(32% 0.015 70);
+        --rr-color-border-control: oklch(30% 0.015 70);
+        --rr-color-border-tint: oklch(32% 0.015 70);
+        --rr-color-border-strong: oklch(28% 0.015 70);
+        --rr-color-divider: oklch(29% 0.012 70);
+        --rr-color-surface-muted: oklch(24% 0.012 70);
+        --rr-color-surface-tint: oklch(23% 0.012 70);
+        --rr-color-surface-subtle: oklch(24% 0.015 70);
+        --rr-color-surface-flat: oklch(26% 0.012 70);
+        --rr-color-surface-hover: oklch(27% 0.012 70);
+        --rr-color-text-muted: oklch(74% 0.012 70);
+        --rr-color-text-strong: oklch(97% 0.008 70);
+        --rr-color-text-medium: oklch(80% 0.012 70);
+        --rr-color-text-faint: oklch(66% 0.012 70);
+        --rr-color-text-disabled: oklch(56% 0.01 70);
+        --rr-color-text-emphasis: oklch(95% 0.008 70);
+        --rr-color-text-heavy: oklch(90% 0.01 70);
+        --rr-color-text-label: oklch(70% 0.015 70);
+        --rr-color-on-primary: #fff;
+        --rr-color-backdrop: oklch(5% 0.01 70 / 0.6);
+        --rr-color-scrim: rgba(0, 0, 0, 0.6);
+        --rr-color-selection-border: oklch(42% 0.05 155);
+        --rr-color-hover-border: oklch(45% 0.05 155);
+
+        --rr-color-primary-text: oklch(80% 0.11 155);
+        --rr-color-primary-tint: oklch(26% 0.05 155);
+        --rr-color-primary-tint-strong: oklch(32% 0.06 155);
+        --rr-color-primary-tint-alt: oklch(29% 0.055 155);
+        --rr-color-primary-border: oklch(45% 0.08 155);
+        --rr-color-primary-border-soft: oklch(42% 0.06 155);
+        --rr-color-primary-border-hover: oklch(58% 0.1 155);
+        --rr-color-primary-selected-bg: oklch(28% 0.06 155);
+        --rr-color-primary-shadow: oklch(72% 0.13 155 / 0.25);
+        --rr-color-focus-ring: oklch(72% 0.12 155 / 0.55);
+
+        --rr-color-accent-ring: oklch(75% 0.15 45 / 0.5);
+        --rr-color-accent-tint: oklch(30% 0.06 50);
+        --rr-color-accent-text: oklch(83% 0.1 40);
+        --rr-color-accent-border: oklch(48% 0.09 48);
+        --rr-color-event-border: oklch(46% 0.08 55);
+        --rr-color-event-tint: oklch(28% 0.05 55);
+
+        --rr-color-success-bg: oklch(28% 0.05 150);
+        --rr-color-success-text: oklch(72% 0.12 150);
+        --rr-color-ev-bg: oklch(26% 0.04 150);
+        --rr-color-ev-text: oklch(70% 0.11 150);
+        --rr-color-ev-border: oklch(45% 0.07 150);
+        --rr-color-warning-bg: oklch(30% 0.06 85);
+        --rr-color-warning-text: oklch(80% 0.1 85);
+        --rr-color-notice-border: oklch(45% 0.08 90);
+        --rr-color-notice-bg: oklch(28% 0.05 90);
+        --rr-color-notice-text: oklch(82% 0.09 90);
+        --rr-color-danger-bg: oklch(28% 0.06 25);
+        --rr-color-danger-text: oklch(74% 0.16 25);
+        --rr-color-danger-strong-bg: oklch(24% 0.07 20);
+        --rr-color-danger-strong-text: oklch(78% 0.17 20);
+    }
+}
+
+:root[data-theme="dark"] {
+    --rr-color-bg: oklch(15% 0.012 70);
+    --rr-color-surface: oklch(20% 0.014 70);
+    --rr-color-text: oklch(94% 0.01 70);
+    --rr-color-text-secondary: oklch(70% 0.015 70);
+    --rr-color-primary: oklch(72% 0.13 155);
+    --rr-color-primary-strong: oklch(80% 0.12 155);
+    --rr-color-accent: oklch(75% 0.15 45);
+    --rr-color-accent-strong: oklch(80% 0.14 45);
+    --rr-shadow-card: 0 24px 60px -20px oklch(0% 0 0 / 0.55);
+    --rr-color-map-bg: oklch(24% 0.03 155);
+    --rr-color-map-border: oklch(34% 0.03 155);
+
+    --rr-color-border: oklch(32% 0.015 70);
+    --rr-color-border-control: oklch(30% 0.015 70);
+    --rr-color-border-tint: oklch(32% 0.015 70);
+    --rr-color-border-strong: oklch(28% 0.015 70);
+    --rr-color-divider: oklch(29% 0.012 70);
+    --rr-color-surface-muted: oklch(24% 0.012 70);
+    --rr-color-surface-tint: oklch(23% 0.012 70);
+    --rr-color-surface-subtle: oklch(24% 0.015 70);
+    --rr-color-surface-flat: oklch(26% 0.012 70);
+    --rr-color-surface-hover: oklch(27% 0.012 70);
+    --rr-color-text-muted: oklch(74% 0.012 70);
+    --rr-color-text-strong: oklch(97% 0.008 70);
+    --rr-color-text-medium: oklch(80% 0.012 70);
+    --rr-color-text-faint: oklch(66% 0.012 70);
+    --rr-color-text-disabled: oklch(56% 0.01 70);
+    --rr-color-text-emphasis: oklch(95% 0.008 70);
+    --rr-color-text-heavy: oklch(90% 0.01 70);
+    --rr-color-text-label: oklch(70% 0.015 70);
+    --rr-color-on-primary: #fff;
+    --rr-color-backdrop: oklch(5% 0.01 70 / 0.6);
+    --rr-color-scrim: rgba(0, 0, 0, 0.6);
+    --rr-color-selection-border: oklch(42% 0.05 155);
+    --rr-color-hover-border: oklch(45% 0.05 155);
+
+    --rr-color-primary-text: oklch(80% 0.11 155);
+    --rr-color-primary-tint: oklch(26% 0.05 155);
+    --rr-color-primary-tint-strong: oklch(32% 0.06 155);
+    --rr-color-primary-tint-alt: oklch(29% 0.055 155);
+    --rr-color-primary-border: oklch(45% 0.08 155);
+    --rr-color-primary-border-soft: oklch(42% 0.06 155);
+    --rr-color-primary-border-hover: oklch(58% 0.1 155);
+    --rr-color-primary-selected-bg: oklch(28% 0.06 155);
+    --rr-color-primary-shadow: oklch(72% 0.13 155 / 0.25);
+    --rr-color-focus-ring: oklch(72% 0.12 155 / 0.55);
+
+    --rr-color-accent-ring: oklch(75% 0.15 45 / 0.5);
+    --rr-color-accent-tint: oklch(30% 0.06 50);
+    --rr-color-accent-text: oklch(83% 0.1 40);
+    --rr-color-accent-border: oklch(48% 0.09 48);
+    --rr-color-event-border: oklch(46% 0.08 55);
+    --rr-color-event-tint: oklch(28% 0.05 55);
+
+    --rr-color-success-bg: oklch(28% 0.05 150);
+    --rr-color-success-text: oklch(72% 0.12 150);
+    --rr-color-ev-bg: oklch(26% 0.04 150);
+    --rr-color-ev-text: oklch(70% 0.11 150);
+    --rr-color-ev-border: oklch(45% 0.07 150);
+    --rr-color-warning-bg: oklch(30% 0.06 85);
+    --rr-color-warning-text: oklch(80% 0.1 85);
+    --rr-color-notice-border: oklch(45% 0.08 90);
+    --rr-color-notice-bg: oklch(28% 0.05 90);
+    --rr-color-notice-text: oklch(82% 0.09 90);
+    --rr-color-danger-bg: oklch(28% 0.06 25);
+    --rr-color-danger-text: oklch(74% 0.16 25);
+    --rr-color-danger-strong-bg: oklch(24% 0.07 20);
+    --rr-color-danger-strong-text: oklch(78% 0.17 20);
 }
 
 /* ===== Page Loader Overlay ===== */
@@ -159,8 +304,36 @@ body.global-loading-open {
 .rr-navbar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     background-color: var(--rr-color-surface);
     border-bottom: 1px solid var(--rr-color-border);
+}
+
+.rr-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.7rem 0.35rem 0.55rem;
+    border: 1px solid var(--rr-color-border);
+    border-radius: var(--rr-radius-pill);
+    background-color: var(--rr-color-bg);
+    color: var(--rr-color-text-secondary);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.rr-theme-toggle:hover,
+.rr-theme-toggle:focus-visible {
+    border-color: var(--rr-color-primary-border);
+    outline: none;
+}
+
+.rr-theme-toggle-icon {
+    font-size: 0.95rem;
+    line-height: 1;
 }
 
 .rr-navbar-brand {
@@ -428,14 +601,14 @@ body.global-loading-open {
 
 .map-action-buttons .btn-primary {
     border-color: transparent;
-    background-color: var(--rr-color-text);
+    background-color: var(--rr-color-primary);
     color: var(--rr-color-on-primary);
 }
 
 .map-action-buttons .btn-primary:hover,
 .map-action-buttons .btn-primary:focus {
     border-color: transparent;
-    background-color: var(--rr-color-neutral-strong);
+    background-color: var(--rr-color-primary-strong);
     color: var(--rr-color-on-primary);
 }
 

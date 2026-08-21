@@ -3,7 +3,9 @@
    =================================================== */
 
 import { initRestStopMap } from './rest-stops-map.js';
+import { initThemeToggle } from './theme.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initRestStopMap();
+    initThemeToggle(document, window);
 });
