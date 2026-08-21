@@ -435,6 +435,16 @@ body.global-loading-open {
     overflow: hidden;
 }
 
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .rest-stop-map {
+        filter: invert(92%) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+    }
+}
+
+:root[data-theme="dark"] .rest-stop-map {
+    filter: invert(92%) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
+
 .rest-stop-map-stage {
     position: relative;
     min-width: 0;
