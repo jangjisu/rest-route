@@ -1,5 +1,6 @@
 package com.restroute.flight.controller;
 
+import com.restroute.common.ExternalApiException;
 import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.exception.InvalidFlightSearchException;
 import com.restroute.flight.controller.response.FlightApiError;
@@ -43,6 +44,14 @@ public class FlightExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(FlightApiResponse.error(
                         new FlightApiError("validation_failed", VALIDATION_FAILED_MESSAGE, e.details())));
+    }
+
+    @ExceptionHandler(ExternalApiException.class)
+    public ResponseEntity<FlightApiResponse<Void>> handleExternalApiFailure(ExternalApiException e) {
+        log.warn("Flight external API call failed: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(FlightApiResponse.error(
+                        FlightApiError.of("external_api_unavailable", "일시적으로 조회가 어렵습니다. 잠시 후 다시 시도해 주세요")));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

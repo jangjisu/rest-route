@@ -29,9 +29,6 @@ class FlightSearchRequestDtoTest {
                 "true",
                 "true",
                 "true",
-                "2",
-                "1",
-                "1",
                 "DATE",
                 null,
                 "20",
@@ -47,9 +44,6 @@ class FlightSearchRequestDtoTest {
         assertThat(result.isIncludeWeekend()).isTrue();
         assertThat(result.isIncludeHoliday()).isTrue();
         assertThat(result.isIncludeTransfer()).isTrue();
-        assertThat(result.parsedAdults()).isEqualTo(2);
-        assertThat(result.parsedChildren()).isEqualTo(1);
-        assertThat(result.parsedInfants()).isEqualTo(1);
         assertThat(result.parsedSort()).isEqualTo(FlightDealSort.DATE);
         assertThat(result.parsedLocale()).isEqualTo("en");
         assertThat(result.parsedCurrency()).isEqualTo("krw");
@@ -131,16 +125,6 @@ class FlightSearchRequestDtoTest {
     }
 
     @Test
-    @DisplayName("adults/children/infants가 없으면 어른 1명, 나머지 0명이 기본값이다")
-    void paxCounts_defaultWhenMissing() {
-        FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
-
-        assertThat(result.parsedAdults()).isEqualTo(1);
-        assertThat(result.parsedChildren()).isEqualTo(0);
-        assertThat(result.parsedInfants()).isEqualTo(0);
-    }
-
-    @Test
     @DisplayName("locale/currency가 없으면 각각 ko, krw가 기본값이다")
     void localeAndCurrency_defaultWhenMissing() {
         FlightSearchRequestDto result = rangeRequest(futureDate(10), futureDate(41), List.of("3"));
@@ -159,9 +143,6 @@ class FlightSearchRequestDtoTest {
                         futureDate(41),
                         null,
                         List.of("3"),
-                        null,
-                        null,
-                        null,
                         null,
                         null,
                         null,
@@ -211,13 +192,6 @@ class FlightSearchRequestDtoTest {
     }
 
     @Test
-    @DisplayName("adults가 음수면 실패한다")
-    void constructor_throws_whenAdultsNegative() {
-        assertThatThrownBy(() -> fixedRequest(builder -> builder.adults("-1")))
-                .isInstanceOf(InvalidFlightSearchException.class);
-    }
-
-    @Test
     @DisplayName("equals/hashCode는 cursor/limit이 달라도 같은 검색 조건이면 같다고 본다")
     void equalsAndHashCode_ignoreCursorAndLimit() {
         FlightSearchRequestDto a = rangeRequestWithPaging("tok_0001", "10");
@@ -234,6 +208,26 @@ class FlightSearchRequestDtoTest {
         FlightSearchRequestDto b = rangeRequest(futureDate(10), futureDate(41), List.of("4"));
 
         assertThat(a).isNotEqualTo(b);
+    }
+
+    @Test
+    @DisplayName("equals는 대소문자만 다른 currency를 같다고 본다 — raw 문자열이 아니라 parsedCurrency()로 비교한다")
+    void equals_treatsCurrencyCaseInsensitively() {
+        FlightSearchRequestDto lower = fixedRequest(builder -> builder.currency("krw"));
+        FlightSearchRequestDto upper = fixedRequest(builder -> builder.currency("KRW"));
+
+        assertThat(lower).isEqualTo(upper);
+        assertThat(lower.hashCode()).isEqualTo(upper.hashCode());
+    }
+
+    @Test
+    @DisplayName("equals는 sort를 생략한 요청과 명시적으로 기본값을 보낸 요청을 같다고 본다")
+    void equals_treatsOmittedSortSameAsExplicitDefault() {
+        FlightSearchRequestDto omitted = fixedRequest(builder -> builder.sort(null));
+        FlightSearchRequestDto explicit = fixedRequest(builder -> builder.sort("PRICE"));
+
+        assertThat(omitted).isEqualTo(explicit);
+        assertThat(omitted.hashCode()).isEqualTo(explicit.hashCode());
     }
 
     @Test
@@ -290,7 +284,7 @@ class FlightSearchRequestDtoTest {
         return builder.build();
     }
 
-    /** 18개 필드를 매번 전부 나열하지 않도록 테스트 전용으로 둔 최소 빌더. */
+    /** 15개 필드를 매번 전부 나열하지 않도록 테스트 전용으로 둔 최소 빌더. */
     private static final class RequestBuilder {
         private String origin = "ICN";
         private String searchMode = "range";
@@ -302,9 +296,6 @@ class FlightSearchRequestDtoTest {
         private String includeWeekend;
         private String includeHoliday;
         private String includeTransfer;
-        private String adults;
-        private String children;
-        private String infants;
         private String sort;
         private String cursor;
         private String limit;
@@ -346,8 +337,8 @@ class FlightSearchRequestDtoTest {
             return this;
         }
 
-        RequestBuilder adults(String value) {
-            this.adults = value;
+        RequestBuilder sort(String value) {
+            this.sort = value;
             return this;
         }
 
@@ -378,9 +369,6 @@ class FlightSearchRequestDtoTest {
                     includeWeekend,
                     includeHoliday,
                     includeTransfer,
-                    adults,
-                    children,
-                    infants,
                     sort,
                     cursor,
                     limit,

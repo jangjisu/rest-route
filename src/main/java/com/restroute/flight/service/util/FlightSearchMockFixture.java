@@ -2,10 +2,12 @@ package com.restroute.flight.service.util;
 
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightDealResponse;
+import com.restroute.holiday.domain.HolidayEntity;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.IntStream;
@@ -15,9 +17,14 @@ import org.springframework.util.StringUtils;
  * 프론트엔드 개발용 고정 모킹 데이터 생성기. Travelpayouts grouped_prices가 실제로 줄 수 있는
  * 필드만으로 결정적(deterministic) 가짜 데이터를 만든다.
  *
- * <p>id는 세션 토큰(4자리) + 순번(예: "aB3x_0004")으로 구성된다. 세션별 저장/조회, cursor
- * lookup은 이 클래스가 아니라 세션 스토어가 담당한다 — 여기는 순수하게 "이 세션의 몇 번째
- * 항목이 어떤 값인지"만 계산한다.
+ * <p>id는 세션 토큰을 아직 몰라서 여기서는 채우지 않는다 — 세션별 저장/조회, cursor lookup을
+ * 담당하는 세션 스토어가 최종 저장 직전에 부여한다. 여기는 순수하게 "이 세션의 몇 번째 항목이
+ * 어떤 값인지"만 계산한다.
+ *
+ * <p>includeWeekend는 실 경로({@link com.restroute.flight.service.FlightDealPostFilter})와
+ * 동일하게 적용한다. includeHoliday는 적용하지 않는다 — 실제 공휴일 이름은 DB(HolidayRepository)에서
+ * 와야 하는데, 이 클래스는 의도적으로 DB 의존 없는 순수 static 유틸이라 값을 모른다. holidays
+ * 필드는 주말만 채운다({@code name=null}) — 실 응답의 holidays 구조와 모양은 맞춘다.
  */
 public final class FlightSearchMockFixture {
 
@@ -48,17 +55,23 @@ public final class FlightSearchMockFixture {
     /** 예약처는 지금 Aviasales 하나뿐이다 — mock도 실제와 동일하게 고정값을 쓴다. */
     private static final String GATE_NAME = "Aviasales";
 
+    private static final String PENDING_ID = "";
+
     private FlightSearchMockFixture() {}
 
-    public static List<FlightDealResponse> generateAll(
-            FlightSearchRequestDto request, String sessionToken, int totalSize) {
+    public static List<FlightDealResponse> generateAll(FlightSearchRequestDto request, int totalSize) {
         List<FlightDealResponse> items = IntStream.range(0, totalSize)
-                .mapToObj(index -> dealAt(index, request, sessionToken))
+                .mapToObj(index -> dealAt(index, request))
+                .filter(deal -> request.isIncludeWeekend() || !isWeekendDeparture(deal))
                 .toList();
         return FlightDealResponses.markLowestInRange(items);
     }
 
-    private static FlightDealResponse dealAt(int index, FlightSearchRequestDto request, String sessionToken) {
+    private static boolean isWeekendDeparture(FlightDealResponse deal) {
+        return HolidayEntity.isWeekend(FlightDealResponses.departureDateOf(deal));
+    }
+
+    private static FlightDealResponse dealAt(int index, FlightSearchRequestDto request) {
         Destination destination = destinationAt(index, request);
         int nights = nightsAt(index, request);
         LocalDate departureDate = departureDateAt(index, request);
@@ -69,7 +82,6 @@ public final class FlightSearchMockFixture {
         int arrivalDuration = BASE_DURATION_MINUTES + (index % 4) * 10;
         int departureTransferCount = request.isIncludeTransfer() && index % 3 == 0 ? 1 : 0;
         int arrivalTransferCount = request.isIncludeTransfer() && index % 4 == 0 ? 1 : 0;
-        String id = FlightDealResponses.idOf(sessionToken, index);
 
         FlightDealResponse.Leg departure = legAt(
                 departureDate.atTime(9, 20).atOffset(KST),
@@ -80,18 +92,30 @@ public final class FlightSearchMockFixture {
                 returnDate.atTime(13, 10).atOffset(destination.offset()), KST, arrivalDuration, arrivalTransferCount);
 
         return new FlightDealResponse(
-                id,
+                PENDING_ID,
                 new FlightDealResponse.Destination(destination.code(), destination.name()),
                 departure,
                 arrival,
                 nights,
-                FlightDealResponses.NO_HOLIDAYS,
+                weekendHolidaysOf(departureDate, returnDate),
                 new FlightDealResponse.Airline(airline.code(), airline.name(), true),
                 new FlightDealResponse.Price(amount, "KRW"),
                 false,
                 GATE_NAME,
-                "https://www.aviasales.com/search/mock-" + id,
+                "https://www.aviasales.com/search/mock-" + index,
                 null);
+    }
+
+    /** 출발일~귀국일 사이의 주말만 채운다(name=null) — 실제 공휴일 이름은 DB 없이는 알 수 없다. */
+    private static List<FlightDealResponse.HolidayDay> weekendHolidaysOf(
+            LocalDate departureDate, LocalDate returnDate) {
+        List<FlightDealResponse.HolidayDay> holidays = new ArrayList<>();
+        for (LocalDate date = departureDate; !date.isAfter(returnDate); date = date.plusDays(1)) {
+            if (HolidayEntity.isWeekend(date)) {
+                holidays.add(new FlightDealResponse.HolidayDay(date.toString(), null));
+            }
+        }
+        return holidays;
     }
 
     private static FlightDealResponse.Leg legAt(

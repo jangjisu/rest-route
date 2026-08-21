@@ -39,9 +39,6 @@ final class FlightSearchRequestValidator {
     private final String includeWeekend;
     private final String includeHoliday;
     private final String includeTransfer;
-    private final String adults;
-    private final String children;
-    private final String infants;
     private final String sort;
     private final String currency;
 
@@ -56,9 +53,6 @@ final class FlightSearchRequestValidator {
             String includeWeekend,
             String includeHoliday,
             String includeTransfer,
-            String adults,
-            String children,
-            String infants,
             String sort,
             String currency) {
         this.origin = origin;
@@ -71,9 +65,6 @@ final class FlightSearchRequestValidator {
         this.includeWeekend = includeWeekend;
         this.includeHoliday = includeHoliday;
         this.includeTransfer = includeTransfer;
-        this.adults = adults;
-        this.children = children;
-        this.infants = infants;
         this.sort = sort;
         this.currency = currency;
     }
@@ -89,9 +80,6 @@ final class FlightSearchRequestValidator {
             String includeWeekend,
             String includeHoliday,
             String includeTransfer,
-            String adults,
-            String children,
-            String infants,
             String sort,
             String currency) {
         new FlightSearchRequestValidator(
@@ -105,9 +93,6 @@ final class FlightSearchRequestValidator {
                         includeWeekend,
                         includeHoliday,
                         includeTransfer,
-                        adults,
-                        children,
-                        infants,
                         sort,
                         currency)
                 .run();
@@ -125,9 +110,6 @@ final class FlightSearchRequestValidator {
         validateIncludeWeekend();
         validateIncludeHoliday();
         validateIncludeTransfer();
-        validateAdults();
-        validateChildren();
-        validateInfants();
         validateSort();
         validateCurrency();
 
@@ -268,28 +250,6 @@ final class FlightSearchRequestValidator {
             return;
         }
         details.add(new FlightApiError.Detail("includeTransfer", "invalid_include_transfer"));
-    }
-
-    private void validateAdults() {
-        validateNonNegativeInt("adults", adults, "invalid_adults");
-    }
-
-    private void validateChildren() {
-        validateNonNegativeInt("children", children, "invalid_children");
-    }
-
-    private void validateInfants() {
-        validateNonNegativeInt("infants", infants, "invalid_infants");
-    }
-
-    private void validateNonNegativeInt(String field, String raw, String errorCode) {
-        if (!StringUtils.hasText(raw)) {
-            return;
-        }
-        Integer value = parseIntOrNull(raw);
-        if (value == null || value < 0) {
-            details.add(new FlightApiError.Detail(field, errorCode));
-        }
     }
 
     private static Integer parseIntOrNull(String raw) {

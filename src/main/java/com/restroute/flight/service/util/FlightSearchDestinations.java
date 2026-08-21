@@ -17,6 +17,9 @@ import org.springframework.util.StringUtils;
  */
 public final class FlightSearchDestinations {
 
+    /** 검색 하나가 낼 수 있는 Travelpayouts 호출 수 상한 — RANGE/FIXED 양쪽이 공유한다. */
+    public static final int MAX_FANOUT_CALLS = 20;
+
     private FlightSearchDestinations() {}
 
     public static List<String> resolve(FlightSearchRequestDto request) {
@@ -56,5 +59,22 @@ public final class FlightSearchDestinations {
         List<String> withAggregate = new ArrayList<>(destinations);
         withAggregate.add(null);
         return withAggregate;
+    }
+
+    /**
+     * {@link #withAggregate}와 같지만, "국가별 + 전체"(destinations.size() + 1)로 늘었을 때
+     * 호출 수가 {@link #MAX_FANOUT_CALLS}를 넘지 않을 때만 적용한다. 넘으면 국가별 조회를
+     * 포기하고 전체 하나만 하도록 빈 목록을 돌려준다. {@code callsPerDestination}은 destination
+     * 하나당 실제로 몇 번씩 호출하는지다(RANGE는 개월×nights창 수, FIXED는 1).
+     */
+    public static List<String> withAggregateIfBudgetAllows(List<String> destinations, int callsPerDestination) {
+        if (destinations.isEmpty()) {
+            return destinations;
+        }
+        long detailedCalls = (long) (destinations.size() + 1) * callsPerDestination;
+        if (detailedCalls > MAX_FANOUT_CALLS) {
+            return List.of();
+        }
+        return withAggregate(destinations);
     }
 }

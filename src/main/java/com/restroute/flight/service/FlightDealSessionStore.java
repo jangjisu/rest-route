@@ -5,6 +5,7 @@ import com.restroute.flight.controller.exception.FlightDealNotFoundException;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchMeta;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
+import com.restroute.flight.service.util.FlightDealResponses;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 import org.springframework.stereotype.Component;
 
 /**
@@ -34,6 +36,9 @@ class FlightDealSessionStore {
     private static final int TOKEN_LENGTH = 4;
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
+    /** reserveToken()이 토큰을 원자적으로 선점하는 동안 잠깐 채워두는 자리표시자. */
+    private static final CachedSession RESERVED = new CachedSession(null, List.of(), Map.of(), Instant.MAX, null);
+
     private final Map<String, CachedSession> sessions = new ConcurrentHashMap<>();
     private final Duration ttl;
 
@@ -50,15 +55,22 @@ class FlightDealSessionStore {
     }
 
     /**
-     * 새 세션을 만든다 — 토큰 발급, {@code fetcher}로 조회, 저장, 첫 페이지 계산까지 전부
-     * 여기서 처리한다.
+     * 새 세션을 만든다 — 토큰 발급, {@code fetcher}로 조회, id 부여, 저장, 첫 페이지 계산까지
+     * 전부 여기서 처리한다. 토큰은 이 클래스만 알면 되므로 {@code fetcher}에는 넘기지 않는다 —
+     * fetch 결과가 나온 뒤 이 클래스가 각 항목에 최종 id(토큰+순번)를 부여한다.
      */
     FlightDealSearchResponse create(FlightSearchRequestDto request, int size, Fetcher fetcher) {
         String token = reserveToken();
-        List<FlightDealResponse> items = fetcher.fetch(token);
+        List<FlightDealResponse> items = stampIds(fetcher.fetch(), token);
         OffsetDateTime fetchedAt = OffsetDateTime.now(KST);
         save(token, request, items, fetchedAt);
         return toResponse(items, 0, size, request, fetchedAt);
+    }
+
+    private static List<FlightDealResponse> stampIds(List<FlightDealResponse> items, String token) {
+        return IntStream.range(0, items.size())
+                .mapToObj(index -> FlightDealResponses.withId(items.get(index), FlightDealResponses.idOf(token, index)))
+                .toList();
     }
 
     /**
@@ -75,14 +87,20 @@ class FlightDealSessionStore {
 
     @FunctionalInterface
     interface Fetcher {
-        List<FlightDealResponse> fetch(String token);
+        List<FlightDealResponse> fetch();
     }
 
+    /**
+     * 토큰을 뽑고 그 자리에 {@link #RESERVED}를 원자적으로 선점해둔다 — putIfAbsent 하나로
+     * 확인과 선점을 한 번에 처리해서, 조회 후 나중에 저장하는 사이에 다른 요청이 같은 토큰을
+     * 골라 세션을 덮어쓰는 경합을 막는다. 실제 fetcher 호출은 초 단위로 걸릴 수 있어 그 사이의
+     * 창이 실제로 위험하다.
+     */
     private String reserveToken() {
         String token;
         do {
             token = randomToken();
-        } while (sessions.containsKey(token));
+        } while (sessions.putIfAbsent(token, RESERVED) != null);
         return token;
     }
 
@@ -108,7 +126,7 @@ class FlightDealSessionStore {
             return null;
         }
         CachedSession cached = sessions.get(token);
-        if (cached == null) {
+        if (cached == null || cached == RESERVED) {
             return null;
         }
         if (Instant.now().isAfter(cached.expiresAt())) {

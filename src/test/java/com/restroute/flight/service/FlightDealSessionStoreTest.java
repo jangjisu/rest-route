@@ -82,9 +82,11 @@ class FlightDealSessionStoreTest {
 
     private static FlightDealSearchResponse create(
             FlightDealSessionStore sessionStore, FlightSearchRequestDto req, int size) {
-        return sessionStore.create(req, size, token -> FlightSearchMockFixture.generateAll(req, token, TOTAL_SIZE));
+        return sessionStore.create(req, size, () -> FlightSearchMockFixture.generateAll(req, TOTAL_SIZE));
     }
 
+    /** includeWeekend=true로 고정한다 — 이 클래스가 검증하는 건 세션/페이징 메커니즘이지 주말
+     * 필터링이 아니라서, TOTAL_SIZE개가 그대로 저장/순회되는 게 보장돼야 한다. */
     private static FlightSearchRequestDto request(String nights) {
         return new FlightSearchRequestDto(
                 "ICN",
@@ -94,10 +96,7 @@ class FlightDealSessionStoreTest {
                 null,
                 List.of(nights),
                 null,
-                null,
-                null,
-                null,
-                null,
+                "true",
                 null,
                 null,
                 null,

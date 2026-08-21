@@ -89,6 +89,8 @@ class FlightSearchMockServiceTest {
         return requestWithSort(cursor, nights, limit, null);
     }
 
+    /** includeWeekend=true로 고정한다 — MOCK_TOTAL_SIZE(77)개가 필터 없이 그대로 저장/순회되는
+     * 걸 전제로 하는 테스트라서, 주말 필터링과 뒤섞이지 않게 한다. */
     private static FlightSearchRequestDto requestWithSort(String cursor, String nights, String limit, String sort) {
         return new FlightSearchRequestDto(
                 VALID_ORIGIN,
@@ -98,10 +100,7 @@ class FlightSearchMockServiceTest {
                 null,
                 List.of(nights),
                 null,
-                null,
-                null,
-                null,
-                null,
+                "true",
                 null,
                 null,
                 sort,

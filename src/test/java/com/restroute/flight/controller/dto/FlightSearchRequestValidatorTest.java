@@ -30,34 +30,16 @@ class FlightSearchRequestValidatorTest {
                         "true",
                         "true",
                         "true",
-                        "2",
-                        "1",
-                        "1",
                         "DATE",
                         "KRW"))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName(
-            "destination/nights/sector/includeWeekend/includeHoliday/includeTransfer/pax/sort/currency 없이도(옵션) 통과한다")
+    @DisplayName("destination/nights/sector/includeWeekend/includeHoliday/includeTransfer/sort/currency 없이도(옵션) 통과한다")
     void validate_passesWithoutOptionalFields() {
         assertThatCode(() -> FlightSearchRequestValidator.validate(
-                        "ICN",
-                        "range",
-                        futureDate(10),
-                        futureDate(41),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null))
+                        "ICN", "range", futureDate(10), futureDate(41), null, null, null, null, null, null, null, null))
                 .doesNotThrowAnyException();
     }
 
@@ -259,23 +241,6 @@ class FlightSearchRequestValidatorTest {
     }
 
     @Test
-    @DisplayName("adults/children/infants가 음수거나 숫자가 아니면 각각의 INVALID_* 코드를 반환한다")
-    void validate_flagsInvalidPaxCounts() {
-        assertThatThrownBy(() -> validMinimalExcept(builder -> builder.adults("-1")))
-                .isInstanceOf(InvalidFlightSearchException.class)
-                .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("adults", "invalid_adults")));
-        assertThatThrownBy(() -> validMinimalExcept(builder -> builder.children("abc")))
-                .isInstanceOf(InvalidFlightSearchException.class)
-                .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("children", "invalid_children")));
-        assertThatThrownBy(() -> validMinimalExcept(builder -> builder.infants("-2")))
-                .isInstanceOf(InvalidFlightSearchException.class)
-                .extracting(e -> ((InvalidFlightSearchException) e).details())
-                .isEqualTo(List.of(new FlightApiError.Detail("infants", "invalid_infants")));
-    }
-
-    @Test
     @DisplayName("sort가 PRICE/DATE가 아니면 INVALID_SORT를 반환한다")
     void validate_flagsInvalidSort() {
         assertThatThrownBy(() -> validMinimalExcept(builder -> builder.sort("CHEAPEST")))
@@ -313,7 +278,7 @@ class FlightSearchRequestValidatorTest {
     @DisplayName("여러 필드가 동시에 잘못되면 전부 모아서 반환한다")
     void validate_collectsMultipleDetailsAtOnce() {
         assertThatThrownBy(() -> FlightSearchRequestValidator.validate(
-                        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null))
+                        null, null, null, null, null, null, null, null, null, null, null, null))
                 .isInstanceOf(InvalidFlightSearchException.class)
                 .extracting(e -> ((InvalidFlightSearchException) e).details())
                 .isEqualTo(List.of(
@@ -329,7 +294,7 @@ class FlightSearchRequestValidatorTest {
         args.invoke();
     }
 
-    /** validate()의 15개 인자를 매번 전부 나열하지 않도록 테스트 전용으로 둔 최소 빌더. */
+    /** validate()의 12개 인자를 매번 전부 나열하지 않도록 테스트 전용으로 둔 최소 빌더. */
     private static final class ValidateArgs {
         private String origin = "ICN";
         private String searchMode = "range";
@@ -341,9 +306,6 @@ class FlightSearchRequestValidatorTest {
         private String includeWeekend;
         private String includeHoliday;
         private String includeTransfer;
-        private String adults;
-        private String children;
-        private String infants;
         private String sort;
         private String currency;
 
@@ -397,21 +359,6 @@ class FlightSearchRequestValidatorTest {
             return this;
         }
 
-        ValidateArgs adults(String value) {
-            this.adults = value;
-            return this;
-        }
-
-        ValidateArgs children(String value) {
-            this.children = value;
-            return this;
-        }
-
-        ValidateArgs infants(String value) {
-            this.infants = value;
-            return this;
-        }
-
         ValidateArgs sort(String value) {
             this.sort = value;
             return this;
@@ -434,9 +381,6 @@ class FlightSearchRequestValidatorTest {
                     includeWeekend,
                     includeHoliday,
                     includeTransfer,
-                    adults,
-                    children,
-                    infants,
                     sort,
                     currency);
         }
