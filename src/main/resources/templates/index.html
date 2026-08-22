@@ -280,20 +280,25 @@
             </aside>
         </div>
         <dialog id="routeResultModal" class="route-result-modal" aria-labelledby="routeResultModalTitle">
+            <div id="routeResultModalHandle" class="route-result-modal-handle" aria-hidden="true">
+                <span></span>
+            </div>
             <div class="route-result-modal-header">
                 <h3 id="routeResultModalTitle" class="route-result-modal-title">경로상 휴게소</h3>
                 <button id="routeResultModalClose" class="btn-close" type="button"
                         aria-label="경로 결과 닫기"></button>
             </div>
-            <div id="routeOptions" class="route-options d-none" role="group" aria-label="경로 선택"></div>
-            <p id="routeDirectionAlternativeNotice" class="route-direction-alternative-notice d-none">
-                같은 이름의 상·하행 후보가 함께 표시될 수 있어요. 실제 진행 방향을 확인해주세요.
-            </p>
-            <section id="routeNationalOilPriceSummary" class="route-national-oil-summary d-none"
-                     aria-label="전국 평균 주유 가격"></section>
-            <div id="routeRestStopFilters" class="route-rest-stop-filters d-none"
-                 role="group" aria-label="경로상 휴게소 필터"></div>
-            <ol id="routeResultList" class="route-result-list"></ol>
+            <div class="route-result-modal-body">
+                <div id="routeOptions" class="route-options d-none" role="group" aria-label="경로 선택"></div>
+                <p id="routeDirectionAlternativeNotice" class="route-direction-alternative-notice d-none">
+                    같은 이름의 상·하행 후보가 함께 표시될 수 있어요. 실제 진행 방향을 확인해주세요.
+                </p>
+                <section id="routeNationalOilPriceSummary" class="route-national-oil-summary d-none"
+                         aria-label="전국 평균 주유 가격"></section>
+                <div id="routeRestStopFilters" class="route-rest-stop-filters d-none"
+                     role="group" aria-label="경로상 휴게소 필터"></div>
+                <ol id="routeResultList" class="route-result-list"></ol>
+            </div>
         </dialog>
         <dialog id="routeOriginModal" class="route-point-modal" aria-labelledby="routeOriginModalTitle">
             <div class="route-result-modal-header">

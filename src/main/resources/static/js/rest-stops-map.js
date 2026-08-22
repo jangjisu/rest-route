@@ -11,6 +11,7 @@ import {
 } from './route-point-selection.js';
 import { createRestStopDetailView } from './rest-stop-detail-view.js';
 import { createRouteRestStopView, renderNationalOilPriceState } from './route-rest-stop-view.js';
+import { initBottomSheetDrag } from './bottom-sheet.js';
 
 const MAP_CONFIG_ENDPOINT = '/api/map-config';
 const REST_STOPS_ENDPOINT = '/api/rest-stops';
@@ -49,6 +50,7 @@ let routeView;
 let allRestStopMarkers = [];
 let markerMode = 'all';
 let originMarker;
+let bottomSheetController;
 let destinationMarker;
 let currentRouteRestStops = [];
 let currentNationalOilPriceSummary;
@@ -121,6 +123,7 @@ export async function initRestStopMap() {
         bindRestStopNameSearch();
         bindRouteMapClick();
         bindMarkerModeToggle();
+        bottomSheetController = initBottomSheetDrag(document, window);
         initializeMobileCurrentLocationOrigin();
 
         setText('restStopMapStatus', '휴게소 불러오는 중');
@@ -853,6 +856,7 @@ function closeRouteResultModal() {
     const modal = document.getElementById('routeResultModal');
     if (modal?.open) {
         modal.close();
+        bottomSheetController?.resetHeight();
     }
 }
 
