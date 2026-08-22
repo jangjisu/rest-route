@@ -831,7 +831,12 @@ body.global-loading-open {
     flex-direction: column;
 }
 
+.route-result-modal-handle {
+    display: none;
+}
+
 .route-result-modal-header {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -839,6 +844,13 @@ body.global-loading-open {
     min-height: 4.5rem;
     padding: 1rem 1.25rem 0.9rem;
     border-bottom: 1px solid var(--rr-color-border);
+}
+
+.route-result-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .route-result-modal-header .btn-close {
@@ -859,7 +871,6 @@ body.global-loading-open {
 
 .route-result-modal .route-result-list {
     padding: 1rem 1.25rem 1.25rem;
-    overflow-y: auto;
 }
 
 .route-options {
@@ -1113,11 +1124,15 @@ body.global-loading-open {
 }
 
 .route-rest-stop-filters {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     flex: 0 0 auto;
     gap: 0.4rem;
-    margin: 0.8rem 1.25rem 0;
-    padding-bottom: 0.15rem;
+    margin: 0.8rem 0 0;
+    padding: 0.6rem 1.25rem 0.15rem;
+    background-color: var(--rr-color-surface);
     overflow-x: auto;
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -2275,21 +2290,24 @@ body.global-loading-open {
         border-radius: 20px 20px 0 0;
     }
 
-    #routeResultModal .route-result-modal-header {
-        position: relative;
-        padding-top: 1.15rem;
+    #routeResultModal .route-result-modal-handle {
+        display: flex;
+        flex: 0 0 auto;
+        justify-content: center;
+        padding: 10px 0 4px;
+        cursor: grab;
+        touch-action: none;
     }
 
-    #routeResultModal .route-result-modal-header::before {
-        position: absolute;
-        top: 8px;
-        left: 50%;
+    #routeResultModal .route-result-modal-handle:active {
+        cursor: grabbing;
+    }
+
+    #routeResultModal .route-result-modal-handle span {
         width: 36px;
         height: 4px;
         border-radius: 2px;
         background-color: var(--rr-color-border-strong);
-        content: '';
-        transform: translateX(-50%);
     }
 
     .route-national-oil-summary {
