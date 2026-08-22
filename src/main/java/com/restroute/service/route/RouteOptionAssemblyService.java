@@ -8,7 +8,7 @@ import com.restroute.controller.response.RouteRestStopResponse.RouteSummary;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.service.RestStopAggregateQueryService;
 import com.restroute.service.dto.RestStopAggregate;
-import com.restroute.service.route.dto.ResolvedRoute.RouteGeometry;
+import com.restroute.service.route.dto.RouteCandidate;
 import com.restroute.service.route.dto.RoutePath;
 import com.restroute.service.route.dto.RouteRestStopComparison;
 import com.restroute.service.route.dto.RouteRestStopRecommendationStandards;
@@ -17,13 +17,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 대안 경로별로 휴게소를 매칭하고, 이미지/EV충전/테마/이벤트/비교요약/추천태그를 붙여
- * 최종 RouteOption 목록으로 조립한다. 집계 조회는 대안 경로 전체에 대해 한 번만 수행한다.
+ * 방향 필터링까지 끝난 휴게소 후보(RouteCandidate)에 이미지/EV충전/테마/이벤트/비교요약/추천태그를
+ * 붙여 최종 RouteOption 목록으로 조립한다. 집계 조회는 대안 경로 전체에 대해 한 번만 수행한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,31 +30,19 @@ public class RouteOptionAssemblyService {
 
     private static final String LIST_IMAGE_URL_FORMAT = "/api/rest-stops/%s/images/list";
 
-    private final RouteRestStopMatchingService routeRestStopMatchingService;
     private final RestStopAggregateQueryService restStopAggregateQueryService;
     private final RouteRestStopComparisonSummaryService routeRestStopComparisonSummaryService;
     private final RouteRestStopRecommendationTagService routeRestStopRecommendationTagService;
 
-    public List<RouteOption> assemble(
-            List<RouteGeometry> routes,
+    public List<RouteOption> attachDetails(
+            List<RouteCandidate> candidates,
             List<RestStopEntity> allRestStops,
-            int radiusMeters,
             Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        List<RouteCandidate> candidates = IntStream.range(0, routes.size())
-                .mapToObj(routeIndex -> buildRouteCandidate(routeIndex, routes.get(routeIndex), allRestStops, radiusMeters))
-                .toList();
-
         Map<String, RestStopAggregate> aggregatesByServiceAreaCode = aggregatesForCandidates(candidates, allRestStops);
 
         return candidates.stream()
                 .map(candidate -> toRouteOption(candidate, aggregatesByServiceAreaCode, nationalOilPriceSummary))
                 .toList();
-    }
-
-    private RouteCandidate buildRouteCandidate(
-            int routeIndex, RouteGeometry geometry, List<RestStopEntity> allRestStops, int radiusMeters) {
-        List<RouteRestStopItem> items = routeRestStopMatchingService.match(geometry.path(), radiusMeters, allRestStops);
-        return new RouteCandidate(routeIndex, geometry, items);
     }
 
     /**
@@ -90,8 +77,6 @@ public class RouteOptionAssemblyService {
                 routeSummary(candidate.geometry().summary(), candidate.geometry().path()),
                 restStops);
     }
-
-    private record RouteCandidate(int routeIndex, RouteGeometry geometry, List<RouteRestStopItem> items) {}
 
     private List<RouteRestStopItem> buildResponseItems(
             List<RouteRestStopItem> items,

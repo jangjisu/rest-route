@@ -15,7 +15,7 @@ import com.restroute.client.response.KakaoDirectionsResponse.Section;
 import com.restroute.client.response.KakaoDirectionsResponse.Summary;
 import com.restroute.client.response.KakaoLocalSearchResponse;
 import com.restroute.client.response.KakaoLocalSearchResponse.Document;
-import com.restroute.service.route.dto.ResolvedRoute;
+import com.restroute.service.route.RouteResolverService.RawRouteResult;
 import com.restroute.service.route.exception.RouteRestStopNotFoundException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +54,7 @@ class RouteResolverServiceTest {
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
 
-        ResolvedRoute resolved = service.resolve(37.0, 127.0, "부산", null, null, null);
+        RawRouteResult resolved = service.resolveDestinationAndRoute(37.0, 127.0, "부산", null, null, null);
 
         assertThat(resolved.destination().name()).isEqualTo("부산역");
         assertThat(resolved.destination().latitude()).isEqualTo(35.0);
@@ -67,7 +67,7 @@ class RouteResolverServiceTest {
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(10L, 20L, null), VERTEXES));
 
-        ResolvedRoute resolved = service.resolve(37.0, 127.0, null, 35.0, 129.0, "부산항");
+        RawRouteResult resolved = service.resolveDestinationAndRoute(37.0, 127.0, null, 35.0, 129.0, "부산항");
 
         assertThat(resolved.destination().name()).isEqualTo("부산항");
         verify(kakaoMapClient, never()).searchKeyword(anyString());
@@ -78,7 +78,7 @@ class RouteResolverServiceTest {
         when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역", null));
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
 
-        ResolvedRoute resolved = service.resolve(37.0, 127.0, "부산", 35.0, null, "이름");
+        RawRouteResult resolved = service.resolveDestinationAndRoute(37.0, 127.0, "부산", 35.0, null, "이름");
 
         assertThat(resolved.destination().name()).isEqualTo("부산역");
     }
@@ -87,11 +87,11 @@ class RouteResolverServiceTest {
     void coordinatesWithoutName_defaultToDestination() {
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
 
-        assertThat(service.resolve(37.0, 127.0, null, 35.0, 129.0, null)
+        assertThat(service.resolveDestinationAndRoute(37.0, 127.0, null, 35.0, 129.0, null)
                         .destination()
                         .name())
                 .isEqualTo("목적지");
-        assertThat(service.resolve(37.0, 127.0, null, 35.0, 129.0, "  ")
+        assertThat(service.resolveDestinationAndRoute(37.0, 127.0, null, 35.0, 129.0, "  ")
                         .destination()
                         .name())
                 .isEqualTo("목적지");
@@ -102,7 +102,7 @@ class RouteResolverServiceTest {
         when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "", "부산 우동"));
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
 
-        ResolvedRoute resolved = service.resolve(37.0, 127.0, "부산", null, null, null);
+        RawRouteResult resolved = service.resolveDestinationAndRoute(37.0, 127.0, "부산", null, null, null);
 
         assertThat(resolved.destination().name()).isEqualTo("부산 우동");
     }
@@ -110,22 +110,22 @@ class RouteResolverServiceTest {
     @Test
     void emptySearchResult_throwsNotFound() {
         when(kakaoMapClient.searchKeyword("없는곳")).thenReturn(new KakaoLocalSearchResponse(List.of()));
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "없는곳", null, null, null))
+        assertThatThrownBy(() -> service.resolveDestinationAndRoute(37.0, 127.0, "없는곳", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         when(kakaoMapClient.searchKeyword("널")).thenReturn(new KakaoLocalSearchResponse(null));
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "널", null, null, null))
+        assertThatThrownBy(() -> service.resolveDestinationAndRoute(37.0, 127.0, "널", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
     }
 
     @Test
     void unparsableDestinationCoordinates_throwNotFound() {
         when(kakaoMapClient.searchKeyword("경도없음")).thenReturn(searchResult(null, "35.0", "곳", null));
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "경도없음", null, null, null))
+        assertThatThrownBy(() -> service.resolveDestinationAndRoute(37.0, 127.0, "경도없음", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         when(kakaoMapClient.searchKeyword("위도없음")).thenReturn(searchResult("129.0", null, "곳", null));
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "위도없음", null, null, null))
+        assertThatThrownBy(() -> service.resolveDestinationAndRoute(37.0, 127.0, "위도없음", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
     }
 
@@ -134,15 +134,15 @@ class RouteResolverServiceTest {
         when(kakaoMapClient.searchKeyword(anyString())).thenReturn(searchResult("129.0", "35.0", "부산", null));
 
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(104, null, VERTEXES));
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "부산", null, null, null))
+        assertThatThrownBy(() -> service.resolveDestinationAndRoute(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(new KakaoDirectionsResponse(List.of()));
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "부산", null, null, null))
+        assertThatThrownBy(() -> service.resolveDestinationAndRoute(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(new KakaoDirectionsResponse(null));
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "부산", null, null, null))
+        assertThatThrownBy(() -> service.resolveDestinationAndRoute(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
     }
 
@@ -160,31 +160,8 @@ class RouteResolverServiceTest {
 
     private void assertFailureMessage(int resultCode, String expectedFragment) {
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(resultCode, null, VERTEXES));
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "부산", null, null, null))
+        assertThatThrownBy(() -> service.resolveDestinationAndRoute(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class)
                 .hasMessageContaining(expectedFragment);
-    }
-
-    @Test
-    void emptyPolyline_throwsNotFound() {
-        when(kakaoMapClient.searchKeyword(anyString())).thenReturn(searchResult("129.0", "35.0", "부산", null));
-        when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, List.of()));
-
-        assertThatThrownBy(() -> service.resolve(37.0, 127.0, "부산", null, null, null))
-                .isInstanceOf(RouteRestStopNotFoundException.class);
-    }
-
-    @Test
-    void alternatives_keepsOnlyRoutesWithNonEmptyPath() {
-        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역", null));
-        Route withPath = new Route(0, new Summary(100L, 200L, null), List.of(new Section(List.of(new Road(VERTEXES)))));
-        Route withoutPath = new Route(0, new Summary(150L, 300L, null), List.of(new Section(List.of(new Road(List.of())))));
-        when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
-                .thenReturn(new KakaoDirectionsResponse(List.of(withPath, withoutPath)));
-
-        ResolvedRoute resolved = service.resolve(37.0, 127.0, "부산", null, null, null);
-
-        assertThat(resolved.routes()).hasSize(1);
-        assertThat(resolved.routes().get(0).summary().distance()).isEqualTo(100L);
     }
 }

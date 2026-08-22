@@ -4,9 +4,6 @@ import com.restroute.client.KakaoMapClient;
 import com.restroute.client.response.KakaoDirectionsResponse;
 import com.restroute.client.response.KakaoLocalSearchResponse;
 import com.restroute.controller.response.RouteRestStopResponse.Destination;
-import com.restroute.service.route.dto.ResolvedRoute;
-import com.restroute.service.route.dto.ResolvedRoute.RouteGeometry;
-import com.restroute.service.route.dto.RoutePath;
 import com.restroute.service.route.exception.RouteRestStopNotFoundException;
 import com.restroute.service.route.util.RouteCoordinateFormat;
 import java.util.List;
@@ -14,9 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 목적지를 정하고, 카카오 길찾기를 호출해서 대안 경로까지 포함한 경로 좌표열(RoutePath)을 만든다.
- * 길찾기 실패는 여기서 바로 예외로 끝낸다. 개별 경로의 좌표가 비어있으면 그 경로만 제외하고,
- * 전부 비어있으면 예외로 끝낸다.
+ * 목적지를 정하고, 카카오 길찾기를 호출해서 대안 경로까지 포함한 원본 경로 응답을 받아온다.
+ * 좌표열 축약(다운샘플링)은 여기서 하지 않는다 — 원본 그대로 RouteRestStopService에 돌려준다.
+ * 길찾기 실패는 여기서 바로 예외로 끝낸다.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,7 +21,7 @@ public class RouteResolverService {
 
     private final KakaoMapClient kakaoMapClient;
 
-    public ResolvedRoute resolve(
+    public RawRouteResult resolveDestinationAndRoute(
             double originLatitude,
             double originLongitude,
             String destinationQuery,
@@ -43,28 +40,10 @@ public class RouteResolverService {
                     routeFailureMessage(failedRoute == null ? null : failedRoute.resultCode()));
         }
 
-        List<RouteGeometry> routes = directions.routes().stream()
-                .map(this::toGeometry)
-                .filter(geometry -> !geometry.path().isEmpty())
-                .toList();
-        if (routes.isEmpty()) {
-            throw new RouteRestStopNotFoundException("경로 좌표가 없습니다.");
-        }
-
-        return ResolvedRoute.of(destination, routes);
+        return new RawRouteResult(destination, directions.routes());
     }
 
-    private RouteGeometry toGeometry(KakaoDirectionsResponse.Route route) {
-        RoutePath path = RoutePath.from(route.sections(), totalDistanceMeters(route.summary()));
-        return RouteGeometry.of(path, route.summary());
-    }
-
-    private long totalDistanceMeters(KakaoDirectionsResponse.Summary summary) {
-        if (summary == null || summary.distance() == null) {
-            return 0L;
-        }
-        return summary.distance();
-    }
+    public record RawRouteResult(Destination destination, List<KakaoDirectionsResponse.Route> routes) {}
 
     private String routeFailureMessage(Integer resultCode) {
         int code = resultCode == null ? -1 : resultCode;

@@ -9,12 +9,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.restroute.client.response.KakaoDirectionsResponse.Fare;
-import com.restroute.client.response.KakaoDirectionsResponse.Road;
-import com.restroute.client.response.KakaoDirectionsResponse.Section;
 import com.restroute.client.response.KakaoDirectionsResponse.Summary;
 import com.restroute.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.controller.response.RouteRestStopResponse.RouteOption;
+import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.domain.RestFoodEntity;
 import com.restroute.domain.RestOilEntity;
@@ -25,6 +24,7 @@ import com.restroute.service.RestStopAggregateQueryService;
 import com.restroute.service.dto.RestStopAggregate;
 import com.restroute.service.dto.RestStopRelatedInfo;
 import com.restroute.service.route.dto.ResolvedRoute.RouteGeometry;
+import com.restroute.service.route.dto.RouteCandidate;
 import com.restroute.service.route.dto.RoutePath;
 import java.util.HashMap;
 import java.util.List;
@@ -39,8 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RouteOptionAssemblyServiceTest {
 
-    private static final List<Double> VERTEXES = List.of(127.0, 37.0, 127.5, 37.5, 128.0, 38.0);
-
     @Mock
     private RestStopAggregateQueryService restStopAggregateQueryService;
 
@@ -50,7 +48,6 @@ class RouteOptionAssemblyServiceTest {
     void setUp() {
         stubRelatedInfoByCode(Map.of());
         service = new RouteOptionAssemblyService(
-                new RouteRestStopMatchingService(),
                 restStopAggregateQueryService,
                 new RouteRestStopComparisonSummaryService(),
                 new RouteRestStopRecommendationTagService());
@@ -82,17 +79,17 @@ class RouteOptionAssemblyServiceTest {
                 .findByRestStopsAndAdminOverridden(any(), any());
     }
 
-    private RouteGeometry geometry(Summary summary, List<Double> vertexes) {
-        return RouteGeometry.of(RoutePath.from(List.of(new Section(List.of(new Road(vertexes)))), 1000L), summary);
+    private RouteGeometry geometry(Summary summary) {
+        return RouteGeometry.of(RoutePath.from(List.of(), 0L), summary);
     }
 
-    private RestStopEntity restStop(String code, String name, String route, String lng, String lat) {
+    private RouteRestStopItem item(String code, double lat, double lng) {
+        return RouteRestStopItem.of(code, code + "휴게소", "경부선", lat, lng, 100L);
+    }
+
+    private RestStopEntity restStop(String code) {
         RestStopEntity entity = mock(RestStopEntity.class);
         lenient().when(entity.getServiceAreaCode()).thenReturn(code);
-        lenient().when(entity.getUnitName()).thenReturn(name);
-        lenient().when(entity.getRouteName()).thenReturn(route);
-        lenient().when(entity.getXValue()).thenReturn(lng);
-        lenient().when(entity.getYValue()).thenReturn(lat);
         return entity;
     }
 
@@ -134,62 +131,61 @@ class RouteOptionAssemblyServiceTest {
     }
 
     @Test
-    void assemble_buildsRouteOptionWithSummaryAndMatchedRestStops() {
-        RestStopEntity near = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
+    void attachDetails_buildsRouteOptionWithSummaryAndMatchedRestStops() {
+        RestStopEntity near = restStop("A");
+        RouteCandidate candidate =
+                new RouteCandidate(0, geometry(new Summary(100L, 200L, null)), List.of(item("A", 37.0001, 127.0001)));
 
-        List<RouteOption> routes = service.assemble(
-                List.of(geometry(new Summary(100L, 200L, null), VERTEXES)),
-                List.of(near),
-                1000,
-                Optional.empty());
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(near), Optional.empty());
 
         assertThat(routes).hasSize(1);
         assertThat(routes.get(0).routeIndex()).isZero();
         assertThat(routes.get(0).summary().distanceMeters()).isEqualTo(100L);
         assertThat(routes.get(0).summary().durationSeconds()).isEqualTo(200L);
         assertThat(routes.get(0).restStops())
-                .extracting(item -> item.serviceAreaCode())
+                .extracting(RouteRestStopItem::serviceAreaCode)
                 .containsExactly("A");
     }
 
     @Test
-    void assemble_includesEvThemeEventFlagsFromAggregates() {
-        RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
+    void attachDetails_includesEvThemeEventFlagsFromAggregates() {
+        RestStopEntity restStop = restStop("A");
+        RouteCandidate candidate =
+                new RouteCandidate(0, geometry(new Summary(100L, 200L, null)), List.of(item("A", 37.0001, 127.0001)));
         stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), true, false, true, true)));
 
-        List<RouteOption> routes = service.assemble(
-                List.of(geometry(new Summary(100L, 200L, null), VERTEXES)),
-                List.of(restStop),
-                1000,
-                Optional.empty());
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(restStop), Optional.empty());
 
-        var item = routes.get(0).restStops().get(0);
-        assertThat(item.hasEvCharger()).isTrue();
-        assertThat(item.hasTheme()).isTrue();
-        assertThat(item.hasEvent()).isTrue();
+        var resultItem = routes.get(0).restStops().get(0);
+        assertThat(resultItem.hasEvCharger()).isTrue();
+        assertThat(resultItem.hasTheme()).isTrue();
+        assertThat(resultItem.hasEvent()).isTrue();
     }
 
     @Test
-    void assemble_attachesListImageUrlFromSingleBulkLookup() {
-        RestStopEntity first = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
-        RestStopEntity second = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
+    void attachDetails_attachesListImageUrlFromSingleBulkLookup() {
+        RestStopEntity first = restStop("A");
+        RestStopEntity second = restStop("B");
+        RouteCandidate candidate = new RouteCandidate(
+                0,
+                geometry(new Summary(100L, 200L, null)),
+                List.of(item("A", 37.0001, 127.0001), item("B", 37.5001, 127.5001)));
         stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false)));
 
-        List<RouteOption> routes = service.assemble(
-                List.of(geometry(new Summary(100L, 200L, null), VERTEXES)),
-                List.of(first, second),
-                1000,
-                Optional.empty());
+        List<RouteOption> routes =
+                service.attachDetails(List.of(candidate), List.of(first, second), Optional.empty());
 
         assertThat(routes.get(0).restStops())
-                .extracting(item -> item.listImageUrl())
+                .extracting(RouteRestStopItem::listImageUrl)
                 .containsExactly("/api/rest-stops/A/images/list", null);
         verify(restStopAggregateQueryService, times(1)).findByRestStopsAndAdminOverridden(any(), isNull());
     }
 
     @Test
-    void assemble_usesNationalOilPriceSummaryForPriceDiffsOnly() {
-        RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
+    void attachDetails_usesNationalOilPriceSummaryForPriceDiffsOnly() {
+        RestStopEntity restStop = restStop("A");
+        RouteCandidate candidate =
+                new RouteCandidate(0, geometry(new Summary(100L, 200L, null)), List.of(item("A", 37.0001, 127.0001)));
         RestOilEntity oilConvenience = oilConvenience("OIL-A", "쉼터");
         RestOilPriceEntity oilPrice = oilPrice("1,850원", "1,900원", "1,135원");
         stubRelatedInfoByCode(Map.of(
@@ -201,8 +197,7 @@ class RouteOptionAssemblyServiceTest {
                 AverageOilPrice.of("D047", "자동차용경유", "1,880원", "-4.51"),
                 AverageOilPrice.of("K015", "자동차용부탄", "1,135원", "+0.01")));
 
-        List<RouteOption> routes = service.assemble(
-                List.of(geometry(new Summary(100L, 200L, null), VERTEXES)), List.of(restStop), 1000, summary);
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(restStop), summary);
 
         var comparisonSummary = routes.get(0).restStops().get(0).comparisonSummary();
         assertThat(comparisonSummary.gasolinePriceDiffFromAverage()).isEqualTo(-43);
@@ -211,9 +206,13 @@ class RouteOptionAssemblyServiceTest {
     }
 
     @Test
-    void assemble_addsRecommendationTagsAcrossCandidates() {
-        RestStopEntity first = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
-        RestStopEntity second = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
+    void attachDetails_addsRecommendationTagsAcrossCandidates() {
+        RestStopEntity first = restStop("A");
+        RestStopEntity second = restStop("B");
+        RouteCandidate candidate = new RouteCandidate(
+                0,
+                geometry(new Summary(100L, 200L, null)),
+                List.of(item("A", 37.0001, 127.0001), item("B", 37.5001, 127.5001)));
         HighwayServiceAreaInfoEntity firstParking = parking("10", "5", "1");
         HighwayServiceAreaInfoEntity secondParking = parking("40", "20", "3");
         RestOilEntity firstOilConvenience = oilConvenience("OIL-A", "쉼터");
@@ -237,11 +236,8 @@ class RouteOptionAssemblyServiceTest {
                         Optional.of(secondOilPrice),
                         List.of())));
 
-        List<RouteOption> routes = service.assemble(
-                List.of(geometry(new Summary(100L, 200L, null), VERTEXES)),
-                List.of(first, second),
-                1000,
-                Optional.empty());
+        List<RouteOption> routes =
+                service.attachDetails(List.of(candidate), List.of(first, second), Optional.empty());
 
         var firstItem = routes.get(0).restStops().get(0);
         var secondItem = routes.get(0).restStops().get(1);
@@ -254,46 +250,44 @@ class RouteOptionAssemblyServiceTest {
     }
 
     @Test
-    void assemble_zeroesTollFareWhenFarePresentButTollNull() {
-        List<RouteOption> routes = service.assemble(
-                List.of(geometry(new Summary(100L, 200L, new Fare(null)), VERTEXES)),
-                List.of(),
-                1000,
-                Optional.empty());
+    void attachDetails_zeroesTollFareWhenFarePresentButTollNull() {
+        RouteCandidate candidate =
+                new RouteCandidate(0, geometry(new Summary(100L, 200L, new Fare(null))), List.of());
+
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(), Optional.empty());
 
         assertThat(routes.get(0).summary().tollFareWon()).isZero();
     }
 
     @Test
-    void assemble_zeroesDistanceAndDurationWhenSummaryIsNull() {
-        List<RouteOption> routes =
-                service.assemble(List.of(geometry(null, VERTEXES)), List.of(), 1000, Optional.empty());
+    void attachDetails_zeroesDistanceAndDurationWhenSummaryIsNull() {
+        RouteCandidate candidate = new RouteCandidate(0, geometry(null), List.of());
+
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(), Optional.empty());
 
         assertThat(routes.get(0).summary().distanceMeters()).isZero();
         assertThat(routes.get(0).summary().durationSeconds()).isZero();
     }
 
     @Test
-    void assemble_matchesEachAlternativeRouteIndependently_andQueriesAggregatesOnce() {
-        List<Double> routeBVertexes = List.of(129.0, 39.0, 129.5, 39.5);
-        RestStopEntity nearRouteA = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
-        RestStopEntity nearRouteB = restStop("B", "B휴게소", "동해선", "129.0001", "39.0001");
+    void attachDetails_buildsIndependentRouteOptionsPerCandidate_andQueriesAggregatesOnce() {
+        RestStopEntity nearRouteA = restStop("A");
+        RestStopEntity nearRouteB = restStop("B");
+        RouteCandidate candidateA = new RouteCandidate(
+                0, geometry(new Summary(100L, 200L, new Fare(1000))), List.of(item("A", 37.0001, 127.0001)));
+        RouteCandidate candidateB = new RouteCandidate(
+                1, geometry(new Summary(150L, 300L, new Fare(0))), List.of(item("B", 39.0001, 129.0001)));
 
-        List<RouteOption> routes = service.assemble(
-                List.of(
-                        geometry(new Summary(100L, 200L, new Fare(1000)), VERTEXES),
-                        geometry(new Summary(150L, 300L, new Fare(0)), routeBVertexes)),
-                List.of(nearRouteA, nearRouteB),
-                1000,
-                Optional.empty());
+        List<RouteOption> routes = service.attachDetails(
+                List.of(candidateA, candidateB), List.of(nearRouteA, nearRouteB), Optional.empty());
 
         assertThat(routes).hasSize(2);
         assertThat(routes.get(0).routeIndex()).isZero();
         assertThat(routes.get(0).summary().tollFareWon()).isEqualTo(1000L);
-        assertThat(routes.get(0).restStops()).extracting(item -> item.serviceAreaCode()).containsExactly("A");
+        assertThat(routes.get(0).restStops()).extracting(RouteRestStopItem::serviceAreaCode).containsExactly("A");
         assertThat(routes.get(1).routeIndex()).isEqualTo(1);
         assertThat(routes.get(1).summary().tollFareWon()).isZero();
-        assertThat(routes.get(1).restStops()).extracting(item -> item.serviceAreaCode()).containsExactly("B");
+        assertThat(routes.get(1).restStops()).extracting(RouteRestStopItem::serviceAreaCode).containsExactly("B");
         verify(restStopAggregateQueryService, times(1)).findByRestStopsAndAdminOverridden(any(), any());
     }
 }
