@@ -81,6 +81,7 @@ class RouteRestStopServiceTest {
                 new RouteResolverService(kakaoMapClient),
                 restStopQueryService,
                 nationalOilPriceService,
+                new RouteCoordinateReductionService(),
                 new RouteRestStopMatchingService(),
                 new RouteOptionAssemblyService(
                         restStopAggregateQueryService,

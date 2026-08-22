@@ -11,7 +11,6 @@ import com.restroute.service.RestStopQueryService;
 import com.restroute.service.route.RouteResolverService.RawRouteResult;
 import com.restroute.service.route.dto.ResolvedRoute.RouteGeometry;
 import com.restroute.service.route.dto.RouteCandidate;
-import com.restroute.service.route.dto.RoutePath;
 import com.restroute.service.route.exception.RouteRestStopNotFoundException;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +29,7 @@ public class RouteRestStopService {
     private final RouteResolverService routeResolverService;
     private final RestStopQueryService restStopQueryService;
     private final NationalOilPriceService nationalOilPriceService;
+    private final RouteCoordinateReductionService routeCoordinateReductionService;
     private final RouteRestStopMatchingService routeRestStopMatchingService;
     private final RouteOptionAssemblyService routeOptionAssemblyService;
 
@@ -64,30 +64,19 @@ public class RouteRestStopService {
 
     /**
      * 카카오가 준 원본 폴리라인은 총 거리에 비해 정점이 너무 많다 — 근접거리 계산(nearestTo)이
-     * 매 휴게소마다 전체 정점을 순회하므로, 성능을 위해 여기서 미리 정점 수를 줄인다.
+     * 매 휴게소마다 전체 정점을 순회하므로, 성능을 위해 여기서 미리 정점 수를 줄인다
+     * (RouteCoordinateReductionService에 위임 — 200m 간격/최소 300개 기준 균등 샘플링).
      * 개별 경로의 좌표가 비어있으면 그 경로만 제외하고, 전부 비어있으면 예외로 끝낸다.
      */
     private List<RouteGeometry> reduceCoordinates(List<KakaoDirectionsResponse.Route> rawRoutes) {
         List<RouteGeometry> routes = rawRoutes.stream()
-                .map(this::toGeometry)
+                .map(routeCoordinateReductionService::reduce)
                 .filter(geometry -> !geometry.path().isEmpty())
                 .toList();
         if (routes.isEmpty()) {
             throw new RouteRestStopNotFoundException("경로 좌표가 없습니다.");
         }
         return routes;
-    }
-
-    private RouteGeometry toGeometry(KakaoDirectionsResponse.Route route) {
-        RoutePath path = RoutePath.from(route.sections(), totalDistanceMeters(route.summary()));
-        return RouteGeometry.of(path, route.summary());
-    }
-
-    private long totalDistanceMeters(KakaoDirectionsResponse.Summary summary) {
-        if (summary == null || summary.distance() == null) {
-            return 0L;
-        }
-        return summary.distance();
     }
 
     /**

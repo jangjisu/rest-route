@@ -80,7 +80,7 @@ class RouteOptionAssemblyServiceTest {
     }
 
     private RouteGeometry geometry(Summary summary) {
-        return RouteGeometry.of(RoutePath.from(List.of(), 0L), summary);
+        return RouteGeometry.of(RoutePath.of(List.of(), List.of()), summary);
     }
 
     private RouteRestStopItem item(String code, double lat, double lng) {

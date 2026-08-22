@@ -4,11 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
-import com.restroute.client.response.KakaoDirectionsResponse.Road;
-import com.restroute.client.response.KakaoDirectionsResponse.Section;
 import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.domain.RestStopEntity;
+import com.restroute.service.route.dto.PathPoint;
 import com.restroute.service.route.dto.RoutePath;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -19,8 +20,12 @@ class RouteRestStopMatchingServiceTest {
 
     private final RouteRestStopMatchingService service = new RouteRestStopMatchingService();
 
-    private RoutePath path(List<Double> vertexes) {
-        return RoutePath.from(List.of(new Section(List.of(new Road(vertexes)))), 1000L);
+    private RoutePath path(List<Double> lngLatPairs) {
+        List<PathPoint> points = new ArrayList<>();
+        for (int i = 0; i + 1 < lngLatPairs.size(); i += 2) {
+            points.add(new PathPoint(lngLatPairs.get(i), lngLatPairs.get(i + 1)));
+        }
+        return RoutePath.of(points, Arrays.asList(new Integer[points.size()]));
     }
 
     private RestStopEntity restStop(String code, String name, String route, String lng, String lat) {
@@ -124,10 +129,9 @@ class RouteRestStopMatchingServiceTest {
 
     @Test
     void nearbyTraffic_readsFromNearestRoadSegment() {
-        Road jamRoad = new Road("경부선", 10L, 5L, 10, 1, List.of(127.0, 37.0));
-        Road smoothRoad = new Road("경부선", 10L, 5L, 90, 4, List.of(127.5, 37.5));
-        Road noInfoRoad = new Road("경부선", 10L, 5L, null, 0, List.of(128.0, 38.0));
-        RoutePath path = RoutePath.from(List.of(new Section(List.of(jamRoad, smoothRoad, noInfoRoad))), 1000L);
+        RoutePath path = RoutePath.of(
+                List.of(new PathPoint(127.0, 37.0), new PathPoint(127.5, 37.5), new PathPoint(128.0, 38.0)),
+                Arrays.asList(1, 4, null));
 
         RestStopEntity near0 = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopEntity near1 = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
