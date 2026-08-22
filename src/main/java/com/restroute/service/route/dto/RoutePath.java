@@ -1,19 +1,16 @@
 package com.restroute.service.route.dto;
 
-import com.restroute.client.response.KakaoDirectionsResponse;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * 카카오 길찾기 경로 좌표열과 근접·방향 계산을 담당하는 순수 로직(일급 컬렉션).
- * 생성 시점(from())에 총 거리 기준으로 정점 수를 이미 줄여서 들고 있는다.
+ * 이미 축소된 경로 좌표열에 대한 근접·방향 계산을 담당하는 순수 로직(일급 컬렉션).
+ * 좌표 축소(다운샘플링) 자체는 이 클래스의 책임이 아니다 — RouteCoordinateReducer가
+ * 정점 수를 줄인 뒤 of()로 넘겨준다.
  */
 public final class RoutePath {
 
     private static final double EARTH_RADIUS_METERS = 6_371_000.0;
-    private static final int MINIMUM_POINTS = 300;
-    private static final int TARGET_SPACING_METERS = 200;
 
     /**
      * sideOfTravel 계산에서 진행방향 벡터를 구할 때 최근접 지점 기준 앞뒤로 보는 정점 "개수"(거리
@@ -29,64 +26,8 @@ public final class RoutePath {
         this.trafficStates = trafficStates;
     }
 
-    public static RoutePath from(List<KakaoDirectionsResponse.Section> sections, long totalDistanceMeters) {
-        List<PathPoint> rawPoints = new ArrayList<>();
-        List<Integer> rawTrafficStates = new ArrayList<>();
-        collect(sections, rawPoints, rawTrafficStates);
-
-        int targetCount = targetPointCount(totalDistanceMeters);
-        return new RoutePath(downsample(rawPoints, targetCount), downsample(rawTrafficStates, targetCount));
-    }
-
-    private static int targetPointCount(long totalDistanceMeters) {
-        int distanceBasedCount = (int) Math.ceil(totalDistanceMeters / (double) TARGET_SPACING_METERS);
-        return Math.max(MINIMUM_POINTS, distanceBasedCount);
-    }
-
-    private static void collect(
-            List<KakaoDirectionsResponse.Section> sections, List<PathPoint> points, List<Integer> trafficStates) {
-        if (sections == null) {
-            return;
-        }
-        for (KakaoDirectionsResponse.Section section : sections) {
-            if (section == null || section.roads() == null) {
-                continue;
-            }
-            for (KakaoDirectionsResponse.Road road : section.roads()) {
-                collectRoad(road, points, trafficStates);
-            }
-        }
-    }
-
-    private static void collectRoad(
-            KakaoDirectionsResponse.Road road, List<PathPoint> points, List<Integer> trafficStates) {
-        if (road == null || road.vertexes() == null) {
-            return;
-        }
-        List<Double> vertexes = road.vertexes();
-        Integer trafficState = road.trafficState();
-        for (int i = 0; i + 1 < vertexes.size(); i += 2) {
-            Double longitude = vertexes.get(i);
-            Double latitude = vertexes.get(i + 1);
-            if (longitude == null || latitude == null) {
-                continue;
-            }
-            points.add(new PathPoint(longitude, latitude));
-            trafficStates.add(trafficState);
-        }
-    }
-
-    private static <T> List<T> downsample(List<T> source, int maxPoints) {
-        if (source.size() <= maxPoints) {
-            return source;
-        }
-        List<T> sampled = new ArrayList<>();
-        double step = (double) (source.size() - 1) / (maxPoints - 1);
-        for (int i = 0; i < maxPoints; i++) {
-            int index = (int) Math.round(i * step);
-            sampled.add(source.get(Math.min(index, source.size() - 1)));
-        }
-        return sampled;
+    public static RoutePath of(List<PathPoint> points, List<Integer> trafficStates) {
+        return new RoutePath(points, trafficStates);
     }
 
     public boolean isEmpty() {

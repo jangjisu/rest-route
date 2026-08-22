@@ -78,12 +78,15 @@ class RouteRestStopServiceTest {
         routeRestStopComparisonSummaryService = new RouteRestStopComparisonSummaryService();
         routeRestStopRecommendationTagService = new RouteRestStopRecommendationTagService();
         service = new RouteRestStopService(
-                kakaoMapClient,
+                new RouteResolverService(kakaoMapClient),
                 restStopQueryService,
-                restStopAggregateQueryService,
-                routeRestStopComparisonSummaryService,
-                routeRestStopRecommendationTagService,
-                nationalOilPriceService);
+                nationalOilPriceService,
+                new RouteCoordinateReducer(),
+                new RouteRestStopMatcher(),
+                new RouteOptionAssemblyService(
+                        restStopAggregateQueryService,
+                        routeRestStopComparisonSummaryService,
+                        routeRestStopRecommendationTagService));
     }
 
     private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {
@@ -777,6 +780,23 @@ class RouteRestStopServiceTest {
                 .containsExactly("B");
         verify(restStopQueryService, times(1)).findAll();
         verify(restStopAggregateQueryService, times(1)).findByRestStopsAndAdminOverridden(any(), any());
+    }
+
+    @Test
+    @DisplayName("대안 경로 중 폴리라인이 빈 경로는 제외하고 나머지만 routes에 담는다")
+    void alternatives_dropsRouteWithEmptyPolylineKeepsOthers() {
+        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역", null));
+        Route withPath = new Route(0, new Summary(100L, 200L, null), List.of(new Section(List.of(new Road(VERTEXES)))));
+        Route withoutPath =
+                new Route(0, new Summary(150L, 300L, null), List.of(new Section(List.of(new Road(List.of())))));
+        when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
+                .thenReturn(new KakaoDirectionsResponse(List.of(withPath, withoutPath)));
+        when(restStopQueryService.findAll()).thenReturn(List.of());
+
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+
+        assertThat(response.routes()).hasSize(1);
+        assertThat(response.routes().get(0).summary().distanceMeters()).isEqualTo(100L);
     }
 
     private RestStopRelatedInfo emptyRelatedInfo() {
