@@ -7,7 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * 좌표 축소(다운샘플링) 자체는 RouteCoordinateReductionServiceTest에서 검증한다.
+ * 좌표 축소(다운샘플링) 자체는 RouteCoordinateReducerTest에서 검증한다.
  * 여기서는 이미 축소된 좌표열에 대한 근접·방향 계산만 검증한다.
  */
 class RoutePathTest {

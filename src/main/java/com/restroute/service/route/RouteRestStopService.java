@@ -29,8 +29,8 @@ public class RouteRestStopService {
     private final RouteResolverService routeResolverService;
     private final RestStopQueryService restStopQueryService;
     private final NationalOilPriceService nationalOilPriceService;
-    private final RouteCoordinateReductionService routeCoordinateReductionService;
-    private final RouteRestStopMatchingService routeRestStopMatchingService;
+    private final RouteCoordinateReducer routeCoordinateReducer;
+    private final RouteRestStopMatcher routeRestStopMatcher;
     private final RouteOptionAssemblyService routeOptionAssemblyService;
 
     public RouteRestStopResponse findRouteRestStops(
@@ -65,12 +65,12 @@ public class RouteRestStopService {
     /**
      * 카카오가 준 원본 폴리라인은 총 거리에 비해 정점이 너무 많다 — 근접거리 계산(nearestTo)이
      * 매 휴게소마다 전체 정점을 순회하므로, 성능을 위해 여기서 미리 정점 수를 줄인다
-     * (RouteCoordinateReductionService에 위임 — 200m 간격/최소 300개 기준 균등 샘플링).
+     * (RouteCoordinateReducer에 위임 — 200m 간격/최소 300개 기준 균등 샘플링).
      * 개별 경로의 좌표가 비어있으면 그 경로만 제외하고, 전부 비어있으면 예외로 끝낸다.
      */
     private List<RouteGeometry> reduceCoordinates(List<KakaoDirectionsResponse.Route> rawRoutes) {
         List<RouteGeometry> routes = rawRoutes.stream()
-                .map(routeCoordinateReductionService::reduce)
+                .map(routeCoordinateReducer::reduce)
                 .filter(geometry -> !geometry.path().isEmpty())
                 .toList();
         if (routes.isEmpty()) {
@@ -81,7 +81,7 @@ public class RouteRestStopService {
 
     /**
      * 대안 경로마다 독립적으로, 휴게소 전체를 경로 반경 안에서 매칭하고 상·하행 페어의
-     * 진행방향을 판별한다 (RouteRestStopMatchingService에 위임).
+     * 진행방향을 판별한다 (RouteRestStopMatcher에 위임).
      */
     private List<RouteCandidate> matchRestStopsByDirection(
             List<RouteGeometry> routes, List<RestStopEntity> allRestStops, int radiusMeters) {
@@ -89,7 +89,7 @@ public class RouteRestStopService {
                 .mapToObj(routeIndex -> {
                     RouteGeometry geometry = routes.get(routeIndex);
                     List<RouteRestStopItem> items =
-                            routeRestStopMatchingService.match(geometry.path(), radiusMeters, allRestStops);
+                            routeRestStopMatcher.match(geometry.path(), radiusMeters, allRestStops);
                     return new RouteCandidate(routeIndex, geometry, items);
                 })
                 .toList();

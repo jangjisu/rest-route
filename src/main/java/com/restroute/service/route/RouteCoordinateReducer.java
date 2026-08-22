@@ -6,16 +6,17 @@ import com.restroute.service.route.dto.ResolvedRoute.RouteGeometry;
 import com.restroute.service.route.dto.RoutePath;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 /**
  * 카카오 원본 폴리라인은 총 거리에 비해 정점이 너무 많다 — 근접거리 계산(RoutePath.nearestTo)이
  * 매 휴게소마다 전체 정점을 순회하므로, 성능을 위해 여기서 정점 수를 줄인다.
  * 200m 간격 기준으로 목표 개수를 정하고(최소 300개), 원본에서 그 개수만큼 균등한 간격으로
  * 정점을 뽑아낸다(uniform sampling) — 압축이나 단순 절단이 아니다.
+ * 의존성 없는 순수 알고리즘이라 서비스가 아닌 컴포넌트로 분류한다.
  */
-@Service
-public class RouteCoordinateReductionService {
+@Component
+public class RouteCoordinateReducer {
 
     private static final int MINIMUM_POINTS = 300;
     private static final int TARGET_SPACING_METERS = 200;

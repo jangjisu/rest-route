@@ -13,12 +13,12 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class RouteRestStopMatchingServiceTest {
+class RouteRestStopMatcherTest {
 
     private static final List<Double> VERTEXES = List.of(127.0, 37.0, 127.5, 37.5, 128.0, 38.0);
     private static final List<Double> NORTH_HEADING_VERTEXES = List.of(127.0, 37.0, 127.0, 37.01);
 
-    private final RouteRestStopMatchingService service = new RouteRestStopMatchingService();
+    private final RouteRestStopMatcher service = new RouteRestStopMatcher();
 
     private RoutePath path(List<Double> lngLatPairs) {
         List<PathPoint> points = new ArrayList<>();

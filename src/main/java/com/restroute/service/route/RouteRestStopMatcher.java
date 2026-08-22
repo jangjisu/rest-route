@@ -17,14 +17,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 /**
  * 휴게소 전체를 경로 반경 안에서 매칭하고, 같은 이름의 상·하행 페어가 함께 잡히면 진행방향 기준으로
  * 실제로 갈 수 있는 쪽 하나만 남긴다. 판별이 애매하면 아무것도 제거하지 않고 hasDirectionAlternative만 켠다.
+ * 의존성 없는 순수 알고리즘이라 서비스가 아닌 컴포넌트로 분류한다.
  */
-@Service
-public class RouteRestStopMatchingService {
+@Component
+public class RouteRestStopMatcher {
 
     private static final int AMBIGUITY_CHECK_MIN_GROUP_SIZE = 2;
     private static final int SINGLE_REACHABLE_MATCH_COUNT = 1;

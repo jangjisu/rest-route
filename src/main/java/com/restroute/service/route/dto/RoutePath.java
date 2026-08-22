@@ -5,7 +5,7 @@ import java.util.Optional;
 
 /**
  * 이미 축소된 경로 좌표열에 대한 근접·방향 계산을 담당하는 순수 로직(일급 컬렉션).
- * 좌표 축소(다운샘플링) 자체는 이 클래스의 책임이 아니다 — RouteCoordinateReductionService가
+ * 좌표 축소(다운샘플링) 자체는 이 클래스의 책임이 아니다 — RouteCoordinateReducer가
  * 정점 수를 줄인 뒤 of()로 넘겨준다.
  */
 public final class RoutePath {

@@ -18,9 +18,9 @@ import org.junit.jupiter.api.Test;
  * RouteRestStopService.reduceCoordinates()가 위임하는 실제 좌표 축소 알고리즘.
  * "얼마나 줄이는지"와 "어떻게 뽑아내는지"를 여기 한 클래스에서 검증한다.
  */
-class RouteCoordinateReductionServiceTest {
+class RouteCoordinateReducerTest {
 
-    private final RouteCoordinateReductionService service = new RouteCoordinateReductionService();
+    private final RouteCoordinateReducer service = new RouteCoordinateReducer();
 
     private static Route route(long totalDistanceMeters, List<Double> vertexes) {
         return new Route(0, new Summary(totalDistanceMeters, 0L, null), List.of(new Section(List.of(new Road(vertexes)))));
