@@ -78,12 +78,14 @@ class RouteRestStopServiceTest {
         routeRestStopComparisonSummaryService = new RouteRestStopComparisonSummaryService();
         routeRestStopRecommendationTagService = new RouteRestStopRecommendationTagService();
         service = new RouteRestStopService(
-                kakaoMapClient,
+                new RouteResolverService(kakaoMapClient),
                 restStopQueryService,
-                restStopAggregateQueryService,
-                routeRestStopComparisonSummaryService,
-                routeRestStopRecommendationTagService,
-                nationalOilPriceService);
+                nationalOilPriceService,
+                new RouteOptionAssemblyService(
+                        new RouteRestStopMatchingService(),
+                        restStopAggregateQueryService,
+                        routeRestStopComparisonSummaryService,
+                        routeRestStopRecommendationTagService));
     }
 
     private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {

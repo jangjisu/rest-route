@@ -1,41 +1,14 @@
 package com.restroute.service.route;
 
-import com.restroute.client.KakaoMapClient;
-import com.restroute.client.response.KakaoDirectionsResponse;
-import com.restroute.client.response.KakaoLocalSearchResponse;
 import com.restroute.controller.response.RouteRestStopResponse;
-import com.restroute.controller.response.RouteRestStopResponse.Destination;
 import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.controller.response.RouteRestStopResponse.NearbyTraffic;
 import com.restroute.controller.response.RouteRestStopResponse.RouteOption;
-import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
-import com.restroute.controller.response.RouteRestStopResponse.RouteSummary;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.service.NationalOilPriceService;
-import com.restroute.service.RestStopAggregateQueryService;
 import com.restroute.service.RestStopQueryService;
-import com.restroute.service.dto.RestStopAggregate;
-import com.restroute.service.route.dto.IndexedMatch;
-import com.restroute.service.route.dto.MatchedRestStop;
-import com.restroute.service.route.dto.NearbyTrafficStatus;
 import com.restroute.service.route.dto.ResolvedRoute;
-import com.restroute.service.route.dto.ResolvedRoute.RouteGeometry;
-import com.restroute.service.route.dto.RoutePath;
-import com.restroute.service.route.dto.RouteRestStopCandidate;
-import com.restroute.service.route.dto.RouteRestStopComparison;
-import com.restroute.service.route.dto.RouteRestStopRecommendationStandards;
-import com.restroute.service.route.exception.RouteRestStopNotFoundException;
-import com.restroute.service.route.util.RouteCoordinateFormat;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -43,16 +16,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RouteRestStopService {
 
-    private static final String LIST_IMAGE_URL_FORMAT = "/api/rest-stops/%s/images/list";
-    private static final int AMBIGUITY_CHECK_MIN_GROUP_SIZE = 2;
-    private static final int SINGLE_REACHABLE_MATCH_COUNT = 1;
-
-    private final KakaoMapClient kakaoMapClient;
+    private final RouteResolverService routeResolverService;
     private final RestStopQueryService restStopQueryService;
-    private final RestStopAggregateQueryService restStopAggregateQueryService;
-    private final RouteRestStopComparisonSummaryService routeRestStopComparisonSummaryService;
-    private final RouteRestStopRecommendationTagService routeRestStopRecommendationTagService;
     private final NationalOilPriceService nationalOilPriceService;
+    private final RouteOptionAssemblyService routeOptionAssemblyService;
 
     public RouteRestStopResponse findRouteRestStops(
             double originLatitude,
@@ -62,7 +29,7 @@ public class RouteRestStopService {
             Double destinationLongitude,
             String destinationName,
             int radiusMeters) {
-        ResolvedRoute resolved = resolveRoute(
+        ResolvedRoute resolved = routeResolverService.resolve(
                 originLatitude,
                 originLongitude,
                 destinationQuery,
@@ -73,309 +40,9 @@ public class RouteRestStopService {
         List<RestStopEntity> allRestStops = restStopQueryService.findAll();
         Optional<NationalOilPriceSummary> nationalOilPriceSummary = nationalOilPriceService.getTodaySummary();
 
-        List<RouteCandidate> candidates = IntStream.range(0, resolved.routes().size())
-                .mapToObj(routeIndex -> buildRouteCandidate(
-                        routeIndex, resolved.routes().get(routeIndex), allRestStops, radiusMeters))
-                .toList();
-
-        Map<String, RestStopAggregate> aggregatesByServiceAreaCode = aggregatesForCandidates(candidates, allRestStops);
-
-        List<RouteOption> routes = candidates.stream()
-                .map(candidate -> toRouteOption(candidate, aggregatesByServiceAreaCode, nationalOilPriceSummary))
-                .toList();
+        List<RouteOption> routes = routeOptionAssemblyService.assemble(
+                resolved.routes(), allRestStops, radiusMeters, nationalOilPriceSummary);
 
         return RouteRestStopResponse.of(resolved.destination(), routes);
-    }
-
-    private RouteCandidate buildRouteCandidate(
-            int routeIndex, RouteGeometry geometry, List<RestStopEntity> allRestStops, int radiusMeters) {
-        RoutePath path = geometry.path();
-        List<RouteRestStopCandidate> matched = matchRestStopsToPath(path, radiusMeters, allRestStops);
-        List<RouteRestStopItem> directionFiltered = removeUnreachableSide(matched, path);
-        return new RouteCandidate(routeIndex, geometry, directionFiltered);
-    }
-
-    /**
-     * 대안 경로 전체의 후보 서비스 영역 코드를 합쳐서, 이미지/EV/테마/이벤트/상세/주유/먹거리
-     * 집계를 요청당 한 번만 조회한다 — 경로마다 반복하지 않는다. 이미 요청 초기에 조회해둔
-     * allRestStops에서 필요한 엔티티만 선별해 넘기므로 RestStopEntity를 다시 조회하지 않는다.
-     */
-    private Map<String, RestStopAggregate> aggregatesForCandidates(
-            List<RouteCandidate> candidates, List<RestStopEntity> allRestStops) {
-        Set<String> serviceAreaCodes = candidates.stream()
-                .flatMap(candidate -> candidate.items().stream())
-                .map(RouteRestStopItem::serviceAreaCode)
-                .collect(Collectors.toSet());
-        if (serviceAreaCodes.isEmpty()) {
-            return Map.of();
-        }
-
-        List<RestStopEntity> selected = allRestStops.stream()
-                .filter(restStop -> serviceAreaCodes.contains(restStop.getServiceAreaCode()))
-                .toList();
-        return restStopAggregateQueryService.findByRestStopsAndAdminOverridden(selected, null);
-    }
-
-    private RouteOption toRouteOption(
-            RouteCandidate candidate,
-            Map<String, RestStopAggregate> aggregatesByServiceAreaCode,
-            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        List<RouteRestStopItem> restStops =
-                buildResponseItems(candidate.items(), aggregatesByServiceAreaCode, nationalOilPriceSummary);
-        return RouteOption.of(
-                candidate.routeIndex(),
-                routeSummary(candidate.geometry().summary(), candidate.geometry().path()),
-                restStops);
-    }
-
-    private record RouteCandidate(int routeIndex, RouteGeometry geometry, List<RouteRestStopItem> items) {}
-
-    /**
-     * 목적지를 정하고, 카카오 길찾기를 호출해서 대안 경로까지 포함한 경로 좌표열(RoutePath)을 만든다.
-     * 길찾기 실패는 여기서 바로 예외로 끝낸다. 개별 경로의 좌표가 비어있으면 그 경로만 제외하고,
-     * 전부 비어있으면 예외로 끝낸다.
-     */
-    private ResolvedRoute resolveRoute(
-            double originLatitude,
-            double originLongitude,
-            String destinationQuery,
-            Double destinationLatitude,
-            Double destinationLongitude,
-            String destinationName) {
-        Destination destination =
-                resolveDestination(destinationQuery, destinationLatitude, destinationLongitude, destinationName);
-
-        KakaoDirectionsResponse directions = kakaoMapClient.getDirections(
-                RouteCoordinateFormat.toParam(originLongitude, originLatitude),
-                RouteCoordinateFormat.toParam(destination.longitude(), destination.latitude()));
-        if (directions.failedToRoute()) {
-            KakaoDirectionsResponse.Route failedRoute = directions.firstRoute();
-            throw new RouteRestStopNotFoundException(
-                    routeFailureMessage(failedRoute == null ? null : failedRoute.resultCode()));
-        }
-
-        List<RouteGeometry> routes = directions.routes().stream()
-                .map(this::toGeometry)
-                .filter(geometry -> !geometry.path().isEmpty())
-                .toList();
-        if (routes.isEmpty()) {
-            throw new RouteRestStopNotFoundException("경로 좌표가 없습니다.");
-        }
-
-        return ResolvedRoute.of(destination, routes);
-    }
-
-    private RouteGeometry toGeometry(KakaoDirectionsResponse.Route route) {
-        RoutePath path = RoutePath.from(route.sections(), totalDistanceMeters(route.summary()));
-        return RouteGeometry.of(path, route.summary());
-    }
-
-    private long totalDistanceMeters(KakaoDirectionsResponse.Summary summary) {
-        if (summary == null || summary.distance() == null) {
-            return 0L;
-        }
-        return summary.distance();
-    }
-
-    private String routeFailureMessage(Integer resultCode) {
-        int code = resultCode == null ? -1 : resultCode;
-        return switch (code) {
-            case 101, 105 -> "출발지 주변에서 도로를 찾지 못했어요. 출발지를 도로에 가까운 위치로 바꿔주세요.";
-            case 102, 106 -> "도착지 주변에서 도로를 찾지 못했어요. 도착지를 도로에 가까운 위치로 바꿔주세요.";
-            case 104 -> "출발지와 도착지가 너무 가까워요. 좀 더 떨어진 위치를 선택해주세요.";
-            default -> "경로를 찾지 못했어요. 출발지와 도착지를 다시 확인해주세요.";
-        };
-    }
-
-    private Destination resolveDestination(
-            String destinationQuery, Double destinationLatitude, Double destinationLongitude, String destinationName) {
-        if (destinationLatitude == null || destinationLongitude == null) {
-            return destinationFromQuery(destinationQuery);
-        }
-        String name = destinationName == null || destinationName.isBlank() ? "목적지" : destinationName;
-        return Destination.of(name, destinationLatitude, destinationLongitude);
-    }
-
-    private Destination destinationFromQuery(String destinationQuery) {
-        KakaoLocalSearchResponse search = kakaoMapClient.searchKeyword(destinationQuery);
-        if (search.isEmpty()) {
-            throw new RouteRestStopNotFoundException("목적지 검색 결과가 없습니다: " + destinationQuery);
-        }
-
-        KakaoLocalSearchResponse.Document document = search.first();
-        Double longitude = RouteCoordinateFormat.parse(document.x());
-        Double latitude = RouteCoordinateFormat.parse(document.y());
-        if (longitude == null || latitude == null) {
-            throw new RouteRestStopNotFoundException("목적지 좌표를 해석하지 못했습니다.");
-        }
-
-        return Destination.of(document.label(), latitude, longitude);
-    }
-
-    /**
-     * 1번: 휴게소 전체를 경로에 매칭한다. 경로상 같은 지점(routeIndex)에 매칭된 휴게소가
-     * 여럿이면(드묾) 하나의 RouteRestStopCandidate에 묶인다.
-     */
-    private List<RouteRestStopCandidate> matchRestStopsToPath(
-            RoutePath path, int radiusMeters, List<RestStopEntity> allRestStops) {
-        Map<Integer, List<MatchedRestStop>> matchesByRouteIndex = allRestStops.stream()
-                .map(restStop -> matchOne(restStop, path, radiusMeters))
-                .filter(Objects::nonNull)
-                .collect(Collectors.groupingBy(
-                        IndexedMatch::routeIndex,
-                        Collectors.mapping(IndexedMatch::matchedRestStop, Collectors.toList())));
-
-        return matchesByRouteIndex.entrySet().stream()
-                .map(entry -> RouteRestStopCandidate.of(entry.getKey(), entry.getValue()))
-                .toList();
-    }
-
-    private IndexedMatch matchOne(RestStopEntity restStop, RoutePath path, int radiusMeters) {
-        Double latitude = RouteCoordinateFormat.parse(restStop.getYValue());
-        Double longitude = RouteCoordinateFormat.parse(restStop.getXValue());
-        if (latitude == null || longitude == null) {
-            return null;
-        }
-
-        RoutePath.Nearest nearest = path.nearestTo(latitude, longitude);
-        if (nearest.distanceMeters() > radiusMeters) {
-            return null;
-        }
-
-        RouteRestStopItem item = RouteRestStopItem.of(
-                        restStop.getServiceAreaCode(),
-                        restStop.getUnitName(),
-                        restStop.getRouteName(),
-                        latitude,
-                        longitude,
-                        Math.round(nearest.distanceMeters()))
-                .withNearbyTraffic(nearbyTraffic(path.trafficStateAt(nearest.index())));
-        return IndexedMatch.of(nearest.index(), MatchedRestStop.of(restStop, item));
-    }
-
-    private NearbyTraffic nearbyTraffic(Integer trafficState) {
-        return NearbyTrafficStatus.from(trafficState)
-                .map(status -> NearbyTraffic.of(status.key(), status.label()))
-                .orElse(null);
-    }
-
-    /**
-     * 3+4번: 같은 이름의 방향 페어(groupKey)가 2개 이상이면, 진행방향 기준으로 실제로 갈 수
-     * 있는 쪽(RIGHT) 하나만 남긴다. 판별이 애매하면(RIGHT가 0개거나 2개 이상) 아무것도
-     * 제거하지 않고 hasDirectionAlternative만 켠다. 페어가 아닌 후보는 건드리지 않는다.
-     */
-    private List<RouteRestStopItem> removeUnreachableSide(List<RouteRestStopCandidate> candidates, RoutePath path) {
-        List<IndexedMatch> flattened = candidates.stream()
-                .flatMap(candidate -> candidate.restStops().stream()
-                        .map(matchedRestStop -> IndexedMatch.of(candidate.routeIndex(), matchedRestStop)))
-                .toList();
-
-        Map<String, List<IndexedMatch>> groups = flattened.stream()
-                .filter(indexed -> indexed.matchedRestStop().hasDirectionGroup())
-                .collect(Collectors.groupingBy(
-                        indexed -> indexed.matchedRestStop().groupKey()));
-
-        Map<String, IndexedMatch> winnerByGroupKey = new HashMap<>();
-        Set<String> ambiguousGroupKeys = new HashSet<>();
-        groups.forEach((groupKey, group) -> {
-            if (group.size() < AMBIGUITY_CHECK_MIN_GROUP_SIZE) {
-                return;
-            }
-            List<IndexedMatch> reachableSide = group.stream()
-                    .filter(indexed -> sideOfTravel(indexed, path) == RoutePath.Side.RIGHT)
-                    .toList();
-            if (reachableSide.size() != SINGLE_REACHABLE_MATCH_COUNT) {
-                ambiguousGroupKeys.add(groupKey);
-                return;
-            }
-            winnerByGroupKey.put(groupKey, reachableSide.get(0));
-        });
-
-        return flattened.stream()
-                .filter(indexed -> isKept(indexed, winnerByGroupKey))
-                .sorted(Comparator.comparingInt(IndexedMatch::routeIndex))
-                .map(indexed ->
-                        ambiguousGroupKeys.contains(indexed.matchedRestStop().groupKey())
-                                ? indexed.matchedRestStop().item().withDirectionAlternative(true)
-                                : indexed.matchedRestStop().item())
-                .toList();
-    }
-
-    private RoutePath.Side sideOfTravel(IndexedMatch indexed, RoutePath path) {
-        RouteRestStopItem item = indexed.matchedRestStop().item();
-        return path.sideOfTravel(indexed.routeIndex(), item.latitude(), item.longitude());
-    }
-
-    private boolean isKept(IndexedMatch indexed, Map<String, IndexedMatch> winnerByGroupKey) {
-        IndexedMatch winner = winnerByGroupKey.get(indexed.matchedRestStop().groupKey());
-        return winner == null || winner.equals(indexed);
-    }
-
-    /**
-     * 5번: 방향 필터링까지 끝난 휴게소들에 이미지/EV충전/테마/이벤트/비교요약/추천태그를 붙여
-     * 최종 응답으로 만든다. RouteRestStopCandidate/RestStopEntity는 더 이상 필요 없다 —
-     * serviceAreaCode가 이미 item에 있다. aggregatesByServiceAreaCode는 대안 경로 전체에 대해
-     * 미리 한 번만 조회해둔 것을 그대로 받는다(경로마다 다시 조회하지 않음).
-     */
-    private List<RouteRestStopItem> buildResponseItems(
-            List<RouteRestStopItem> items,
-            Map<String, RestStopAggregate> aggregatesByServiceAreaCode,
-            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        List<RouteRestStopComparison> comparisons = items.stream()
-                .map(item -> RouteRestStopComparison.of(
-                        item,
-                        routeRestStopComparisonSummaryService.create(
-                                aggregatesByServiceAreaCode
-                                        .get(item.serviceAreaCode())
-                                        .relatedInfo(),
-                                nationalOilPriceSummary)))
-                .toList();
-        RouteRestStopRecommendationStandards recommendationStandards =
-                routeRestStopRecommendationTagService.standards(comparisons);
-
-        return comparisons.stream()
-                .map(comparison -> {
-                    RestStopAggregate aggregate =
-                            aggregatesByServiceAreaCode.get(comparison.item().serviceAreaCode());
-                    return comparison
-                            .item()
-                            .withListImageUrl(listImageUrl(
-                                    aggregate.hasListImage(), comparison.item().serviceAreaCode()))
-                            .withEvCharger(aggregate.hasEvCharger())
-                            .withTheme(aggregate.hasTheme())
-                            .withEvent(aggregate.hasEvent())
-                            .withComparison(
-                                    comparison.summary(),
-                                    routeRestStopRecommendationTagService.create(comparison, recommendationStandards));
-                })
-                .toList();
-    }
-
-    private String listImageUrl(boolean hasListImage, String serviceAreaCode) {
-        if (!hasListImage) {
-            return null;
-        }
-        return LIST_IMAGE_URL_FORMAT.formatted(serviceAreaCode);
-    }
-
-    private RouteSummary routeSummary(KakaoDirectionsResponse.Summary summary, RoutePath path) {
-        long distance = summaryValue(summary, true);
-        long duration = summaryValue(summary, false);
-        return RouteSummary.of(distance, duration, tollFareWon(summary), path.path());
-    }
-
-    private long summaryValue(KakaoDirectionsResponse.Summary summary, boolean distance) {
-        if (summary == null) {
-            return 0L;
-        }
-        Long value = distance ? summary.distance() : summary.duration();
-        return value == null ? 0L : value;
-    }
-
-    private long tollFareWon(KakaoDirectionsResponse.Summary summary) {
-        if (summary == null || summary.fare() == null || summary.fare().toll() == null) {
-            return 0L;
-        }
-        return summary.fare().toll();
     }
 }
