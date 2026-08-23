@@ -26,7 +26,7 @@ public class AdminDashboardService {
 
     public AdminDashboardSummary getSummary() {
         return AdminDashboardSummary.of(
-                restStopRepository.count(), latestSalesRankingMonth(), "준비중", recentActivityLogs());
+                restStopRepository.count(), latestSalesRankingMonth(), null, recentActivityLogs());
     }
 
     private String latestSalesRankingMonth() {

@@ -1,4 +1,11 @@
-import { hideGlobalLoading, setText, showApiUnavailableAlert, showGlobalLoading } from './utils.js';
+import {
+    closeDialogById,
+    hideGlobalLoading,
+    openDialogById,
+    setText,
+    showApiUnavailableAlert,
+    showGlobalLoading
+} from './utils.js';
 import { formatText } from './rest-stop-detail-formatters.js';
 import { createRestStopDetailRequest } from './rest-stop-detail-request.js';
 import { createRouteRestStopRequest } from './route-rest-stop-request.js';
@@ -768,31 +775,19 @@ function selectRestStopSearchResult(restStop) {
 }
 
 function openRestStopSearchModal() {
-    const modal = document.getElementById('restStopSearchModal');
-    if (modal && !modal.open) {
-        modal.showModal();
-    }
+    openDialogById('restStopSearchModal');
 }
 
 function closeRestStopSearchModal() {
-    const modal = document.getElementById('restStopSearchModal');
-    if (modal?.open) {
-        modal.close();
-    }
+    closeDialogById('restStopSearchModal');
 }
 
 function openRouteOriginModal() {
-    const modal = document.getElementById('routeOriginModal');
-    if (modal && !modal.open) {
-        modal.showModal();
-    }
+    openDialogById('routeOriginModal');
 }
 
 function closeRouteOriginModal() {
-    const modal = document.getElementById('routeOriginModal');
-    if (modal?.open) {
-        modal.close();
-    }
+    closeDialogById('routeOriginModal');
 }
 
 function selectCurrentLocationAsOrigin() {
@@ -846,18 +841,11 @@ function selectCurrentLocationOrigin({ moveMap = false } = {}) {
 }
 
 function openRouteResultModal() {
-    const modal = document.getElementById('routeResultModal');
-    if (modal && currentRouteRestStops.length > 0 && !modal.open) {
-        modal.showModal();
-    }
+    openDialogById('routeResultModal', { guard: () => currentRouteRestStops.length > 0 });
 }
 
 function closeRouteResultModal() {
-    const modal = document.getElementById('routeResultModal');
-    if (modal?.open) {
-        modal.close();
-        bottomSheetController?.resetHeight();
-    }
+    closeDialogById('routeResultModal', () => bottomSheetController?.resetHeight());
 }
 
 function toggleRouteResultButton(visible) {
@@ -927,12 +915,12 @@ function requestSelectedRoute() {
 }
 
 function requestRouteAutomatically() {
-    const origin = routePointSelection.getOrigin();
-    const destination = routePointSelection.getDestination();
-    if (!shouldRequestRouteAutomatically(origin, destination)) {
+    if (!routePointSelection.canRequestRoute()) {
         return;
     }
 
+    const origin = routePointSelection.getOrigin();
+    const destination = routePointSelection.getDestination();
     const signature = routeRequestSignature(origin, destination);
     if (signature === automaticRouteRequestSignature) {
         return;
@@ -950,10 +938,6 @@ export function canRequestRouteAutomatically(origin, destination) {
         && Number.isFinite(destination.longitude);
 }
 
-export function shouldRequestRouteAutomatically(origin, destination) {
-    return canRequestRouteAutomatically(origin, destination);
-}
-
 export function isRouteGlobalLoadingState(state) {
     return state?.status === 'loading';
 }
@@ -969,11 +953,11 @@ function routeRequestSignature(origin, destination) {
 }
 
 function currentRouteSelectionSignature() {
-    const origin = routePointSelection.getOrigin();
-    const destination = routePointSelection.getDestination();
-    if (!canRequestRouteAutomatically(origin, destination)) {
+    if (!routePointSelection.canRequestRoute()) {
         return undefined;
     }
+    const origin = routePointSelection.getOrigin();
+    const destination = routePointSelection.getDestination();
     return routeRequestSignature(origin, destination);
 }
 
@@ -1142,17 +1126,11 @@ function selectPlaceCandidate(candidate) {
 }
 
 function openPlaceCandidateModal() {
-    const modal = document.getElementById('placeCandidateModal');
-    if (modal && !modal.open) {
-        modal.showModal();
-    }
+    openDialogById('placeCandidateModal');
 }
 
 function closePlaceCandidateModal() {
-    const modal = document.getElementById('placeCandidateModal');
-    if (modal?.open) {
-        modal.close();
-    }
+    closeDialogById('placeCandidateModal');
 }
 
 function bindRouteMapClick() {

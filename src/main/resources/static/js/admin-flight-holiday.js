@@ -1,5 +1,5 @@
 import { addFlightHoliday, deleteFlightHoliday, fetchFlightHolidays } from './admin-flight-holiday-request.js';
-import { csrfFrom } from './admin-common.js';
+import { closeDialogById, csrfFrom, openDialogById } from './admin-common.js';
 
 export function monthLabel(year, month) {
     return `${year}년 ${month + 1}월`;
@@ -167,25 +167,29 @@ export function initializeAdminFlightHoliday(document, {
     }
 
     function openModal(date, suggestedName = null) {
-        selectedDate = date;
-        modalDate.textContent = date;
-        const existing = holidayByDate(date);
-        if (existing) {
-            addView.hidden = true;
-            removeView.hidden = false;
-            existingName.textContent = existing.name;
-            deleteButton.dataset.holidayId = String(existing.id);
-        } else {
-            addView.hidden = false;
-            removeView.hidden = true;
-            nameInput.value = suggestedName ?? '';
-        }
-        modal.showModal();
+        openDialogById(document, 'flightHolidayModal', {
+            onOpened: () => {
+                selectedDate = date;
+                modalDate.textContent = date;
+                const existing = holidayByDate(date);
+                if (existing) {
+                    addView.hidden = true;
+                    removeView.hidden = false;
+                    existingName.textContent = existing.name;
+                    deleteButton.dataset.holidayId = String(existing.id);
+                } else {
+                    addView.hidden = false;
+                    removeView.hidden = true;
+                    nameInput.value = suggestedName ?? '';
+                }
+            }
+        });
     }
 
     function closeModal() {
-        modal.close();
-        selectedDate = null;
+        closeDialogById(document, 'flightHolidayModal', () => {
+            selectedDate = null;
+        });
     }
 
     modalClose.addEventListener('click', closeModal);

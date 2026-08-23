@@ -5,7 +5,7 @@ import {
     searchOilStations,
     unlinkOilStation
 } from './admin-rest-oil-link-request.js';
-import { csrfFrom } from './admin-common.js';
+import { closeDialogById, csrfFrom, openDialogById } from './admin-common.js';
 
 const DEFAULT_DEBOUNCE_MS = 250;
 
@@ -273,13 +273,16 @@ export function initializeAdminRestOilLink(document, {
     }
 
     function openModal(restStop) {
-        currentRestStop = restStop;
-        modalTitle.textContent = restStop.unitName;
-        renderCurrentLink(restStop.linkedOilStation);
-        searchQuery.value = '';
-        searchRoute.value = restStop.routeName ?? '';
-        modal.showModal();
-        runSearch();
+        openDialogById(document, 'oilLinkModal', {
+            onOpened: () => {
+                currentRestStop = restStop;
+                modalTitle.textContent = restStop.unitName;
+                renderCurrentLink(restStop.linkedOilStation);
+                searchQuery.value = '';
+                searchRoute.value = restStop.routeName ?? '';
+                runSearch();
+            }
+        });
     }
 
     searchInput.addEventListener('input', renderTable);
@@ -291,8 +294,9 @@ export function initializeAdminRestOilLink(document, {
     });
 
     modalClose.addEventListener('click', () => {
-        modal.close();
-        currentRestStop = null;
+        closeDialogById(document, 'oilLinkModal', () => {
+            currentRestStop = null;
+        });
     });
 
     searchQuery.addEventListener('input', () => {

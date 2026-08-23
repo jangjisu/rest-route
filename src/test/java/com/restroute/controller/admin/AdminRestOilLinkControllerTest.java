@@ -91,7 +91,7 @@ class AdminRestOilLinkControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.restStopServiceAreaCode").value("A00099"));
 
-        verify(adminActivityLogService).logOilStationLinked(authentication, "SK에너지 마장주유소", "마장휴게소");
+        verify(adminActivityLogService).log(authentication, "SK에너지 마장주유소 주유소를 마장휴게소에 연결했습니다.");
     }
 
     @Test
@@ -134,7 +134,7 @@ class AdminRestOilLinkControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.restStopServiceAreaCode").doesNotExist());
 
-        verify(adminActivityLogService).logOilStationUnlinked(authentication, "SK에너지 마장주유소");
+        verify(adminActivityLogService).log(authentication, "SK에너지 마장주유소 주유소의 연결을 해제했습니다.");
     }
 
     @Test
@@ -147,6 +147,6 @@ class AdminRestOilLinkControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.adminOverridden").value(false));
 
-        verify(adminActivityLogService).logOilStationOverrideCleared(authentication, "SK에너지 마장주유소");
+        verify(adminActivityLogService).log(authentication, "SK에너지 마장주유소 주유소를 자동 매칭으로 되돌렸습니다.");
     }
 }

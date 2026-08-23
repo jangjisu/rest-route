@@ -172,8 +172,7 @@ class RouteOptionAssemblyServiceTest {
                 List.of(item("A", 37.0001, 127.0001), item("B", 37.5001, 127.5001)));
         stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false)));
 
-        List<RouteOption> routes =
-                service.attachDetails(List.of(candidate), List.of(first, second), Optional.empty());
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(first, second), Optional.empty());
 
         assertThat(routes.get(0).restStops())
                 .extracting(RouteRestStopItem::listImageUrl)
@@ -236,8 +235,7 @@ class RouteOptionAssemblyServiceTest {
                         Optional.of(secondOilPrice),
                         List.of())));
 
-        List<RouteOption> routes =
-                service.attachDetails(List.of(candidate), List.of(first, second), Optional.empty());
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(first, second), Optional.empty());
 
         var firstItem = routes.get(0).restStops().get(0);
         var secondItem = routes.get(0).restStops().get(1);
@@ -251,8 +249,7 @@ class RouteOptionAssemblyServiceTest {
 
     @Test
     void attachDetails_zeroesTollFareWhenFarePresentButTollNull() {
-        RouteCandidate candidate =
-                new RouteCandidate(0, geometry(new Summary(100L, 200L, new Fare(null))), List.of());
+        RouteCandidate candidate = new RouteCandidate(0, geometry(new Summary(100L, 200L, new Fare(null))), List.of());
 
         List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(), Optional.empty());
 
@@ -284,10 +281,14 @@ class RouteOptionAssemblyServiceTest {
         assertThat(routes).hasSize(2);
         assertThat(routes.get(0).routeIndex()).isZero();
         assertThat(routes.get(0).summary().tollFareWon()).isEqualTo(1000L);
-        assertThat(routes.get(0).restStops()).extracting(RouteRestStopItem::serviceAreaCode).containsExactly("A");
+        assertThat(routes.get(0).restStops())
+                .extracting(RouteRestStopItem::serviceAreaCode)
+                .containsExactly("A");
         assertThat(routes.get(1).routeIndex()).isEqualTo(1);
         assertThat(routes.get(1).summary().tollFareWon()).isZero();
-        assertThat(routes.get(1).restStops()).extracting(RouteRestStopItem::serviceAreaCode).containsExactly("B");
+        assertThat(routes.get(1).restStops())
+                .extracting(RouteRestStopItem::serviceAreaCode)
+                .containsExactly("B");
         verify(restStopAggregateQueryService, times(1)).findByRestStopsAndAdminOverridden(any(), any());
     }
 }

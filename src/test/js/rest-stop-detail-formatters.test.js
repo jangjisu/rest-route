@@ -25,8 +25,7 @@ import {
     isMissingValue,
     orderFoodMenus,
     sortSalesRankingProducts,
-    sortSalesRankingStores,
-    parseConvenience
+    sortSalesRankingStores
 } from '../../main/resources/static/js/rest-stop-detail-formatters.js';
 
 test('formatText returns the original value when present', () => {
@@ -42,34 +41,22 @@ test('formatText uses the exact fallback for missing name, route, address and di
     assert.equal(isMissingValue(null), true);
 });
 
-test('parseConvenience trims tokens, removes empty values and preserves first occurrence order for tags', () => {
-    assert.deepEqual(
-        parseConvenience(' 수유실 | ATM | | 수유실 | 편의점 '),
-        ['수유실', 'ATM', '편의점']
-    );
-});
-
-test('parseConvenience returns no tags for missing values so the UI can show 편의시설 정보 없음', () => {
-    assert.deepEqual(parseConvenience(null), []);
-    assert.deepEqual(parseConvenience('   '), []);
-    assert.deepEqual(parseConvenience(['수유실', '샤워실']), []);
+test('CONVENIENCE_FALLBACK is the message shown when there are no convenience facilities', () => {
     assert.equal(CONVENIENCE_FALLBACK, '편의시설 정보 없음');
 });
 
 test('formatAvailability converts maintenance status and falls back for unknown values', () => {
-    assert.equal(formatAvailability('O'), '가능');
-    assert.equal(formatAvailability('X'), '불가');
+    assert.equal(formatAvailability(true), '가능');
+    assert.equal(formatAvailability(false), '불가');
     assert.equal(formatAvailability(null), '알 수 없음');
-    assert.equal(formatAvailability(''), '알 수 없음');
-    assert.equal(formatAvailability('Y'), '알 수 없음');
+    assert.equal(formatAvailability(undefined), '알 수 없음');
 });
 
 test('formatFreightOperation converts freight operation status and falls back for unknown values', () => {
-    assert.equal(formatFreightOperation('O'), '운영');
-    assert.equal(formatFreightOperation('X'), '미운영');
+    assert.equal(formatFreightOperation(true), '운영');
+    assert.equal(formatFreightOperation(false), '미운영');
     assert.equal(formatFreightOperation(null), '알 수 없음');
-    assert.equal(formatFreightOperation(''), '알 수 없음');
-    assert.equal(formatFreightOperation('Y'), '알 수 없음');
+    assert.equal(formatFreightOperation(undefined), '알 수 없음');
 });
 
 test('formatParkingCount appends the unit and keeps zero as a valid count', () => {
@@ -109,12 +96,12 @@ test('hasFoodMenu is true only when there is at least one menu', () => {
     assert.equal(hasFoodMenu({}), false);
 });
 
-test('orderFoodMenus places representative menus first while preserving order', () => {
+test('orderFoodMenus places recommended menus first while preserving order', () => {
     const menus = [
-        { foodName: '국밥', representative: false },
-        { foodName: '우동', representative: true },
-        { foodName: '돈까스', representative: false },
-        { foodName: '비빔밥', representative: true }
+        { foodName: '국밥', recommended: false },
+        { foodName: '우동', recommended: true },
+        { foodName: '돈까스', recommended: false },
+        { foodName: '비빔밥', recommended: true }
     ];
 
     assert.deepEqual(
@@ -184,8 +171,8 @@ test('normalizeSalesRankingStoreName keeps names without a recognized prefix', (
 
 test('formatFoodBadges uses backend seasonLabel instead of frontend season code mapping', () => {
     assert.deepEqual(
-        formatFoodBadges({ representative: true, bestFood: true, premium: true, season: 'S', seasonLabel: '여름' }),
-        ['대표', '베스트', '프리미엄', '여름']
+        formatFoodBadges({ recommended: true, bestFood: true, premium: true, season: 'S', seasonLabel: '여름' }),
+        ['추천', '베스트', '프리미엄', '여름']
     );
     assert.deepEqual(formatFoodBadges({ season: 'S' }), []);
     assert.deepEqual(formatFoodBadges(null), []);
@@ -278,9 +265,9 @@ test('hasRenderableRestStopDetail detects each type of displayed related detail'
         { detailImageUrl: '/api/rest-stops/A00001/images/detail' },
         { address: '경기도 시흥시' },
         { direction: '서울' },
-        { convenience: '수유실' },
-        { maintenanceYn: 'O' },
-        { truckSaYn: 'X' },
+        { convenienceFacilities: ['수유실'] },
+        { hasMaintenance: true },
+        { allowsTruckParking: false },
         { compactCarParkingCount: 0 },
         { evChargerCount: 1 },
         { themes: [{ name: '테마' }] },
@@ -298,9 +285,9 @@ test('hasRenderableRestStopDetail ignores empty related detail containers', () =
         detailImageUrl: ' ',
         address: null,
         direction: '',
-        convenience: undefined,
-        maintenanceYn: null,
-        truckSaYn: '',
+        convenienceFacilities: [],
+        hasMaintenance: null,
+        allowsTruckParking: null,
         compactCarParkingCount: null,
         fullSizeCarParkingCount: null,
         disabledParkingCount: null,

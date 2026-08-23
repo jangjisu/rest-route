@@ -14,11 +14,11 @@ function createOption(document, restStop) {
     return option;
 }
 
-function ynToChecked(value) {
+function oxToChecked(value) {
     return value === 'O';
 }
 
-function checkedToYn(checked) {
+function checkedToOx(checked) {
     return checked ? 'O' : 'X';
 }
 
@@ -89,8 +89,8 @@ export function initializeAdminRestStopEdit(document, { fetchImpl = fetch, onNot
         routeCode.value = data.routeCode ?? '';
         svarAddr.value = data.svarAddr ?? '';
         convenience.value = data.convenience ?? '';
-        maintenanceYn.checked = ynToChecked(data.maintenanceYn);
-        truckSaYn.checked = ynToChecked(data.truckSaYn);
+        maintenanceYn.checked = oxToChecked(data.maintenanceYn);
+        truckSaYn.checked = oxToChecked(data.truckSaYn);
         renderLockState(data.adminOverridden === true);
     }
 
@@ -106,8 +106,8 @@ export function initializeAdminRestStopEdit(document, { fetchImpl = fetch, onNot
             routeCode: routeCode.value,
             svarAddr: svarAddr.value,
             convenience: convenience.value,
-            maintenanceYn: checkedToYn(maintenanceYn.checked),
-            truckSaYn: checkedToYn(truckSaYn.checked)
+            maintenanceYn: checkedToOx(maintenanceYn.checked),
+            truckSaYn: checkedToOx(truckSaYn.checked)
         };
     }
 

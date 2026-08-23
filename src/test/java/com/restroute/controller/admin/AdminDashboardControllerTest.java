@@ -2,10 +2,9 @@ package com.restroute.controller.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
@@ -57,7 +56,7 @@ class AdminDashboardControllerTest {
                         .getBody()
                         .getData())
                 .isEqualTo(128);
-        verify(activityLogService).logProductSalesUpload(authentication, "product.csv");
+        verify(activityLogService).log(authentication, "상품 판매순위 CSV(product.csv)를 업로드했습니다.");
     }
 
     @Test
@@ -78,7 +77,7 @@ class AdminDashboardControllerTest {
                         .getBody()
                         .getData())
                 .isEqualTo(84);
-        verify(activityLogService).logStoreSalesUpload(authentication, "store.csv");
+        verify(activityLogService).log(authentication, "매장 판매순위 CSV(store.csv)를 업로드했습니다.");
     }
 
     @Test
@@ -96,7 +95,7 @@ class AdminDashboardControllerTest {
 
         assertThat(controller.backfillSalesRankings(authentication).getBody().getData())
                 .isEqualTo(counts);
-        verify(activityLogService).logBackfill(authentication);
+        verify(activityLogService).log(authentication, "전체 휴게소명 매핑을 실행했습니다.");
     }
 
     @Test
@@ -114,7 +113,7 @@ class AdminDashboardControllerTest {
 
         assertThatThrownBy(() -> controller.uploadProductSalesRankings(product, authentication))
                 .isInstanceOf(RuntimeException.class);
-        verify(activityLogService, never()).logProductSalesUpload(any(), any());
+        verifyNoInteractions(activityLogService);
     }
 
     @Test
@@ -132,7 +131,7 @@ class AdminDashboardControllerTest {
 
         assertThatThrownBy(() -> controller.uploadStoreSalesRankings(store, authentication))
                 .isInstanceOf(RuntimeException.class);
-        verify(activityLogService, never()).logStoreSalesUpload(any(), any());
+        verifyNoInteractions(activityLogService);
     }
 
     @Test
@@ -149,6 +148,6 @@ class AdminDashboardControllerTest {
 
         assertThatThrownBy(() -> controller.backfillSalesRankings(authentication))
                 .isInstanceOf(RuntimeException.class);
-        verify(activityLogService, never()).logBackfill(any());
+        verifyNoInteractions(activityLogService);
     }
 }

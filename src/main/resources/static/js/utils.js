@@ -28,6 +28,27 @@ export function hideGlobalLoading() {
     document.body?.classList.remove('global-loading-open');
 }
 
+export function openDialogById(id, { guard, onOpened } = {}) {
+    const dialog = document.getElementById(id);
+    if (!dialog || dialog.open) {
+        return;
+    }
+    if (guard && !guard()) {
+        return;
+    }
+    onOpened?.();
+    dialog.showModal();
+}
+
+export function closeDialogById(id, onClosed) {
+    const dialog = document.getElementById(id);
+    if (!dialog?.open) {
+        return;
+    }
+    dialog.close();
+    onClosed?.();
+}
+
 export function showApiUnavailableAlert() {
     const existing = document.getElementById('apiUnavailableAlert');
     if (existing) return; // 이미 표시 중이면 중복 생성 안 함

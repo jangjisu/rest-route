@@ -83,7 +83,7 @@ class AdminFlightHolidayControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("대체공휴일"));
 
-        verify(adminActivityLogService).logFlightHolidayAdded(authentication, "2026-09-26", "대체공휴일");
+        verify(adminActivityLogService).log(authentication, "공휴일(2026-09-26 대체공휴일)을 추가했습니다.");
     }
 
     @Test
@@ -109,7 +109,7 @@ class AdminFlightHolidayControllerTest {
         mockMvc.perform(delete("/api/admin/flights/holidays/1").principal(authentication))
                 .andExpect(status().isNoContent());
 
-        verify(adminActivityLogService).logFlightHolidayDeleted(authentication, "2026-09-26");
+        verify(adminActivityLogService).log(authentication, "공휴일(2026-09-26)을 삭제했습니다.");
     }
 
     @Test

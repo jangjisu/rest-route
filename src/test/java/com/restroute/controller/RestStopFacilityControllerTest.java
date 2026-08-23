@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.restroute.controller.response.RestStopFacilityResponse;
 import com.restroute.service.RestStopFacilityQueryService;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,16 +35,18 @@ class RestStopFacilityControllerTest {
     @Test
     @DisplayName("GET /api/rest-stops/{serviceAreaCode}/facilities는 시설/주차 정보를 ApiResponse로 반환한다")
     void getRestStopFacilities_returnsFacilities() throws Exception {
-        RestStopFacilityResponse response = new RestStopFacilityResponse("수유실|쉼터", "O", "X", "하행", 15, 27, 1);
+        RestStopFacilityResponse response =
+                new RestStopFacilityResponse(List.of("수유실", "쉼터"), true, false, "하행", 15, 27, 1);
         when(restStopFacilityQueryService.findByServiceAreaCode("A00001")).thenReturn(Optional.of(response));
 
         mockMvc.perform(get("/api/rest-stops/A00001/facilities"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("OK"))
-                .andExpect(jsonPath("$.data.convenience").value("수유실|쉼터"))
-                .andExpect(jsonPath("$.data.maintenanceYn").value("O"))
-                .andExpect(jsonPath("$.data.truckSaYn").value("X"))
+                .andExpect(jsonPath("$.data.convenienceFacilities[0]").value("수유실"))
+                .andExpect(jsonPath("$.data.convenienceFacilities[1]").value("쉼터"))
+                .andExpect(jsonPath("$.data.hasMaintenance").value(true))
+                .andExpect(jsonPath("$.data.allowsTruckParking").value(false))
                 .andExpect(jsonPath("$.data.direction").value("하행"))
                 .andExpect(jsonPath("$.data.compactCarParkingCount").value(15))
                 .andExpect(jsonPath("$.data.fullSizeCarParkingCount").value(27))

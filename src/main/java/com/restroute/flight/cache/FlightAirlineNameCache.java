@@ -5,7 +5,6 @@ import com.restroute.flight.repository.FlightAirlineRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,16 +13,16 @@ import org.springframework.stereotype.Component;
  * 채워진다.
  */
 @Component
-@RequiredArgsConstructor
-public class FlightAirlineNameCache {
+public class FlightAirlineNameCache extends ReferenceDataNameCache<FlightAirlineEntity> {
 
-    private final FlightAirlineRepository flightAirlineRepository;
-
-    private volatile Map<String, String> nameByCode = Map.of();
     private volatile Map<String, Boolean> isLowCostByCode = Map.of();
 
-    public String findName(String code) {
-        return nameByCode.get(code);
+    public FlightAirlineNameCache(FlightAirlineRepository flightAirlineRepository) {
+        super(
+                flightAirlineRepository::findAll,
+                FlightAirlineEntity::getCode,
+                FlightAirlineEntity::getKorName,
+                FlightAirlineEntity::getEngName);
     }
 
     /** 코드가 없거나 소스(Travelpayouts)에 없었던 항공사는 저비용 여부를 알 수 없다는 뜻으로 false다. */
@@ -31,16 +30,9 @@ public class FlightAirlineNameCache {
         return isLowCostByCode.getOrDefault(code, false);
     }
 
-    public void refresh() {
-        List<FlightAirlineEntity> airlines = flightAirlineRepository.findAll();
-        nameByCode = airlines.stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        FlightAirlineEntity::getCode, FlightAirlineNameCache::displayName));
-        isLowCostByCode = airlines.stream()
+    @Override
+    protected void afterRefresh(List<FlightAirlineEntity> all) {
+        isLowCostByCode = all.stream()
                 .collect(Collectors.toUnmodifiableMap(FlightAirlineEntity::getCode, FlightAirlineEntity::isLowCost));
-    }
-
-    private static String displayName(FlightAirlineEntity entity) {
-        return entity.getKorName() != null ? entity.getKorName() : entity.getEngName();
     }
 }

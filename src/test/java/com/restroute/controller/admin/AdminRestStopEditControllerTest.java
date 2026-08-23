@@ -106,7 +106,7 @@ class AdminRestStopEditControllerTest {
                 .andExpect(jsonPath("$.data.adminOverridden").value(true));
 
         verify(editService).update("A00001", request);
-        verify(adminActivityLogService).logRestStopEdited(authentication, "서울만남(부산)휴게소");
+        verify(adminActivityLogService).log(authentication, "서울만남(부산)휴게소 정보를 수정했습니다.");
     }
 
     @Test
@@ -152,7 +152,7 @@ class AdminRestStopEditControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.adminOverridden").value(false));
 
-        verify(adminActivityLogService).logRestStopOverrideCleared(authentication, "서울만남(부산)휴게소");
+        verify(adminActivityLogService).log(authentication, "서울만남(부산)휴게소의 동기화 잠금을 해제했습니다.");
     }
 
     @Test
@@ -170,7 +170,7 @@ class AdminRestStopEditControllerTest {
                 .andExpect(jsonPath("$.data.adminOverridden").value(true));
 
         verify(editService).create(request);
-        verify(adminActivityLogService).logRestStopCreated(authentication, "서울만남(부산)휴게소");
+        verify(adminActivityLogService).log(authentication, "서울만남(부산)휴게소 휴게소를 새로 등록했습니다.");
     }
 
     @Test

@@ -2,9 +2,6 @@ package com.restroute.flight.cache;
 
 import com.restroute.flight.domain.FlightAirportEntity;
 import com.restroute.flight.repository.FlightAirportRepository;
-import java.util.Map;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,24 +9,13 @@ import org.springframework.stereotype.Component;
  * 시작 시 1회 {@link #refresh()}로 채워진다.
  */
 @Component
-@RequiredArgsConstructor
-public class FlightAirportNameCache {
+public class FlightAirportNameCache extends ReferenceDataNameCache<FlightAirportEntity> {
 
-    private final FlightAirportRepository flightAirportRepository;
-
-    private volatile Map<String, String> nameByCode = Map.of();
-
-    public String findName(String code) {
-        return nameByCode.get(code);
-    }
-
-    public void refresh() {
-        nameByCode = flightAirportRepository.findAll().stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        FlightAirportEntity::getCode, FlightAirportNameCache::displayName));
-    }
-
-    private static String displayName(FlightAirportEntity entity) {
-        return entity.getKorName() != null ? entity.getKorName() : entity.getEngName();
+    public FlightAirportNameCache(FlightAirportRepository flightAirportRepository) {
+        super(
+                flightAirportRepository::findAll,
+                FlightAirportEntity::getCode,
+                FlightAirportEntity::getKorName,
+                FlightAirportEntity::getEngName);
     }
 }

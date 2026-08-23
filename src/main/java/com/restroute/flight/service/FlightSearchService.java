@@ -1,43 +1,35 @@
 package com.restroute.flight.service;
 
-import com.restroute.flight.client.response.TravelpayoutsPriceItem;
-import com.restroute.flight.controller.dto.FlightSearchMode;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
-import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
-import com.restroute.flight.service.util.FlightParallelPriceCalls;
-import java.util.List;
-import java.util.concurrent.Callable;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 /**
  * 항공권 실 연동 검색 진입점. 무한스크롤을 위해 첫 조회 결과를 세션에 cursor로 저장해두고,
- * 이후 요청은 그 세션을 이어서 페이지만 잘라 준다({@link FlightDealSessionStore}).
+ * 이후 요청은 그 세션을 이어서 페이지만 잘라 준다({@link FlightDealSessionStore}). 실제 딜을
+ * 어떻게 구해오는지는 {@link FlightDealFetcher}에 위임한다 — 실 연동/모킹이 이 전략만
+ * 바꿔서 이 클래스를 그대로 재사용한다.
  */
 @Primary
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class FlightSearchService {
 
     private final FlightDealSessionStore sessionStore;
-    private final FlightRangeCallPlanner rangeCallPlanner;
-    private final FlightFixedCallPlanner fixedCallPlanner;
-    private final FlightDealAssembler dealAssembler;
+    private final FlightDealFetcher dealFetcher;
+
+    /** Spring 밖에서(모킹 등) {@link FlightDealFetcher}만 바꿔 조립할 때 쓰는 정적 팩토리. */
+    static FlightSearchService create(FlightDealSessionStore sessionStore, FlightDealFetcher dealFetcher) {
+        return new FlightSearchService(sessionStore, dealFetcher);
+    }
 
     public FlightDealSearchResponse search(FlightSearchRequestDto request) {
         if (request.isFirstRequest()) {
-            return sessionStore.create(request, request.boundedLimit(), () -> fetchDeals(request));
+            return sessionStore.create(request, request.boundedLimit(), () -> dealFetcher.fetch(request));
         }
         return sessionStore.find(request, request.cursor(), request.boundedLimit());
-    }
-
-    protected List<FlightDealResponse> fetchDeals(FlightSearchRequestDto request) {
-        List<Callable<List<TravelpayoutsPriceItem>>> calls = FlightSearchMode.isRange(request.parsedSearchMode())
-                ? rangeCallPlanner.plan(request)
-                : fixedCallPlanner.plan(request);
-        List<TravelpayoutsPriceItem> rawItems = FlightParallelPriceCalls.runAll(calls);
-        return dealAssembler.assemble(rawItems, request);
     }
 }
