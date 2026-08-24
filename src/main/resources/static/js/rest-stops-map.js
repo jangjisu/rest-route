@@ -12,6 +12,7 @@ import {
 import { createRestStopDetailView } from './rest-stop-detail-view.js';
 import { createRouteRestStopView, renderNationalOilPriceState } from './route-rest-stop-view.js';
 import { initBottomSheetDrag } from './bottom-sheet.js';
+import { trackScreenView } from './analytics.js';
 
 const MAP_CONFIG_ENDPOINT = '/api/map-config';
 const REST_STOPS_ENDPOINT = '/api/rest-stops';
@@ -849,6 +850,7 @@ function openRouteResultModal() {
     const modal = document.getElementById('routeResultModal');
     if (modal && currentRouteRestStops.length > 0 && !modal.open) {
         modal.showModal();
+        trackScreenView('route_results');
     }
 }
 

@@ -1,4 +1,5 @@
 import { showApiUnavailableAlert } from './utils.js';
+import { trackScreenView } from './analytics.js';
 import {
     availableDataTags,
     CONVENIENCE_FALLBACK,
@@ -375,6 +376,7 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
         selectedRestStopName = restStop.unitName;
         selectedServiceAreaCode = restStop.serviceAreaCode;
         currentDetail = undefined;
+        trackScreenView('rest_stop_detail', { service_area_code: selectedServiceAreaCode });
     }
 
     function renderState(state) {
@@ -465,6 +467,7 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
         foodExpanded = false;
         renderFoodList();
         modal.showModal();
+        trackScreenView('rest_stop_food_menu', { service_area_code: selectedServiceAreaCode });
     }
 
     function closeFoodModal() {
