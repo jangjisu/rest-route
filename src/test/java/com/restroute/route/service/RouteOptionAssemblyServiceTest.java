@@ -10,11 +10,14 @@ import static org.mockito.Mockito.verify;
 
 import com.restroute.client.response.KakaoDirectionsResponse.Fare;
 import com.restroute.client.response.KakaoDirectionsResponse.Summary;
-import com.restroute.domain.HighwayServiceAreaInfoEntity;
-import com.restroute.domain.RestStopDetailEntity;
-import com.restroute.domain.RestStopEntity;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
+import com.restroute.reststop.domain.RestStopDetailEntity;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.service.RestStopAggregateQueryService;
+import com.restroute.reststop.service.dto.RestStopAggregate;
+import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
@@ -23,9 +26,6 @@ import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestSt
 import com.restroute.route.service.dto.ResolvedRoute.RouteGeometry;
 import com.restroute.route.service.dto.RouteCandidate;
 import com.restroute.route.service.dto.RoutePath;
-import com.restroute.service.RestStopAggregateQueryService;
-import com.restroute.service.dto.RestStopAggregate;
-import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

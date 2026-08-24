@@ -1,11 +1,11 @@
 package com.restroute.evcharger.service;
 
-import com.restroute.domain.RestStopEntity;
 import com.restroute.evcharger.domain.EvChargerStationMappingEntity;
 import com.restroute.evcharger.repository.EvChargerRepository;
 import com.restroute.evcharger.repository.EvChargerStationMappingRepository;
 import com.restroute.evcharger.service.mapping.EvChargerStationMappingCalculator;
-import com.restroute.repository.RestStopDetailRepository;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopDetailRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

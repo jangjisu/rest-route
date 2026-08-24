@@ -7,13 +7,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restroute.domain.RestStopEntity;
-import com.restroute.repository.RestStopRepository;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
+import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.client.response.RestBestfoodItem;
 import com.restroute.reststopcontent.controller.response.FoodMenuResponse;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
-import com.restroute.service.RestStopRelatedInfoQueryService;
-import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

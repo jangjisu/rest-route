@@ -1,15 +1,15 @@
 package com.restroute.route.service;
 
-import com.restroute.domain.HighwayServiceAreaInfoEntity;
-import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
+import com.restroute.reststop.domain.RestStopDetailEntity;
+import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.service.dto.FuelType;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
-import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;

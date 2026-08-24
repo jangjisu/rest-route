@@ -1,7 +1,9 @@
 package com.restroute.route.service;
 
 import com.restroute.client.response.KakaoDirectionsResponse;
-import com.restroute.domain.RestStopEntity;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.service.RestStopAggregateQueryService;
+import com.restroute.reststop.service.dto.RestStopAggregate;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
@@ -10,8 +12,6 @@ import com.restroute.route.service.dto.RouteCandidate;
 import com.restroute.route.service.dto.RoutePath;
 import com.restroute.route.service.dto.RouteRestStopComparison;
 import com.restroute.route.service.dto.RouteRestStopRecommendationStandards;
-import com.restroute.service.RestStopAggregateQueryService;
-import com.restroute.service.dto.RestStopAggregate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

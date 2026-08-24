@@ -2,7 +2,7 @@ package com.restroute.oilprice.controller.admin;
 
 import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.ApiResponse;
-import com.restroute.controller.request.AdminOilStationLinkRequest;
+import com.restroute.oilprice.controller.request.AdminOilStationLinkRequest;
 import com.restroute.oilprice.controller.response.AdminOilStationLinkResponse;
 import com.restroute.oilprice.controller.response.AdminOilStationSearchResponse;
 import com.restroute.oilprice.controller.response.AdminRestOilLinkSummaryResponse;

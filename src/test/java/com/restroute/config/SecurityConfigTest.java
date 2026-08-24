@@ -17,8 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.restroute.admin.domain.AdminRole;
 import com.restroute.admin.domain.AdminUserEntity;
 import com.restroute.admin.repository.AdminUserRepository;
-import com.restroute.domain.RestStopEntity;
-import com.restroute.repository.RestStopRepository;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopRepository;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

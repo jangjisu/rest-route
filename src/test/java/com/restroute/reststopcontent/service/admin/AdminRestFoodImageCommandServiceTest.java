@@ -7,12 +7,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.restroute.reststop.service.image.dto.RestStopImageData;
+import com.restroute.reststop.service.image.util.RestStopImageProcessor;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
 import com.restroute.reststopcontent.repository.RestFoodImageRepository;
 import com.restroute.reststopcontent.repository.RestFoodRepository;
 import com.restroute.reststopcontent.service.admin.exception.RestFoodNotFoundException;
-import com.restroute.service.image.dto.RestStopImageData;
-import com.restroute.service.image.util.RestStopImageProcessor;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

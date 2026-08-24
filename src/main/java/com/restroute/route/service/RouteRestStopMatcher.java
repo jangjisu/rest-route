@@ -1,6 +1,6 @@
 package com.restroute.route.service;
 
-import com.restroute.domain.RestStopEntity;
+import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.route.controller.response.RouteRestStopResponse.NearbyTraffic;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.service.dto.IndexedMatch;

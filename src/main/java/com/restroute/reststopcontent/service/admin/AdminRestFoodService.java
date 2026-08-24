@@ -1,15 +1,15 @@
 package com.restroute.reststopcontent.service.admin;
 
-import com.restroute.controller.request.AdminRestFoodRequest;
-import com.restroute.domain.RestStopEntity;
-import com.restroute.repository.RestStopRepository;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.service.image.exception.RestStopNotFoundException;
+import com.restroute.reststopcontent.controller.request.AdminRestFoodRequest;
 import com.restroute.reststopcontent.controller.response.AdminRestFoodResponse;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
 import com.restroute.reststopcontent.repository.RestFoodImageRepository;
 import com.restroute.reststopcontent.repository.RestFoodRepository;
 import com.restroute.reststopcontent.service.admin.exception.InvalidRestFoodEditException;
 import com.restroute.reststopcontent.service.admin.exception.RestFoodNotFoundException;
-import com.restroute.service.image.exception.RestStopNotFoundException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;

@@ -5,11 +5,11 @@ import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restroute.domain.RestStopDetailEntity;
-import com.restroute.domain.RestStopEntity;
 import com.restroute.evcharger.client.response.EvChargerItem;
 import com.restroute.evcharger.domain.EvChargerEntity;
 import com.restroute.evcharger.domain.EvChargerStationMappingEntity;
+import com.restroute.reststop.domain.RestStopDetailEntity;
+import com.restroute.reststop.domain.RestStopEntity;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;

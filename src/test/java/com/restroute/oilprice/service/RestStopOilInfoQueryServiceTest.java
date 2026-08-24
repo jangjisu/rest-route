@@ -8,13 +8,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.restroute.domain.RestStopEntity;
 import com.restroute.oilprice.controller.response.OilInfoResponse;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
-import com.restroute.repository.RestStopRepository;
-import com.restroute.service.RestStopRelatedInfoQueryService;
-import com.restroute.service.dto.RestStopRelatedInfo;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
+import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

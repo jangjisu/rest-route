@@ -1,10 +1,10 @@
 package com.restroute.client;
 
-import com.restroute.client.response.HighwayServiceAreaInfoResponse;
-import com.restroute.client.response.RestStopDetailResponse;
-import com.restroute.client.response.RestStopResponse;
 import com.restroute.oilprice.client.response.RestOilPriceResponse;
 import com.restroute.oilprice.client.response.RestOilResponse;
+import com.restroute.reststop.client.response.HighwayServiceAreaInfoResponse;
+import com.restroute.reststop.client.response.RestStopDetailResponse;
+import com.restroute.reststop.client.response.RestStopResponse;
 import com.restroute.reststopcontent.client.response.RestBestfoodResponse;
 import com.restroute.reststopcontent.client.response.RestEventResponse;
 import com.restroute.reststopcontent.client.response.RestThemeResponse;
