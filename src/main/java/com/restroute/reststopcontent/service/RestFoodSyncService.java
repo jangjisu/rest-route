@@ -1,12 +1,12 @@
 package com.restroute.reststopcontent.service;
 
 import com.restroute.common.client.ExApiClient;
+import com.restroute.common.sync.NaturalKeyUpserter;
+import com.restroute.common.sync.PagedFetchTemplate;
 import com.restroute.reststopcontent.client.response.RestBestfoodItem;
 import com.restroute.reststopcontent.client.response.RestBestfoodResponse;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
 import com.restroute.reststopcontent.repository.RestFoodRepository;
-import com.restroute.service.sync.NaturalKeyUpserter;
-import com.restroute.service.sync.PagedFetchTemplate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

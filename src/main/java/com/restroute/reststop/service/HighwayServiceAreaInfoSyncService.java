@@ -1,11 +1,11 @@
 package com.restroute.reststop.service;
 
 import com.restroute.common.client.ExApiClient;
+import com.restroute.common.sync.NaturalKeyUpserter;
 import com.restroute.reststop.client.response.HighwayServiceAreaInfoItem;
 import com.restroute.reststop.client.response.HighwayServiceAreaInfoResponse;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.repository.HighwayServiceAreaInfoRepository;
-import com.restroute.service.sync.NaturalKeyUpserter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.restroute.service.sync;
+package com.restroute.common.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

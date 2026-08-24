@@ -1,11 +1,11 @@
 package com.restroute.reststopcontent.service;
 
 import com.restroute.common.client.ExApiClient;
+import com.restroute.common.sync.NaturalKeyUpserter;
 import com.restroute.reststopcontent.client.response.RestThemeItem;
 import com.restroute.reststopcontent.client.response.RestThemeResponse;
 import com.restroute.reststopcontent.domain.RestThemeEntity;
 import com.restroute.reststopcontent.repository.RestThemeRepository;
-import com.restroute.service.sync.NaturalKeyUpserter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
