@@ -1,5 +1,7 @@
 package com.restroute.scheduler;
 
+import com.restroute.evcharger.service.EvChargerSyncService;
+import com.restroute.evcharger.service.dto.EvChargerSyncResult;
 import com.restroute.service.RestEventSyncService;
 import com.restroute.service.RestFoodSyncService;
 import com.restroute.service.RestOilPriceSyncService;
@@ -8,8 +10,6 @@ import com.restroute.service.RestStopDetailSyncService;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
 import com.restroute.service.RestStopSyncService;
 import com.restroute.service.RestThemeSyncService;
-import com.restroute.service.evcharger.EvChargerSyncService;
-import com.restroute.service.evcharger.dto.EvChargerSyncResult;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
