@@ -1,4 +1,4 @@
-package com.restroute.controller.response;
+package com.restroute.placesearch.controller.response;
 
 public record MapConfigResponse(String naverMapsNcpKeyId) {
 

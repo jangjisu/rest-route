@@ -1,7 +1,7 @@
-package com.restroute.controller;
+package com.restroute.placesearch.controller;
 
 import com.restroute.common.ApiResponse;
-import com.restroute.controller.response.MapConfigResponse;
+import com.restroute.placesearch.controller.response.MapConfigResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

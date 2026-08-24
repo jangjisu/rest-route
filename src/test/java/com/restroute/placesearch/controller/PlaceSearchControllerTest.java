@@ -1,4 +1,4 @@
-package com.restroute.controller;
+package com.restroute.placesearch.controller;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -8,8 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.restroute.client.exception.KakaoApiException;
 import com.restroute.common.GlobalExceptionHandler;
-import com.restroute.controller.response.PlaceCandidateResponse;
-import com.restroute.service.PlaceSearchService;
+import com.restroute.placesearch.controller.response.PlaceCandidateResponse;
+import com.restroute.placesearch.service.PlaceSearchService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
