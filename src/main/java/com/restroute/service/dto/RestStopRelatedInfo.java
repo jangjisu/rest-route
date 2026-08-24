@@ -3,10 +3,10 @@ package com.restroute.service.dto;
 import com.restroute.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.domain.RestEventEntity;
 import com.restroute.domain.RestFoodEntity;
-import com.restroute.domain.RestOilEntity;
-import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestThemeEntity;
+import com.restroute.oilprice.domain.RestOilEntity;
+import com.restroute.oilprice.domain.RestOilPriceEntity;
 import java.util.List;
 import java.util.Optional;
 

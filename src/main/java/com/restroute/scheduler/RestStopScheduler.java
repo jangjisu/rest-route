@@ -1,10 +1,10 @@
 package com.restroute.scheduler;
 
+import com.restroute.oilprice.service.RestOilPriceSyncService;
+import com.restroute.oilprice.service.RestOilSyncService;
 import com.restroute.service.HighwayServiceAreaInfoSyncService;
 import com.restroute.service.RestEventSyncService;
 import com.restroute.service.RestFoodSyncService;
-import com.restroute.service.RestOilPriceSyncService;
-import com.restroute.service.RestOilSyncService;
 import com.restroute.service.RestStopDetailSyncService;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
 import com.restroute.service.RestStopSyncService;
