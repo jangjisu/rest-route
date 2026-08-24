@@ -10,8 +10,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.restroute.client.ExApiClient;
-import com.restroute.client.exception.ExApiException;
+import com.restroute.common.client.ExApiClient;
+import com.restroute.common.client.exception.ExApiException;
 import com.restroute.oilprice.client.response.RestOilItem;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.repository.RestOilRepository;

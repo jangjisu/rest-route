@@ -13,12 +13,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.GlobalExceptionHandler;
-import com.restroute.controller.request.AdminRestFoodRequest;
+import com.restroute.reststop.service.image.exception.RestStopNotFoundException;
+import com.restroute.reststopcontent.controller.request.AdminRestFoodRequest;
 import com.restroute.reststopcontent.controller.response.AdminRestFoodResponse;
 import com.restroute.reststopcontent.service.admin.AdminRestFoodService;
 import com.restroute.reststopcontent.service.admin.exception.InvalidRestFoodEditException;
 import com.restroute.reststopcontent.service.admin.exception.RestFoodNotFoundException;
-import com.restroute.service.image.exception.RestStopNotFoundException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

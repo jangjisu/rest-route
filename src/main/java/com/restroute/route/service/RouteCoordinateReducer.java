@@ -1,6 +1,6 @@
 package com.restroute.route.service;
 
-import com.restroute.client.response.KakaoDirectionsResponse;
+import com.restroute.common.client.response.KakaoDirectionsResponse;
 import com.restroute.route.service.dto.PathPoint;
 import com.restroute.route.service.dto.ResolvedRoute.RouteGeometry;
 import com.restroute.route.service.dto.RoutePath;

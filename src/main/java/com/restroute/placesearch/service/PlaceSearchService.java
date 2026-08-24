@@ -1,7 +1,7 @@
 package com.restroute.placesearch.service;
 
-import com.restroute.client.KakaoMapClient;
-import com.restroute.client.response.KakaoLocalSearchResponse;
+import com.restroute.common.client.KakaoMapClient;
+import com.restroute.common.client.response.KakaoLocalSearchResponse;
 import com.restroute.placesearch.controller.response.PlaceCandidateResponse;
 import java.util.List;
 import java.util.Objects;

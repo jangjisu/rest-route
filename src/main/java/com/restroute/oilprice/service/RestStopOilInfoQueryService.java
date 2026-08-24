@@ -1,10 +1,10 @@
 package com.restroute.oilprice.service;
 
-import com.restroute.domain.RestStopEntity;
 import com.restroute.oilprice.controller.response.OilInfoResponse;
-import com.restroute.repository.RestStopRepository;
-import com.restroute.service.RestStopRelatedInfoQueryService;
-import com.restroute.service.dto.RestStopRelatedInfo;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
+import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

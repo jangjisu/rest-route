@@ -1,6 +1,5 @@
 package com.restroute.oilprice.service.admin;
 
-import com.restroute.domain.RestStopEntity;
 import com.restroute.oilprice.controller.response.AdminOilStationLinkResponse;
 import com.restroute.oilprice.controller.response.AdminOilStationSearchResponse;
 import com.restroute.oilprice.controller.response.AdminRestOilLinkSummaryResponse;
@@ -9,8 +8,9 @@ import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.oilprice.repository.RestOilPriceRepository;
 import com.restroute.oilprice.repository.RestOilRepository;
 import com.restroute.oilprice.service.admin.exception.RestOilNotFoundException;
-import com.restroute.repository.RestStopRepository;
-import com.restroute.service.image.exception.RestStopNotFoundException;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.service.image.exception.RestStopNotFoundException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

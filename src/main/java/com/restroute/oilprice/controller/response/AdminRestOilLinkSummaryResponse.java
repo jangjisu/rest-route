@@ -1,7 +1,7 @@
 package com.restroute.oilprice.controller.response;
 
-import com.restroute.domain.RestStopEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.reststop.domain.RestStopEntity;
 
 public record AdminRestOilLinkSummaryResponse(
         String serviceAreaCode, String unitName, String routeName, AdminOilStationSummary linkedOilStation) {

@@ -1,11 +1,11 @@
 package com.restroute.reststopcontent.service.admin;
 
+import com.restroute.reststop.service.image.dto.RestStopImageData;
+import com.restroute.reststop.service.image.util.RestStopImageProcessor;
 import com.restroute.reststopcontent.domain.RestFoodImageEntity;
 import com.restroute.reststopcontent.repository.RestFoodImageRepository;
 import com.restroute.reststopcontent.repository.RestFoodRepository;
 import com.restroute.reststopcontent.service.admin.exception.RestFoodNotFoundException;
-import com.restroute.service.image.dto.RestStopImageData;
-import com.restroute.service.image.util.RestStopImageProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

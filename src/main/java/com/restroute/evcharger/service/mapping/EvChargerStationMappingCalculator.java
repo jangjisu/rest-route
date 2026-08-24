@@ -1,11 +1,11 @@
 package com.restroute.evcharger.service.mapping;
 
-import com.restroute.domain.RestStopDetailEntity;
-import com.restroute.domain.RestStopEntity;
 import com.restroute.evcharger.domain.EvChargerEntity;
 import com.restroute.evcharger.domain.EvChargerStationMappingEntity;
 import com.restroute.evcharger.service.dto.EvChargerCoordinates;
 import com.restroute.evcharger.service.util.CoordinateDistanceCalculator;
+import com.restroute.reststop.domain.RestStopDetailEntity;
+import com.restroute.reststop.domain.RestStopEntity;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;

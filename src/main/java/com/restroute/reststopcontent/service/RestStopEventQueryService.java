@@ -1,12 +1,12 @@
 package com.restroute.reststopcontent.service;
 
-import com.restroute.domain.RestStopEntity;
-import com.restroute.repository.RestStopRepository;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
+import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.controller.response.RestStopEventResponse;
 import com.restroute.reststopcontent.domain.RestEventEntity;
 import com.restroute.reststopcontent.repository.RestEventRepository;
-import com.restroute.service.RestStopRelatedInfoQueryService;
-import com.restroute.service.dto.RestStopRelatedInfo;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

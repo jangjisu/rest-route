@@ -1,8 +1,8 @@
 package com.restroute.route.service;
 
-import com.restroute.client.KakaoMapClient;
-import com.restroute.client.response.KakaoDirectionsResponse;
-import com.restroute.client.response.KakaoLocalSearchResponse;
+import com.restroute.common.client.KakaoMapClient;
+import com.restroute.common.client.response.KakaoDirectionsResponse;
+import com.restroute.common.client.response.KakaoLocalSearchResponse;
 import com.restroute.route.controller.response.RouteRestStopResponse.Destination;
 import com.restroute.route.service.exception.RouteRestStopNotFoundException;
 import com.restroute.route.service.util.RouteCoordinateFormat;

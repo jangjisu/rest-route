@@ -8,8 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restroute.client.ExApiClient;
-import com.restroute.client.exception.ExApiException;
+import com.restroute.common.client.ExApiClient;
+import com.restroute.common.client.exception.ExApiException;
 import com.restroute.reststopcontent.client.response.RestBestfoodItem;
 import com.restroute.reststopcontent.client.response.RestBestfoodResponse;
 import com.restroute.reststopcontent.domain.RestFoodEntity;

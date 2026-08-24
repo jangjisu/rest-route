@@ -12,13 +12,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.GlobalExceptionHandler;
-import com.restroute.controller.request.AdminOilStationLinkRequest;
+import com.restroute.oilprice.controller.request.AdminOilStationLinkRequest;
 import com.restroute.oilprice.controller.response.AdminOilStationLinkResponse;
 import com.restroute.oilprice.controller.response.AdminOilStationSearchResponse;
 import com.restroute.oilprice.controller.response.AdminRestOilLinkSummaryResponse;
 import com.restroute.oilprice.service.admin.AdminRestOilLinkService;
 import com.restroute.oilprice.service.admin.exception.RestOilNotFoundException;
-import com.restroute.service.image.exception.RestStopNotFoundException;
+import com.restroute.reststop.service.image.exception.RestStopNotFoundException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

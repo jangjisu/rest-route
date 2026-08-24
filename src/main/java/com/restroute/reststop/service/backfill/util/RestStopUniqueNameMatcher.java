@@ -1,0 +1,28 @@
+package com.restroute.reststop.service.backfill.util;
+
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.service.salesranking.util.SalesRankingRestStopNameNormalizer;
+import java.util.List;
+import org.springframework.util.StringUtils;
+
+public final class RestStopUniqueNameMatcher {
+
+    private static final int SINGLE_MATCH_COUNT = 1;
+
+    private RestStopUniqueNameMatcher() {}
+
+    public static String findUniqueServiceAreaCode(List<RestStopEntity> restStops, String name) {
+        List<String> serviceAreaCodes = restStops.stream()
+                .filter(restStop -> StringUtils.hasText(restStop.getUnitName()))
+                .filter(restStop -> StringUtils.hasText(restStop.getServiceAreaCode()))
+                .filter(restStop -> SalesRankingRestStopNameNormalizer.normalize(restStop.getUnitName())
+                        .equals(SalesRankingRestStopNameNormalizer.normalize(name)))
+                .map(RestStopEntity::getServiceAreaCode)
+                .distinct()
+                .toList();
+        if (serviceAreaCodes.size() != SINGLE_MATCH_COUNT) {
+            return null;
+        }
+        return serviceAreaCodes.get(0);
+    }
+}

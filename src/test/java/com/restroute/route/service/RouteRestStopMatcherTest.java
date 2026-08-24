@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
-import com.restroute.domain.RestStopEntity;
+import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.service.dto.PathPoint;
 import com.restroute.route.service.dto.RoutePath;

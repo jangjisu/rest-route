@@ -1,6 +1,7 @@
 package com.restroute.evcharger.service;
 
-import com.restroute.client.ExternalApiRequestLog;
+import com.restroute.common.client.ExternalApiRequestLog;
+import com.restroute.common.sync.NaturalKeyUpserter;
 import com.restroute.evcharger.client.EvChargerApiClient;
 import com.restroute.evcharger.client.response.EvChargerItem;
 import com.restroute.evcharger.client.response.EvChargerResponse;
@@ -8,7 +9,6 @@ import com.restroute.evcharger.domain.EvChargerEntity;
 import com.restroute.evcharger.repository.EvChargerRepository;
 import com.restroute.evcharger.service.dto.EvChargerFetchSummary;
 import com.restroute.evcharger.service.dto.EvChargerSyncResult;
-import com.restroute.service.sync.NaturalKeyUpserter;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

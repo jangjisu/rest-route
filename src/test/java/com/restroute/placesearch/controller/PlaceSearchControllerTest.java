@@ -6,8 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.restroute.client.exception.KakaoApiException;
 import com.restroute.common.GlobalExceptionHandler;
+import com.restroute.common.client.exception.KakaoApiException;
 import com.restroute.placesearch.controller.response.PlaceCandidateResponse;
 import com.restroute.placesearch.service.PlaceSearchService;
 import java.util.List;

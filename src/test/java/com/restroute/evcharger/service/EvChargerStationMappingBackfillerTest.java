@@ -6,13 +6,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.restroute.domain.RestStopDetailEntity;
-import com.restroute.domain.RestStopEntity;
 import com.restroute.evcharger.domain.EvChargerStationMappingEntity;
 import com.restroute.evcharger.repository.EvChargerRepository;
 import com.restroute.evcharger.repository.EvChargerStationMappingRepository;
 import com.restroute.evcharger.service.mapping.EvChargerStationMappingCalculator;
-import com.restroute.repository.RestStopDetailRepository;
+import com.restroute.reststop.domain.RestStopDetailEntity;
+import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.repository.RestStopDetailRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

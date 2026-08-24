@@ -1,6 +1,6 @@
 package com.restroute.route.service.dto;
 
-import com.restroute.client.response.KakaoDirectionsResponse;
+import com.restroute.common.client.response.KakaoDirectionsResponse;
 import com.restroute.route.controller.response.RouteRestStopResponse.Destination;
 import java.util.List;
 

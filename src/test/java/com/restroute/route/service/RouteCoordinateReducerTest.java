@@ -2,10 +2,10 @@ package com.restroute.route.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.restroute.client.response.KakaoDirectionsResponse.Road;
-import com.restroute.client.response.KakaoDirectionsResponse.Route;
-import com.restroute.client.response.KakaoDirectionsResponse.Section;
-import com.restroute.client.response.KakaoDirectionsResponse.Summary;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Road;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Route;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Section;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Summary;
 import com.restroute.route.service.dto.ResolvedRoute.RouteGeometry;
 import com.restroute.route.service.dto.RoutePath;
 import java.util.ArrayList;
