@@ -1,4 +1,4 @@
-package com.restroute.controller.response;
+package com.restroute.placesearch.controller.response;
 
 public record PlaceCandidateResponse(String name, String address, double latitude, double longitude) {
 

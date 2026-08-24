@@ -1,8 +1,8 @@
-package com.restroute.service;
+package com.restroute.placesearch.service;
 
 import com.restroute.client.KakaoMapClient;
 import com.restroute.client.response.KakaoLocalSearchResponse;
-import com.restroute.controller.response.PlaceCandidateResponse;
+import com.restroute.placesearch.controller.response.PlaceCandidateResponse;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;

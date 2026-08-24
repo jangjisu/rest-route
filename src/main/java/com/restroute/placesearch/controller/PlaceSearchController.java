@@ -1,8 +1,8 @@
-package com.restroute.controller;
+package com.restroute.placesearch.controller;
 
 import com.restroute.common.ApiResponse;
-import com.restroute.controller.response.PlaceCandidateResponse;
-import com.restroute.service.PlaceSearchService;
+import com.restroute.placesearch.controller.response.PlaceCandidateResponse;
+import com.restroute.placesearch.service.PlaceSearchService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
