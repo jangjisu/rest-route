@@ -14,10 +14,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-import com.restroute.domain.AdminRole;
-import com.restroute.domain.AdminUserEntity;
+import com.restroute.admin.domain.AdminRole;
+import com.restroute.admin.domain.AdminUserEntity;
+import com.restroute.admin.repository.AdminUserRepository;
 import com.restroute.domain.RestStopEntity;
-import com.restroute.repository.AdminUserRepository;
 import com.restroute.repository.RestStopRepository;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;

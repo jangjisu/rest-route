@@ -7,8 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.GlobalExceptionHandler;
-import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.image.RestStopImageCommandService;
 import com.restroute.service.image.exception.InvalidRestStopImageException;
 import com.restroute.service.image.exception.RestStopNotFoundException;

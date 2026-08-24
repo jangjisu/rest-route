@@ -1,12 +1,12 @@
 package com.restroute.oilprice.controller.admin;
 
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.ApiResponse;
 import com.restroute.controller.request.AdminOilStationLinkRequest;
 import com.restroute.oilprice.controller.response.AdminOilStationLinkResponse;
 import com.restroute.oilprice.controller.response.AdminOilStationSearchResponse;
 import com.restroute.oilprice.controller.response.AdminRestOilLinkSummaryResponse;
 import com.restroute.oilprice.service.admin.AdminRestOilLinkService;
-import com.restroute.service.admin.AdminActivityLogService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

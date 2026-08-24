@@ -9,11 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.GlobalExceptionHandler;
 import com.restroute.reststopcontent.service.admin.AdminRestFoodImageCommandService;
 import com.restroute.reststopcontent.service.admin.AdminRestFoodImageQueryService;
 import com.restroute.reststopcontent.service.admin.exception.RestFoodNotFoundException;
-import com.restroute.service.admin.AdminActivityLogService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

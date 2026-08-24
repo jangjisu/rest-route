@@ -1,6 +1,6 @@
 package com.restroute.service.admindashboard.dto;
 
-import com.restroute.domain.AdminActivityLogEntity;
+import com.restroute.admin.domain.AdminActivityLogEntity;
 import java.time.format.DateTimeFormatter;
 
 public record AdminActivityLogItemResponse(String actor, String message, String occurredAt) {

@@ -1,9 +1,9 @@
 package com.restroute.controller.admin;
 
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.ApiResponse;
 import com.restroute.controller.request.AdminRestStopUpdateRequest;
 import com.restroute.controller.response.AdminRestStopEditableResponse;
-import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admin.AdminRestStopEditService;
 import com.restroute.service.image.exception.RestStopNotFoundException;
 import lombok.RequiredArgsConstructor;
