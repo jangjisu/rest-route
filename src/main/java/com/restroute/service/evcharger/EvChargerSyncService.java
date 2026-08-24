@@ -8,10 +8,9 @@ import com.restroute.domain.EvChargerEntity;
 import com.restroute.repository.EvChargerRepository;
 import com.restroute.service.evcharger.dto.EvChargerFetchSummary;
 import com.restroute.service.evcharger.dto.EvChargerSyncResult;
+import com.restroute.service.sync.NaturalKeyUpserter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +22,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class EvChargerSyncService {
 
     private static final int FIRST_PAGE = 1;
+
+    private static final NaturalKeyUpserter<EvChargerItem, String, EvChargerEntity> UPSERTER = NaturalKeyUpserter.of(
+            entity -> chargerKey(entity.getStatId(), entity.getChgerId()),
+            item -> chargerKey(item.getStatId(), item.getChgerId()),
+            EvChargerEntity::from,
+            EvChargerEntity::updateFrom);
 
     private final EvChargerApiClient evChargerApiClient;
     private final EvChargerRepository evChargerRepository;
@@ -121,25 +126,7 @@ public class EvChargerSyncService {
     }
 
     private void upsertEvChargers(List<EvChargerItem> items) {
-        Map<String, EvChargerEntity> existingByKey = evChargerRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        entity -> chargerKey(entity.getStatId(), entity.getChgerId()),
-                        entity -> entity,
-                        (first, second) -> first));
-
-        List<EvChargerEntity> toSave = new ArrayList<>();
-        for (EvChargerItem item : items) {
-            String key = chargerKey(item.getStatId(), item.getChgerId());
-            EvChargerEntity existing = existingByKey.get(key);
-            if (existing == null) {
-                EvChargerEntity created = EvChargerEntity.from(item);
-                existingByKey.put(key, created);
-                toSave.add(created);
-                continue;
-            }
-            existing.updateFrom(item);
-            toSave.add(existing);
-        }
+        List<EvChargerEntity> toSave = UPSERTER.upsert(items, evChargerRepository.findAll());
         evChargerRepository.saveAll(toSave);
     }
 
@@ -147,7 +134,7 @@ public class EvChargerSyncService {
         return items.stream().map(EvChargerItem::getStatId).distinct().count();
     }
 
-    private String chargerKey(String statId, String chgerId) {
+    private static String chargerKey(String statId, String chgerId) {
         return statId + "\n" + chgerId;
     }
 

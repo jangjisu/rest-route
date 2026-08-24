@@ -93,7 +93,7 @@ class AdminRestFoodImageControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(commandService).save("A00001", 1L, file);
-        verify(adminActivityLogService).logCustomFoodImageSaved(authentication, 1L);
+        verify(adminActivityLogService).log(authentication, "메뉴(1) 이미지를 등록했습니다.");
     }
 
     @Test
@@ -103,6 +103,6 @@ class AdminRestFoodImageControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(commandService).delete("A00001", 1L);
-        verify(adminActivityLogService).logCustomFoodImageDeleted(authentication, 1L);
+        verify(adminActivityLogService).log(authentication, "메뉴(1) 이미지를 삭제했습니다.");
     }
 }

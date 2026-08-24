@@ -74,7 +74,8 @@ public class RouteOptionAssemblyService {
                 buildResponseItems(candidate.items(), aggregatesByServiceAreaCode, nationalOilPriceSummary);
         return RouteOption.of(
                 candidate.routeIndex(),
-                routeSummary(candidate.geometry().summary(), candidate.geometry().path()),
+                routeSummary(
+                        candidate.geometry().summary(), candidate.geometry().path()),
                 restStops);
     }
 

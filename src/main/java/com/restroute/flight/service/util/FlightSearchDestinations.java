@@ -52,7 +52,7 @@ public final class FlightSearchDestinations {
      * 생략) 조회 하나를 국가별 조회에 더 얹는다 — 비어있으면(이미 "전체" 상태) 그대로 둔다.
      * RANGE·FIXED 검색 계획/실행 양쪽이 공유한다.
      */
-    public static List<String> withAggregate(List<String> destinations) {
+    private static List<String> withAggregate(List<String> destinations) {
         if (destinations.isEmpty()) {
             return destinations;
         }

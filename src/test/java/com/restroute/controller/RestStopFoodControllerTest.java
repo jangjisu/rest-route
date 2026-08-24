@@ -51,7 +51,7 @@ class RestStopFoodControllerTest {
                 .andExpect(jsonPath("$.message").value("OK"))
                 .andExpect(jsonPath("$.data.menus[0].foodName").value("농심어묵우동"))
                 .andExpect(jsonPath("$.data.menus[0].foodCost").value("7000"))
-                .andExpect(jsonPath("$.data.menus[0].representative").value(true))
+                .andExpect(jsonPath("$.data.menus[0].recommended").value(true))
                 .andExpect(jsonPath("$.data.menus[0].bestFood").value(true))
                 .andExpect(jsonPath("$.data.menus[0].seasonLabel").value("여름"))
                 .andExpect(jsonPath("$.data.sections[0].key").value("recommended"))

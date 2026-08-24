@@ -95,8 +95,8 @@ class RoutePathTest {
 
     @Test
     void trafficStateAt_returnsValueGivenAtConstruction() {
-        RoutePath path = RoutePath.of(
-                List.of(new PathPoint(127.0, 37.0), new PathPoint(127.1, 37.1)), Arrays.asList(1, null));
+        RoutePath path =
+                RoutePath.of(List.of(new PathPoint(127.0, 37.0), new PathPoint(127.1, 37.1)), Arrays.asList(1, null));
 
         assertThat(path.trafficStateAt(0)).isEqualTo(1);
         assertThat(path.trafficStateAt(1)).isNull();

@@ -6,7 +6,7 @@ public record FoodMenuItemResponse(
         String foodName,
         String foodCost,
         String description,
-        boolean representative,
+        boolean recommended,
         boolean bestFood,
         boolean premium,
         String season,

@@ -2,9 +2,6 @@ package com.restroute.flight.cache;
 
 import com.restroute.flight.domain.FlightCountryEntity;
 import com.restroute.flight.repository.FlightCountryRepository;
-import java.util.Map;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,24 +9,13 @@ import org.springframework.stereotype.Component;
  * 시작 시 1회, 동기화 갱신 직후 1회 {@link #refresh()}로 다시 채워진다.
  */
 @Component
-@RequiredArgsConstructor
-public class FlightCountryNameCache {
+public class FlightCountryNameCache extends ReferenceDataNameCache<FlightCountryEntity> {
 
-    private final FlightCountryRepository flightCountryRepository;
-
-    private volatile Map<String, String> nameByCode = Map.of();
-
-    public String findName(String code) {
-        return nameByCode.get(code);
-    }
-
-    public void refresh() {
-        nameByCode = flightCountryRepository.findAll().stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        FlightCountryEntity::getCode, FlightCountryNameCache::displayName));
-    }
-
-    private static String displayName(FlightCountryEntity entity) {
-        return entity.getKorName() != null ? entity.getKorName() : entity.getEngName();
+    public FlightCountryNameCache(FlightCountryRepository flightCountryRepository) {
+        super(
+                flightCountryRepository::findAll,
+                FlightCountryEntity::getCode,
+                FlightCountryEntity::getKorName,
+                FlightCountryEntity::getEngName);
     }
 }

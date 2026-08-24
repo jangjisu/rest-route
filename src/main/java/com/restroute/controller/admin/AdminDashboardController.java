@@ -20,6 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class AdminDashboardController {
 
+    private static final String PRODUCT_SALES_UPLOAD_MESSAGE = "상품 판매순위 CSV(%s)를 업로드했습니다.";
+    private static final String STORE_SALES_UPLOAD_MESSAGE = "매장 판매순위 CSV(%s)를 업로드했습니다.";
+    private static final String BACKFILL_MESSAGE = "전체 휴게소명 매핑을 실행했습니다.";
+
     private final SalesRankingUploadService salesRankingUploadService;
     private final RestStopServiceAreaCodeBackfillService backfillService;
     private final AdminDashboardService dashboardService;
@@ -37,7 +41,8 @@ public class AdminDashboardController {
     public ResponseEntity<ApiResponse<Integer>> uploadProductSalesRankings(
             @RequestParam("productFile") MultipartFile productFile, Authentication authentication) {
         int uploadedCount = salesRankingUploadService.uploadProducts(productFile);
-        adminActivityLogService.logProductSalesUpload(authentication, productFile.getOriginalFilename());
+        adminActivityLogService.log(
+                authentication, String.format(PRODUCT_SALES_UPLOAD_MESSAGE, productFile.getOriginalFilename()));
         return ResponseEntity.ok(ApiResponse.success(uploadedCount));
     }
 
@@ -48,14 +53,15 @@ public class AdminDashboardController {
     public ResponseEntity<ApiResponse<Integer>> uploadStoreSalesRankings(
             @RequestParam("storeFile") MultipartFile storeFile, Authentication authentication) {
         int uploadedCount = salesRankingUploadService.uploadStores(storeFile);
-        adminActivityLogService.logStoreSalesUpload(authentication, storeFile.getOriginalFilename());
+        adminActivityLogService.log(
+                authentication, String.format(STORE_SALES_UPLOAD_MESSAGE, storeFile.getOriginalFilename()));
         return ResponseEntity.ok(ApiResponse.success(uploadedCount));
     }
 
     @PostMapping("/api/admin/sales-rankings/backfill")
     public ResponseEntity<ApiResponse<Map<String, Integer>>> backfillSalesRankings(Authentication authentication) {
         Map<String, Integer> mappedCounts = backfillService.backfill();
-        adminActivityLogService.logBackfill(authentication);
+        adminActivityLogService.log(authentication, BACKFILL_MESSAGE);
         return ResponseEntity.ok(ApiResponse.success(mappedCounts));
     }
 }

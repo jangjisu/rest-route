@@ -21,6 +21,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/admin/rest-stops")
 public class AdminRestStopImageController {
 
+    private static final String IMAGE_SAVED_MESSAGE = "휴게소(%s) 이미지를 등록했습니다.";
+    private static final String IMAGE_DELETED_MESSAGE = "휴게소(%s) 이미지를 삭제했습니다.";
+
     private final RestStopImageCommandService commandService;
     private final AdminActivityLogService adminActivityLogService;
 
@@ -28,14 +31,14 @@ public class AdminRestStopImageController {
     public ResponseEntity<Void> save(
             @PathVariable String serviceAreaCode, @RequestPart MultipartFile file, Authentication authentication) {
         commandService.save(serviceAreaCode, file);
-        adminActivityLogService.logRestStopImageSaved(authentication, serviceAreaCode);
+        adminActivityLogService.log(authentication, String.format(IMAGE_SAVED_MESSAGE, serviceAreaCode));
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{serviceAreaCode}/image")
     public ResponseEntity<Void> delete(@PathVariable String serviceAreaCode, Authentication authentication) {
         commandService.delete(serviceAreaCode);
-        adminActivityLogService.logRestStopImageDeleted(authentication, serviceAreaCode);
+        adminActivityLogService.log(authentication, String.format(IMAGE_DELETED_MESSAGE, serviceAreaCode));
         return ResponseEntity.noContent().build();
     }
 }

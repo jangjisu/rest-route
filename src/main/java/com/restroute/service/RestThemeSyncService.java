@@ -5,10 +5,8 @@ import com.restroute.client.response.RestThemeItem;
 import com.restroute.client.response.RestThemeResponse;
 import com.restroute.domain.RestThemeEntity;
 import com.restroute.repository.RestThemeRepository;
-import java.util.ArrayList;
+import com.restroute.service.sync.NaturalKeyUpserter;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -16,6 +14,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 @RequiredArgsConstructor
 public class RestThemeSyncService {
+
+    private static final NaturalKeyUpserter<RestThemeItem, String, RestThemeEntity> UPSERTER = NaturalKeyUpserter.of(
+            entity -> themeKey(entity.getStdRestCd(), entity.getItemNm()),
+            item -> themeKey(item.getStdRestCd(), item.getItemNm()),
+            RestThemeEntity::from,
+            RestThemeEntity::updateFrom);
 
     private final ExApiClient exApiClient;
     private final RestThemeRepository restThemeRepository;
@@ -44,30 +48,11 @@ public class RestThemeSyncService {
     }
 
     private void upsertRestThemes(List<RestThemeItem> items) {
-        Map<String, RestThemeEntity> existingByKey = restThemeRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        entity -> themeKey(entity.getStdRestCd(), entity.getItemNm()),
-                        entity -> entity,
-                        (first, second) -> first));
-
-        List<RestThemeEntity> toSave = new ArrayList<>();
-        for (RestThemeItem item : items) {
-            toSave.add(upsertOne(item, existingByKey));
-        }
+        List<RestThemeEntity> toSave = UPSERTER.upsert(items, restThemeRepository.findAll());
         restThemeRepository.saveAll(toSave);
     }
 
-    private RestThemeEntity upsertOne(RestThemeItem item, Map<String, RestThemeEntity> existingByKey) {
-        String key = themeKey(item.getStdRestCd(), item.getItemNm());
-        RestThemeEntity existing = existingByKey.get(key);
-        if (existing != null) {
-            existing.updateFrom(item);
-            return existing;
-        }
-        return existingByKey.computeIfAbsent(key, k -> RestThemeEntity.from(item));
-    }
-
-    private String themeKey(String stdRestCd, String itemNm) {
+    private static String themeKey(String stdRestCd, String itemNm) {
         return stdRestCd + "\n" + itemNm;
     }
 }

@@ -59,7 +59,7 @@ class AdminRestStopImageControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(commandService).save("A00001", file);
-        verify(adminActivityLogService).logRestStopImageSaved(authentication, "A00001");
+        verify(adminActivityLogService).log(authentication, "휴게소(A00001) 이미지를 등록했습니다.");
     }
 
     @Test
@@ -69,7 +69,7 @@ class AdminRestStopImageControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(commandService).delete("A00001");
-        verify(adminActivityLogService).logRestStopImageDeleted(authentication, "A00001");
+        verify(adminActivityLogService).log(authentication, "휴게소(A00001) 이미지를 삭제했습니다.");
     }
 
     @Test

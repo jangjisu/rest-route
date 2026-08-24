@@ -45,12 +45,9 @@ class RouteRestStopMatcherTest {
         RestStopEntity near2 = restStop("C", "C휴게소", "경부선", "128.0001", "38.0001");
         RestStopEntity far = restStop("C", "C휴게소", "중부선", "130.0", "40.0");
 
-        List<RouteRestStopItem> items =
-                service.match(path(VERTEXES), 1000, List.of(near1, near0, near2, far));
+        List<RouteRestStopItem> items = service.match(path(VERTEXES), 1000, List.of(near1, near0, near2, far));
 
-        assertThat(items)
-                .extracting(RouteRestStopItem::serviceAreaCode)
-                .containsExactly("A", "B", "C");
+        assertThat(items).extracting(RouteRestStopItem::serviceAreaCode).containsExactly("A", "B", "C");
         assertThat(items.get(0).distanceFromRouteMeters()).isLessThan(50L);
     }
 
@@ -62,8 +59,8 @@ class RouteRestStopMatcherTest {
         RestStopEntity nonNumeric = restStop("E", "E", "x", "127.0", "abc");
         RestStopEntity far = restStop("C", "C휴게소", "중부선", "130.0", "40.0");
 
-        List<RouteRestStopItem> items = service.match(
-                path(VERTEXES), 1000, List.of(nullLatitude, nullLongitude, blank, nonNumeric, far));
+        List<RouteRestStopItem> items =
+                service.match(path(VERTEXES), 1000, List.of(nullLatitude, nullLongitude, blank, nonNumeric, far));
 
         assertThat(items).isEmpty();
     }
@@ -73,8 +70,7 @@ class RouteRestStopMatcherTest {
         RestStopEntity busan = restStop("A", "안성(부산)휴게소", "경부선", "127.001", "37.005");
         RestStopEntity seoul = restStop("B", "안성(서울)휴게소", "경부선", "126.999", "37.005");
 
-        List<RouteRestStopItem> items =
-                service.match(path(NORTH_HEADING_VERTEXES), 1000, List.of(busan, seoul));
+        List<RouteRestStopItem> items = service.match(path(NORTH_HEADING_VERTEXES), 1000, List.of(busan, seoul));
 
         assertThat(items).extracting(RouteRestStopItem::serviceAreaCode).containsExactly("A");
         assertThat(items.get(0).hasDirectionAlternative()).isFalse();
@@ -105,11 +101,11 @@ class RouteRestStopMatcherTest {
         RestStopEntity busan = restStop("A", "죽암(부산)휴게소", "경부선", "127.0001", "37.0001");
         RestStopEntity seoul = restStop("B", "죽암(서울)휴게소", "경부선", "126.9999", "37.0001");
 
-        List<RouteRestStopItem> items =
-                service.match(path(List.of(127.0, 37.0)), 1000, List.of(busan, seoul));
+        List<RouteRestStopItem> items = service.match(path(List.of(127.0, 37.0)), 1000, List.of(busan, seoul));
 
         assertThat(items).extracting(RouteRestStopItem::serviceAreaCode).containsExactlyInAnyOrder("A", "B");
-        assertThat(items).allSatisfy(item -> assertThat(item.hasDirectionAlternative()).isTrue());
+        assertThat(items)
+                .allSatisfy(item -> assertThat(item.hasDirectionAlternative()).isTrue());
     }
 
     @Test
@@ -121,9 +117,7 @@ class RouteRestStopMatcherTest {
         List<RouteRestStopItem> items =
                 service.match(path(VERTEXES), 1000, List.of(blankDirection, unnamedFar, unnamedNear));
 
-        assertThat(items)
-                .extracting(RouteRestStopItem::unitName)
-                .containsExactly(null, null, "화성()휴게소");
+        assertThat(items).extracting(RouteRestStopItem::unitName).containsExactly(null, null, "화성()휴게소");
         assertThat(items).extracting(RouteRestStopItem::hasDirectionAlternative).containsExactly(false, false, false);
     }
 

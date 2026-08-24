@@ -70,7 +70,7 @@ test('fetches the admin dashboard API and returns its data', async () => {
 test('renders dashboard summary and uses 준비중 when month is missing', () => {
     const document = documentWithDashboardElements();
 
-    renderDashboard(document, { restStopCount: 203, latestSalesRankingMonth: null, lastSyncStatus: '준비중' });
+    renderDashboard(document, { restStopCount: 203, latestSalesRankingMonth: null, lastSyncStatus: null });
 
     assert.equal(document.elements.get('restStopCount').textContent, 203);
     assert.equal(document.elements.get('latestSalesRankingMonth').textContent, '준비중');
@@ -131,11 +131,11 @@ test('전체 보기 클릭 시 모달에 전체 활동 로그를 렌더링하고
     assert.equal(modalList.children.length, 7);
 });
 
-function fakeAdminForm(action) {
+function fakeAdminForm(action, actionKind) {
     const button = { disabled: false, textContent: '' };
     const form = {
         action,
-        dataset: {},
+        dataset: { actionKind },
         querySelector: () => button,
         reset: () => { form.wasReset = true; },
         addEventListener: (_event, handler) => { form.submitHandler = handler; },
@@ -165,7 +165,7 @@ function jsonResponse(ok, body) {
 }
 
 test('shows the backfill loading overlay and locks the page while submitting', () => {
-    const form = fakeAdminForm('/api/admin/sales-rankings/backfill');
+    const form = fakeAdminForm('/api/admin/sales-rankings/backfill', 'backfill');
     const document = fakeAdminDocument(form);
 
     attachAdminForms(document, () => new Promise(() => {}), () => 'fake-form-data');
@@ -179,7 +179,7 @@ test('shows the backfill loading overlay and locks the page while submitting', (
 });
 
 test('shows the uploaded row count and refreshes the dashboard after a successful product upload', async () => {
-    const form = fakeAdminForm('/api/admin/sales-rankings/products');
+    const form = fakeAdminForm('/api/admin/sales-rankings/products', 'product');
     const document = fakeAdminDocument(form);
     const calledUrls = [];
     const fetchImpl = async (url) => {
@@ -203,7 +203,7 @@ test('shows the uploaded row count and refreshes the dashboard after a successfu
 });
 
 test('shows the server error message when a product upload fails', async () => {
-    const form = fakeAdminForm('/api/admin/sales-rankings/products');
+    const form = fakeAdminForm('/api/admin/sales-rankings/products', 'product');
     const document = fakeAdminDocument(form);
     const fetchImpl = async () => jsonResponse(false, { message: 'CSV 형식이 올바르지 않습니다.' });
 
@@ -216,7 +216,7 @@ test('shows the server error message when a product upload fails', async () => {
 });
 
 test('falls back to a generic error message when the upload request itself fails', async () => {
-    const form = fakeAdminForm('/api/admin/sales-rankings/stores');
+    const form = fakeAdminForm('/api/admin/sales-rankings/stores', 'store');
     const document = fakeAdminDocument(form);
     const fetchImpl = async () => {
         throw new Error('network down');
@@ -230,7 +230,7 @@ test('falls back to a generic error message when the upload request itself fails
 });
 
 test('shows a completion toast for a successful backfill run', async () => {
-    const form = fakeAdminForm('/api/admin/sales-rankings/backfill');
+    const form = fakeAdminForm('/api/admin/sales-rankings/backfill', 'backfill');
     const document = fakeAdminDocument(form);
     const fetchImpl = async (url) => {
         if (url === '/api/admin/sales-rankings/backfill') {
@@ -246,8 +246,45 @@ test('shows a completion toast for a successful backfill run', async () => {
     assert.match(document.toast.className, /is-success/);
 });
 
+test('logs and shows a stale-data notice when the post-submit dashboard refresh fails', async () => {
+    const form = fakeAdminForm('/api/admin/sales-rankings/products', 'product');
+    const document = fakeAdminDocument(form);
+    const fetchImpl = async (url) => {
+        if (url === '/api/admin/sales-rankings/products') {
+            return jsonResponse(true, { data: 128 });
+        }
+        throw new Error('refresh failed');
+    };
+    const originalConsoleError = console.error;
+    const loggedErrors = [];
+    console.error = (...args) => loggedErrors.push(args);
+
+    try {
+        attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+        await form.submitHandler({ preventDefault: () => {} });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+    } finally {
+        console.error = originalConsoleError;
+    }
+
+    assert.equal(loggedErrors.length, 1);
+    assert.match(document.toast.textContent, /최신|갱신|새로고침/);
+    assert.match(document.toast.className, /is-error/);
+});
+
+test('classifies the submit action from the data-action-kind attribute rather than the URL', () => {
+    const form = fakeAdminForm('/api/admin/sales-rankings/some-future-path', 'backfill');
+    const document = fakeAdminDocument(form);
+
+    attachAdminForms(document, () => new Promise(() => {}), () => 'fake-form-data');
+    form.submitHandler({ preventDefault: () => {} });
+
+    assert.equal(form.button.textContent, '매핑 실행 중...');
+    assert.equal(document.message.textContent, '휴게소명 매핑을 실행하고 있습니다.');
+});
+
 test('ignores a duplicate submit while a request is already in flight', () => {
-    const form = fakeAdminForm('/api/admin/sales-rankings/backfill');
+    const form = fakeAdminForm('/api/admin/sales-rankings/backfill', 'backfill');
     form.dataset.submitting = 'true';
     const document = fakeAdminDocument(form);
     let fetchCalls = 0;

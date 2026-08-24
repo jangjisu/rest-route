@@ -2,19 +2,16 @@ package com.restroute.flight.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.dto.FlightSearchRequestDto;
 import com.restroute.flight.controller.response.FlightDealResponse;
 import com.restroute.flight.controller.response.FlightDealSearchResponse;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.Callable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -25,69 +22,38 @@ class FlightSearchServiceTest {
     private static final String VALID_DATE_TO = LocalDate.now().plusDays(41).toString();
 
     @Test
-    @DisplayName("RANGE는 rangeCallPlanner가 만든 호출을 실행해 dealAssembler로 조립한다")
-    void search_usesRangeCallPlannerAndAssembler_whenSearchModeIsRange() {
-        FlightRangeCallPlanner rangeCallPlanner = mock(FlightRangeCallPlanner.class);
-        FlightFixedCallPlanner fixedCallPlanner = mock(FlightFixedCallPlanner.class);
-        FlightDealAssembler dealAssembler = mock(FlightDealAssembler.class);
-        FlightSearchService service = new FlightSearchService(
-                new FlightDealSessionStore(), rangeCallPlanner, fixedCallPlanner, dealAssembler);
+    @DisplayName("첫 요청(cursor 없음)이면 dealFetcher로 조회해 세션에 저장하고 결과를 반환한다")
+    void search_fetchesFromDealFetcher_whenFirstRequest() {
+        FlightDealFetcher dealFetcher = mock(FlightDealFetcher.class);
+        FlightSearchService service = FlightSearchService.create(new FlightDealSessionStore(), dealFetcher);
         FlightSearchRequestDto request = request(null, "3", null);
-
-        TravelpayoutsPriceItem rawItem = rawItem();
         FlightDealResponse mapped = dealWithPrice(89000);
-        when(rangeCallPlanner.plan(request)).thenReturn(List.of(callableReturning(rawItem)));
-        when(dealAssembler.assemble(List.of(rawItem), request)).thenReturn(List.of(mapped));
+        when(dealFetcher.fetch(request)).thenReturn(List.of(mapped));
 
         FlightDealSearchResponse response = service.search(request);
 
         assertThat(response.items())
                 .extracting(FlightDealResponse::price)
                 .containsExactly(new FlightDealResponse.Price(89000, "KRW"));
-        verify(fixedCallPlanner, never()).plan(any());
+        verify(dealFetcher).fetch(request);
     }
 
     @Test
-    @DisplayName("FIXED는 fixedCallPlanner를 통해 호출을 만든다")
-    void search_usesFixedCallPlanner_whenSearchModeIsFixed() {
-        FlightRangeCallPlanner rangeCallPlanner = mock(FlightRangeCallPlanner.class);
-        FlightFixedCallPlanner fixedCallPlanner = mock(FlightFixedCallPlanner.class);
-        FlightDealAssembler dealAssembler = mock(FlightDealAssembler.class);
-        FlightSearchService service = new FlightSearchService(
-                new FlightDealSessionStore(), rangeCallPlanner, fixedCallPlanner, dealAssembler);
-        FlightSearchRequestDto request = fixedRequest();
+    @DisplayName("cursor가 이전 세션을 이어가면 dealFetcher를 다시 부르지 않고 이어서 반환한다")
+    void search_doesNotRefetch_whenCursorContinuesExistingSession() {
+        FlightDealFetcher dealFetcher = mock(FlightDealFetcher.class);
+        FlightSearchService service = FlightSearchService.create(new FlightDealSessionStore(), dealFetcher);
+        FlightSearchRequestDto firstRequest = request(null, "3", "1");
+        when(dealFetcher.fetch(firstRequest)).thenReturn(List.of(dealWithPrice(89000), dealWithPrice(95000)));
+        FlightDealSearchResponse first = service.search(firstRequest);
 
-        when(fixedCallPlanner.plan(request)).thenReturn(List.of());
-        when(dealAssembler.assemble(eq(List.of()), eq(request))).thenReturn(List.of());
+        FlightSearchRequestDto secondRequest = request(first.meta().nextCursor(), "3", "1");
+        FlightDealSearchResponse second = service.search(secondRequest);
 
-        service.search(request);
-
-        verify(fixedCallPlanner).plan(request);
-        verify(rangeCallPlanner, never()).plan(any());
-    }
-
-    private static Callable<List<TravelpayoutsPriceItem>> callableReturning(TravelpayoutsPriceItem... items) {
-        return () -> List.of(items);
-    }
-
-    private static TravelpayoutsPriceItem rawItem() {
-        return new TravelpayoutsPriceItem(
-                "SEL",
-                "OSA",
-                "ICN",
-                "KIX",
-                89000,
-                "LJ",
-                "1",
-                "2026-09-15T09:00:00+09:00",
-                "2026-09-18T09:00:00+09:00",
-                0,
-                0,
-                90,
-                90,
-                90,
-                "gate",
-                "link");
+        assertThat(second.items())
+                .extracting(FlightDealResponse::price)
+                .containsExactly(new FlightDealResponse.Price(95000, "KRW"));
+        verify(dealFetcher, times(1)).fetch(any());
     }
 
     private static FlightDealResponse dealWithPrice(int amount) {
@@ -105,25 +71,6 @@ class FlightSearchServiceTest {
                 false,
                 "gate",
                 "link",
-                null);
-    }
-
-    private static FlightSearchRequestDto fixedRequest() {
-        return new FlightSearchRequestDto(
-                VALID_ORIGIN,
-                "fixed",
-                VALID_DATE_FROM,
-                LocalDate.now().plusDays(13).toString(),
-                "OSA",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
                 null);
     }
 

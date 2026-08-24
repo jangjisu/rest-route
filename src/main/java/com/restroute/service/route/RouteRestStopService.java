@@ -52,12 +52,11 @@ public class RouteRestStopService {
         List<RouteGeometry> routes = reduceCoordinates(raw.routes()); // 2. 좌표 개수 줄이기
 
         List<RestStopEntity> allRestStops = restStopQueryService.findAll();
-        List<RouteCandidate> candidates =
-                matchRestStopsByDirection(routes, allRestStops, radiusMeters); // 3. 방향 매칭
+        List<RouteCandidate> candidates = matchRestStopsByDirection(routes, allRestStops, radiusMeters); // 3. 방향 매칭
 
         Optional<NationalOilPriceSummary> nationalOilPriceSummary = nationalOilPriceService.getTodaySummary();
-        List<RouteOption> routeOptions =
-                routeOptionAssemblyService.attachDetails(candidates, allRestStops, nationalOilPriceSummary); // 4. detail 조립
+        List<RouteOption> routeOptions = routeOptionAssemblyService.attachDetails(
+                candidates, allRestStops, nationalOilPriceSummary); // 4. detail 조립
 
         return RouteRestStopResponse.of(raw.destination(), routeOptions);
     }

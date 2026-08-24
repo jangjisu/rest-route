@@ -1,4 +1,5 @@
 export const CONVENIENCE_FALLBACK = '편의시설 정보 없음';
+const TOP_SALES_RANKING_LIMIT = 5;
 
 export function isMissingValue(value) {
     return value === null
@@ -11,32 +12,21 @@ export function formatText(value, fallback) {
     return isMissingValue(value) ? fallback : value;
 }
 
-export function parseConvenience(value) {
-    if (typeof value !== 'string' || isMissingValue(value)) {
-        return [];
-    }
-
-    return [...new Set(value
-        .split('|')
-        .map((token) => token.trim())
-        .filter((token) => token !== ''))];
-}
-
 export function formatAvailability(value) {
-    if (value === 'O') {
+    if (value === true) {
         return '가능';
     }
-    if (value === 'X') {
+    if (value === false) {
         return '불가';
     }
     return '알 수 없음';
 }
 
 export function formatFreightOperation(value) {
-    if (value === 'O') {
+    if (value === true) {
         return '운영';
     }
-    if (value === 'X') {
+    if (value === false) {
         return '미운영';
     }
     return '알 수 없음';
@@ -93,9 +83,9 @@ export function orderFoodMenus(menus) {
         return [];
     }
 
-    const representatives = menus.filter((menu) => menu?.representative);
-    const others = menus.filter((menu) => !menu?.representative);
-    return [...representatives, ...others];
+    const recommended = menus.filter((menu) => menu?.recommended);
+    const others = menus.filter((menu) => !menu?.recommended);
+    return [...recommended, ...others];
 }
 
 export function formatFoodBadges(menu) {
@@ -104,8 +94,8 @@ export function formatFoodBadges(menu) {
     }
 
     const badges = [];
-    if (menu.representative) {
-        badges.push('대표');
+    if (menu.recommended) {
+        badges.push('추천');
     }
     if (menu.bestFood) {
         badges.push('베스트');
@@ -176,7 +166,7 @@ function sortSalesRankingItems(items, nameKey) {
     return items
         .filter((item) => Number.isInteger(item?.rank) && item.rank > 0 && !isMissingValue(item?.[nameKey]))
         .sort((first, second) => first.rank - second.rank)
-        .slice(0, 5);
+        .slice(0, TOP_SALES_RANKING_LIMIT);
 }
 
 export const DATA_TAG_DEFINITIONS = [
@@ -251,14 +241,11 @@ export function hasRenderableRestStopDetail(detail) {
         return false;
     }
 
-    const hasTextDetail = [
-        detail.detailImageUrl,
-        detail.address,
-        detail.direction,
-        detail.convenience,
-        detail.maintenanceYn,
-        detail.truckSaYn
-    ].some((value) => !isMissingValue(value));
+    const hasTextDetail = [detail.detailImageUrl, detail.address, detail.direction]
+        .some((value) => !isMissingValue(value))
+        || (Array.isArray(detail.convenienceFacilities) && detail.convenienceFacilities.length > 0)
+        || typeof detail.hasMaintenance === 'boolean'
+        || typeof detail.allowsTruckParking === 'boolean';
     const evChargerCount = Number(detail.evChargerCount);
     const hasEvCharger = Number.isFinite(evChargerCount) && evChargerCount > 0;
     const hasSalesRanking = !isMissingValue(detail.salesRanking?.baseYearMonth)

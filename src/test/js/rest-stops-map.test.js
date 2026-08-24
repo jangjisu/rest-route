@@ -6,7 +6,6 @@ import {
     isRouteGlobalLoadingState,
     routeMapSelectionMessage,
     routePointLabel,
-    shouldRequestRouteAutomatically,
     shouldShowRouteResultBackButton
 } from '../../main/resources/static/js/rest-stops-map.js';
 
@@ -83,13 +82,6 @@ test('canRequestRouteAutomatically requires selected origin and destination coor
     assert.equal(canRequestRouteAutomatically(undefined, destination), false);
     assert.equal(canRequestRouteAutomatically(origin, undefined), false);
     assert.equal(canRequestRouteAutomatically(origin, { latitude: Number.NaN, longitude: 129.0 }), false);
-});
-
-test('shouldRequestRouteAutomatically allows automatic route search on mobile and desktop', () => {
-    const origin = { latitude: 37.5, longitude: 126.9 };
-    const destination = { latitude: 35.1, longitude: 129.0 };
-
-    assert.equal(shouldRequestRouteAutomatically(origin, destination), true);
 });
 
 test('shouldShowRouteResultBackButton is visible only on mobile detail opened from route results', () => {

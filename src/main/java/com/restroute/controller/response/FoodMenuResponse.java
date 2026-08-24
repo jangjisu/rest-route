@@ -19,7 +19,7 @@ public record FoodMenuResponse(List<FoodMenuItemResponse> menus, List<FoodMenuSe
                 "recommended",
                 "추천 메뉴",
                 menus.stream()
-                        .filter(menu -> menu.representative() || menu.bestFood())
+                        .filter(menu -> menu.recommended() || menu.bestFood())
                         .toList());
         addSection(
                 sections,

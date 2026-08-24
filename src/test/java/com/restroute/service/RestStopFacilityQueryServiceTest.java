@@ -64,9 +64,9 @@ class RestStopFacilityQueryServiceTest {
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
         assertThat(result).isPresent();
-        assertThat(result.get().convenience()).isEqualTo("수유실|쉼터");
-        assertThat(result.get().maintenanceYn()).isEqualTo("O");
-        assertThat(result.get().truckSaYn()).isEqualTo("X");
+        assertThat(result.get().convenienceFacilities()).containsExactly("수유실", "쉼터");
+        assertThat(result.get().hasMaintenance()).isTrue();
+        assertThat(result.get().allowsTruckParking()).isFalse();
         assertThat(result.get().direction()).isEqualTo("하행");
         assertThat(result.get().compactCarParkingCount()).isEqualTo(15);
         assertThat(result.get().fullSizeCarParkingCount()).isEqualTo(27);
@@ -103,9 +103,9 @@ class RestStopFacilityQueryServiceTest {
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
         assertThat(result).isPresent();
-        assertThat(result.get().convenience()).isNull();
-        assertThat(result.get().maintenanceYn()).isNull();
-        assertThat(result.get().truckSaYn()).isNull();
+        assertThat(result.get().convenienceFacilities()).isEmpty();
+        assertThat(result.get().hasMaintenance()).isNull();
+        assertThat(result.get().allowsTruckParking()).isNull();
         assertThat(result.get().direction()).isNull();
         assertThat(result.get().compactCarParkingCount()).isNull();
         assertThat(result.get().fullSizeCarParkingCount()).isNull();
@@ -133,13 +133,37 @@ class RestStopFacilityQueryServiceTest {
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
         assertThat(result).isPresent();
-        assertThat(result.get().convenience()).isNull();
-        assertThat(result.get().maintenanceYn()).isNull();
-        assertThat(result.get().truckSaYn()).isNull();
+        assertThat(result.get().convenienceFacilities()).isEmpty();
+        assertThat(result.get().hasMaintenance()).isNull();
+        assertThat(result.get().allowsTruckParking()).isNull();
         assertThat(result.get().direction()).isNull();
         assertThat(result.get().compactCarParkingCount()).isNull();
         assertThat(result.get().fullSizeCarParkingCount()).isNull();
         assertThat(result.get().disabledParkingCount()).isNull();
+    }
+
+    @Test
+    @DisplayName("점검/화물차 여부가 O/X가 아니면 알 수 없음을 뜻하는 null을 반환한다")
+    void findByServiceAreaCode_returnsNullBooleanWhenYnValueIsUnrecognized() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
+        RestStopDetailEntity detail = detail("수유실", "Y", "N");
+        when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
+        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+                .thenReturn(RestStopRelatedInfo.of(
+                        Optional.of(detail),
+                        List.of(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
+
+        Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().hasMaintenance()).isNull();
+        assertThat(result.get().allowsTruckParking()).isNull();
     }
 
     private RestStopDetailEntity detail(String convenience, String maintenanceYn, String truckSaYn) {

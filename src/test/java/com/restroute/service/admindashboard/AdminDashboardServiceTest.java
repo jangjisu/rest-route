@@ -51,7 +51,7 @@ class AdminDashboardServiceTest {
         when(storeRepository.findTopByOrderByBaseYearMonthDesc()).thenReturn(Optional.of(store("2026-06")));
         when(adminActivityLogService.findRecent()).thenReturn(List.of());
 
-        assertThat(service.getSummary()).isEqualTo(new AdminDashboardSummary(203L, "2026-06", "준비중", List.of()));
+        assertThat(service.getSummary()).isEqualTo(new AdminDashboardSummary(203L, "2026-06", null, List.of()));
     }
 
     @Test
@@ -61,7 +61,7 @@ class AdminDashboardServiceTest {
         when(storeRepository.findTopByOrderByBaseYearMonthDesc()).thenReturn(Optional.empty());
         when(adminActivityLogService.findRecent()).thenReturn(List.of());
 
-        assertThat(service.getSummary()).isEqualTo(new AdminDashboardSummary(0L, null, "준비중", List.of()));
+        assertThat(service.getSummary()).isEqualTo(new AdminDashboardSummary(0L, null, null, List.of()));
     }
 
     @Test

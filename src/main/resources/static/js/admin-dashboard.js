@@ -1,4 +1,4 @@
-import { setGlobalLoading, showToast } from './admin-common.js';
+import { closeDialogById, openDialogById, setGlobalLoading, showToast } from './admin-common.js';
 
 const ADMIN_DASHBOARD_API = '/api/admin/dashboard';
 const ACTIVITY_LIST_INLINE_LIMIT = 5;
@@ -55,20 +55,15 @@ function renderActivityList(document, elementId, logs) {
 }
 
 export function openActivityModal(document) {
-    renderActivityList(document, 'adminActivityModalList', latestActivityLogs);
-    const modal = document.getElementById('adminActivityModal');
-    if (modal && !modal.open) {
-        modal.showModal();
-    }
+    openDialogById(document, 'adminActivityModal', {
+        onOpened: () => renderActivityList(document, 'adminActivityModalList', latestActivityLogs)
+    });
 }
 
 export function bindActivityModal(document) {
     document.getElementById('showActivityNotice')?.addEventListener('click', () => openActivityModal(document));
     document.getElementById('adminActivityModalClose')?.addEventListener('click', () => {
-        const modal = document.getElementById('adminActivityModal');
-        if (modal?.open) {
-            modal.close();
-        }
+        closeDialogById(document, 'adminActivityModal');
     });
 }
 
@@ -94,14 +89,8 @@ function submitButton(form) {
     return form.querySelector('button[type="submit"]');
 }
 
-function actionKind(url) {
-    if (url.includes('/backfill')) {
-        return 'backfill';
-    }
-    if (url.includes('/stores')) {
-        return 'store';
-    }
-    return 'product';
+function actionKind(form) {
+    return form.dataset.actionKind || 'product';
 }
 
 function loadingMessage(kind) {
@@ -133,7 +122,7 @@ function buildFormData(form) {
 }
 
 async function submitAdminForm(document, form, fetchImpl, buildFormDataImpl) {
-    const kind = actionKind(form.action);
+    const kind = actionKind(form);
     const button = submitButton(form);
 
     try {
@@ -148,7 +137,10 @@ async function submitAdminForm(document, form, fetchImpl, buildFormDataImpl) {
             form.reset?.();
             fetchAdminDashboard(fetchImpl)
                 .then((summary) => renderDashboard(document, summary))
-                .catch(() => {});
+                .catch((error) => {
+                    console.error('관리자 대시보드 갱신에 실패했습니다.', error);
+                    showToast(document, '대시보드 정보가 최신이 아닐 수 있습니다. 새로고침해주세요.', 'error');
+                });
         } else {
             showToast(document, payload?.message || failureMessage(kind), 'error');
         }
@@ -174,7 +166,7 @@ export function attachAdminForms(document, fetchImpl = fetch, buildFormDataImpl 
             }
 
             form.dataset.submitting = 'true';
-            const kind = actionKind(form.action);
+            const kind = actionKind(form);
             const button = submitButton(form);
             if (button) {
                 button.disabled = true;
