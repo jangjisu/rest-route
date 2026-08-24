@@ -1,12 +1,12 @@
 package com.restroute.service.dto;
 
 import com.restroute.domain.HighwayServiceAreaInfoEntity;
-import com.restroute.domain.RestEventEntity;
-import com.restroute.domain.RestFoodEntity;
 import com.restroute.domain.RestStopDetailEntity;
-import com.restroute.domain.RestThemeEntity;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.reststopcontent.domain.RestEventEntity;
+import com.restroute.reststopcontent.domain.RestFoodEntity;
+import com.restroute.reststopcontent.domain.RestThemeEntity;
 import java.util.List;
 import java.util.Optional;
 

@@ -1,13 +1,13 @@
 package com.restroute.client;
 
 import com.restroute.client.response.HighwayServiceAreaInfoResponse;
-import com.restroute.client.response.RestBestfoodResponse;
-import com.restroute.client.response.RestEventResponse;
 import com.restroute.client.response.RestStopDetailResponse;
 import com.restroute.client.response.RestStopResponse;
-import com.restroute.client.response.RestThemeResponse;
 import com.restroute.oilprice.client.response.RestOilPriceResponse;
 import com.restroute.oilprice.client.response.RestOilResponse;
+import com.restroute.reststopcontent.client.response.RestBestfoodResponse;
+import com.restroute.reststopcontent.client.response.RestEventResponse;
+import com.restroute.reststopcontent.client.response.RestThemeResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
