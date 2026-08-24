@@ -9,9 +9,9 @@ import com.restroute.controller.response.RouteRestStopResponse.ComparisonSummary
 import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.domain.RestFoodEntity;
-import com.restroute.domain.RestOilEntity;
-import com.restroute.domain.RestOilPriceEntity;
 import com.restroute.domain.RestStopDetailEntity;
+import com.restroute.oilprice.domain.RestOilEntity;
+import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.service.dto.RestStopRelatedInfo;
 import java.util.List;
 import java.util.Optional;

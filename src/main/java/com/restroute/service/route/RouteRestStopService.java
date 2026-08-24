@@ -6,7 +6,7 @@ import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceS
 import com.restroute.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.domain.RestStopEntity;
-import com.restroute.service.NationalOilPriceService;
+import com.restroute.oilprice.service.NationalOilPriceService;
 import com.restroute.service.RestStopQueryService;
 import com.restroute.service.route.RouteResolverService.RawRouteResult;
 import com.restroute.service.route.dto.ResolvedRoute.RouteGeometry;
