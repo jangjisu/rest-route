@@ -15,11 +15,11 @@ import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceS
 import com.restroute.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.domain.HighwayServiceAreaInfoEntity;
-import com.restroute.domain.RestFoodEntity;
 import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.reststopcontent.domain.RestFoodEntity;
 import com.restroute.service.RestStopAggregateQueryService;
 import com.restroute.service.dto.RestStopAggregate;
 import com.restroute.service.dto.RestStopRelatedInfo;

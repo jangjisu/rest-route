@@ -2,7 +2,7 @@ package com.restroute.controller.response;
 
 import com.restroute.domain.RestStopDetailEntity;
 import com.restroute.domain.RestStopEntity;
-import com.restroute.domain.RestThemeEntity;
+import com.restroute.reststopcontent.domain.RestThemeEntity;
 import java.util.List;
 import java.util.Optional;
 
