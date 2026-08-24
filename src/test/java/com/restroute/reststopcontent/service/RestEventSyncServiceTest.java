@@ -11,8 +11,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.restroute.client.ExApiClient;
-import com.restroute.client.exception.ExApiException;
+import com.restroute.common.client.ExApiClient;
+import com.restroute.common.client.exception.ExApiException;
 import com.restroute.reststopcontent.client.response.RestEventItem;
 import com.restroute.reststopcontent.client.response.RestEventResponse;
 import com.restroute.reststopcontent.domain.RestEventEntity;

@@ -1,4 +1,4 @@
-package com.restroute.client;
+package com.restroute.common.client;
 
 public enum ExApiResponseFormat {
     JSON("json");

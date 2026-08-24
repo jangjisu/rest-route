@@ -2,8 +2,8 @@ package com.restroute.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.restroute.client.exception.ExApiException;
-import com.restroute.client.exception.KakaoApiException;
+import com.restroute.common.client.exception.ExApiException;
+import com.restroute.common.client.exception.KakaoApiException;
 import com.restroute.reststop.service.image.exception.InvalidRestStopImageException;
 import com.restroute.reststop.service.image.exception.RestStopNotFoundException;
 import com.restroute.reststop.service.salesranking.exception.SalesRankingUploadException;

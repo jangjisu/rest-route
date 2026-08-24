@@ -1,7 +1,7 @@
-package com.restroute.client.exception;
+package com.restroute.common.client.exception;
 
-import com.restroute.client.ExternalApiRequestLog;
 import com.restroute.common.ExternalApiException;
+import com.restroute.common.client.ExternalApiRequestLog;
 
 public class ExApiException extends ExternalApiException {
 

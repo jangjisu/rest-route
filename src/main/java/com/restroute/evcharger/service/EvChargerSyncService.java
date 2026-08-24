@@ -1,6 +1,6 @@
 package com.restroute.evcharger.service;
 
-import com.restroute.client.ExternalApiRequestLog;
+import com.restroute.common.client.ExternalApiRequestLog;
 import com.restroute.evcharger.client.EvChargerApiClient;
 import com.restroute.evcharger.client.response.EvChargerItem;
 import com.restroute.evcharger.client.response.EvChargerResponse;

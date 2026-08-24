@@ -1,6 +1,6 @@
 package com.restroute.route.service;
 
-import com.restroute.client.response.KakaoDirectionsResponse;
+import com.restroute.common.client.response.KakaoDirectionsResponse;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.service.RestStopAggregateQueryService;
 import com.restroute.reststop.service.dto.RestStopAggregate;

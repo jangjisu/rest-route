@@ -1,8 +1,8 @@
-package com.restroute.client.response;
+package com.restroute.common.client.response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.restroute.client.response.KakaoLocalSearchResponse.Document;
+import com.restroute.common.client.response.KakaoLocalSearchResponse.Document;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

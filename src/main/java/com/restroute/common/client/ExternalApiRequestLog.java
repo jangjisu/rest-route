@@ -1,4 +1,4 @@
-package com.restroute.client;
+package com.restroute.common.client;
 
 import java.util.Set;
 

@@ -1,6 +1,6 @@
 package com.restroute.reststop.service;
 
-import com.restroute.client.ExApiClient;
+import com.restroute.common.client.ExApiClient;
 import com.restroute.reststop.client.response.HighwayServiceAreaInfoItem;
 import com.restroute.reststop.client.response.HighwayServiceAreaInfoResponse;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;

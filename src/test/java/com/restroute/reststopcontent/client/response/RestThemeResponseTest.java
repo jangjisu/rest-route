@@ -2,7 +2,7 @@ package com.restroute.reststopcontent.client.response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.restroute.client.response.ExApiResponse;
+import com.restroute.common.client.response.ExApiResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;

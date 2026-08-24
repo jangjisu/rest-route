@@ -1,6 +1,6 @@
-package com.restroute.client;
+package com.restroute.common.client;
 
-import com.restroute.client.response.KakaoLocalSearchResponse;
+import com.restroute.common.client.response.KakaoLocalSearchResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;

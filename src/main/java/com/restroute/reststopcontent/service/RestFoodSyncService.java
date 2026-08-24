@@ -1,6 +1,6 @@
 package com.restroute.reststopcontent.service;
 
-import com.restroute.client.ExApiClient;
+import com.restroute.common.client.ExApiClient;
 import com.restroute.reststopcontent.client.response.RestBestfoodItem;
 import com.restroute.reststopcontent.client.response.RestBestfoodResponse;
 import com.restroute.reststopcontent.domain.RestFoodEntity;

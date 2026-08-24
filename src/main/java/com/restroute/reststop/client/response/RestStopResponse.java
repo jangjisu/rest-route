@@ -1,6 +1,6 @@
 package com.restroute.reststop.client.response;
 
-import com.restroute.client.response.ExApiResponse;
+import com.restroute.common.client.response.ExApiResponse;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;

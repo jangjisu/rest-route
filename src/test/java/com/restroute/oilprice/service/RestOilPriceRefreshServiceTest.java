@@ -11,7 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.restroute.client.ExApiClient;
+import com.restroute.common.client.ExApiClient;
 import com.restroute.oilprice.client.response.RestOilPriceItem;
 import com.restroute.oilprice.controller.response.OilInfoResponse;
 import com.restroute.oilprice.domain.RestOilEntity;

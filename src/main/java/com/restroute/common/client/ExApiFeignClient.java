@@ -1,4 +1,4 @@
-package com.restroute.client;
+package com.restroute.common.client;
 
 import com.restroute.oilprice.client.response.RestOilPriceResponse;
 import com.restroute.oilprice.client.response.RestOilResponse;

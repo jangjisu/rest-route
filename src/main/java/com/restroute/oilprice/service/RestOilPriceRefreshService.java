@@ -1,6 +1,6 @@
 package com.restroute.oilprice.service;
 
-import com.restroute.client.ExApiClient;
+import com.restroute.common.client.ExApiClient;
 import com.restroute.oilprice.client.response.RestOilPriceItem;
 import com.restroute.oilprice.client.response.RestOilPriceResponse;
 import com.restroute.oilprice.controller.response.OilInfoResponse;

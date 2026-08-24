@@ -1,11 +1,11 @@
-package com.restroute.client.response;
+package com.restroute.common.client.response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restroute.client.response.KakaoDirectionsResponse.Road;
-import com.restroute.client.response.KakaoDirectionsResponse.Route;
-import com.restroute.client.response.KakaoDirectionsResponse.Summary;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Road;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Route;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Summary;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

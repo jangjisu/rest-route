@@ -1,4 +1,4 @@
-package com.restroute.client.response;
+package com.restroute.common.client.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

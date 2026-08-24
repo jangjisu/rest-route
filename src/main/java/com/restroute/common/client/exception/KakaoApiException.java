@@ -1,4 +1,4 @@
-package com.restroute.client.exception;
+package com.restroute.common.client.exception;
 
 import com.restroute.common.ExternalApiException;
 

@@ -1,6 +1,6 @@
 package com.restroute.reststopcontent.service;
 
-import com.restroute.client.ExApiClient;
+import com.restroute.common.client.ExApiClient;
 import com.restroute.reststopcontent.client.response.RestEventItem;
 import com.restroute.reststopcontent.client.response.RestEventResponse;
 import com.restroute.reststopcontent.domain.RestEventEntity;

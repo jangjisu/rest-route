@@ -1,4 +1,4 @@
-package com.restroute.client;
+package com.restroute.common.client;
 
 import static com.restroute.support.RestStopTestFixtures.highwayServiceAreaInfoResponse;
 import static com.restroute.support.RestStopTestFixtures.restEventResponse;
@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restroute.client.exception.ExApiException;
+import com.restroute.common.client.exception.ExApiException;
 import com.restroute.oilprice.client.response.RestOilPriceResponse;
 import com.restroute.oilprice.client.response.RestOilResponse;
 import com.restroute.reststop.client.response.HighwayServiceAreaInfoResponse;

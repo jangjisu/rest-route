@@ -1,8 +1,8 @@
-package com.restroute.client;
+package com.restroute.common.client;
 
-import com.restroute.client.exception.KakaoApiException;
-import com.restroute.client.response.KakaoDirectionsResponse;
-import com.restroute.client.response.KakaoLocalSearchResponse;
+import com.restroute.common.client.exception.KakaoApiException;
+import com.restroute.common.client.response.KakaoDirectionsResponse;
+import com.restroute.common.client.response.KakaoLocalSearchResponse;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

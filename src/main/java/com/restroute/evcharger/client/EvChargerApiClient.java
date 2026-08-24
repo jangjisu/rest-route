@@ -1,7 +1,7 @@
 package com.restroute.evcharger.client;
 
-import com.restroute.client.ExternalApiRequestLog;
-import com.restroute.client.exception.ExApiException;
+import com.restroute.common.client.ExternalApiRequestLog;
+import com.restroute.common.client.exception.ExApiException;
 import com.restroute.evcharger.client.response.EvChargerResponse;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +50,8 @@ public class EvChargerApiClient {
                         EvChargerFeignClient.REST_FACILITY_KIND));
     }
 
-    private <T extends com.restroute.client.response.ExApiResponse> T fetch(String requestUrl, Supplier<T> request) {
+    private <T extends com.restroute.common.client.response.ExApiResponse> T fetch(
+            String requestUrl, Supplier<T> request) {
         String safeRequestUrl = ExternalApiRequestLog.sanitizeUrl(requestUrl);
         log.info("External API request started. api={}, requestUrl={}", API_NAME, safeRequestUrl);
         try {

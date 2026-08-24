@@ -1,13 +1,13 @@
-package com.restroute.client;
+package com.restroute.common.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import com.restroute.client.exception.KakaoApiException;
-import com.restroute.client.response.KakaoDirectionsResponse;
-import com.restroute.client.response.KakaoLocalSearchResponse;
+import com.restroute.common.client.exception.KakaoApiException;
+import com.restroute.common.client.response.KakaoDirectionsResponse;
+import com.restroute.common.client.response.KakaoLocalSearchResponse;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

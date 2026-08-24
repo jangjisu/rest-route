@@ -3,9 +3,9 @@ package com.restroute.placesearch.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.restroute.client.KakaoMapClient;
-import com.restroute.client.response.KakaoLocalSearchResponse;
-import com.restroute.client.response.KakaoLocalSearchResponse.Document;
+import com.restroute.common.client.KakaoMapClient;
+import com.restroute.common.client.response.KakaoLocalSearchResponse;
+import com.restroute.common.client.response.KakaoLocalSearchResponse.Document;
 import com.restroute.placesearch.controller.response.PlaceCandidateResponse;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

@@ -8,8 +8,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.restroute.client.response.KakaoDirectionsResponse.Fare;
-import com.restroute.client.response.KakaoDirectionsResponse.Summary;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Fare;
+import com.restroute.common.client.response.KakaoDirectionsResponse.Summary;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
