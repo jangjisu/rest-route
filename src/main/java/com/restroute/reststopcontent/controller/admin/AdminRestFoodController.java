@@ -1,10 +1,10 @@
 package com.restroute.reststopcontent.controller.admin;
 
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.ApiResponse;
 import com.restroute.controller.request.AdminRestFoodRequest;
 import com.restroute.reststopcontent.controller.response.AdminRestFoodResponse;
 import com.restroute.reststopcontent.service.admin.AdminRestFoodService;
-import com.restroute.service.admin.AdminActivityLogService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

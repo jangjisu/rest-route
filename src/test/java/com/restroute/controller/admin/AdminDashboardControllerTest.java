@@ -7,8 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
-import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admindashboard.AdminDashboardService;
 import com.restroute.service.admindashboard.dto.AdminDashboardSummary;
 import com.restroute.service.salesranking.SalesRankingUploadService;

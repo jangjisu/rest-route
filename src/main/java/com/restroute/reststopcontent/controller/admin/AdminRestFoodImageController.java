@@ -1,8 +1,8 @@
 package com.restroute.reststopcontent.controller.admin;
 
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.reststopcontent.service.admin.AdminRestFoodImageCommandService;
 import com.restroute.reststopcontent.service.admin.AdminRestFoodImageQueryService;
-import com.restroute.service.admin.AdminActivityLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

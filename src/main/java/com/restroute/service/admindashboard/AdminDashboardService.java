@@ -1,11 +1,11 @@
 package com.restroute.service.admindashboard;
 
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.domain.RestStopProductSalesRankEntity;
 import com.restroute.domain.RestStopStoreSalesRankEntity;
 import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
-import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admindashboard.dto.AdminActivityLogItemResponse;
 import com.restroute.service.admindashboard.dto.AdminDashboardSummary;
 import java.util.List;

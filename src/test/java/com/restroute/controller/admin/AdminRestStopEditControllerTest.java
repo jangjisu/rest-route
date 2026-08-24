@@ -11,10 +11,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.restroute.admin.service.AdminActivityLogService;
 import com.restroute.common.GlobalExceptionHandler;
 import com.restroute.controller.request.AdminRestStopUpdateRequest;
 import com.restroute.controller.response.AdminRestStopEditableResponse;
-import com.restroute.service.admin.AdminActivityLogService;
 import com.restroute.service.admin.AdminRestStopEditService;
 import com.restroute.service.admin.exception.InvalidRestStopEditException;
 import com.restroute.service.image.exception.RestStopNotFoundException;
