@@ -1,11 +1,11 @@
 package com.restroute.oilprice.service;
 
-import com.restroute.controller.response.RouteRestStopResponse.AverageOilPrice;
-import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.oilprice.client.OpinetApiClient;
 import com.restroute.oilprice.client.response.OpinetAverageOilPriceItem;
 import com.restroute.oilprice.domain.NationalOilPriceEntity;
 import com.restroute.oilprice.repository.NationalOilPriceRepository;
+import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
+import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
