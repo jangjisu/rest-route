@@ -6,6 +6,8 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.restroute.evcharger.service.EvChargerSyncService;
+import com.restroute.evcharger.service.dto.EvChargerSyncResult;
 import com.restroute.oilprice.service.RestOilPriceSyncService;
 import com.restroute.oilprice.service.RestOilSyncService;
 import com.restroute.service.RestEventSyncService;
@@ -14,8 +16,6 @@ import com.restroute.service.RestStopDetailSyncService;
 import com.restroute.service.RestStopServiceAreaCodeBackfillService;
 import com.restroute.service.RestStopSyncService;
 import com.restroute.service.RestThemeSyncService;
-import com.restroute.service.evcharger.EvChargerSyncService;
-import com.restroute.service.evcharger.dto.EvChargerSyncResult;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
