@@ -23,6 +23,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/admin/rest-stops")
 public class AdminRestFoodImageController {
 
+    private static final String CUSTOM_FOOD_IMAGE_SAVED_MESSAGE = "메뉴(%d) 이미지를 등록했습니다.";
+    private static final String CUSTOM_FOOD_IMAGE_DELETED_MESSAGE = "메뉴(%d) 이미지를 삭제했습니다.";
+
     private final AdminRestFoodImageCommandService commandService;
     private final AdminRestFoodImageQueryService queryService;
     private final AdminActivityLogService adminActivityLogService;
@@ -44,7 +47,7 @@ public class AdminRestFoodImageController {
             @RequestPart MultipartFile file,
             Authentication authentication) {
         commandService.save(serviceAreaCode, foodId, file);
-        adminActivityLogService.logCustomFoodImageSaved(authentication, foodId);
+        adminActivityLogService.log(authentication, String.format(CUSTOM_FOOD_IMAGE_SAVED_MESSAGE, foodId));
         return ResponseEntity.noContent().build();
     }
 
@@ -52,7 +55,7 @@ public class AdminRestFoodImageController {
     public ResponseEntity<Void> delete(
             @PathVariable String serviceAreaCode, @PathVariable Long foodId, Authentication authentication) {
         commandService.delete(serviceAreaCode, foodId);
-        adminActivityLogService.logCustomFoodImageDeleted(authentication, foodId);
+        adminActivityLogService.log(authentication, String.format(CUSTOM_FOOD_IMAGE_DELETED_MESSAGE, foodId));
         return ResponseEntity.noContent().build();
     }
 }

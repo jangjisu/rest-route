@@ -88,7 +88,7 @@ class AdminRestFoodControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.foodName").value("커스텀메뉴"));
 
-        verify(adminActivityLogService).logCustomFoodAdded(authentication, "커스텀메뉴");
+        verify(adminActivityLogService).log(authentication, "커스텀메뉴 메뉴를 추가했습니다.");
     }
 
     @Test
@@ -118,7 +118,7 @@ class AdminRestFoodControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.adminOverridden").value(true));
 
-        verify(adminActivityLogService).logCustomFoodEdited(authentication, "커스텀메뉴");
+        verify(adminActivityLogService).log(authentication, "커스텀메뉴 메뉴를 수정했습니다.");
     }
 
     @Test
@@ -143,7 +143,7 @@ class AdminRestFoodControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.adminOverridden").value(false));
 
-        verify(adminActivityLogService).logCustomFoodOverrideCleared(authentication, "커스텀메뉴");
+        verify(adminActivityLogService).log(authentication, "커스텀메뉴 메뉴의 동기화 잠금을 해제했습니다.");
     }
 
     @Test
@@ -153,7 +153,7 @@ class AdminRestFoodControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(adminRestFoodService).delete("A00001", 1L);
-        verify(adminActivityLogService).logCustomFoodDeleted(authentication, 1L);
+        verify(adminActivityLogService).log(authentication, "메뉴(1)를 삭제했습니다.");
     }
 
     @Test

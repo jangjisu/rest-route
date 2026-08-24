@@ -9,7 +9,7 @@ import {
     saveAdminRestFoodImage,
     updateAdminRestFood
 } from './admin-rest-food-request.js';
-import { csrfFrom } from './admin-common.js';
+import { closeDialogById, csrfFrom, openDialogById } from './admin-common.js';
 
 const EMPTY_FOOD_LIST_MESSAGE = '등록된 메뉴가 없습니다.';
 
@@ -61,22 +61,26 @@ export function initializeAdminRestFood(document, {
     }
 
     function closeEditModal() {
-        editModal.close();
-        editingFoodId = null;
+        closeDialogById(document, 'restStopFoodEditModal', () => {
+            editingFoodId = null;
+        });
     }
 
     function openEditModal(food) {
-        editingFoodId = food.id;
-        editingWasOverridden = food.adminOverridden === true;
-        editName.value = food.foodName ?? '';
-        editCost.value = food.foodCost ?? '';
-        editDescription.value = food.description ?? '';
-        editStateLabel.textContent = editingWasOverridden
-            ? '관리자가 수정하여 자동 동기화에서 제외된 메뉴입니다.'
-            : '동기화 중인 메뉴입니다. 저장하면 자동 동기화 대상에서 제외됩니다.';
-        editSubmit.textContent = '저장';
-        editClearOverride.hidden = !editingWasOverridden;
-        editModal.showModal();
+        openDialogById(document, 'restStopFoodEditModal', {
+            onOpened: () => {
+                editingFoodId = food.id;
+                editingWasOverridden = food.adminOverridden === true;
+                editName.value = food.foodName ?? '';
+                editCost.value = food.foodCost ?? '';
+                editDescription.value = food.description ?? '';
+                editStateLabel.textContent = editingWasOverridden
+                    ? '관리자가 수정하여 자동 동기화에서 제외된 메뉴입니다.'
+                    : '동기화 중인 메뉴입니다. 저장하면 자동 동기화 대상에서 제외됩니다.';
+                editSubmit.textContent = '저장';
+                editClearOverride.hidden = !editingWasOverridden;
+            }
+        });
     }
 
     function revokeImagePreviews() {
@@ -292,8 +296,8 @@ export function initializeAdminRestFood(document, {
         await loadFoods();
     });
 
-    addButton.addEventListener('click', () => addModal.showModal());
-    addModalClose.addEventListener('click', () => addModal.close());
+    addButton.addEventListener('click', () => openDialogById(document, 'restStopFoodAddModal'));
+    addModalClose.addEventListener('click', () => closeDialogById(document, 'restStopFoodAddModal'));
 
     addForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -318,7 +322,7 @@ export function initializeAdminRestFood(document, {
             return;
         }
 
-        addModal.close();
+        closeDialogById(document, 'restStopFoodAddModal');
         addName.value = '';
         addCost.value = '';
         addDescription.value = '';

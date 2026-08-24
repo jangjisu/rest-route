@@ -60,7 +60,7 @@ class RestStopFoodMenuQueryServiceTest {
 
         assertThat(result).isPresent();
         assertThat(result.get().menus())
-                .extracting("foodName", "representative", "bestFood", "seasonLabel")
+                .extracting("foodName", "recommended", "bestFood", "seasonLabel")
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("농심어묵우동", true, true, "여름"));
         assertThat(result.get().sections()).extracting("key").containsExactly("recommended", "seasonal");
     }

@@ -23,6 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AdminRestOilLinkController {
 
+    private static final String OIL_STATION_LINKED_MESSAGE = "%s 주유소를 %s에 연결했습니다.";
+    private static final String OIL_STATION_UNLINKED_MESSAGE = "%s 주유소의 연결을 해제했습니다.";
+    private static final String OIL_STATION_OVERRIDE_CLEARED_MESSAGE = "%s 주유소를 자동 매칭으로 되돌렸습니다.";
+
     private final AdminRestOilLinkService adminRestOilLinkService;
     private final AdminActivityLogService adminActivityLogService;
 
@@ -45,8 +49,9 @@ public class AdminRestOilLinkController {
     public ResponseEntity<ApiResponse<AdminOilStationLinkResponse>> link(
             @PathVariable Long oilId, @RequestBody AdminOilStationLinkRequest request, Authentication authentication) {
         AdminOilStationLinkResponse response = adminRestOilLinkService.link(oilId, request.serviceAreaCode());
-        adminActivityLogService.logOilStationLinked(
-                authentication, response.standardRestName(), response.restStopName());
+        adminActivityLogService.log(
+                authentication,
+                String.format(OIL_STATION_LINKED_MESSAGE, response.standardRestName(), response.restStopName()));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -54,7 +59,8 @@ public class AdminRestOilLinkController {
     public ResponseEntity<ApiResponse<AdminOilStationLinkResponse>> unlink(
             @PathVariable Long oilId, Authentication authentication) {
         AdminOilStationLinkResponse response = adminRestOilLinkService.unlink(oilId);
-        adminActivityLogService.logOilStationUnlinked(authentication, response.standardRestName());
+        adminActivityLogService.log(
+                authentication, String.format(OIL_STATION_UNLINKED_MESSAGE, response.standardRestName()));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -62,7 +68,8 @@ public class AdminRestOilLinkController {
     public ResponseEntity<ApiResponse<AdminOilStationLinkResponse>> clearOverride(
             @PathVariable Long oilId, Authentication authentication) {
         AdminOilStationLinkResponse response = adminRestOilLinkService.clearOverride(oilId);
-        adminActivityLogService.logOilStationOverrideCleared(authentication, response.standardRestName());
+        adminActivityLogService.log(
+                authentication, String.format(OIL_STATION_OVERRIDE_CLEARED_MESSAGE, response.standardRestName()));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

@@ -5,7 +5,6 @@ import com.restroute.domain.RestStopEntity;
 import com.restroute.domain.RestThemeEntity;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 public record RestStopBasicInfoResponse(
         String serviceAreaCode,
@@ -38,23 +37,12 @@ public record RestStopBasicInfoResponse(
                 restStop.getXValue(),
                 restStop.getYValue(),
                 restStop.getStdRestCd(),
-                textOf(detail, RestStopDetailEntity::getSvarAddr),
-                textOf(detail, RestStopDetailEntity::getTelNo),
-                textOf(detail, RestStopDetailEntity::getBrand),
+                ResponseTextUtils.textOf(detail, RestStopDetailEntity::getSvarAddr),
+                ResponseTextUtils.textOf(detail, RestStopDetailEntity::getTelNo),
+                ResponseTextUtils.textOf(detail, RestStopDetailEntity::getBrand),
                 evChargerCount,
                 detailImageUrl,
                 themes.stream().map(ThemeInfo::from).toList());
-    }
-
-    private static String textOf(Optional<RestStopDetailEntity> detail, Function<RestStopDetailEntity, String> getter) {
-        return detail.map(getter)
-                .filter(RestStopBasicInfoResponse::hasText)
-                .map(String::trim)
-                .orElse(null);
-    }
-
-    private static boolean hasText(String value) {
-        return !value.trim().isEmpty();
     }
 
     public record ThemeInfo(String name, String detail) {

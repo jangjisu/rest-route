@@ -2,15 +2,16 @@ package com.restroute.controller.response;
 
 import com.restroute.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.domain.RestStopDetailEntity;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 public record RestStopFacilityResponse(
-        String convenience,
-        String maintenanceYn,
-        String truckSaYn,
+        List<String> convenienceFacilities,
+        Boolean hasMaintenance,
+        Boolean allowsTruckParking,
         String direction,
         Integer compactCarParkingCount,
         Integer fullSizeCarParkingCount,
@@ -19,26 +20,42 @@ public record RestStopFacilityResponse(
     public static RestStopFacilityResponse of(
             Optional<RestStopDetailEntity> detail, List<HighwayServiceAreaInfoEntity> infos) {
         return new RestStopFacilityResponse(
-                textOf(detail, RestStopDetailEntity::getConvenience),
-                textOf(detail, RestStopDetailEntity::getMaintenanceYn),
-                textOf(detail, RestStopDetailEntity::getTruckSaYn),
+                convenienceFacilities(detail),
+                toBoolean(ResponseTextUtils.textOf(detail, RestStopDetailEntity::getMaintenanceYn)),
+                toBoolean(ResponseTextUtils.textOf(detail, RestStopDetailEntity::getTruckSaYn)),
                 minText(infos, HighwayServiceAreaInfoEntity::getDirectionTypeName),
                 sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getCompactCarParkingCount),
                 sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getFullSizeCarParkingCount),
                 sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getDisabledParkingCount));
     }
 
-    private static String textOf(Optional<RestStopDetailEntity> detail, Function<RestStopDetailEntity, String> getter) {
-        return detail.map(getter)
-                .filter(RestStopFacilityResponse::hasText)
+    private static List<String> convenienceFacilities(Optional<RestStopDetailEntity> detail) {
+        String raw = ResponseTextUtils.textOf(detail, RestStopDetailEntity::getConvenience);
+        if (raw == null) {
+            return List.of();
+        }
+
+        return Arrays.stream(raw.split("\\|"))
                 .map(String::trim)
-                .orElse(null);
+                .filter(ResponseTextUtils::hasText)
+                .distinct()
+                .toList();
+    }
+
+    private static Boolean toBoolean(String value) {
+        if ("O".equals(value)) {
+            return true;
+        }
+        if ("X".equals(value)) {
+            return false;
+        }
+        return null;
     }
 
     private static <T> String minText(List<T> items, Function<T, String> getter) {
         return items.stream()
                 .map(getter)
-                .filter(RestStopFacilityResponse::hasText)
+                .filter(ResponseTextUtils::hasText)
                 .map(String::trim)
                 .min(String::compareTo)
                 .orElse(null);
@@ -60,14 +77,10 @@ public record RestStopFacilityResponse(
     }
 
     private static Integer parseInteger(String value) {
-        if (!hasText(value)) {
+        if (!ResponseTextUtils.hasText(value)) {
             return null;
         }
 
         return Integer.valueOf(value.trim());
-    }
-
-    private static boolean hasText(String value) {
-        return value != null && !value.trim().isEmpty();
     }
 }

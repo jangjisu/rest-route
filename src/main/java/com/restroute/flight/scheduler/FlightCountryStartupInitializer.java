@@ -3,38 +3,45 @@ package com.restroute.flight.scheduler;
 import com.restroute.flight.cache.FlightCountryNameCache;
 import com.restroute.flight.repository.FlightCountryRepository;
 import com.restroute.flight.service.FlightReferenceDataSeeder;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @ConditionalOnProperty(
         prefix = "flight.country.sync",
         name = "startup-enabled",
         havingValue = "true",
         matchIfMissing = true)
-public class FlightCountryStartupInitializer implements ApplicationRunner {
+public class FlightCountryStartupInitializer extends ReferenceDataStartupInitializer {
 
-    private static final String SEED_SQL_PATH = "data/flight-country-seed.sql";
-
-    private final FlightReferenceDataSeeder flightReferenceDataSeeder;
-    private final FlightCountryRepository flightCountryRepository;
     private final FlightCountryNameCache flightCountryNameCache;
 
+    public FlightCountryStartupInitializer(
+            FlightReferenceDataSeeder flightReferenceDataSeeder,
+            FlightCountryRepository flightCountryRepository,
+            FlightCountryNameCache flightCountryNameCache) {
+        super(
+                flightReferenceDataSeeder,
+                "data/flight-country-seed.sql",
+                flightCountryRepository::deleteAllInBatch,
+                flightCountryRepository::count);
+        this.flightCountryNameCache = flightCountryNameCache;
+    }
+
     @Override
-    public void run(ApplicationArguments args) {
-        try {
-            int savedCount = flightReferenceDataSeeder.reseed(
-                    SEED_SQL_PATH, flightCountryRepository::deleteAllInBatch, flightCountryRepository::count);
-            log.info("Initial flight country seeding completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Initial flight country seeding failed. cause={}", e.getMessage(), e);
-        }
+    protected void onSeedSuccess(int savedCount) {
+        log.info("Initial flight country seeding completed. savedCount={}", savedCount);
+    }
+
+    @Override
+    protected void onSeedFailure(RuntimeException e) {
+        log.error("Initial flight country seeding failed. cause={}", e.getMessage(), e);
+    }
+
+    @Override
+    protected void refreshCache() {
         flightCountryNameCache.refresh();
     }
 }

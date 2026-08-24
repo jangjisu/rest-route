@@ -25,7 +25,7 @@ class FoodMenuResponseTest {
                         "foodName",
                         "foodCost",
                         "description",
-                        "representative",
+                        "recommended",
                         "bestFood",
                         "premium",
                         "season",

@@ -474,11 +474,22 @@ export function renderRouteOptionCards(routes, selectedIndex, onSelectRoute) {
         card.type = 'button';
         card.className = `route-option${index === selectedIndex ? ' selected' : ''}`;
         card.setAttribute('aria-pressed', String(index === selectedIndex));
-        card.innerHTML = `
-            <span class="route-option-label">경로 ${index + 1}</span>
-            <p class="route-option-summary">${formatRouteOptionSummary(route)}</p>
-            <p class="route-option-toll">${formatRouteTollFare(route?.summary?.tollFareWon)}</p>
-        `;
+
+        const label = document.createElement('span');
+        label.className = 'route-option-label';
+        label.textContent = `경로 ${index + 1}`;
+
+        const summary = document.createElement('p');
+        summary.className = 'route-option-summary';
+        summary.textContent = formatRouteOptionSummary(route);
+
+        const toll = document.createElement('p');
+        toll.className = 'route-option-toll';
+        toll.textContent = formatRouteTollFare(route?.summary?.tollFareWon);
+
+        card.appendChild(label);
+        card.appendChild(summary);
+        card.appendChild(toll);
         card.addEventListener('click', () => onSelectRoute?.(index));
         container.appendChild(card);
     });

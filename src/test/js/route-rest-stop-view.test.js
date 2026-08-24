@@ -86,13 +86,7 @@ test('route option cards expose selection state without a detail action arrow', 
     const previousDocument = globalThis.document;
     const container = createFakeElement(['d-none']);
     globalThis.document = {
-        createElement: () => ({
-            attributes: new Map(),
-            setAttribute(name, value) {
-                this.attributes.set(name, String(value));
-            },
-            addEventListener() {}
-        }),
+        createElement: () => createFakeElement(),
         getElementById: (id) => (id === 'routeOptions' ? container : null)
     };
 
@@ -103,9 +97,18 @@ test('route option cards expose selection state without a detail action arrow', 
             { summary: { durationSeconds: 7500, distanceMeters: 160000, tollFareWon: 9000 } }
         ], 1, () => {});
 
-        assert.equal(container.children[0].attributes.get('aria-pressed'), 'false');
-        assert.equal(container.children[1].attributes.get('aria-pressed'), 'true');
-        assert.doesNotMatch(container.children[0].innerHTML, /route-option-arrow/);
+        const [firstCard, secondCard] = container.children;
+        assert.equal(firstCard.attributes.get('aria-pressed'), 'false');
+        assert.equal(secondCard.attributes.get('aria-pressed'), 'true');
+        assert.equal(firstCard.children.some((child) => child.className === 'route-option-arrow'), false);
+
+        const [label, summary, toll] = firstCard.children;
+        assert.equal(label.className, 'route-option-label');
+        assert.equal(label.textContent, '경로 1');
+        assert.equal(summary.className, 'route-option-summary');
+        assert.equal(summary.textContent, '2시간 · 150km');
+        assert.equal(toll.className, 'route-option-toll');
+        assert.equal(toll.textContent, '톨비 12,000원');
     } finally {
         globalThis.document = previousDocument;
     }

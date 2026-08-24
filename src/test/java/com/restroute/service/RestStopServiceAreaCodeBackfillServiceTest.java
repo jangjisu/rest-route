@@ -37,6 +37,7 @@ import com.restroute.repository.RestStopProductSalesRankRepository;
 import com.restroute.repository.RestStopRepository;
 import com.restroute.repository.RestStopStoreSalesRankRepository;
 import com.restroute.repository.RestThemeRepository;
+import com.restroute.service.backfill.EvChargerStationMappingBackfiller;
 import com.restroute.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
 import com.restroute.service.backfill.RestEventServiceAreaCodeBackfiller;
 import com.restroute.service.backfill.RestFoodServiceAreaCodeBackfiller;
@@ -65,6 +66,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     RestStopServiceAreaCodeBackfillService.class,
     RestStopQueryService.class,
     EvChargerStationMappingCalculator.class,
+    EvChargerStationMappingBackfiller.class,
     RestStopDetailServiceAreaCodeBackfiller.class,
     HighwayServiceAreaInfoServiceAreaCodeBackfiller.class,
     RestFoodServiceAreaCodeBackfiller.class,

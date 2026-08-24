@@ -5,10 +5,8 @@ import com.restroute.client.response.RestEventItem;
 import com.restroute.client.response.RestEventResponse;
 import com.restroute.domain.RestEventEntity;
 import com.restroute.repository.RestEventRepository;
-import java.util.ArrayList;
+import com.restroute.service.sync.NaturalKeyUpserter;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -16,6 +14,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 @RequiredArgsConstructor
 public class RestEventSyncService {
+
+    private static final NaturalKeyUpserter<RestEventItem, String, RestEventEntity> UPSERTER = NaturalKeyUpserter.of(
+            entity -> eventKey(entity.getStdRestCd(), entity.getEventSeq()),
+            item -> eventKey(item.getStdRestCd(), item.getEventSeq()),
+            RestEventEntity::from,
+            RestEventEntity::updateFrom);
 
     private final ExApiClient exApiClient;
     private final RestEventRepository restEventRepository;
@@ -44,30 +48,11 @@ public class RestEventSyncService {
     }
 
     private void upsertRestEvents(List<RestEventItem> items) {
-        Map<String, RestEventEntity> existingByKey = restEventRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        entity -> eventKey(entity.getStdRestCd(), entity.getEventSeq()),
-                        entity -> entity,
-                        (first, second) -> first));
-
-        List<RestEventEntity> toSave = new ArrayList<>();
-        for (RestEventItem item : items) {
-            toSave.add(upsertOne(item, existingByKey));
-        }
+        List<RestEventEntity> toSave = UPSERTER.upsert(items, restEventRepository.findAll());
         restEventRepository.saveAll(toSave);
     }
 
-    private RestEventEntity upsertOne(RestEventItem item, Map<String, RestEventEntity> existingByKey) {
-        String key = eventKey(item.getStdRestCd(), item.getEventSeq());
-        RestEventEntity existing = existingByKey.get(key);
-        if (existing != null) {
-            existing.updateFrom(item);
-            return existing;
-        }
-        return existingByKey.computeIfAbsent(key, k -> RestEventEntity.from(item));
-    }
-
-    private String eventKey(String stdRestCd, String eventSeq) {
+    private static String eventKey(String stdRestCd, String eventSeq) {
         return stdRestCd + "\n" + eventSeq;
     }
 }

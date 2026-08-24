@@ -23,6 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin/rest-stops")
 public class AdminRestStopEditController {
 
+    private static final String CREATED_MESSAGE = "%s 휴게소를 새로 등록했습니다.";
+    private static final String EDITED_MESSAGE = "%s 정보를 수정했습니다.";
+    private static final String OVERRIDE_CLEARED_MESSAGE = "%s의 동기화 잠금을 해제했습니다.";
+
     private final AdminRestStopEditService editService;
     private final AdminActivityLogService adminActivityLogService;
 
@@ -38,7 +42,7 @@ public class AdminRestStopEditController {
     public ResponseEntity<ApiResponse<AdminRestStopEditableResponse>> create(
             @RequestBody AdminRestStopUpdateRequest request, Authentication authentication) {
         AdminRestStopEditableResponse response = editService.create(request);
-        adminActivityLogService.logRestStopCreated(authentication, response.unitName());
+        adminActivityLogService.log(authentication, String.format(CREATED_MESSAGE, response.unitName()));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -48,7 +52,7 @@ public class AdminRestStopEditController {
             @RequestBody AdminRestStopUpdateRequest request,
             Authentication authentication) {
         AdminRestStopEditableResponse response = editService.update(serviceAreaCode, request);
-        adminActivityLogService.logRestStopEdited(authentication, response.unitName());
+        adminActivityLogService.log(authentication, String.format(EDITED_MESSAGE, response.unitName()));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -56,7 +60,7 @@ public class AdminRestStopEditController {
     public ResponseEntity<ApiResponse<AdminRestStopEditableResponse>> clearOverride(
             @PathVariable String serviceAreaCode, Authentication authentication) {
         AdminRestStopEditableResponse response = editService.clearOverride(serviceAreaCode);
-        adminActivityLogService.logRestStopOverrideCleared(authentication, response.unitName());
+        adminActivityLogService.log(authentication, String.format(OVERRIDE_CLEARED_MESSAGE, response.unitName()));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

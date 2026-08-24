@@ -23,7 +23,8 @@ class RouteCoordinateReducerTest {
     private final RouteCoordinateReducer service = new RouteCoordinateReducer();
 
     private static Route route(long totalDistanceMeters, List<Double> vertexes) {
-        return new Route(0, new Summary(totalDistanceMeters, 0L, null), List.of(new Section(List.of(new Road(vertexes)))));
+        return new Route(
+                0, new Summary(totalDistanceMeters, 0L, null), List.of(new Section(List.of(new Road(vertexes)))));
     }
 
     private static List<Double> sequentialVertexes(int count) {

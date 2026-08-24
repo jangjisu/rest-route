@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>{@link RouteRestStopService}, {@code RestStopServiceAreaCodeBackfillService}처럼 여러 QueryService를
  * 각자 호출하고 서비스 코드 기준으로 직접 짜맞추던 로직을 이 서비스 하나로 대체하기 위한 것이다.
- * 기존 소비자를 이 서비스로 교체하는 작업은 아직 하지 않았다 — 우선 조합 형태(뼈대)만 확정한다.
+ * {@code RouteOptionAssemblyService}가 이 서비스를 사용해 경로 상의 휴게소 정보를 조합한다.
  */
 @Service
 @RequiredArgsConstructor

@@ -1,11 +1,8 @@
 package com.restroute.service;
 
-import com.restroute.domain.EvChargerStationMappingEntity;
 import com.restroute.domain.RestOilEntity;
 import com.restroute.domain.RestStopEntity;
-import com.restroute.repository.EvChargerRepository;
-import com.restroute.repository.EvChargerStationMappingRepository;
-import com.restroute.repository.RestStopDetailRepository;
+import com.restroute.service.backfill.EvChargerStationMappingBackfiller;
 import com.restroute.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
 import com.restroute.service.backfill.RestEventServiceAreaCodeBackfiller;
 import com.restroute.service.backfill.RestFoodServiceAreaCodeBackfiller;
@@ -15,7 +12,6 @@ import com.restroute.service.backfill.RestStopDetailServiceAreaCodeBackfiller;
 import com.restroute.service.backfill.RestStopProductSalesRankBackfiller;
 import com.restroute.service.backfill.RestStopStoreSalesRankBackfiller;
 import com.restroute.service.backfill.RestThemeServiceAreaCodeBackfiller;
-import com.restroute.service.evcharger.mapping.EvChargerStationMappingCalculator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,15 +38,12 @@ public class RestStopServiceAreaCodeBackfillService {
     public static final String REST_EVENT_MAPPED_COUNT = "restEventMappedCount";
 
     private final RestStopQueryService restStopQueryService;
-    private final RestStopDetailRepository restStopDetailRepository;
-    private final EvChargerRepository evChargerRepository;
-    private final EvChargerStationMappingRepository evChargerStationMappingRepository;
-    private final EvChargerStationMappingCalculator evChargerStationMappingCalculator;
     private final RestStopDetailServiceAreaCodeBackfiller restStopDetailBackfiller;
     private final HighwayServiceAreaInfoServiceAreaCodeBackfiller highwayServiceAreaInfoBackfiller;
     private final RestFoodServiceAreaCodeBackfiller restFoodBackfiller;
     private final RestOilServiceAreaCodeBackfiller restOilBackfiller;
     private final RestOilPriceServiceAreaCodeBackfiller restOilPriceBackfiller;
+    private final EvChargerStationMappingBackfiller evChargerStationMappingBackfiller;
     private final RestStopProductSalesRankBackfiller productSalesRankBackfiller;
     private final RestStopStoreSalesRankBackfiller storeSalesRankBackfiller;
     private final RestThemeServiceAreaCodeBackfiller restThemeBackfiller;
@@ -68,7 +61,7 @@ public class RestStopServiceAreaCodeBackfillService {
         int restFoodMappedCount = restFoodBackfiller.backfill(serviceAreaCodeByStdRestCd);
         int restOilMappedCount = restOilBackfiller.backfill(serviceAreaCodeByOilKey);
         int restOilPriceMappedCount = restOilPriceBackfiller.backfill();
-        int evChargerMappedCount = backfillEvChargerMappings(restStops);
+        int evChargerMappedCount = evChargerStationMappingBackfiller.backfill(restStops);
         int productSalesRankMappedCount = productSalesRankBackfiller.backfill(restStops);
         int storeSalesRankMappedCount = storeSalesRankBackfiller.backfill(restStops);
         int restThemeMappedCount = restThemeBackfiller.backfill(serviceAreaCodeByStdRestCd);
@@ -111,14 +104,6 @@ public class RestStopServiceAreaCodeBackfillService {
                 result.get(REST_THEME_MAPPED_COUNT),
                 result.get(REST_EVENT_MAPPED_COUNT));
         return result;
-    }
-
-    private int backfillEvChargerMappings(List<RestStopEntity> restStops) {
-        List<EvChargerStationMappingEntity> mappingsToSave = evChargerStationMappingCalculator.calculate(
-                restStops, restStopDetailRepository.findAll(), evChargerRepository.findAllByDelYn("N"));
-        evChargerStationMappingRepository.deleteAllInBatch();
-        evChargerStationMappingRepository.saveAll(mappingsToSave);
-        return mappingsToSave.size();
     }
 
     private List<String> findRestStopServiceAreaCodes(List<RestStopEntity> restStops) {

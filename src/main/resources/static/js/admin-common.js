@@ -17,6 +17,27 @@ export function showToast(document, message, type = 'success', duration = TOAST_
     }, duration);
 }
 
+export function openDialogById(document, id, { guard, onOpened } = {}) {
+    const dialog = document.getElementById(id);
+    if (!dialog || dialog.open) {
+        return;
+    }
+    if (guard && !guard()) {
+        return;
+    }
+    onOpened?.();
+    dialog.showModal();
+}
+
+export function closeDialogById(document, id, onClosed) {
+    const dialog = document.getElementById(id);
+    if (!dialog?.open) {
+        return;
+    }
+    dialog.close();
+    onClosed?.();
+}
+
 export function csrfFrom(source) {
     return {
         headerName: source.dataset.csrfHeader || 'X-CSRF-TOKEN',

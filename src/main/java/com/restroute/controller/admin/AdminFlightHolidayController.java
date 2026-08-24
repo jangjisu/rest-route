@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin/flights/holidays")
 public class AdminFlightHolidayController {
 
+    private static final String FLIGHT_HOLIDAY_ADDED_MESSAGE = "공휴일(%s %s)을 추가했습니다.";
+    private static final String FLIGHT_HOLIDAY_DELETED_MESSAGE = "공휴일(%s)을 삭제했습니다.";
+
     private final AdminFlightHolidayService adminFlightHolidayService;
     private final AdminActivityLogService adminActivityLogService;
 
@@ -34,14 +37,15 @@ public class AdminFlightHolidayController {
     public ResponseEntity<ApiResponse<AdminFlightHolidayResponse>> create(
             @RequestBody AdminFlightHolidayRequest request, Authentication authentication) {
         AdminFlightHolidayResponse response = adminFlightHolidayService.create(request);
-        adminActivityLogService.logFlightHolidayAdded(authentication, response.date(), response.name());
+        adminActivityLogService.log(
+                authentication, String.format(FLIGHT_HOLIDAY_ADDED_MESSAGE, response.date(), response.name()));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @DeleteMapping("/{holidayId}")
     public ResponseEntity<Void> delete(@PathVariable Long holidayId, Authentication authentication) {
         AdminFlightHolidayResponse deleted = adminFlightHolidayService.delete(holidayId);
-        adminActivityLogService.logFlightHolidayDeleted(authentication, deleted.date());
+        adminActivityLogService.log(authentication, String.format(FLIGHT_HOLIDAY_DELETED_MESSAGE, deleted.date()));
         return ResponseEntity.noContent().build();
     }
 }

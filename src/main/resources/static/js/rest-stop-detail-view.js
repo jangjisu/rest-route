@@ -1,4 +1,4 @@
-import { showApiUnavailableAlert } from './utils.js';
+import { closeDialogById, openDialogById, showApiUnavailableAlert } from './utils.js';
 import { trackScreenView } from './analytics.js';
 import {
     availableDataTags,
@@ -20,7 +20,6 @@ import {
     isMissingValue,
     normalizeSalesRankingStoreName,
     orderFoodMenus,
-    parseConvenience,
     sortSalesRankingProducts,
     sortSalesRankingStores
 } from './rest-stop-detail-formatters.js';
@@ -181,7 +180,7 @@ function renderParkingInfo(compactCount, fullSizeCount, disabledCount) {
     }
 }
 
-function renderConvenience(value) {
+function renderConvenience(facilities) {
     const list = document.getElementById('restStopDetailConvenience');
     const fallback = document.getElementById('restStopDetailConvenienceFallback');
     if (!list || !fallback) {
@@ -189,7 +188,7 @@ function renderConvenience(value) {
     }
 
     list.replaceChildren();
-    const conveniences = parseConvenience(value);
+    const conveniences = Array.isArray(facilities) ? facilities : [];
     conveniences.forEach((convenience) => {
         const item = document.createElement('li');
         item.textContent = convenience;
@@ -199,6 +198,16 @@ function renderConvenience(value) {
     list.classList.toggle('d-none', conveniences.length === 0);
     fallback.classList.toggle('d-none', conveniences.length > 0);
     fallback.textContent = conveniences.length === 0 ? CONVENIENCE_FALLBACK : '';
+}
+
+function renderBooleanStatus(id, value, formatter) {
+    const element = document.getElementById(id);
+    if (!element) {
+        return;
+    }
+
+    element.textContent = formatter(value);
+    element.classList.toggle('rest-stop-detail-missing', value !== true && value !== false);
 }
 
 function renderEvChargerInfo(count) {
@@ -426,9 +435,9 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
         setDetailValue('restStopDetailRoute', detail.routeName, '노선 정보 없음');
         setDetailValue('restStopDetailDirection', detail.direction, '방향 정보 없음');
         setDetailValue('restStopDetailAddress', detail.address, '주소 정보 없음');
-        renderConvenience(detail.convenience);
-        setDetailValue('restStopDetailMaintenance', detail.maintenanceYn, '알 수 없음', formatAvailability);
-        setDetailValue('restStopDetailFreight', detail.truckSaYn, '알 수 없음', formatFreightOperation);
+        renderConvenience(detail.convenienceFacilities);
+        renderBooleanStatus('restStopDetailMaintenance', detail.hasMaintenance, formatAvailability);
+        renderBooleanStatus('restStopDetailFreight', detail.allowsTruckParking, formatFreightOperation);
         renderParkingInfo(detail.compactCarParkingCount, detail.fullSizeCarParkingCount, detail.disabledParkingCount);
         renderEvChargerInfo(detail.evChargerCount);
         renderThemeBadges(detail.themes);
@@ -459,22 +468,18 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
     }
 
     function openFoodModal() {
-        const modal = document.getElementById('restStopFoodModal');
-        if (!modal || currentFoodMenus.length === 0) {
-            return;
-        }
-
-        foodExpanded = false;
-        renderFoodList();
-        modal.showModal();
-        trackScreenView('rest_stop_food_menu', { service_area_code: selectedServiceAreaCode });
+        openDialogById('restStopFoodModal', {
+            guard: () => currentFoodMenus.length > 0,
+            onOpened: () => {
+                foodExpanded = false;
+                renderFoodList();
+                trackScreenView('rest_stop_food_menu', { service_area_code: selectedServiceAreaCode });
+            }
+        });
     }
 
     function closeFoodModal() {
-        const modal = document.getElementById('restStopFoodModal');
-        if (modal?.open) {
-            modal.close();
-        }
+        closeDialogById('restStopFoodModal');
     }
 
     function renderFoodList() {
@@ -491,13 +496,13 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
             return;
         }
 
-        const representatives = currentFoodMenus.filter((menu) => menu?.representative);
-        const hasRepresentatives = representatives.length > 0;
-        const menus = foodExpanded || !hasRepresentatives ? orderFoodMenus(currentFoodMenus) : representatives;
+        const recommended = currentFoodMenus.filter((menu) => menu?.recommended);
+        const hasRecommended = recommended.length > 0;
+        const menus = foodExpanded || !hasRecommended ? orderFoodMenus(currentFoodMenus) : recommended;
 
         list.replaceChildren();
         menus.forEach((menu) => list.appendChild(createFoodMenuItem(menu)));
-        renderFoodToggle(hasFoodSections({ sections }) || (hasRepresentatives && currentFoodMenus.length > representatives.length));
+        renderFoodToggle(hasFoodSections({ sections }) || (hasRecommended && currentFoodMenus.length > recommended.length));
     }
 
     function renderFoodToggle(canExpand) {

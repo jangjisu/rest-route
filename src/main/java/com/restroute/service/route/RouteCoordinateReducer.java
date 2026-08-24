@@ -27,8 +27,7 @@ public class RouteCoordinateReducer {
         collect(route.sections(), rawPoints, rawTrafficStates);
 
         int targetCount = targetPointCount(totalDistanceMeters(route.summary()));
-        RoutePath path =
-                RoutePath.of(downsample(rawPoints, targetCount), downsample(rawTrafficStates, targetCount));
+        RoutePath path = RoutePath.of(downsample(rawPoints, targetCount), downsample(rawTrafficStates, targetCount));
         return RouteGeometry.of(path, route.summary());
     }
 
@@ -59,8 +58,7 @@ public class RouteCoordinateReducer {
         }
     }
 
-    private void collectRoad(
-            KakaoDirectionsResponse.Road road, List<PathPoint> points, List<Integer> trafficStates) {
+    private void collectRoad(KakaoDirectionsResponse.Road road, List<PathPoint> points, List<Integer> trafficStates) {
         if (road == null || road.vertexes() == null) {
             return;
         }
