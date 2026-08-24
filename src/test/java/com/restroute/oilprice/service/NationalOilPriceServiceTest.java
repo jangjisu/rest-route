@@ -6,12 +6,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restroute.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.oilprice.client.OpinetApiClient;
 import com.restroute.oilprice.client.response.OpinetAverageOilPriceItem;
 import com.restroute.oilprice.client.response.OpinetAverageOilPriceResponse;
 import com.restroute.oilprice.domain.NationalOilPriceEntity;
 import com.restroute.oilprice.repository.NationalOilPriceRepository;
+import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
