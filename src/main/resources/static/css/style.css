@@ -1655,7 +1655,9 @@ body.global-loading-open {
     font-size: 0.76rem;
     font-weight: 700;
     line-height: 1.2;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .rest-stop-detail-status {
