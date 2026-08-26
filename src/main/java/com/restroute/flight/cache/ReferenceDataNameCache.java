@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
  * 로직을 그대로 공유해서 여기 한 곳에 모았다 — DB 조회 방식과 엔티티에서 code/kor/eng를
  * 꺼내는 방법만 서브클래스가 정한다.
  */
-public abstract class ReferenceDataNameCache<T> {
+public class ReferenceDataNameCache<T> {
 
     private final Supplier<List<T>> findAll;
     private final Function<T, String> codeOf;
