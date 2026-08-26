@@ -1606,11 +1606,14 @@ body.global-loading-open {
 .rest-stop-detail-name {
     margin: 0;
     padding: 0;
+    max-width: 100%;
     color: var(--rr-color-text);
     font-size: 1.05rem;
     font-weight: 900;
     line-height: 1.4;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .rest-stop-detail-badges {

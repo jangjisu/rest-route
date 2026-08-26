@@ -145,7 +145,9 @@ function setDetailName(value, fallbackValue) {
         return;
     }
 
-    element.textContent = formatText(value, formatText(fallbackValue, '이름 정보 없음'));
+    const name = formatText(value, formatText(fallbackValue, '이름 정보 없음'));
+    element.textContent = name;
+    element.title = name;
     element.classList.toggle(
         'rest-stop-detail-missing',
         isMissingValue(value) && isMissingValue(fallbackValue)
