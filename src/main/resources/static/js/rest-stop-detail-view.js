@@ -81,10 +81,9 @@ export function renderThemeBadges(themes) {
         const badge = document.createElement('li');
         badge.className = 'rest-stop-detail-theme-badge';
         badge.textContent = name;
+        // 배지 자체는 한 줄로 잘릴 수 있어(CSS ellipsis), 이름은 항상 title에 넣어 마우스오버로 보이게 한다.
         const detail = typeof theme?.detail === 'string' ? theme.detail.trim() : '';
-        if (detail !== '') {
-            badge.title = detail;
-        }
+        badge.title = detail !== '' ? `${name} - ${detail}` : name;
         list.appendChild(badge);
     });
 
