@@ -1606,11 +1606,22 @@ body.global-loading-open {
 .rest-stop-detail-name {
     margin: 0;
     padding: 0;
+    max-width: 100%;
     color: var(--rr-color-text);
     font-size: 1.05rem;
     font-weight: 900;
     line-height: 1.4;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rest-stop-detail-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
 }
 
 .rest-stop-detail-ev-charger {
@@ -1618,7 +1629,6 @@ body.global-loading-open {
     align-items: center;
     gap: 0.3rem;
     max-width: 100%;
-    margin-top: 0.5rem;
     padding: 0.25rem 0.5rem;
     border: 1px solid var(--rr-color-ev-border);
     border-radius: var(--rr-radius-pill);
@@ -1635,10 +1645,7 @@ body.global-loading-open {
 }
 
 .rest-stop-detail-theme-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin: 0.5rem 0 0;
+    display: contents;
     padding: 0;
     list-style: none;
 }
