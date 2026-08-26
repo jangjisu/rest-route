@@ -141,9 +141,9 @@ test('renderThemeBadges renders one badge per theme and reveals the list', () =>
         const list = elements.get('restStopDetailThemes');
         assert.equal(list.children.length, 2);
         assert.equal(list.children[0].textContent, '4계절 꽃이 있는 휴게소');
-        assert.equal(list.children[0].title, '365일 꽃향기가 나는 휴게소입니다');
+        assert.equal(list.children[0].title, '4계절 꽃이 있는 휴게소 - 365일 꽃향기가 나는 휴게소입니다');
         assert.equal(list.children[1].textContent, '포토존');
-        assert.equal(list.children[1].title, undefined);
+        assert.equal(list.children[1].title, '포토존');
         assert.equal(list.classList.contains('d-none'), false);
     });
 });

@@ -60,11 +60,14 @@ public record RestStopFacilityResponse(
                 .toList();
     }
 
+    private static final String YES_VALUE = "O";
+    private static final String NO_VALUE = "X";
+
     private static Boolean toBoolean(String value) {
-        if ("O".equals(value)) {
+        if (YES_VALUE.equals(value)) {
             return true;
         }
-        if ("X".equals(value)) {
+        if (NO_VALUE.equals(value)) {
             return false;
         }
         return null;
