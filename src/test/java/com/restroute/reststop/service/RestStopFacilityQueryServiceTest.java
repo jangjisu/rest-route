@@ -74,6 +74,31 @@ class RestStopFacilityQueryServiceTest {
     }
 
     @Test
+    @DisplayName("장애인 주차대수가 소형+대형 합계보다 크면 그 차이만 실제 장애인 주차대수로 본다")
+    void findByServiceAreaCode_correctsDisabledParkingCountWhenLargerThanOtherTotal() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "죽전(서울)휴게소"));
+        HighwayServiceAreaInfoEntity info = highwayServiceAreaInfo("133", "67", "204", "상행");
+        when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
+        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+                .thenReturn(RestStopRelatedInfo.of(
+                        Optional.empty(),
+                        List.of(info),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
+
+        Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().compactCarParkingCount()).isEqualTo(133);
+        assertThat(result.get().fullSizeCarParkingCount()).isEqualTo(67);
+        assertThat(result.get().disabledParkingCount()).isEqualTo(4);
+    }
+
+    @Test
     @DisplayName("휴게소가 없으면 시설/주차 정보가 없다")
     void findByServiceAreaCode_returnsEmptyWhenRestStopMissing() {
         when(restStopRepository.findByServiceAreaCode("UNKNOWN")).thenReturn(Optional.empty());

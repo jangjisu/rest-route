@@ -19,14 +19,32 @@ public record RestStopFacilityResponse(
 
     public static RestStopFacilityResponse of(
             Optional<RestStopDetailEntity> detail, List<HighwayServiceAreaInfoEntity> infos) {
+        Integer compactCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getCompactCarParkingCount);
+        Integer fullSizeCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getFullSizeCarParkingCount);
+        Integer disabledCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getDisabledParkingCount);
         return new RestStopFacilityResponse(
                 convenienceFacilities(detail),
                 toBoolean(ResponseTextUtils.textOf(detail, RestStopDetailEntity::getMaintenanceYn)),
                 toBoolean(ResponseTextUtils.textOf(detail, RestStopDetailEntity::getTruckSaYn)),
                 minText(infos, HighwayServiceAreaInfoEntity::getDirectionTypeName),
-                sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getCompactCarParkingCount),
-                sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getFullSizeCarParkingCount),
-                sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getDisabledParkingCount));
+                compactCount,
+                fullSizeCount,
+                correctedDisabledCount(compactCount, fullSizeCount, disabledCount));
+    }
+
+    // 도로공사 원천 데이터 일부가 장애인 주차대수 칸에 총 주차대수를 잘못 입력해 두는 경우가 있어(예: 소형133+대형67인데 장애인 204),
+    // 장애인 수가 소형+대형 합계를 넘으면 그 차이만 실제 장애인 주차대수로 본다.
+    private static Integer correctedDisabledCount(Integer compactCount, Integer fullSizeCount, Integer disabledCount) {
+        if (disabledCount == null) {
+            return null;
+        }
+
+        int otherTotal = orZero(compactCount) + orZero(fullSizeCount);
+        return disabledCount > otherTotal ? disabledCount - otherTotal : disabledCount;
+    }
+
+    private static int orZero(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private static List<String> convenienceFacilities(Optional<RestStopDetailEntity> detail) {
