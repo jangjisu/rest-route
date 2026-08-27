@@ -36,7 +36,7 @@ class RestStopFacilityControllerTest {
     @DisplayName("GET /api/rest-stops/{serviceAreaCode}/facilities는 시설/주차 정보를 ApiResponse로 반환한다")
     void getRestStopFacilities_returnsFacilities() throws Exception {
         RestStopFacilityResponse response =
-                new RestStopFacilityResponse(List.of("수유실", "쉼터"), true, false, "하행", 15, 27, 1);
+                new RestStopFacilityResponse(List.of("수유실", "쉼터"), true, false, "하행", 15, 27, 1, 37, 57);
         when(restStopFacilityQueryService.findByServiceAreaCode("A00001")).thenReturn(Optional.of(response));
 
         mockMvc.perform(get("/api/rest-stops/A00001/facilities"))
@@ -50,7 +50,9 @@ class RestStopFacilityControllerTest {
                 .andExpect(jsonPath("$.data.direction").value("하행"))
                 .andExpect(jsonPath("$.data.compactCarParkingCount").value(15))
                 .andExpect(jsonPath("$.data.fullSizeCarParkingCount").value(27))
-                .andExpect(jsonPath("$.data.disabledParkingCount").value(1));
+                .andExpect(jsonPath("$.data.disabledParkingCount").value(1))
+                .andExpect(jsonPath("$.data.maleToiletCount").value(37))
+                .andExpect(jsonPath("$.data.femaleToiletCount").value(57));
     }
 
     @Test

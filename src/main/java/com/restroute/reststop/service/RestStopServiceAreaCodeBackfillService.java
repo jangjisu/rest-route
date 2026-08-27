@@ -8,6 +8,7 @@ import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
 import com.restroute.reststop.service.backfill.RestStopDetailServiceAreaCodeBackfiller;
 import com.restroute.reststop.service.backfill.RestStopProductSalesRankBackfiller;
+import com.restroute.reststop.service.backfill.RestStopRestroomBackfiller;
 import com.restroute.reststop.service.backfill.RestStopStoreSalesRankBackfiller;
 import com.restroute.reststopcontent.service.RestEventServiceAreaCodeBackfiller;
 import com.restroute.reststopcontent.service.RestFoodServiceAreaCodeBackfiller;
@@ -36,6 +37,7 @@ public class RestStopServiceAreaCodeBackfillService {
     public static final String STORE_SALES_RANK_MAPPED_COUNT = "storeSalesRankMappedCount";
     public static final String REST_THEME_MAPPED_COUNT = "restThemeMappedCount";
     public static final String REST_EVENT_MAPPED_COUNT = "restEventMappedCount";
+    public static final String REST_STOP_RESTROOM_MAPPED_COUNT = "restStopRestroomMappedCount";
 
     private final RestStopQueryService restStopQueryService;
     private final RestStopDetailServiceAreaCodeBackfiller restStopDetailBackfiller;
@@ -48,6 +50,7 @@ public class RestStopServiceAreaCodeBackfillService {
     private final RestStopStoreSalesRankBackfiller storeSalesRankBackfiller;
     private final RestThemeServiceAreaCodeBackfiller restThemeBackfiller;
     private final RestEventServiceAreaCodeBackfiller restEventBackfiller;
+    private final RestStopRestroomBackfiller restStopRestroomBackfiller;
 
     @Transactional
     public Map<String, Integer> backfill() {
@@ -66,33 +69,26 @@ public class RestStopServiceAreaCodeBackfillService {
         int storeSalesRankMappedCount = storeSalesRankBackfiller.backfill(restStops);
         int restThemeMappedCount = restThemeBackfiller.backfill(serviceAreaCodeByStdRestCd);
         int restEventMappedCount = restEventBackfiller.backfill(serviceAreaCodeByStdRestCd);
+        int restStopRestroomMappedCount = restStopRestroomBackfiller.backfill(restStops);
 
-        Map<String, Integer> result = Map.of(
-                REST_STOP_DETAIL_MAPPED_COUNT,
-                restStopDetailMappedCount,
-                HIGHWAY_SERVICE_AREA_INFO_MAPPED_COUNT,
-                highwayServiceAreaInfoMappedCount,
-                REST_FOOD_MAPPED_COUNT,
-                restFoodMappedCount,
-                REST_OIL_MAPPED_COUNT,
-                restOilMappedCount,
-                REST_OIL_PRICE_MAPPED_COUNT,
-                restOilPriceMappedCount,
-                EV_CHARGER_MAPPED_COUNT,
-                evChargerMappedCount,
-                PRODUCT_SALES_RANK_MAPPED_COUNT,
-                productSalesRankMappedCount,
-                STORE_SALES_RANK_MAPPED_COUNT,
-                storeSalesRankMappedCount,
-                REST_THEME_MAPPED_COUNT,
-                restThemeMappedCount,
-                REST_EVENT_MAPPED_COUNT,
-                restEventMappedCount);
+        Map<String, Integer> result = Map.ofEntries(
+                Map.entry(REST_STOP_DETAIL_MAPPED_COUNT, restStopDetailMappedCount),
+                Map.entry(HIGHWAY_SERVICE_AREA_INFO_MAPPED_COUNT, highwayServiceAreaInfoMappedCount),
+                Map.entry(REST_FOOD_MAPPED_COUNT, restFoodMappedCount),
+                Map.entry(REST_OIL_MAPPED_COUNT, restOilMappedCount),
+                Map.entry(REST_OIL_PRICE_MAPPED_COUNT, restOilPriceMappedCount),
+                Map.entry(EV_CHARGER_MAPPED_COUNT, evChargerMappedCount),
+                Map.entry(PRODUCT_SALES_RANK_MAPPED_COUNT, productSalesRankMappedCount),
+                Map.entry(STORE_SALES_RANK_MAPPED_COUNT, storeSalesRankMappedCount),
+                Map.entry(REST_THEME_MAPPED_COUNT, restThemeMappedCount),
+                Map.entry(REST_EVENT_MAPPED_COUNT, restEventMappedCount),
+                Map.entry(REST_STOP_RESTROOM_MAPPED_COUNT, restStopRestroomMappedCount));
         log.info(
                 "Rest stop service area code backfill completed. restStopDetailMappedCount={}, "
                         + "highwayServiceAreaInfoMappedCount={}, restFoodMappedCount={}, restOilMappedCount={}, "
                         + "restOilPriceMappedCount={}, evChargerMappedCount={}, productSalesRankMappedCount={}, "
-                        + "storeSalesRankMappedCount={}, restThemeMappedCount={}, restEventMappedCount={}",
+                        + "storeSalesRankMappedCount={}, restThemeMappedCount={}, restEventMappedCount={}, "
+                        + "restStopRestroomMappedCount={}",
                 result.get(REST_STOP_DETAIL_MAPPED_COUNT),
                 result.get(HIGHWAY_SERVICE_AREA_INFO_MAPPED_COUNT),
                 result.get(REST_FOOD_MAPPED_COUNT),
@@ -102,7 +98,8 @@ public class RestStopServiceAreaCodeBackfillService {
                 result.get(PRODUCT_SALES_RANK_MAPPED_COUNT),
                 result.get(STORE_SALES_RANK_MAPPED_COUNT),
                 result.get(REST_THEME_MAPPED_COUNT),
-                result.get(REST_EVENT_MAPPED_COUNT));
+                result.get(REST_EVENT_MAPPED_COUNT),
+                result.get(REST_STOP_RESTROOM_MAPPED_COUNT));
         return result;
     }
 
