@@ -74,9 +74,9 @@ test('formatParkingCount appends the unit and keeps zero as a valid count', () =
 });
 
 test('formatToiletCount appends the unit and keeps zero as a valid count', () => {
-    assert.equal(formatToiletCount(12), '12칸');
-    assert.equal(formatToiletCount('7'), '7칸');
-    assert.equal(formatToiletCount(0), '0칸');
+    assert.equal(formatToiletCount(12), '12개');
+    assert.equal(formatToiletCount('7'), '7개');
+    assert.equal(formatToiletCount(0), '0개');
     assert.equal(formatToiletCount(null), '정보 없음');
     assert.equal(formatToiletCount(''), '정보 없음');
     assert.equal(formatToiletCount('   '), '정보 없음');

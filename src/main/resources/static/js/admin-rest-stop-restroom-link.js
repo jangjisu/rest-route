@@ -163,10 +163,10 @@ export function initializeAdminRestStopRestroomLink(document, {
         detail.textContent = [
             restroom.routeName,
             restroom.maleToiletCount !== null && restroom.maleToiletCount !== undefined
-                ? `남 ${restroom.maleToiletCount}칸`
+                ? `남 ${restroom.maleToiletCount}개`
                 : null,
             restroom.femaleToiletCount !== null && restroom.femaleToiletCount !== undefined
-                ? `여 ${restroom.femaleToiletCount}칸`
+                ? `여 ${restroom.femaleToiletCount}개`
                 : null
         ]
             .filter((value) => value)

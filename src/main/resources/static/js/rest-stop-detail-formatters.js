@@ -43,7 +43,7 @@ export function formatToiletCount(value) {
     const isNumber = typeof value === 'number' && Number.isInteger(value) && value >= 0;
     const isNumericString = typeof value === 'string' && /^\d+$/.test(value.trim());
     const normalizedValue = typeof value === 'string' ? value.trim() : value;
-    return isNumber || isNumericString ? `${normalizedValue}칸` : '정보 없음';
+    return isNumber || isNumericString ? `${normalizedValue}개` : '정보 없음';
 }
 
 export function formatTotalParkingCount(compactCount, fullSizeCount, disabledCount) {
