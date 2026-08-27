@@ -12,6 +12,7 @@
         <a th:classappend="${active == 'edit'} ? 'active'" href="/admin/rest-stops/edit"><span class="nav-icon">✎</span>휴게소 정보 관리</a>
         <a th:classappend="${active == 'foods'} ? 'active'" href="/admin/rest-stops/foods"><span class="nav-icon">◇</span>휴게소 음식 관리</a>
         <a th:classappend="${active == 'oil-links'} ? 'active'" href="/admin/rest-stops/oil-links"><span class="nav-icon">⛽</span>휴게소 주유소 연결</a>
+        <a th:classappend="${active == 'restroom-links'} ? 'active'" href="/admin/rest-stops/restroom-links"><span class="nav-icon">🚻</span>휴게소 화장실 연결</a>
         <a th:classappend="${active == 'flight-holidays'} ? 'active'" href="/admin/flights/holidays"><span class="nav-icon">✈</span>항공권 공휴일 관리</a>
         <div class="nav-label">System</div>
         <a class="disabled" href="#"><span class="nav-icon">↻</span>데이터 동기화<span>준비중</span></a>
