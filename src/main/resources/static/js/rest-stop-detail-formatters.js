@@ -39,6 +39,13 @@ export function formatParkingCount(value) {
     return isNumber || isNumericString ? `${normalizedValue}대` : '정보 없음';
 }
 
+export function formatToiletCount(value) {
+    const isNumber = typeof value === 'number' && Number.isInteger(value) && value >= 0;
+    const isNumericString = typeof value === 'string' && /^\d+$/.test(value.trim());
+    const normalizedValue = typeof value === 'string' ? value.trim() : value;
+    return isNumber || isNumericString ? `${normalizedValue}칸` : '정보 없음';
+}
+
 export function formatTotalParkingCount(compactCount, fullSizeCount, disabledCount) {
     const values = [compactCount, fullSizeCount, disabledCount].filter((value) => !isMissingValue(value));
     if (values.length === 0) {
@@ -203,7 +210,7 @@ export function hasOilInfo(oilInfo) {
         || hasOilConveniences(oilInfo.oilStationConveniences);
 }
 
-function isParkingCount(value) {
+function isNonNegativeCount(value) {
     if (typeof value === 'number') {
         return Number.isInteger(value) && value >= 0;
     }
@@ -215,9 +222,17 @@ export function hasParkingInfo(detail) {
         return false;
     }
 
-    return isParkingCount(detail.compactCarParkingCount)
-        || isParkingCount(detail.fullSizeCarParkingCount)
-        || isParkingCount(detail.disabledParkingCount);
+    return isNonNegativeCount(detail.compactCarParkingCount)
+        || isNonNegativeCount(detail.fullSizeCarParkingCount)
+        || isNonNegativeCount(detail.disabledParkingCount);
+}
+
+export function hasRestroomInfo(detail) {
+    if (!detail || typeof detail !== 'object') {
+        return false;
+    }
+
+    return isNonNegativeCount(detail.maleToiletCount) || isNonNegativeCount(detail.femaleToiletCount);
 }
 
 export function availableDataTags(detail) {
