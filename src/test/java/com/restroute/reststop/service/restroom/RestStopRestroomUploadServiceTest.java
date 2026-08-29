@@ -1,13 +1,17 @@
 package com.restroute.reststop.service.restroom;
 
+import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopRestroomEntity;
+import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopRestroomRepository;
+import com.restroute.reststop.service.backfill.RestStopRestroomBackfiller;
 import com.restroute.reststop.service.restroom.dto.RestStopRestroomRow;
 import com.restroute.reststop.service.restroom.util.RestStopRestroomCsvParser;
 import java.util.List;
@@ -16,7 +20,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -32,6 +38,12 @@ class RestStopRestroomUploadServiceTest {
     private RestStopRestroomRepository restroomRepository;
 
     @Mock
+    private RestStopRepository restStopRepository;
+
+    @Mock
+    private RestStopRestroomBackfiller backfiller;
+
+    @Mock
     private TransactionTemplate transactionTemplate;
 
     @Mock
@@ -41,7 +53,8 @@ class RestStopRestroomUploadServiceTest {
 
     @BeforeEach
     void setUp() {
-        uploadService = new RestStopRestroomUploadService(csvParser, restroomRepository, transactionTemplate);
+        uploadService = new RestStopRestroomUploadService(
+                csvParser, restroomRepository, restStopRepository, backfiller, transactionTemplate);
     }
 
     @Test
@@ -60,6 +73,22 @@ class RestStopRestroomUploadServiceTest {
         assertThat(existing.getFemaleToiletCount()).isEqualTo("60");
         assertThat(existing.getRestStopServiceAreaCode()).isEqualTo("A00001");
         assertThat(captureSaved()).containsExactly(existing);
+    }
+
+    @Test
+    void upload_backfillsNamesAfterSaveWithoutRelyingOnSharedBackfillService() {
+        RestStopRestroomRow row = row("죽전(서울)", "37", "57");
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "죽전(서울)휴게소", "A00001"));
+        when(csvParser.parse(restroomFile)).thenReturn(List.of(row));
+        when(restroomRepository.findAll()).thenReturn(List.of());
+        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        runTransactionCallback();
+
+        uploadService.upload(restroomFile);
+
+        InOrder inOrder = Mockito.inOrder(restroomRepository, backfiller);
+        inOrder.verify(restroomRepository).saveAll(any());
+        inOrder.verify(backfiller).backfill(List.of(restStop));
     }
 
     @Test
