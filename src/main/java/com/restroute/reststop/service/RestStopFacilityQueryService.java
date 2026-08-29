@@ -4,6 +4,7 @@ import com.restroute.reststop.controller.response.RestStopFacilityResponse;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopRestroomRepository;
+import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class RestStopFacilityQueryService {
     private final RestStopRepository restStopRepository;
     private final RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
     private final RestStopRestroomRepository restStopRestroomRepository;
+    private final RestStopUsageSnapshotRepository restStopUsageSnapshotRepository;
 
     @Transactional(readOnly = true)
     public Optional<RestStopFacilityResponse> findByServiceAreaCode(String serviceAreaCode) {
@@ -28,6 +30,7 @@ public class RestStopFacilityQueryService {
         return RestStopFacilityResponse.of(
                 relatedInfo.detail(),
                 relatedInfo.highwayServiceAreaInfos(),
-                restStopRestroomRepository.findByRestStopServiceAreaCode(restStop.getServiceAreaCode()));
+                restStopRestroomRepository.findByRestStopServiceAreaCode(restStop.getServiceAreaCode()),
+                restStopUsageSnapshotRepository.findByRestStopServiceAreaCode(restStop.getServiceAreaCode()));
     }
 }
