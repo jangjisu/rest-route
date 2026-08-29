@@ -109,12 +109,18 @@ function successMessage(kind, uploadedCount) {
     if (kind === 'backfill') {
         return '전체 휴게소명 매핑이 완료되었습니다.';
     }
+    if (kind === 'restroom') {
+        return `화장실 현황 ${uploadedCount ?? 0}건을 업로드했습니다.`;
+    }
     const label = kind === 'store' ? '매장' : '상품';
     return `${label} 판매순위 ${uploadedCount ?? 0}건을 업로드했습니다.`;
 }
 
 function failureMessage(kind) {
-    return kind === 'backfill' ? '전체 휴게소명 매핑에 실패했습니다.' : '판매순위 업로드에 실패했습니다.';
+    if (kind === 'backfill') {
+        return '전체 휴게소명 매핑에 실패했습니다.';
+    }
+    return kind === 'restroom' ? '화장실 현황 업로드에 실패했습니다.' : '판매순위 업로드에 실패했습니다.';
 }
 
 function buildFormData(form) {
@@ -157,7 +163,7 @@ async function submitAdminForm(document, form, fetchImpl, buildFormDataImpl) {
 }
 
 export function attachAdminForms(document, fetchImpl = fetch, buildFormDataImpl = buildFormData) {
-    const forms = document.querySelectorAll('form[action*="/admin/sales-rankings/"]');
+    const forms = document.querySelectorAll('form[data-action-kind]');
     forms.forEach((form) => {
         form.addEventListener('submit', (event) => {
             event.preventDefault();

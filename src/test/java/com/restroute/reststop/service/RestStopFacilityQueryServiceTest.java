@@ -13,8 +13,11 @@ import com.restroute.reststop.controller.response.RestStopFacilityResponse;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.domain.RestStopRestroomEntity;
 import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.repository.RestStopRestroomRepository;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
+import com.restroute.reststop.service.restroom.dto.RestStopRestroomRow;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,12 +37,15 @@ class RestStopFacilityQueryServiceTest {
     @Mock
     private RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
 
+    @Mock
+    private RestStopRestroomRepository restStopRestroomRepository;
+
     private RestStopFacilityQueryService restStopFacilityQueryService;
 
     @BeforeEach
     void setUp() {
-        restStopFacilityQueryService =
-                new RestStopFacilityQueryService(restStopRepository, restStopRelatedInfoQueryService);
+        restStopFacilityQueryService = new RestStopFacilityQueryService(
+                restStopRepository, restStopRelatedInfoQueryService, restStopRestroomRepository);
     }
 
     @Test
@@ -99,6 +105,33 @@ class RestStopFacilityQueryServiceTest {
     }
 
     @Test
+    @DisplayName("화장실 현황이 매핑돼 있으면 남녀 변기 수를 함께 반환한다")
+    void findByServiceAreaCode_returnsRestroomCountsWhenMapped() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "죽전(서울)휴게소"));
+        RestStopRestroomEntity restroom =
+                RestStopRestroomEntity.from(new RestStopRestroomRow("경부선", "죽전(서울)", "37", "57"));
+        restroom.updateRestStopServiceAreaCode("A00001");
+        when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
+        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+                .thenReturn(RestStopRelatedInfo.of(
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
+        when(restStopRestroomRepository.findByRestStopServiceAreaCode("A00001")).thenReturn(Optional.of(restroom));
+
+        Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().maleToiletCount()).isEqualTo(37);
+        assertThat(result.get().femaleToiletCount()).isEqualTo(57);
+    }
+
+    @Test
     @DisplayName("휴게소가 없으면 시설/주차 정보가 없다")
     void findByServiceAreaCode_returnsEmptyWhenRestStopMissing() {
         when(restStopRepository.findByServiceAreaCode("UNKNOWN")).thenReturn(Optional.empty());
@@ -135,6 +168,8 @@ class RestStopFacilityQueryServiceTest {
         assertThat(result.get().compactCarParkingCount()).isNull();
         assertThat(result.get().fullSizeCarParkingCount()).isNull();
         assertThat(result.get().disabledParkingCount()).isNull();
+        assertThat(result.get().maleToiletCount()).isNull();
+        assertThat(result.get().femaleToiletCount()).isNull();
     }
 
     @Test

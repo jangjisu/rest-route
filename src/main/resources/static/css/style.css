@@ -1840,6 +1840,33 @@ body.global-loading-open {
     color: var(--rr-color-text-disabled) !important;
 }
 
+.rest-stop-detail-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+}
+
+.rest-stop-detail-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--rr-radius-button);
+    background-color: var(--rr-color-surface-muted);
+}
+
+.rest-stop-detail-stat-label {
+    color: var(--rr-color-text-secondary);
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.rest-stop-detail-stat-value {
+    color: var(--rr-color-text);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
 .rest-stop-detail-tags {
     display: flex;
     flex-wrap: wrap;

@@ -15,12 +15,14 @@ import {
     formatSalesRankingMonth,
     normalizeSalesRankingStoreName,
     formatText,
+    formatToiletCount,
     hasEvents,
     hasFoodMenu,
     hasFoodSections,
     hasOilInfo,
     hasParkingInfo,
     hasRenderableRestStopDetail,
+    hasRestroomInfo,
     hasThemes,
     isMissingValue,
     orderFoodMenus,
@@ -69,6 +71,18 @@ test('formatParkingCount appends the unit and keeps zero as a valid count', () =
     assert.equal(formatParkingCount({}), '정보 없음');
     assert.equal(formatParkingCount(-1), '정보 없음');
     assert.equal(formatParkingCount(1.5), '정보 없음');
+});
+
+test('formatToiletCount appends the unit and keeps zero as a valid count', () => {
+    assert.equal(formatToiletCount(12), '12개');
+    assert.equal(formatToiletCount('7'), '7개');
+    assert.equal(formatToiletCount(0), '0개');
+    assert.equal(formatToiletCount(null), '정보 없음');
+    assert.equal(formatToiletCount(''), '정보 없음');
+    assert.equal(formatToiletCount('   '), '정보 없음');
+    assert.equal(formatToiletCount({}), '정보 없음');
+    assert.equal(formatToiletCount(-1), '정보 없음');
+    assert.equal(formatToiletCount(1.5), '정보 없음');
 });
 
 test('formatOilPrice keeps present price text and falls back for missing values', () => {
@@ -198,6 +212,13 @@ test('hasParkingInfo detects any non-missing parking count', () => {
     assert.equal(hasParkingInfo({ disabledParkingCount: 3 }), true);
     assert.equal(hasParkingInfo({ compactCarParkingCount: null, fullSizeCarParkingCount: '없음' }), false);
     assert.equal(hasParkingInfo(null), false);
+});
+
+test('hasRestroomInfo detects any non-missing toilet count', () => {
+    assert.equal(hasRestroomInfo({ maleToiletCount: 37 }), true);
+    assert.equal(hasRestroomInfo({ femaleToiletCount: '0' }), true);
+    assert.equal(hasRestroomInfo({ maleToiletCount: null, femaleToiletCount: null }), false);
+    assert.equal(hasRestroomInfo(null), false);
 });
 
 test('hasThemes is true only when there is at least one theme', () => {

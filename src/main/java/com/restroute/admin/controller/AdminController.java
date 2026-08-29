@@ -31,6 +31,11 @@ public class AdminController {
         return "admin-rest-stop-oil-links";
     }
 
+    @GetMapping("/admin/rest-stops/restroom-links")
+    public String restStopRestroomLinks() {
+        return "admin-rest-stop-restroom-links";
+    }
+
     @GetMapping("/admin/flights/holidays")
     public String flightHolidays() {
         return "admin-flight-holidays";

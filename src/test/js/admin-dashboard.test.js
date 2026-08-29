@@ -202,6 +202,40 @@ test('shows the uploaded row count and refreshes the dashboard after a successfu
     assert.equal(form.dataset.submitting, 'false');
 });
 
+test('shows the uploaded row count and refreshes the dashboard after a successful restroom upload', async () => {
+    const form = fakeAdminForm('/api/admin/rest-stops/restrooms', 'restroom');
+    const document = fakeAdminDocument(form);
+    const calledUrls = [];
+    const fetchImpl = async (url) => {
+        calledUrls.push(url);
+        if (url === '/api/admin/rest-stops/restrooms') {
+            return jsonResponse(true, { data: 211 });
+        }
+        return jsonResponse(true, { data: { restStopCount: 203, latestSalesRankingMonth: '2026-06' } });
+    };
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    await form.submitHandler({ preventDefault: () => {} });
+
+    assert.deepEqual(calledUrls, ['/api/admin/rest-stops/restrooms', '/api/admin/dashboard']);
+    assert.equal(document.toast.textContent, '화장실 현황 211건을 업로드했습니다.');
+    assert.match(document.toast.className, /is-success/);
+});
+
+test('shows a fallback error message when a restroom upload request itself fails', async () => {
+    const form = fakeAdminForm('/api/admin/rest-stops/restrooms', 'restroom');
+    const document = fakeAdminDocument(form);
+    const fetchImpl = async () => {
+        throw new Error('network down');
+    };
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    await form.submitHandler({ preventDefault: () => {} });
+
+    assert.equal(document.toast.textContent, '화장실 현황 업로드에 실패했습니다.');
+    assert.match(document.toast.className, /is-error/);
+});
+
 test('shows the server error message when a product upload fails', async () => {
     const form = fakeAdminForm('/api/admin/sales-rankings/products', 'product');
     const document = fakeAdminDocument(form);

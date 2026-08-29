@@ -14,9 +14,11 @@ import {
     formatTotalParkingCount,
     formatSalesRankingMonth,
     formatText,
+    formatToiletCount,
     hasFoodMenu,
     hasFoodSections,
     hasRenderableRestStopDetail,
+    hasRestroomInfo,
     isMissingValue,
     normalizeSalesRankingStoreName,
     orderFoodMenus,
@@ -178,6 +180,25 @@ function renderParkingInfo(compactCount, fullSizeCount, disabledCount) {
         const allMissing = isMissingValue(fullSizeCount) && isMissingValue(compactCount) && isMissingValue(disabledCount);
         breakdownElement.textContent = formatParkingBreakdown(fullSizeCount, compactCount, disabledCount);
         breakdownElement.classList.toggle('rest-stop-detail-missing', allMissing);
+    }
+}
+
+function renderRestroomInfo(maleCount, femaleCount) {
+    const section = document.getElementById('restStopRestroomSection');
+    if (!section) {
+        return;
+    }
+
+    section.classList.toggle('d-none', !hasRestroomInfo({ maleToiletCount: maleCount, femaleToiletCount: femaleCount }));
+
+    const maleElement = document.getElementById('restStopDetailRestroomMale');
+    if (maleElement) {
+        maleElement.textContent = formatToiletCount(maleCount);
+    }
+
+    const femaleElement = document.getElementById('restStopDetailRestroomFemale');
+    if (femaleElement) {
+        femaleElement.textContent = formatToiletCount(femaleCount);
     }
 }
 
@@ -440,6 +461,7 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
         renderBooleanStatus('restStopDetailMaintenance', detail.hasMaintenance, formatAvailability);
         renderBooleanStatus('restStopDetailFreight', detail.allowsTruckParking, formatFreightOperation);
         renderParkingInfo(detail.compactCarParkingCount, detail.fullSizeCarParkingCount, detail.disabledParkingCount);
+        renderRestroomInfo(detail.maleToiletCount, detail.femaleToiletCount);
         renderEvChargerInfo(detail.evChargerCount);
         renderThemeBadges(detail.themes);
         renderEventSection(detail.events);

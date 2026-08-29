@@ -2,6 +2,7 @@ package com.restroute.reststop.controller.response;
 
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
+import com.restroute.reststop.domain.RestStopRestroomEntity;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -15,10 +16,14 @@ public record RestStopFacilityResponse(
         String direction,
         Integer compactCarParkingCount,
         Integer fullSizeCarParkingCount,
-        Integer disabledParkingCount) {
+        Integer disabledParkingCount,
+        Integer maleToiletCount,
+        Integer femaleToiletCount) {
 
     public static RestStopFacilityResponse of(
-            Optional<RestStopDetailEntity> detail, List<HighwayServiceAreaInfoEntity> infos) {
+            Optional<RestStopDetailEntity> detail,
+            List<HighwayServiceAreaInfoEntity> infos,
+            Optional<RestStopRestroomEntity> restroom) {
         Integer compactCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getCompactCarParkingCount);
         Integer fullSizeCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getFullSizeCarParkingCount);
         Integer disabledCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getDisabledParkingCount);
@@ -29,7 +34,13 @@ public record RestStopFacilityResponse(
                 minText(infos, HighwayServiceAreaInfoEntity::getDirectionTypeName),
                 compactCount,
                 fullSizeCount,
-                correctedDisabledCount(compactCount, fullSizeCount, disabledCount));
+                correctedDisabledCount(compactCount, fullSizeCount, disabledCount),
+                restroom.map(RestStopRestroomEntity::getMaleToiletCount)
+                        .map(RestStopFacilityResponse::parseInteger)
+                        .orElse(null),
+                restroom.map(RestStopRestroomEntity::getFemaleToiletCount)
+                        .map(RestStopFacilityResponse::parseInteger)
+                        .orElse(null));
     }
 
     // 도로공사 원천 데이터 일부가 장애인 주차대수 칸에 총 주차대수를 잘못 입력해 두는 경우가 있어(예: 소형133+대형67인데 장애인 204),

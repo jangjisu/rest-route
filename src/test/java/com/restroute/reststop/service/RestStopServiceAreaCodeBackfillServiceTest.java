@@ -28,16 +28,20 @@ import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopProductSalesRankEntity;
+import com.restroute.reststop.domain.RestStopRestroomEntity;
 import com.restroute.reststop.domain.RestStopStoreSalesRankEntity;
 import com.restroute.reststop.repository.HighwayServiceAreaInfoRepository;
 import com.restroute.reststop.repository.RestStopDetailRepository;
 import com.restroute.reststop.repository.RestStopProductSalesRankRepository;
 import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.repository.RestStopRestroomRepository;
 import com.restroute.reststop.repository.RestStopStoreSalesRankRepository;
 import com.restroute.reststop.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
 import com.restroute.reststop.service.backfill.RestStopDetailServiceAreaCodeBackfiller;
 import com.restroute.reststop.service.backfill.RestStopProductSalesRankBackfiller;
+import com.restroute.reststop.service.backfill.RestStopRestroomBackfiller;
 import com.restroute.reststop.service.backfill.RestStopStoreSalesRankBackfiller;
+import com.restroute.reststop.service.restroom.dto.RestStopRestroomRow;
 import com.restroute.reststop.service.salesranking.dto.SalesRankingProductRow;
 import com.restroute.reststop.service.salesranking.dto.SalesRankingStoreRow;
 import com.restroute.reststopcontent.client.response.RestBestfoodItem;
@@ -75,7 +79,8 @@ import org.springframework.test.util.ReflectionTestUtils;
     RestStopProductSalesRankBackfiller.class,
     RestStopStoreSalesRankBackfiller.class,
     RestThemeServiceAreaCodeBackfiller.class,
-    RestEventServiceAreaCodeBackfiller.class
+    RestEventServiceAreaCodeBackfiller.class,
+    RestStopRestroomBackfiller.class
 })
 class RestStopServiceAreaCodeBackfillServiceTest {
 
@@ -117,6 +122,9 @@ class RestStopServiceAreaCodeBackfillServiceTest {
 
     @Autowired
     private RestEventRepository restEventRepository;
+
+    @Autowired
+    private RestStopRestroomRepository restStopRestroomRepository;
 
     @Test
     @DisplayName("기존 휴게소 관련 row에 rest_stop_service_area_code를 연결 규칙 순서대로 채운다")
@@ -421,6 +429,22 @@ class RestStopServiceAreaCodeBackfillServiceTest {
         assertThat(secondResult.get(RestStopServiceAreaCodeBackfillService.PRODUCT_SALES_RANK_MAPPED_COUNT))
                 .isEqualTo(1);
         assertThat(productSalesRankRepository.findAll().get(0).getRestStopServiceAreaCode())
+                .isEqualTo("A00001");
+    }
+
+    @Test
+    @DisplayName("화장실 현황 backfill은 비어 있는 매핑만 유일한 휴게소명으로 연결한다")
+    void backfill_mapsOnlyUnmappedRestroomsByUniqueName() {
+        restStopRepository.save(RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001")));
+        RestStopRestroomEntity restroom =
+                RestStopRestroomEntity.from(new RestStopRestroomRow("경부선", "서울만남(부산)휴게소", "17", "34"));
+        restStopRestroomRepository.save(restroom);
+
+        Map<String, Integer> result = backfillService.backfill();
+
+        assertThat(result.get(RestStopServiceAreaCodeBackfillService.REST_STOP_RESTROOM_MAPPED_COUNT))
+                .isEqualTo(1);
+        assertThat(restStopRestroomRepository.findAll().get(0).getRestStopServiceAreaCode())
                 .isEqualTo("A00001");
     }
 
