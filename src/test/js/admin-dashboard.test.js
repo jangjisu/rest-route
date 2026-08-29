@@ -236,6 +236,40 @@ test('shows a fallback error message when a restroom upload request itself fails
     assert.match(document.toast.className, /is-error/);
 });
 
+test('shows the uploaded row count and refreshes the dashboard after a successful usage snapshot upload', async () => {
+    const form = fakeAdminForm('/api/admin/rest-stops/usage-snapshots', 'usage');
+    const document = fakeAdminDocument(form);
+    const calledUrls = [];
+    const fetchImpl = async (url) => {
+        calledUrls.push(url);
+        if (url === '/api/admin/rest-stops/usage-snapshots') {
+            return jsonResponse(true, { data: 206 });
+        }
+        return jsonResponse(true, { data: { restStopCount: 203, latestSalesRankingMonth: '2026-06' } });
+    };
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    await form.submitHandler({ preventDefault: () => {} });
+
+    assert.deepEqual(calledUrls, ['/api/admin/rest-stops/usage-snapshots', '/api/admin/dashboard']);
+    assert.equal(document.toast.textContent, '이용객 및 교통량 현황 206건을 업로드했습니다.');
+    assert.match(document.toast.className, /is-success/);
+});
+
+test('shows a fallback error message when a usage snapshot upload request itself fails', async () => {
+    const form = fakeAdminForm('/api/admin/rest-stops/usage-snapshots', 'usage');
+    const document = fakeAdminDocument(form);
+    const fetchImpl = async () => {
+        throw new Error('network down');
+    };
+
+    attachAdminForms(document, fetchImpl, () => 'fake-form-data');
+    await form.submitHandler({ preventDefault: () => {} });
+
+    assert.equal(document.toast.textContent, '이용객 및 교통량 현황 업로드에 실패했습니다.');
+    assert.match(document.toast.className, /is-error/);
+});
+
 test('shows the server error message when a product upload fails', async () => {
     const form = fakeAdminForm('/api/admin/sales-rankings/products', 'product');
     const document = fakeAdminDocument(form);

@@ -1640,6 +1640,21 @@ body.global-loading-open {
     overflow-wrap: anywhere;
 }
 
+.rest-stop-detail-traffic-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid color-mix(in oklch, var(--rr-color-warning-text) 35%, transparent);
+    border-radius: var(--rr-radius-pill);
+    background-color: var(--rr-color-warning-bg);
+    color: var(--rr-color-warning-text);
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
 .rest-stop-detail-ev-charger i {
     flex: 0 0 auto;
 }

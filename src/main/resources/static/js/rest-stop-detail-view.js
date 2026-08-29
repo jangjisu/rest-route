@@ -15,10 +15,13 @@ import {
     formatSalesRankingMonth,
     formatText,
     formatToiletCount,
+    formatTrafficVolume,
+    formatVisitorCount,
     hasFoodMenu,
     hasFoodSections,
     hasRenderableRestStopDetail,
     hasRestroomInfo,
+    hasUsageInfo,
     isMissingValue,
     normalizeSalesRankingStoreName,
     orderFoodMenus,
@@ -200,6 +203,37 @@ function renderRestroomInfo(maleCount, femaleCount) {
     if (femaleElement) {
         femaleElement.textContent = formatToiletCount(femaleCount);
     }
+}
+
+function renderUsageInfo(dailyVisitorCount, dailyTrafficVolume) {
+    const section = document.getElementById('restStopUsageSection');
+    if (!section) {
+        return;
+    }
+
+    section.classList.toggle(
+        'd-none',
+        !hasUsageInfo({ dailyVisitorCount, dailyTrafficVolume })
+    );
+
+    const visitorElement = document.getElementById('restStopDetailDailyVisitorCount');
+    if (visitorElement) {
+        visitorElement.textContent = formatVisitorCount(dailyVisitorCount);
+    }
+
+    const trafficElement = document.getElementById('restStopDetailDailyTrafficVolume');
+    if (trafficElement) {
+        trafficElement.textContent = formatTrafficVolume(dailyTrafficVolume);
+    }
+}
+
+function renderTrafficBadge(topTrafficTier) {
+    const badge = document.getElementById('restStopDetailTrafficBadge');
+    if (!badge) {
+        return;
+    }
+
+    badge.classList.toggle('d-none', topTrafficTier !== true);
 }
 
 function renderConvenience(facilities) {
@@ -462,7 +496,9 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
         renderBooleanStatus('restStopDetailFreight', detail.allowsTruckParking, formatFreightOperation);
         renderParkingInfo(detail.compactCarParkingCount, detail.fullSizeCarParkingCount, detail.disabledParkingCount);
         renderRestroomInfo(detail.maleToiletCount, detail.femaleToiletCount);
+        renderUsageInfo(detail.dailyVisitorCount, detail.dailyTrafficVolume);
         renderEvChargerInfo(detail.evChargerCount);
+        renderTrafficBadge(detail.topTrafficTier);
         renderThemeBadges(detail.themes);
         renderEventSection(detail.events);
         renderSalesRanking(detail.salesRanking);
