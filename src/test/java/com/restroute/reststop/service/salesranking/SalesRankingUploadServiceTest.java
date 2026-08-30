@@ -1,15 +1,20 @@
 package com.restroute.reststop.service.salesranking;
 
+import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopProductSalesRankEntity;
 import com.restroute.reststop.domain.RestStopStoreSalesRankEntity;
 import com.restroute.reststop.repository.RestStopProductSalesRankRepository;
+import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopStoreSalesRankRepository;
+import com.restroute.reststop.service.backfill.RestStopProductSalesRankBackfiller;
+import com.restroute.reststop.service.backfill.RestStopStoreSalesRankBackfiller;
 import com.restroute.reststop.service.salesranking.dto.SalesRankingProductRow;
 import com.restroute.reststop.service.salesranking.dto.SalesRankingStoreRow;
 import com.restroute.reststop.service.salesranking.util.SalesRankingCsvParser;
@@ -19,7 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -38,6 +45,15 @@ class SalesRankingUploadServiceTest {
     private RestStopStoreSalesRankRepository storeRepository;
 
     @Mock
+    private RestStopRepository restStopRepository;
+
+    @Mock
+    private RestStopProductSalesRankBackfiller productSalesRankBackfiller;
+
+    @Mock
+    private RestStopStoreSalesRankBackfiller storeSalesRankBackfiller;
+
+    @Mock
     private TransactionTemplate transactionTemplate;
 
     @Mock
@@ -50,8 +66,14 @@ class SalesRankingUploadServiceTest {
 
     @BeforeEach
     void setUp() {
-        uploadService =
-                new SalesRankingUploadService(csvParser, productRepository, storeRepository, transactionTemplate);
+        uploadService = new SalesRankingUploadService(
+                csvParser,
+                productRepository,
+                storeRepository,
+                restStopRepository,
+                productSalesRankBackfiller,
+                storeSalesRankBackfiller,
+                transactionTemplate);
     }
 
     @Test
@@ -113,6 +135,38 @@ class SalesRankingUploadServiceTest {
 
         assertThat(result).isEqualTo(1);
         assertThat(captureSavedStores()).hasSize(1);
+    }
+
+    @Test
+    void uploadProducts_backfillsNamesAfterSaveWithoutRelyingOnSharedBackfillService() {
+        SalesRankingProductRow productRow = productRow("2026-06", "상품명");
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "휴게소", "A00001"));
+        when(csvParser.parseProducts(productFile)).thenReturn(List.of(productRow));
+        when(productRepository.findAll()).thenReturn(List.of());
+        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        runTransactionCallback();
+
+        uploadService.uploadProducts(productFile);
+
+        InOrder inOrder = Mockito.inOrder(productRepository, productSalesRankBackfiller);
+        inOrder.verify(productRepository).saveAll(any());
+        inOrder.verify(productSalesRankBackfiller).backfill(List.of(restStop));
+    }
+
+    @Test
+    void uploadStores_backfillsNamesAfterSaveWithoutRelyingOnSharedBackfillService() {
+        SalesRankingStoreRow storeRow = storeRow("2026-06");
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "휴게소", "A00001"));
+        when(csvParser.parseStores(storeFile)).thenReturn(List.of(storeRow));
+        when(storeRepository.findAll()).thenReturn(List.of());
+        when(restStopRepository.findAll()).thenReturn(List.of(restStop));
+        runTransactionCallback();
+
+        uploadService.uploadStores(storeFile);
+
+        InOrder inOrder = Mockito.inOrder(storeRepository, storeSalesRankBackfiller);
+        inOrder.verify(storeRepository).saveAll(any());
+        inOrder.verify(storeSalesRankBackfiller).backfill(List.of(restStop));
     }
 
     private SalesRankingProductRow productRow(String month, String productName) {

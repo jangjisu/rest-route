@@ -51,7 +51,8 @@ class RestStopBasicInfoControllerTest {
                 "투썸플레이스",
                 2,
                 "/api/rest-stops/A00001/images/detail",
-                List.of(new ThemeInfo("4계절 꽃이 있는 휴게소", "365일 꽃향기가 나는 휴게소입니다")));
+                List.of(new ThemeInfo("4계절 꽃이 있는 휴게소", "365일 꽃향기가 나는 휴게소입니다")),
+                true);
         when(restStopBasicInfoQueryService.findByServiceAreaCode("A00001")).thenReturn(Optional.of(response));
 
         mockMvc.perform(get("/api/rest-stops/A00001/basic-info"))
@@ -72,7 +73,8 @@ class RestStopBasicInfoControllerTest {
                 .andExpect(jsonPath("$.data.evChargerCount").value(2))
                 .andExpect(jsonPath("$.data.detailImageUrl").value("/api/rest-stops/A00001/images/detail"))
                 .andExpect(jsonPath("$.data.themes[0].name").value("4계절 꽃이 있는 휴게소"))
-                .andExpect(jsonPath("$.data.themes[0].detail").value("365일 꽃향기가 나는 휴게소입니다"));
+                .andExpect(jsonPath("$.data.themes[0].detail").value("365일 꽃향기가 나는 휴게소입니다"))
+                .andExpect(jsonPath("$.data.topTrafficTier").value(true));
     }
 
     @Test
@@ -92,7 +94,8 @@ class RestStopBasicInfoControllerTest {
                 "투썸플레이스",
                 2,
                 null,
-                List.of());
+                List.of(),
+                false);
         when(restStopBasicInfoQueryService.findByServiceAreaCode("A00001")).thenReturn(Optional.of(response));
 
         mockMvc.perform(get("/api/rest-stops/A00001/basic-info"))

@@ -20,14 +20,16 @@ public record RestStopBasicInfoResponse(
         String brand,
         int evChargerCount,
         String detailImageUrl,
-        List<ThemeInfo> themes) {
+        List<ThemeInfo> themes,
+        boolean topTrafficTier) {
 
     public static RestStopBasicInfoResponse of(
             RestStopEntity restStop,
             Optional<RestStopDetailEntity> detail,
             int evChargerCount,
             String detailImageUrl,
-            List<RestThemeEntity> themes) {
+            List<RestThemeEntity> themes,
+            boolean topTrafficTier) {
         return new RestStopBasicInfoResponse(
                 restStop.getServiceAreaCode(),
                 restStop.getUnitCode(),
@@ -42,7 +44,8 @@ public record RestStopBasicInfoResponse(
                 ResponseTextUtils.textOf(detail, RestStopDetailEntity::getBrand),
                 evChargerCount,
                 detailImageUrl,
-                themes.stream().map(ThemeInfo::from).toList());
+                themes.stream().map(ThemeInfo::from).toList(),
+                topTrafficTier);
     }
 
     public record ThemeInfo(String name, String detail) {

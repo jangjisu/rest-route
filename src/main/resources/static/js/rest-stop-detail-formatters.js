@@ -235,6 +235,22 @@ export function hasRestroomInfo(detail) {
     return isNonNegativeCount(detail.maleToiletCount) || isNonNegativeCount(detail.femaleToiletCount);
 }
 
+export function hasUsageInfo(detail) {
+    if (!detail || typeof detail !== 'object') {
+        return false;
+    }
+
+    return isNonNegativeCount(detail.dailyVisitorCount) || isNonNegativeCount(detail.dailyTrafficVolume);
+}
+
+export function formatVisitorCount(value) {
+    return isNonNegativeCount(value) ? `${Number(value).toLocaleString('ko-KR')}명` : '정보 없음';
+}
+
+export function formatTrafficVolume(value) {
+    return isNonNegativeCount(value) ? `${Number(value).toLocaleString('ko-KR')}대` : '정보 없음';
+}
+
 export function availableDataTags(detail) {
     if (!detail || typeof detail !== 'object') {
         return [];

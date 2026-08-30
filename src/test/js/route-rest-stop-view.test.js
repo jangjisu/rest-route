@@ -16,7 +16,8 @@ import {
     routeRecommendationLabels,
     routeRestStopAvailabilityLabels,
     routeRestStopCardBadges,
-    routeRestStopFilterCounts
+    routeRestStopFilterCounts,
+    routeTopTrafficTierBadge
 } from '../../main/resources/static/js/route-rest-stop-view.js';
 
 function createFakeElement(classNames = []) {
@@ -138,6 +139,34 @@ test('route rest stop cards expose detail navigation to pointer and keyboard use
         item.eventListeners.get('keydown')({ key: ' ', preventDefault() {} });
         item.eventListeners.get('keydown')({ key: 'Escape', preventDefault() {} });
         assert.equal(selectedCount, 3);
+    } finally {
+        globalThis.document = previousDocument;
+    }
+});
+
+test('route rest stop cards show the top traffic tier badge only when flagged', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = { createElement: () => createFakeElement() };
+
+    try {
+        const withBadge = routeRestStopView.createRouteResultItem({
+            unitName: '천안삼거리(서울)휴게소',
+            routeName: '경부선',
+            topTrafficTier: true
+        }, 0, () => {});
+        const availability = withBadge.children.find((child) => child.className === 'route-result-availability');
+        const badge = availability.children.find((child) => child.className === 'route-result-traffic-tier-badge');
+        assert.equal(badge.textContent, '🚗 이용량 상위 10%');
+
+        const withoutBadge = routeRestStopView.createRouteResultItem({
+            unitName: '망향(부산)휴게소',
+            routeName: '경부선',
+            topTrafficTier: false
+        }, 1, () => {});
+        assert.equal(
+            withoutBadge.children.some((child) => child.className === 'route-result-availability'),
+            false
+        );
     } finally {
         globalThis.document = previousDocument;
     }
@@ -281,6 +310,13 @@ test('routeNearbyTrafficBadge returns null when there is no traffic info', () =>
     assert.equal(routeNearbyTrafficBadge(undefined), null);
 });
 
+test('routeTopTrafficTierBadge is true only when topTrafficTier is exactly true', () => {
+    assert.equal(routeTopTrafficTierBadge({ topTrafficTier: true }), true);
+    assert.equal(routeTopTrafficTierBadge({ topTrafficTier: false }), false);
+    assert.equal(routeTopTrafficTierBadge({}), false);
+    assert.equal(routeTopTrafficTierBadge(null), false);
+});
+
 test('formatRouteComparisonSummary renders prices, parking, food and facility counts compactly', () => {
     assert.deepEqual(formatRouteComparisonSummary({
         comparisonSummary: {
@@ -294,10 +330,10 @@ test('formatRouteComparisonSummary renders prices, parking, food and facility co
             foodMenuCount: 2,
             facilityCount: 3
         }
-    }), [
-        '휘발유 1,650원 (-43) · 경유 1,550원 (+20) · LPG 1,100원 (0)',
-        '주차 63대 · 먹거리 2개 · 시설 3개'
-    ]);
+    }), {
+        priceLine: '휘발유 1,650원 (-43) · 경유 1,550원 (+20) · LPG 1,100원 (0)',
+        countLine: '주차 63대 · 먹거리 2개 · 시설 3개'
+    });
 
     assert.deepEqual(formatRouteComparisonSummary({
         comparisonSummary: {
@@ -308,7 +344,47 @@ test('formatRouteComparisonSummary renders prices, parking, food and facility co
             foodMenuCount: 0,
             facilityCount: 1
         }
-    }), ['경유 1,550원', '시설 1개']);
+    }), { priceLine: '경유 1,550원', countLine: '시설 1개' });
+});
+
+test('formatRouteComparisonSummary keeps the count line addressable even when there is no price info at all', () => {
+    // 유가 연계 정보가 아예 없는 휴게소(priceLine이 완전히 비는 경우)에서도 countLine이 밀리지 않아야 한다 —
+    // 예전에는 [priceParts, countParts]에서 빈 배열을 걸러낸 뒤 .at(1)로 꺼냈기 때문에, priceParts가
+    // 비면 countParts가 인덱스 0으로 밀려 조용히 사라졌다.
+    assert.deepEqual(formatRouteComparisonSummary({
+        comparisonSummary: {
+            gasolinePrice: null,
+            dieselPrice: null,
+            lpgPrice: null,
+            totalParkingCount: 63,
+            foodMenuCount: 2,
+            facilityCount: 3
+        }
+    }), { priceLine: null, countLine: '주차 63대 · 먹거리 2개 · 시설 3개' });
+});
+
+test('formatRouteComparisonSummary renders restroom counts between parking and food in the same line', () => {
+    assert.deepEqual(formatRouteComparisonSummary({
+        maleToiletCount: 10,
+        femaleToiletCount: 8,
+        comparisonSummary: {
+            totalParkingCount: 200,
+            foodMenuCount: 12,
+            facilityCount: 0
+        }
+    }), { priceLine: null, countLine: '주차 200대 · 화장실 남 10 / 여 8 · 먹거리 12개' });
+
+    assert.deepEqual(formatRouteComparisonSummary({
+        maleToiletCount: 4,
+        femaleToiletCount: null,
+        comparisonSummary: { facilityCount: 0 }
+    }), { priceLine: null, countLine: '화장실 남 4 / 여 -' });
+
+    assert.deepEqual(formatRouteComparisonSummary({
+        maleToiletCount: null,
+        femaleToiletCount: null,
+        comparisonSummary: { facilityCount: 1 }
+    }), { priceLine: null, countLine: '시설 1개' });
 });
 
 test('formatOilPriceComparison renders average diff only when it exists', () => {

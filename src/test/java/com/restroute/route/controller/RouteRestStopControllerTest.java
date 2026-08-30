@@ -67,7 +67,10 @@ class RouteRestStopControllerTest {
                                 RouteRestStopResponse.ComparisonSummary.empty(),
                                 List.of(),
                                 "/api/rest-stops/A/images/list",
-                                null)))));
+                                null,
+                                null,
+                                null,
+                                false)))));
         when(routeRestStopService.findRouteRestStops(eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000)))
                 .thenReturn(response);
 

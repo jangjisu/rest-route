@@ -3,6 +3,7 @@ package com.restroute.reststop.controller.response;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopRestroomEntity;
+import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -18,12 +19,15 @@ public record RestStopFacilityResponse(
         Integer fullSizeCarParkingCount,
         Integer disabledParkingCount,
         Integer maleToiletCount,
-        Integer femaleToiletCount) {
+        Integer femaleToiletCount,
+        Integer dailyVisitorCount,
+        Integer dailyTrafficVolume) {
 
     public static RestStopFacilityResponse of(
             Optional<RestStopDetailEntity> detail,
             List<HighwayServiceAreaInfoEntity> infos,
-            Optional<RestStopRestroomEntity> restroom) {
+            Optional<RestStopRestroomEntity> restroom,
+            Optional<RestStopUsageSnapshotEntity> usageSnapshot) {
         Integer compactCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getCompactCarParkingCount);
         Integer fullSizeCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getFullSizeCarParkingCount);
         Integer disabledCount = sumIntegerValues(infos, HighwayServiceAreaInfoEntity::getDisabledParkingCount);
@@ -39,6 +43,14 @@ public record RestStopFacilityResponse(
                         .map(RestStopFacilityResponse::parseInteger)
                         .orElse(null),
                 restroom.map(RestStopRestroomEntity::getFemaleToiletCount)
+                        .map(RestStopFacilityResponse::parseInteger)
+                        .orElse(null),
+                usageSnapshot
+                        .map(RestStopUsageSnapshotEntity::getDailyVisitorCount)
+                        .map(RestStopFacilityResponse::parseInteger)
+                        .orElse(null),
+                usageSnapshot
+                        .map(RestStopUsageSnapshotEntity::getDailyTrafficVolume)
                         .map(RestStopFacilityResponse::parseInteger)
                         .orElse(null));
     }

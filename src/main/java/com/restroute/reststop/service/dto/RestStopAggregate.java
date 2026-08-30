@@ -8,7 +8,10 @@ public record RestStopAggregate(
         boolean hasEvCharger,
         boolean hasListImage,
         boolean hasTheme,
-        boolean hasEvent) {
+        boolean hasEvent,
+        Integer maleToiletCount,
+        Integer femaleToiletCount,
+        boolean topTrafficTier) {
 
     public static RestStopAggregate of(
             RestStopEntity restStop,
@@ -16,7 +19,19 @@ public record RestStopAggregate(
             boolean hasEvCharger,
             boolean hasListImage,
             boolean hasTheme,
-            boolean hasEvent) {
-        return new RestStopAggregate(restStop, relatedInfo, hasEvCharger, hasListImage, hasTheme, hasEvent);
+            boolean hasEvent,
+            Integer maleToiletCount,
+            Integer femaleToiletCount,
+            boolean topTrafficTier) {
+        return new RestStopAggregate(
+                restStop,
+                relatedInfo,
+                hasEvCharger,
+                hasListImage,
+                hasTheme,
+                hasEvent,
+                maleToiletCount,
+                femaleToiletCount,
+                topTrafficTier);
     }
 }

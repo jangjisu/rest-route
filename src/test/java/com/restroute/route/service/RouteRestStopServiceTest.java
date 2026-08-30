@@ -91,8 +91,8 @@ class RouteRestStopServiceTest {
 
     private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {
         Map<String, RestStopAggregate> aggregates = new HashMap<>();
-        overridesByServiceAreaCode.forEach((code, relatedInfo) ->
-                aggregates.put(code, new RestStopAggregate(null, relatedInfo, false, false, false, false)));
+        overridesByServiceAreaCode.forEach((code, relatedInfo) -> aggregates.put(
+                code, new RestStopAggregate(null, relatedInfo, false, false, false, false, null, null, false)));
         stubAggregates(aggregates);
     }
 
@@ -107,7 +107,16 @@ class RouteRestStopServiceTest {
                                 code,
                                 overridesByServiceAreaCode.getOrDefault(
                                         code,
-                                        new RestStopAggregate(null, emptyRelatedInfo(), false, false, false, false)));
+                                        new RestStopAggregate(
+                                                null,
+                                                emptyRelatedInfo(),
+                                                false,
+                                                false,
+                                                false,
+                                                false,
+                                                null,
+                                                null,
+                                                false)));
                     }
                     return result;
                 })
@@ -203,7 +212,8 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
-        stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), true, false, false, false)));
+        stubAggregates(Map.of(
+                "A", new RestStopAggregate(null, emptyRelatedInfo(), true, false, false, false, null, null, false)));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -221,7 +231,8 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
-        stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), false, false, true, true)));
+        stubAggregates(Map.of(
+                "A", new RestStopAggregate(null, emptyRelatedInfo(), false, false, true, true, null, null, false)));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 
@@ -240,7 +251,8 @@ class RouteRestStopServiceTest {
         RestStopEntity first = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopEntity second = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
         when(restStopQueryService.findAll()).thenReturn(List.of(first, second));
-        stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false)));
+        stubAggregates(Map.of(
+                "A", new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false, null, null, false)));
 
         RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
 

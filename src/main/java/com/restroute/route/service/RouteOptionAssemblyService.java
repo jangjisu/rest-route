@@ -106,6 +106,8 @@ public class RouteOptionAssemblyService {
                             .withEvCharger(aggregate.hasEvCharger())
                             .withTheme(aggregate.hasTheme())
                             .withEvent(aggregate.hasEvent())
+                            .withRestroomCounts(aggregate.maleToiletCount(), aggregate.femaleToiletCount())
+                            .withTopTrafficTier(aggregate.topTrafficTier())
                             .withComparison(
                                     comparison.summary(),
                                     routeRestStopRecommendationTagService.create(comparison, recommendationStandards));

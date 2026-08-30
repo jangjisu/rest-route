@@ -2,6 +2,10 @@ package com.restroute.reststop.service;
 
 import com.restroute.evcharger.service.EvChargerQueryService;
 import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.domain.RestStopRestroomEntity;
+import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
+import com.restroute.reststop.repository.RestStopRestroomRepository;
+import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
 import com.restroute.reststop.service.dto.RestStopAggregate;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststop.service.image.RestStopImageQueryService;
@@ -11,10 +15,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 /**
  * REST_STOP_SERVICE_AREA_CODE로 연결되는 휴게소 관련 정보(상세/주유/음식/테마/이벤트/EV차저/이미지)를
@@ -36,6 +42,8 @@ public class RestStopAggregateQueryService {
     private final RestStopImageQueryService restStopImageQueryService;
     private final RestThemeQueryService restThemeQueryService;
     private final RestStopEventQueryService restStopEventQueryService;
+    private final RestStopRestroomRepository restStopRestroomRepository;
+    private final RestStopUsageSnapshotRepository restStopUsageSnapshotRepository;
 
     @Transactional(readOnly = true)
     public Map<String, RestStopAggregate> findByServiceAreaCodesAndAdminOverridden(
@@ -65,17 +73,66 @@ public class RestStopAggregateQueryService {
         Set<String> imageCodes = restStopImageQueryService.findExistingServiceAreaCodes(codes);
         Set<String> themeCodes = Set.copyOf(restThemeQueryService.findThemeMappedServiceAreaCodes(codes));
         Set<String> eventCodes = Set.copyOf(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(codes));
+        Map<String, RestStopRestroomEntity> restroomByCode =
+                restStopRestroomRepository.findAllByRestStopServiceAreaCodeIn(codes).stream()
+                        .collect(Collectors.toMap(
+                                RestStopRestroomEntity::getRestStopServiceAreaCode,
+                                Function.identity(),
+                                (first, second) -> first));
+        Map<String, RestStopUsageSnapshotEntity> usageSnapshotByCode =
+                restStopUsageSnapshotRepository.findAllByRestStopServiceAreaCodeIn(codes).stream()
+                        .collect(Collectors.toMap(
+                                RestStopUsageSnapshotEntity::getRestStopServiceAreaCode,
+                                Function.identity(),
+                                (first, second) -> first));
 
         return restStops.stream()
                 .collect(Collectors.toMap(
                         RestStopEntity::getServiceAreaCode,
-                        restStop -> RestStopAggregate.of(
+                        restStop -> toAggregate(
                                 restStop,
-                                relatedInfoByCode.get(restStop.getServiceAreaCode()),
-                                evChargerCodes.contains(restStop.getServiceAreaCode()),
-                                imageCodes.contains(restStop.getServiceAreaCode()),
-                                themeCodes.contains(restStop.getServiceAreaCode()),
-                                eventCodes.contains(restStop.getServiceAreaCode())),
+                                relatedInfoByCode,
+                                evChargerCodes,
+                                imageCodes,
+                                themeCodes,
+                                eventCodes,
+                                restroomByCode,
+                                usageSnapshotByCode),
                         (first, second) -> first));
+    }
+
+    private RestStopAggregate toAggregate(
+            RestStopEntity restStop,
+            Map<String, RestStopRelatedInfo> relatedInfoByCode,
+            Set<String> evChargerCodes,
+            Set<String> imageCodes,
+            Set<String> themeCodes,
+            Set<String> eventCodes,
+            Map<String, RestStopRestroomEntity> restroomByCode,
+            Map<String, RestStopUsageSnapshotEntity> usageSnapshotByCode) {
+        String serviceAreaCode = restStop.getServiceAreaCode();
+        RestStopRestroomEntity restroom = restroomByCode.get(serviceAreaCode);
+        RestStopUsageSnapshotEntity usageSnapshot = usageSnapshotByCode.get(serviceAreaCode);
+        return RestStopAggregate.of(
+                restStop,
+                relatedInfoByCode.get(serviceAreaCode),
+                evChargerCodes.contains(serviceAreaCode),
+                imageCodes.contains(serviceAreaCode),
+                themeCodes.contains(serviceAreaCode),
+                eventCodes.contains(serviceAreaCode),
+                restroom == null ? null : parseInteger(restroom.getMaleToiletCount()),
+                restroom == null ? null : parseInteger(restroom.getFemaleToiletCount()),
+                usageSnapshot != null && usageSnapshot.isTopTrafficTier());
+    }
+
+    private Integer parseInteger(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
