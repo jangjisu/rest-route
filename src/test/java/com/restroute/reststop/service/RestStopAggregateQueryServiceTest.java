@@ -9,9 +9,15 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.evcharger.service.EvChargerQueryService;
 import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.domain.RestStopRestroomEntity;
+import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
+import com.restroute.reststop.repository.RestStopRestroomRepository;
+import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
 import com.restroute.reststop.service.dto.RestStopAggregate;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststop.service.image.RestStopImageQueryService;
+import com.restroute.reststop.service.restroom.dto.RestStopRestroomRow;
+import com.restroute.reststop.service.usage.dto.RestStopUsageSnapshotRow;
 import com.restroute.reststopcontent.service.RestStopEventQueryService;
 import com.restroute.reststopcontent.service.RestThemeQueryService;
 import java.util.HashMap;
@@ -47,6 +53,12 @@ class RestStopAggregateQueryServiceTest {
     @Mock
     private RestStopEventQueryService restStopEventQueryService;
 
+    @Mock
+    private RestStopRestroomRepository restStopRestroomRepository;
+
+    @Mock
+    private RestStopUsageSnapshotRepository restStopUsageSnapshotRepository;
+
     private RestStopAggregateQueryService aggregateQueryService;
 
     @BeforeEach
@@ -57,7 +69,9 @@ class RestStopAggregateQueryServiceTest {
                 evChargerQueryService,
                 restStopImageQueryService,
                 restThemeQueryService,
-                restStopEventQueryService);
+                restStopEventQueryService,
+                restStopRestroomRepository,
+                restStopUsageSnapshotRepository);
         lenient()
                 .when(restStopRelatedInfoQueryService.findAllByRestStops(any(), any()))
                 .thenReturn(Map.of());
@@ -72,6 +86,12 @@ class RestStopAggregateQueryServiceTest {
                 .thenReturn(List.of());
         lenient()
                 .when(restStopEventQueryService.findActiveEventMappedServiceAreaCodes(any()))
+                .thenReturn(List.of());
+        lenient()
+                .when(restStopRestroomRepository.findAllByRestStopServiceAreaCodeIn(any()))
+                .thenReturn(List.of());
+        lenient()
+                .when(restStopUsageSnapshotRepository.findAllByRestStopServiceAreaCodeIn(any()))
                 .thenReturn(List.of());
     }
 
@@ -150,6 +170,41 @@ class RestStopAggregateQueryServiceTest {
         assertThat(second.hasListImage()).isFalse();
         assertThat(second.hasTheme()).isFalse();
         assertThat(second.hasEvent()).isFalse();
+    }
+
+    @Test
+    @DisplayName("화장실 남/여 변기 수와 이용량 상위 10% 여부를 코드별로 합쳐서 반환하고, 매핑이 없으면 각각 null/false로 채운다")
+    void find_combinesRestroomCountsAndTopTrafficTierPerCode() {
+        RestStopEntity withUsageData = restStop("A00001");
+        RestStopEntity withoutUsageData = restStop("A00002");
+        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(any(), any()))
+                .thenReturn(List.of(withUsageData, withoutUsageData));
+
+        RestStopRestroomEntity restroom =
+                RestStopRestroomEntity.from(new RestStopRestroomRow("경부선", "A휴게소", "10", "8"));
+        restroom.updateRestStopServiceAreaCode("A00001");
+        when(restStopRestroomRepository.findAllByRestStopServiceAreaCodeIn(any()))
+                .thenReturn(List.of(restroom));
+
+        RestStopUsageSnapshotEntity usageSnapshot = RestStopUsageSnapshotEntity.from(
+                new RestStopUsageSnapshotRow("경부선", "A휴게소", "1000", "휴게소", "500", "3000"));
+        usageSnapshot.updateRestStopServiceAreaCode("A00001");
+        usageSnapshot.updateTopTrafficTier(true);
+        when(restStopUsageSnapshotRepository.findAllByRestStopServiceAreaCodeIn(any()))
+                .thenReturn(List.of(usageSnapshot));
+
+        Map<String, RestStopAggregate> result =
+                aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(null, null);
+
+        RestStopAggregate first = result.get("A00001");
+        assertThat(first.maleToiletCount()).isEqualTo(10);
+        assertThat(first.femaleToiletCount()).isEqualTo(8);
+        assertThat(first.topTrafficTier()).isTrue();
+
+        RestStopAggregate second = result.get("A00002");
+        assertThat(second.maleToiletCount()).isNull();
+        assertThat(second.femaleToiletCount()).isNull();
+        assertThat(second.topTrafficTier()).isFalse();
     }
 
     @Test

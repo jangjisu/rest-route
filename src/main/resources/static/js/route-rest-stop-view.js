@@ -89,7 +89,7 @@ export function formatOilPriceComparison(price, diffFromAverage) {
 export function formatRouteComparisonSummary(restStop) {
     const summary = restStop?.comparisonSummary;
     if (!summary || typeof summary !== 'object') {
-        return [];
+        return { priceLine: null, countLine: null };
     }
 
     const priceParts = [
@@ -104,6 +104,10 @@ export function formatRouteComparisonSummary(restStop) {
     if (Number.isFinite(summary.totalParkingCount) && summary.totalParkingCount > 0) {
         countParts.push(`주차 ${summary.totalParkingCount.toLocaleString()}대`);
     }
+    const restroomLabel = formatRestroomCountLabel(restStop);
+    if (restroomLabel !== null) {
+        countParts.push(restroomLabel);
+    }
     if (Number.isFinite(summary.foodMenuCount) && summary.foodMenuCount > 0) {
         countParts.push(`먹거리 ${summary.foodMenuCount.toLocaleString()}개`);
     }
@@ -111,9 +115,21 @@ export function formatRouteComparisonSummary(restStop) {
         countParts.push(`시설 ${summary.facilityCount.toLocaleString()}개`);
     }
 
-    return [priceParts, countParts]
-        .filter((parts) => parts.length > 0)
-        .map((parts) => parts.join(' · '));
+    return {
+        priceLine: priceParts.length > 0 ? priceParts.join(' · ') : null,
+        countLine: countParts.length > 0 ? countParts.join(' · ') : null
+    };
+}
+
+function formatRestroomCountLabel(restStop) {
+    const male = restStop?.maleToiletCount;
+    const female = restStop?.femaleToiletCount;
+    if (!Number.isFinite(male) && !Number.isFinite(female)) {
+        return null;
+    }
+    const maleText = Number.isFinite(male) ? male.toLocaleString() : '-';
+    const femaleText = Number.isFinite(female) ? female.toLocaleString() : '-';
+    return `화장실 남 ${maleText} / 여 ${femaleText}`;
 }
 
 export function formatNationalOilPriceSummary(summary) {
@@ -301,6 +317,10 @@ export function routeRestStopCardBadges(restStop) {
     ];
 }
 
+export function routeTopTrafficTierBadge(restStop) {
+    return restStop?.topTrafficTier === true;
+}
+
 export function routeNearbyTrafficBadge(restStop) {
     const traffic = restStop?.nearbyTraffic;
     if (!traffic || typeof traffic !== 'object' || !traffic.key || !traffic.label) {
@@ -375,7 +395,8 @@ export function createRouteResultItem(restStop, index, onSelect) {
     appendTarget.appendChild(header);
 
     const cardBadges = routeRestStopCardBadges(restStop);
-    if (restStop?.hasDirectionAlternative === true || cardBadges.length > 0) {
+    const showsTopTrafficTier = routeTopTrafficTierBadge(restStop);
+    if (restStop?.hasDirectionAlternative === true || cardBadges.length > 0 || showsTopTrafficTier) {
         const availability = document.createElement('div');
         availability.className = 'route-result-availability';
         if (restStop?.hasDirectionAlternative === true) {
@@ -392,6 +413,12 @@ export function createRouteResultItem(restStop, index, onSelect) {
             badge.textContent = label;
             availability.appendChild(badge);
         });
+        if (showsTopTrafficTier) {
+            const badge = document.createElement('span');
+            badge.className = 'route-result-traffic-tier-badge';
+            badge.textContent = '🚗 이용량 상위 10%';
+            availability.appendChild(badge);
+        }
         appendTarget.appendChild(availability);
     }
 
@@ -429,7 +456,7 @@ export function createRouteResultItem(restStop, index, onSelect) {
         item.appendChild(fuelList);
     }
 
-    const countSummary = formatRouteComparisonSummary(restStop).at(1);
+    const countSummary = formatRouteComparisonSummary(restStop).countLine;
     if (countSummary) {
         const summary = document.createElement('p');
         summary.className = 'route-result-summary';
