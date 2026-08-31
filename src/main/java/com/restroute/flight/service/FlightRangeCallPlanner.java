@@ -17,8 +17,8 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * RANGE 검색 하나를 실제로 몇 번, 어떤 파라미터로 Travelpayouts에 물어볼지 정하고, 그 호출들을
- * 바로 실행 가능한 {@link Callable} 목록으로 만든다. 실행(병렬 호출·dedup)은 {@link
- * com.restroute.flight.service.util.FlightParallelPriceCalls}가 RANGE/FIXED 공통으로 한다.
+ * 바로 실행 가능한 {@link Callable} 목록으로 만든다. 실행은
+ * {@link com.restroute.flight.service.util.FlightParallelPriceCalls}가 한다.
  *
  * <p>호출 횟수는 {@code destinations × months × nightsWindows}의 곱이고, 개월 수는 검색 조건이
  * 정하는 값이라 줄일 수 없다(grouped_prices가 달 단위로만 응답한다). 예산이 모자라면 nights 축을

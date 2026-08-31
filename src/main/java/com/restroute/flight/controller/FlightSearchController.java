@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 실 연동 검색 — {@link FlightSearchMockController}와 요청/응답 계약은 같고, 데이터만 Travelpayouts에서 실제로 가져온다. */
+/** 실 연동 검색 — 딜 데이터를 Travelpayouts에서 실제로 가져온다. 모킹 쪽은 {@link FlightSearchMockController}. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/flights")

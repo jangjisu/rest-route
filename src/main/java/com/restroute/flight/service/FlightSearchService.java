@@ -20,7 +20,7 @@ public class FlightSearchService {
     private final FlightDealSessionStore sessionStore;
     private final FlightDealFetcher dealFetcher;
 
-    /** {@link FlightDealFetcher}만 바꿔 같은 검색 흐름을 재사용한다 — {@link FlightSearchMockService}가 이 경로로 만든다. */
+    /** {@link FlightDealFetcher}만 바꿔 같은 검색 흐름을 재사용할 때 쓴다. */
     static FlightSearchService create(FlightDealSessionStore sessionStore, FlightDealFetcher dealFetcher) {
         return new FlightSearchService(sessionStore, dealFetcher);
     }

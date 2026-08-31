@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * FIXED 검색 — destination 단위(직접 지정/sector 국가들+전체/생략)마다 정확한 출발일·귀국일로
- * 딱 한 번씩만 물어볼 {@link Callable} 목록을 만든다. 실행(병렬 호출·dedup)은 {@link
- * com.restroute.flight.service.util.FlightParallelPriceCalls}가 RANGE/FIXED 공통으로 한다.
+ * 딱 한 번씩만 물어볼 {@link Callable} 목록을 만든다. 실행은
+ * {@link com.restroute.flight.service.util.FlightParallelPriceCalls}가 한다.
  *
  * <p>RANGE와 달리 nights·개월 팬아웃이 없어 destination 단위 수만큼만 호출을 만들고, sector면
  * {@link FlightSearchDestinations#withAggregateIfBudgetAllows}로 "전체" 조회를 예산 안에서만

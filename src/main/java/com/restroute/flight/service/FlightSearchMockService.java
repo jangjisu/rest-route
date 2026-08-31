@@ -10,9 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * 프론트엔드 개발용 모킹 검색. {@link FlightSearchService}에 모킹 {@link FlightDealFetcher}를
- * 주입해서 그대로 위임한다 — 세션 저장/페이지네이션 로직은 실 연동과 똑같이 재사용하고, 딜을
- * 구해오는 방식만 고정 가짜 데이터로 바꾼다.
+ * 프론트엔드 개발용 모킹 검색. {@link FlightSearchService}에 고정 가짜 데이터를 주는
+ * {@link FlightDealFetcher}를 주입해서 그대로 위임한다.
  */
 @Service
 public class FlightSearchMockService {
