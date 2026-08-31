@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
+import com.restroute.reststop.domain.SizeTier;
 import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
 import com.restroute.reststop.service.usage.dto.RestStopUsageSnapshotRow;
 import java.util.List;
@@ -100,5 +101,73 @@ class RestStopUsageSnapshotBackfillerTest {
 
         assertThat(valid.isTopTrafficTier()).isTrue();
         assertThat(invalid.isTopTrafficTier()).isFalse();
+    }
+
+    private RestStopUsageSnapshotEntity snapshotWithArea(String name, String siteAreaSqm) {
+        return RestStopUsageSnapshotEntity.from(
+                new RestStopUsageSnapshotRow("경부선", name, siteAreaSqm, "임대", "1000", "5000"));
+    }
+
+    @Test
+    @DisplayName("부지면적 상위 25%는 LARGE, 하위 25%는 SMALL, 나머지는 MEDIUM으로 표시한다")
+    void recomputeSizeTier_bucketsByAreaPercentile() {
+        // 10개 중 상위 25% = 3개(올림) LARGE, 하위 25% = 3개(올림) SMALL, 나머지 4개 MEDIUM.
+        List<RestStopUsageSnapshotEntity> snapshots = List.of(
+                snapshotWithArea("A", "100000"),
+                snapshotWithArea("B", "90000"),
+                snapshotWithArea("C", "80000"),
+                snapshotWithArea("D", "70000"),
+                snapshotWithArea("E", "60000"),
+                snapshotWithArea("F", "50000"),
+                snapshotWithArea("G", "40000"),
+                snapshotWithArea("H", "30000"),
+                snapshotWithArea("I", "20000"),
+                snapshotWithArea("J", "10000"));
+        when(usageSnapshotRepository.findAll()).thenReturn(snapshots);
+
+        backfiller.recomputeSizeTier();
+
+        assertThat(snapshots.get(0).getSizeTier()).isEqualTo(SizeTier.LARGE);
+        assertThat(snapshots.get(1).getSizeTier()).isEqualTo(SizeTier.LARGE);
+        assertThat(snapshots.get(2).getSizeTier()).isEqualTo(SizeTier.LARGE);
+        assertThat(snapshots.get(3).getSizeTier()).isEqualTo(SizeTier.MEDIUM);
+        assertThat(snapshots.get(4).getSizeTier()).isEqualTo(SizeTier.MEDIUM);
+        assertThat(snapshots.get(5).getSizeTier()).isEqualTo(SizeTier.MEDIUM);
+        assertThat(snapshots.get(6).getSizeTier()).isEqualTo(SizeTier.MEDIUM);
+        assertThat(snapshots.get(7).getSizeTier()).isEqualTo(SizeTier.SMALL);
+        assertThat(snapshots.get(8).getSizeTier()).isEqualTo(SizeTier.SMALL);
+        assertThat(snapshots.get(9).getSizeTier()).isEqualTo(SizeTier.SMALL);
+    }
+
+    @Test
+    @DisplayName("부지면적 값을 숫자로 해석할 수 없는 스냅샷은 등급을 null로 둔다")
+    void recomputeSizeTier_excludesUnparsableArea() {
+        RestStopUsageSnapshotEntity valid = snapshotWithArea("A", "100000");
+        RestStopUsageSnapshotEntity invalid = snapshotWithArea("B", "알수없음");
+        when(usageSnapshotRepository.findAll()).thenReturn(List.of(valid, invalid));
+
+        backfiller.recomputeSizeTier();
+
+        assertThat(valid.getSizeTier()).isNotNull();
+        assertThat(invalid.getSizeTier()).isNull();
+    }
+
+    @Test
+    @DisplayName("전체가 1건이면 LARGE로 분류한다(경계 케이스)")
+    void recomputeSizeTier_singleSnapshotBecomesLarge() {
+        RestStopUsageSnapshotEntity only = snapshotWithArea("A", "50000");
+        when(usageSnapshotRepository.findAll()).thenReturn(List.of(only));
+
+        backfiller.recomputeSizeTier();
+
+        assertThat(only.getSizeTier()).isEqualTo(SizeTier.LARGE);
+    }
+
+    @Test
+    @DisplayName("빈 목록이면 예외 없이 아무 것도 하지 않는다")
+    void recomputeSizeTier_doesNothingWhenEmpty() {
+        when(usageSnapshotRepository.findAll()).thenReturn(List.of());
+
+        backfiller.recomputeSizeTier();
     }
 }
