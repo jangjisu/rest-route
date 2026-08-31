@@ -10,8 +10,8 @@ import org.springframework.stereotype.Component;
 /**
  * Travelpayouts API 호출 전체가 공유하는 요청 한도 게이트. 서버가 분당 고정 창이 아니라
  * rolling window로 한도를 관리하므로, 클라이언트가 창을 스스로 계산하지 않고 매 응답의
- * x-rate-limit-remaining/x-rate-limit-reset 헤더로 남은 예산을 계속 재보정한다. acquire()는 예산이 바닥이면 재보정될 때까지 블로킹한다 — 가상 스레드라
- * 블로킹 비용이 낮다.
+ * x-rate-limit-remaining/x-rate-limit-reset 헤더로 남은 예산을 계속 재보정한다. acquire()는
+ * 예산이 바닥이면 재보정될 때까지 블로킹한다 — 가상 스레드라 블로킹 비용이 낮다.
  */
 @Slf4j
 @Component

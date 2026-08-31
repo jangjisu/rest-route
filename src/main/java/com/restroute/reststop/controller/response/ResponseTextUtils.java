@@ -4,8 +4,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * 응답 DTO들이 반복하던 "Optional에서 텍스트를 꺼내 비어 있으면 null로, 아니면 trim해서 반환한다"
- * 패턴을 하나로 묶는다.
+ * 응답 DTO들이 공통으로 쓰는 "Optional에서 텍스트를 꺼내 비어 있으면 null로, 아니면 trim해서
+ * 반환한다" 패턴을 하나로 묶는다.
  */
 final class ResponseTextUtils {
 
