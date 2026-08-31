@@ -17,14 +17,9 @@ import org.springframework.util.StringUtils;
  * 프론트엔드 개발용 고정 모킹 데이터 생성기. Travelpayouts grouped_prices가 실제로 줄 수 있는
  * 필드만으로 결정적(deterministic) 가짜 데이터를 만든다.
  *
- * <p>id는 세션 토큰을 아직 몰라서 여기서는 채우지 않는다 — 세션별 저장/조회, cursor lookup을
- * 담당하는 세션 스토어가 최종 저장 직전에 부여한다. 여기는 순수하게 "이 세션의 몇 번째 항목이
- * 어떤 값인지"만 계산한다.
- *
- * <p>includeWeekend는 실 경로({@link com.restroute.flight.service.FlightDealPostFilter})와
- * 동일하게 적용한다. includeHoliday는 적용하지 않는다 — 실제 공휴일 이름은 DB(HolidayRepository)에서
- * 와야 하는데, 이 클래스는 의도적으로 DB 의존 없는 순수 static 유틸이라 값을 모른다. holidays
- * 필드는 주말만 채운다({@code name=null}) — 실 응답의 holidays 구조와 모양은 맞춘다.
+ * <p>DB 의존 없는 순수 static 유틸이라 공휴일 이름을 알 수 없다 — includeWeekend는 실 경로와
+ * 동일하게 적용하지만 includeHoliday는 적용하지 않고, holidays 필드는 주말만 채운다
+ * ({@code name=null}). id도 세션 토큰을 알아야 해서 세션 스토어가 최종 저장 직전에 부여한다.
  */
 public final class FlightSearchMockFixture {
 

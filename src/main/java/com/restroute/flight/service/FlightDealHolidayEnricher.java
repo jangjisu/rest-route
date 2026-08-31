@@ -18,11 +18,8 @@ import org.springframework.stereotype.Component;
  * {@link FlightDealResponse.HolidayDay} 목록으로 채운다. 공휴일이면 {@code name}이 채워지고,
  * 순수 주말(공휴일 테이블에 없는 토/일)이면 {@code name}이 {@code null}이다.
  *
- * <p>연차 사용일수 같은 파생값은 이 목록만 있으면 프론트에서 계산할 수 있어서 여기서는 만들지
- * 않는다.
- *
- * <p>딜 전체의 (출발일~귀국일) 범위를 모아 최소~최대로 공휴일을 한 번에 조회한다({@link
- * FlightDealPostFilter}와 같은 이유로 건별 조회를 피한다).
+ * <p>연차 사용일수 같은 파생값은 이 목록만 있으면 프론트에서 계산할 수 있어서 만들지 않는다.
+ * 조회는 딜 전체의 범위를 모아 최소~최대로 한 번에 한다 — 건별 조회를 피한다.
  */
 @Component
 @RequiredArgsConstructor

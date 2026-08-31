@@ -16,12 +16,7 @@ import java.util.concurrent.Future;
  * 실행기 둘 다 "호출 목록을 만드는 방식"만 다르고 "그걸 병렬로 부르고 합치는" 방식은 같아서
  * 여기 하나로 공유한다.
  *
- * <p>호출 중 하나라도 실패하면(외부 API 오류 등) 전체를 그대로 실패시킨다 — 일부만 성공한
- * 결과를 조용히 보여주지 않는다.
- *
- * <p>국가별 조회와 "전체"(destination 생략) 조회를 함께 하는 경우, 같은 항공권이 양쪽에 모두
- * 잡혀서 중복으로 올 수 있다 — destinationAirport·departureAt·returnAt·flightNumber가 모두
- * 같으면 같은 항공권으로 보고 더 싼 쪽만 남긴다.
+ * <p>부분 실패 처리와 중복 제거 기준은 {@code docs/domain/flight.md} "정책과 불변 조건" 참고.
  */
 public final class FlightParallelPriceCalls {
 

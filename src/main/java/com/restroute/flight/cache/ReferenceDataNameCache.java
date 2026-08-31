@@ -9,8 +9,11 @@ import java.util.stream.Collectors;
 /**
  * code→표시명(kor 우선, eng 대체) 조회를 위한 순수 인메모리 캐시의 공통 뼈대. 항공사/공항/도시/
  * 국가 4종 참조 데이터가 "code로 조회, kor 없으면 eng로 대체, refresh로 통째로 다시 채움"
- * 로직을 그대로 공유해서 여기 한 곳에 모았다 — DB 조회 방식과 엔티티에서 code/kor/eng를
+ * 로직을 그대로 공유하므로 여기 한 곳에 둔다 — DB 조회 방식과 엔티티에서 code/kor/eng를
  * 꺼내는 방법만 서브클래스가 정한다.
+ *
+ * <p>네 캐시 모두 DB 왕복 없이 딜 응답 조립 시 읽기 전용으로 쓰이고, 시작 시
+ * {@code ReferenceDataStartupInitializer}가 {@link #refresh()}로 한 번 채운다.
  */
 public class ReferenceDataNameCache<T> {
 
