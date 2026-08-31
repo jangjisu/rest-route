@@ -1,19 +1,13 @@
 package com.restroute.route.service.dto;
 
 /**
- * 이번 요청에서 실제로 조회된(경로에 매칭된) 휴게소들만 대상으로 한 유종별 최저가/평균가.
- * 전국 전체 추적 데이터가 아니라 지금 사용자가 보고 있는 목록 안에서의 순위라서, "제일 저렴"/"평균보다
- * 저렴" 배지가 이 목록 밖의 휴게소와는 무관하다.
+ * 이번 요청에서 실제로 조회된(경로에 매칭된) 휴게소들만 대상으로 한 유종별 최저가. "제일 저렴" 배지는
+ * 전국 전체 추적 데이터가 아니라 지금 사용자가 보고 있는 목록 안에서의 최저가를 기준으로 한다.
+ * "평균보다 저렴"은 이 최저가와 별개로, DB에 있는 오늘자 전국 평균(NationalOilPriceSummary)과 비교한다.
  */
-public record QueriedOilPriceStats(
-        Integer gasolineMin,
-        Integer gasolineAverage,
-        Integer dieselMin,
-        Integer dieselAverage,
-        Integer lpgMin,
-        Integer lpgAverage) {
+public record QueriedOilPriceStats(Integer gasolineMin, Integer dieselMin, Integer lpgMin) {
 
     public static QueriedOilPriceStats empty() {
-        return new QueriedOilPriceStats(null, null, null, null, null, null);
+        return new QueriedOilPriceStats(null, null, null);
     }
 }

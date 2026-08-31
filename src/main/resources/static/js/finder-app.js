@@ -5,7 +5,7 @@
 import { closeDialogById, openDialogById } from './utils.js';
 import { initThemeToggle } from './theme.js';
 import { requestCurrentPosition } from './finder-geolocation.js';
-import { formatDistance, sortByDistance } from './finder-distance.js';
+import { formatDistance, latLngCoordinateOf, sortByDistance } from './finder-distance.js';
 import { DESTINATION_CHIPS, resolveDestinationQuery } from './finder-destination-chips.js';
 import { CONDITION_FILTERS, badgesFor, filterItems } from './finder-condition.js';
 import { createFinderRestStopListRequest } from './finder-rest-stop-list-request.js';
@@ -319,9 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderResultCard({
                     name: item.unitName,
                     routeLabel: item.routeName,
-                    // distanceFromRouteMeters는 진행 거리가 아니라 경로 매칭용 도로-좌표 오차값이라
-                    // 사용자에게 "몇 m 앞" 형태로 보여줄 만한 값이 아니다 — 표시하지 않는다.
-                    distanceLabel: '',
+                    // 내 위치 기준 직선 거리(sortByDistance가 채운 distanceMeters). 경로 매칭용
+                    // 오차값인 distanceFromRouteMeters는 진행 거리가 아니라서 쓰지 않는다.
+                    distanceLabel: Number.isFinite(item.distanceMeters) ? formatDistance(item.distanceMeters) : '',
                     badgeItem: item
                 })
             );
@@ -353,7 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            mode2RestStopItems = state.data.routes?.[0]?.restStops ?? [];
+            const restStops = state.data.routes?.[0]?.restStops ?? [];
+            // 기본 정렬은 지금 내 위치로부터 가까운 순 — 목적지로 추천받기는 위치 정보를 이미
+            // 받아서 진행하므로 그 좌표를 그대로 재사용한다.
+            mode2RestStopItems = sortByDistance(restStops, mode2Origin, latLngCoordinateOf);
             renderMode2List();
         }
     });

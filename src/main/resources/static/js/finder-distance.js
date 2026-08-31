@@ -17,20 +17,38 @@ export function haversineDistanceMeters(origin, target) {
 }
 
 /**
- * 휴게소 목록에 origin 기준 거리(distanceMeters)를 채워 가까운 순으로 정렬한다.
- * 좌표가 유효하지 않은 항목은 결과에서 제외한다.
+ * "이름·거리로 찾기" 목록(/api/rest-stops 응답)의 좌표 형식 — 문자열 xValue/yValue.
  */
-export function sortByDistance(restStops, origin) {
+export function xyValueCoordinateOf(restStop) {
+    const latitude = Number.parseFloat(restStop.yValue);
+    const longitude = Number.parseFloat(restStop.xValue);
+    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+}
+
+/**
+ * "목적지로 추천받기" 결과(RouteRestStopItem)의 좌표 형식 — 이미 숫자인 latitude/longitude.
+ */
+export function latLngCoordinateOf(item) {
+    return Number.isFinite(item.latitude) && Number.isFinite(item.longitude)
+        ? { latitude: item.latitude, longitude: item.longitude }
+        : null;
+}
+
+/**
+ * 목록에 origin 기준 거리(distanceMeters)를 채워 가까운 순으로 정렬한다. 좌표가 유효하지
+ * 않은 항목은 결과에서 제외한다. coordinateOf로 응답 형식이 다른 목록(문자열 xValue/yValue vs
+ * 숫자 latitude/longitude)을 모두 지원한다.
+ */
+export function sortByDistance(restStops, origin, coordinateOf = xyValueCoordinateOf) {
     return restStops
         .map((restStop) => {
-            const latitude = Number.parseFloat(restStop.yValue);
-            const longitude = Number.parseFloat(restStop.xValue);
-            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            const coordinate = coordinateOf(restStop);
+            if (!coordinate) {
                 return null;
             }
             return {
                 ...restStop,
-                distanceMeters: haversineDistanceMeters(origin, { latitude, longitude })
+                distanceMeters: haversineDistanceMeters(origin, coordinate)
             };
         })
         .filter((restStop) => restStop !== null)

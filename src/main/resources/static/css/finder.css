@@ -140,6 +140,7 @@
 
 .finder-example-card {
     background: var(--rr-color-surface-tint);
+    border: 1px solid var(--rr-color-border);
     border-radius: var(--rr-radius-card);
     padding: 14px;
 }
@@ -537,6 +538,7 @@
     justify-content: space-between;
     gap: 12px;
     background: var(--rr-color-surface-tint);
+    border: 1px solid var(--rr-color-border);
     border-radius: 18px;
     padding: 14px;
 }

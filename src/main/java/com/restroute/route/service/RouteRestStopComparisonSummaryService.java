@@ -50,17 +50,21 @@ class RouteRestStopComparisonSummaryService {
 
     /**
      * 보유한 유종 중 하나라도 이번에 조회된 휴게소들 사이의 최저가와 같으면 CHEAPEST, 아니면 하나라도
-     * 조회된 휴게소들의 평균가보다 싸면 BELOW_AVERAGE, 둘 다 아니면(또는 유가 정보 자체가 없으면) null.
-     * 전국 전체가 아니라 지금 목록 안에서의 상대적 순위다.
+     * 오늘자 전국 평균(DB에 저장된 NationalOilPriceSummary)보다 싸면 BELOW_AVERAGE, 둘 다 아니면
+     * (또는 유가 정보 자체가 없으면) null. "제일 저렴"만 지금 목록 안에서의 상대적 순위이고,
+     * "평균보다 저렴"은 create()의 gasolinePriceDiffFromAverage 등과 같은 전국 평균 기준이다.
      */
-    FuelPriceTier fuelPriceTier(Optional<RestOilPriceEntity> oilPrice, QueriedOilPriceStats queriedStats) {
+    FuelPriceTier fuelPriceTier(
+            Optional<RestOilPriceEntity> oilPrice,
+            QueriedOilPriceStats queriedStats,
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         if (oilPrice.isEmpty()) {
             return null;
         }
         if (isCheapest(oilPrice.get(), queriedStats)) {
             return FuelPriceTier.CHEAPEST;
         }
-        if (isBelowQueriedAverage(oilPrice.get(), queriedStats)) {
+        if (isBelowNationalAverage(oilPrice.get(), nationalOilPriceSummary)) {
             return FuelPriceTier.BELOW_AVERAGE;
         }
         return null;
@@ -79,19 +83,15 @@ class RouteRestStopComparisonSummaryService {
         return RouteRestStopNumberParser.parsePrice(price).map(target::equals).orElse(false);
     }
 
-    private boolean isBelowQueriedAverage(RestOilPriceEntity oilPrice, QueriedOilPriceStats queriedStats) {
-        return isBelow(oilPrice.getGasolinePrice(), queriedStats.gasolineAverage())
-                || isBelow(oilPrice.getDieselPrice(), queriedStats.dieselAverage())
-                || isBelow(oilPrice.getLpgPrice(), queriedStats.lpgAverage());
+    private boolean isBelowNationalAverage(
+            RestOilPriceEntity oilPrice, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+        return isNegative(diffFromAverage(oilPrice.getGasolinePrice(), nationalOilPriceSummary, FuelType.GASOLINE))
+                || isNegative(diffFromAverage(oilPrice.getDieselPrice(), nationalOilPriceSummary, FuelType.DIESEL))
+                || isNegative(diffFromAverage(oilPrice.getLpgPrice(), nationalOilPriceSummary, FuelType.LPG));
     }
 
-    private boolean isBelow(String price, Integer average) {
-        if (average == null) {
-            return false;
-        }
-        return RouteRestStopNumberParser.parsePrice(price)
-                .map(parsed -> parsed < average)
-                .orElse(false);
+    private boolean isNegative(Integer diff) {
+        return diff != null && diff < 0;
     }
 
     private Integer diffFromAverage(

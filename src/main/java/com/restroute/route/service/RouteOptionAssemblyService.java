@@ -117,7 +117,7 @@ public class RouteOptionAssemblyService {
                             .withTopTrafficTier(aggregate.topTrafficTier())
                             .withSizeTier(aggregate.sizeTier())
                             .withFuelPriceTier(routeRestStopComparisonSummaryService.fuelPriceTier(
-                                    aggregate.relatedInfo().oilPrice(), queriedOilPriceStats))
+                                    aggregate.relatedInfo().oilPrice(), queriedOilPriceStats, nationalOilPriceSummary))
                             .withComparison(
                                     comparison.summary(),
                                     routeRestStopRecommendationTagService.create(comparison, recommendationStandards));

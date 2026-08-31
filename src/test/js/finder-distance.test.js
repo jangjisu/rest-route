@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatDistance, haversineDistanceMeters, sortByDistance } from '../../main/resources/static/js/finder-distance.js';
+import {
+    formatDistance,
+    haversineDistanceMeters,
+    latLngCoordinateOf,
+    sortByDistance
+} from '../../main/resources/static/js/finder-distance.js';
 
 test('haversineDistanceMeters returns 0 for identical coordinates', () => {
     const point = { latitude: 37.5, longitude: 127.0 };
@@ -43,6 +48,19 @@ test('sortByDistance drops rest stops with unparsable coordinates', () => {
     const sorted = sortByDistance(restStops, origin);
 
     assert.deepEqual(sorted.map((restStop) => restStop.serviceAreaCode), ['VALID']);
+});
+
+test('sortByDistance supports a numeric latitude/longitude coordinate extractor for route rest stop items', () => {
+    const origin = { latitude: 37.5, longitude: 127.0 };
+    const items = [
+        { serviceAreaCode: 'FAR', latitude: 38.5, longitude: 128.0 },
+        { serviceAreaCode: 'NEAR', latitude: 37.501, longitude: 127.001 },
+        { serviceAreaCode: 'INVALID', latitude: null, longitude: undefined }
+    ];
+
+    const sorted = sortByDistance(items, origin, latLngCoordinateOf);
+
+    assert.deepEqual(sorted.map((item) => item.serviceAreaCode), ['NEAR', 'FAR']);
 });
 
 test('formatDistance switches from meters to kilometers at 1000m', () => {
