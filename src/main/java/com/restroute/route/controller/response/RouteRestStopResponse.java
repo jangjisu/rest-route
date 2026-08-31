@@ -49,7 +49,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
             Integer maleToiletCount,
             Integer femaleToiletCount,
             boolean topTrafficTier,
-            SizeTier sizeTier) {
+            SizeTier sizeTier,
+            FuelPriceTier fuelPriceTier) {
 
         public RouteRestStopItem(
                 String serviceAreaCode,
@@ -76,6 +77,7 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     null,
                     null,
                     false,
+                    null,
                     null);
         }
 
@@ -109,7 +111,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         public RouteRestStopItem withComparison(
@@ -132,7 +135,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         public RouteRestStopItem withEvCharger(boolean hasEvCharger) {
@@ -154,7 +158,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         public RouteRestStopItem withTheme(boolean hasTheme) {
@@ -176,7 +181,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         public RouteRestStopItem withEvent(boolean hasEvent) {
@@ -198,7 +204,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         public RouteRestStopItem withListImageUrl(String listImageUrl) {
@@ -220,7 +227,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         public RouteRestStopItem withNearbyTraffic(NearbyTraffic nearbyTraffic) {
@@ -242,7 +250,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         /**
@@ -268,7 +277,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         public RouteRestStopItem withTopTrafficTier(boolean topTrafficTier) {
@@ -290,7 +300,8 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
         }
 
         public RouteRestStopItem withSizeTier(SizeTier sizeTier) {
@@ -312,7 +323,31 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     maleToiletCount,
                     femaleToiletCount,
                     topTrafficTier,
-                    sizeTier);
+                    sizeTier,
+                    fuelPriceTier);
+        }
+
+        public RouteRestStopItem withFuelPriceTier(FuelPriceTier fuelPriceTier) {
+            return new RouteRestStopItem(
+                    serviceAreaCode,
+                    unitName,
+                    routeName,
+                    latitude,
+                    longitude,
+                    hasDirectionAlternative,
+                    hasEvCharger,
+                    hasTheme,
+                    hasEvent,
+                    distanceFromRouteMeters,
+                    comparisonSummary,
+                    recommendationTags,
+                    listImageUrl,
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier,
+                    sizeTier,
+                    fuelPriceTier);
         }
     }
 

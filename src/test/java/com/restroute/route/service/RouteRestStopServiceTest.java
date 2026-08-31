@@ -24,6 +24,8 @@ import com.restroute.common.client.response.KakaoLocalSearchResponse.Document;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.oilprice.service.NationalOilPriceService;
+import com.restroute.oilprice.service.RestOilPriceRankService;
+import com.restroute.oilprice.service.dto.NationalCheapestOilPrice;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
@@ -69,11 +71,17 @@ class RouteRestStopServiceTest {
     @Mock
     private NationalOilPriceService nationalOilPriceService;
 
+    @Mock
+    private RestOilPriceRankService restOilPriceRankService;
+
     private RouteRestStopService service;
 
     @BeforeEach
     void setUp() {
         lenient().when(nationalOilPriceService.getTodaySummary()).thenReturn(Optional.empty());
+        lenient()
+                .when(restOilPriceRankService.findNationalCheapestPrices())
+                .thenReturn(new NationalCheapestOilPrice(null, null, null));
         stubRelatedInfoByCode(Map.of());
         routeRestStopComparisonSummaryService = new RouteRestStopComparisonSummaryService();
         routeRestStopRecommendationTagService = new RouteRestStopRecommendationTagService();
@@ -86,7 +94,8 @@ class RouteRestStopServiceTest {
                 new RouteOptionAssemblyService(
                         restStopAggregateQueryService,
                         routeRestStopComparisonSummaryService,
-                        routeRestStopRecommendationTagService));
+                        routeRestStopRecommendationTagService,
+                        restOilPriceRankService));
     }
 
     private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {
