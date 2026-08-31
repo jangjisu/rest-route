@@ -21,7 +21,7 @@ public class FlightSearchService {
     private final FlightDealSessionStore sessionStore;
     private final FlightDealFetcher dealFetcher;
 
-    /** Spring 밖에서(모킹 등) {@link FlightDealFetcher}만 바꿔 조립할 때 쓰는 정적 팩토리. */
+    /** {@link FlightDealFetcher}만 바꿔 같은 검색 흐름을 재사용한다 — {@link FlightSearchMockService}가 이 경로로 만든다. */
     static FlightSearchService create(FlightDealSessionStore sessionStore, FlightDealFetcher dealFetcher) {
         return new FlightSearchService(sessionStore, dealFetcher);
     }

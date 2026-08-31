@@ -19,7 +19,7 @@ import org.springframework.util.StringUtils;
  * 최종 저장 직전에 부여한다.
  *
  * <p>목적지는 도시코드가 아니라 공항코드({@code destinationAirport})를 기준으로 이름을 채운다 —
- * mock이 이미 공항코드 스타일(FUK/KIX/OKA 등)을 써왔던 것과 응답 계약을 맞추기 위해서다.
+ * 응답 계약이 공항코드(FUK/KIX/OKA 등) 기준으로 확정돼 있다.
  *
  * <p>{@code isLowCost}는 {@link FlightAirlineNameCache#isLowCost}로 채운다 — Travelpayouts
  * {@code /data/airlines.json}의 {@code is_lowcost}를 시딩 단계에서 그대로 가져온 값이다.

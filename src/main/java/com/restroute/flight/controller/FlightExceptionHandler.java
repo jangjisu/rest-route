@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  *
  * <p>{@code @Order}로 공용 GlobalExceptionHandler보다 먼저 평가되게 한다 — 안 하면
  * basePackages로 좁혀놨어도 순서상 공용 핸들러의 Exception.class catch-all이 먼저 걸려서
- * flight 전용 형태 대신 공용 500 응답이 나가버린다(실제로 그렇게 나는 것 확인함).
+ * flight 전용 형태 대신 공용 500 응답이 나가버린다.
  */
 @Slf4j
 @RestControllerAdvice(basePackages = "com.restroute.flight.controller")

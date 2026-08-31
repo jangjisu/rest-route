@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 항공권 검색용 국가 참조 데이터 (Travelpayouts /data/ko/countries.json 기준). korName/engName
- * 둘 다 253개국 전량 채워진다(검증 완료).
+ * 둘 다 253개국 전량 채워져 있다.
  */
 @Getter
 @Entity

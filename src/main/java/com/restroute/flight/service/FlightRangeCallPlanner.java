@@ -20,43 +20,11 @@ import org.springframework.util.CollectionUtils;
  * 바로 실행 가능한 {@link Callable} 목록으로 만든다. 실행(병렬 호출·dedup)은 {@link
  * com.restroute.flight.service.util.FlightParallelPriceCalls}가 RANGE/FIXED 공통으로 한다.
  *
- * <p>실제 호출 횟수는 세 축의 곱이다: {@code destinations.size() × months.size() ×
- * nightsWindows.size()}(destination이 생략이면 1로 친다). 개월 수(dateFrom~dateTo가 걸치는
- * 달력상 월)는 검색 조건 자체가 정하는 값이라 줄일 수 없다 — grouped_prices가 달 하나 단위로만
- * 응답을 주기 때문이다. destination과 nights는 예산이 부족하면 아래처럼 단계적으로 낮춘다.
- *
- * <p><b>1단계 — nights 축.</b> 사용자가 nights를 여러 개 골랐을 때:
- *
- * <ul>
- *   <li><b>개별 모드</b> — 값 하나하나를 정확한 창({@code min=max=그값})으로 따로 조회한다.
- *       "3박짜리는 얼마, 4박짜리는 얼마"를 각각 보여줄 수 있어 결과가 풍부하지만, nights 개수만큼
- *       호출이 늘어난다.
- *   <li><b>범위 모드</b> — nights 전체를 {@code min~max} 창 하나로 뭉쳐서 한 번만 조회한다.
- * </ul>
- *
- * <p>nights를 아예 안 준 경우(자동 확장된 경우)는 개별 모드를 시도조차 하지 않고 바로 범위
- * 모드로 간다 — 자동 확장된 값은 최대 90개까지 갈 수 있어 개별로 쪼개는 게 애초에 말이 안 되기
- * 때문이다.
- *
- * <p><b>2단계 — destination 축.</b> sector로 여러 국가가 잡혔으면(직접 지정 destination은
- * 이미 1개라 해당 없음), 국가별 조회에 "전체"(destination 생략) 조회를 하나 더 얹어서 함께
- * 보여준다 — 국가별 조회 개수(N) + 전체(1) = N+1로 예산을 다시 확인해서, 그래도 넘지 않으면
- * 국가별+전체를 함께, 넘으면 국가별 조회를 포기하고 전체 하나만 한다.
- *
- * <p>이 순서 덕분에 최종 호출 수는 항상 {@link FlightSearchDestinations#MAX_FANOUT_CALLS}를
- * 넘지 않는다 — 전체만 하는 경우는 destination 축이 1이라 {@code 1 × months × nightsWindows}인데,
- * nightsWindows는 이미 1단계에서 원래 destination 개수 기준으로 예산 안에 들도록 정해졌기
- * 때문이다. 예시(1개월 기준):
- *
- * <pre>
- * sector=JAPAN(1개국), nights=[3,4,5]         → 국가별 1×1×3=3, +전체 2×1×3=6 ≤20 → 국가별+전체
- * sector 4개 전부(9개국), nights=[3,4]        → 국가별 9×1×2=18 ≤20 → nights는 개별 유지
- *                                                +전체 10×1×2=20 ≤20 → 국가별+전체
- * sector 4개 전부(9개국), nights=[3,4,5]      → 국가별 9×1×3=27 >20 → nights 범위 모드로 낮춤(9×1×1=9)
- *                                                +전체 10×1×1=10 ≤20 → 국가별+전체
- * sector 4개 전부(9개국), 3개월 걸침, nights=[3] → nights 유지(9×3×1=27>20→범위 9×3×1=27,
- *                                                여전히 초과) → 국가별 포기, 전체만(1×3×1=3)
- * </pre>
+ * <p>호출 횟수는 {@code destinations × months × nightsWindows}의 곱이고, 개월 수는 검색 조건이
+ * 정하는 값이라 줄일 수 없다(grouped_prices가 달 단위로만 응답한다). 예산이 모자라면 nights 축을
+ * 먼저 범위 모드로 낮추고, 그다음 destination 축에서 국가별 조회를 포기한다 — 그래서 최종 호출
+ * 수는 항상 {@link FlightSearchDestinations#MAX_FANOUT_CALLS} 이하다. 단계별 규칙과 예시는
+ * {@code docs/domain/flight.md} "정책과 불변 조건" 참고.
  */
 @Component
 @RequiredArgsConstructor

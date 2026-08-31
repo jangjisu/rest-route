@@ -62,9 +62,7 @@ public class RouteRestStopService {
     }
 
     /**
-     * 카카오가 준 원본 폴리라인은 총 거리에 비해 정점이 너무 많다 — 근접거리 계산(nearestTo)이
-     * 매 휴게소마다 전체 정점을 순회하므로, 성능을 위해 여기서 미리 정점 수를 줄인다
-     * (RouteCoordinateReducer에 위임 — 200m 간격/최소 300개 기준 균등 샘플링).
+     * 근접거리 계산 전에 정점 수를 줄인다(축소 기준과 그 이유는 {@link RouteCoordinateReducer}).
      * 개별 경로의 좌표가 비어있으면 그 경로만 제외하고, 전부 비어있으면 예외로 끝낸다.
      */
     private List<RouteGeometry> reduceCoordinates(List<KakaoDirectionsResponse.Route> rawRoutes) {
