@@ -3,6 +3,7 @@
    =================================================== */
 
 import { closeDialogById, openDialogById } from './utils.js';
+import { initThemeToggle } from './theme.js';
 import { requestCurrentPosition } from './finder-geolocation.js';
 import { formatDistance, sortByDistance } from './finder-distance.js';
 import { DESTINATION_CHIPS, resolveDestinationQuery } from './finder-destination-chips.js';
@@ -88,6 +89,8 @@ function renderResultCard({ name, routeLabel, distanceLabel, badgeItem }) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initThemeToggle(document, window);
+
     /* ---------- 첫 화면 ---------- */
 
     document.getElementById('finderEnterMode1')?.addEventListener('click', () => {
@@ -116,14 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await requestCurrentPosition();
         setLoading(false);
 
-        if (!result.granted) {
-            mode1Origin = null;
-            closeDialogById('finderPermissionMode1');
-            enterMode1();
-            return;
-        }
-
-        mode1Origin = { latitude: result.latitude, longitude: result.longitude };
+        mode1Origin = result.granted ? { latitude: result.latitude, longitude: result.longitude } : null;
         closeDialogById('finderPermissionMode1');
         enterMode1();
     });
@@ -149,11 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         mode2Origin = { latitude: result.latitude, longitude: result.longitude };
         closeDialogById('finderPermissionMode2');
-        enterMode2Destination();
+        enterMode2();
     });
 
     /* ---------- 1. 이름·거리로 찾기 ---------- */
 
+    const mode1EmptyStateEl = document.getElementById('finderMode1EmptyState');
     const mode1SubHeadingEl = document.getElementById('finderMode1SubHeading');
     const mode1SearchInputEl = document.getElementById('finderMode1SearchInput');
     const mode1StatusEl = document.getElementById('finderMode1Status');
@@ -193,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderMode1List(restStops) {
         mode1ListEl.innerHTML = '';
         if (restStops.length === 0) {
-            setStatus(mode1StatusEl, '검색 결과가 없어요.');
+            setStatus(mode1StatusEl, mode1Origin || mode1SearchInputEl.value.trim() !== '' ? '검색 결과가 없어요.' : '');
             return;
         }
         setStatus(mode1StatusEl, '');
@@ -214,13 +211,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function enterMode1() {
         showScreen('mode1');
         mode1SearchInputEl.value = '';
+        mode1ListEl.innerHTML = '';
+        setStatus(mode1StatusEl, '');
+
         if (mode1Origin) {
+            mode1EmptyStateEl.hidden = true;
+            mode1SubHeadingEl.hidden = false;
             mode1SubHeadingEl.textContent = '내 위치 기준 · 가까운 순';
             restStopListRequest.load();
         } else {
-            mode1SubHeadingEl.textContent = '이름으로 검색해보세요';
-            mode1ListEl.innerHTML = '';
-            setStatus(mode1StatusEl, '휴게소 이름을 입력해주세요.');
+            mode1EmptyStateEl.hidden = false;
+            mode1SubHeadingEl.hidden = true;
         }
     }
 
@@ -234,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderMode1List(sortByDistance(mode1AllRestStops, mode1Origin));
             } else {
                 mode1ListEl.innerHTML = '';
-                setStatus(mode1StatusEl, '휴게소 이름을 입력해주세요.');
+                setStatus(mode1StatusEl, '');
             }
             return;
         }
@@ -246,10 +247,17 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen('landing');
     });
 
-    /* ---------- 2. 목적지로 추천받기 — 목적지 입력 ---------- */
+    /* ---------- 2. 목적지로 추천받기 ---------- */
 
     const destinationInputEl = document.getElementById('finderMode2DestinationInput');
     const destinationChipsEl = document.getElementById('finderDestinationChips');
+    const conditionSectionEl = document.getElementById('finderMode2ConditionSection');
+    const mode2ResultsHeadingEl = document.getElementById('finderMode2ResultsHeading');
+    const mode2FiltersEl = document.getElementById('finderConditionFilters');
+    const mode2StatusEl = document.getElementById('finderMode2Status');
+    const mode2ListEl = document.getElementById('finderMode2List');
+    const selectedFilterKeys = new Set();
+    let mode2RestStopItems = [];
 
     DESTINATION_CHIPS.forEach((chip) => {
         const button = document.createElement('button');
@@ -259,32 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => loadMode2Results(chip.destinationQuery, chip.label));
         destinationChipsEl?.appendChild(button);
     });
-
-    function enterMode2Destination() {
-        showScreen('mode2-destination');
-        destinationInputEl.value = '';
-    }
-
-    document.getElementById('finderMode2DestinationSubmit')?.addEventListener('click', () => {
-        const query = destinationInputEl.value.trim();
-        if (query === '') {
-            return;
-        }
-        loadMode2Results(resolveDestinationQuery(query), query);
-    });
-
-    document.getElementById('finderMode2DestinationBack')?.addEventListener('click', () => {
-        showScreen('landing');
-    });
-
-    /* ---------- 2. 목적지로 추천받기 — 조건 필터 + 추천 리스트 ---------- */
-
-    const mode2ResultsTitleEl = document.getElementById('finderMode2ResultsTitle');
-    const mode2FiltersEl = document.getElementById('finderConditionFilters');
-    const mode2StatusEl = document.getElementById('finderMode2Status');
-    const mode2ListEl = document.getElementById('finderMode2List');
-    const selectedFilterKeys = new Set();
-    let mode2RestStopItems = [];
 
     CONDITION_FILTERS.forEach((filter) => {
         const button = document.createElement('button');
@@ -304,6 +286,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         mode2FiltersEl?.appendChild(button);
     });
+
+    function enterMode2() {
+        showScreen('mode2');
+        destinationInputEl.value = '';
+        conditionSectionEl.hidden = true;
+        mode2ListEl.innerHTML = '';
+        selectedFilterKeys.clear();
+        mode2FiltersEl?.querySelectorAll('.finder-chip').forEach((button) => button.setAttribute('aria-pressed', 'false'));
+    }
 
     function renderMode2List() {
         const filtered = filterItems(mode2RestStopItems, [...selectedFilterKeys]);
@@ -333,11 +324,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             setLoading(false);
+            conditionSectionEl.hidden = false;
+            selectedFilterKeys.clear();
+            mode2FiltersEl?.querySelectorAll('.finder-chip').forEach((button) => button.setAttribute('aria-pressed', 'false'));
 
             if (state.status === 'not-found') {
                 mode2RestStopItems = [];
-                selectedFilterKeys.clear();
-                mode2FiltersEl?.querySelectorAll('.finder-chip').forEach((button) => button.setAttribute('aria-pressed', 'false'));
                 setStatus(mode2StatusEl, state.message || '경로를 찾을 수 없어요.');
                 mode2ListEl.innerHTML = '';
                 return;
@@ -350,8 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             mode2RestStopItems = state.data.routes?.[0]?.restStops ?? [];
-            selectedFilterKeys.clear();
-            mode2FiltersEl?.querySelectorAll('.finder-chip').forEach((button) => button.setAttribute('aria-pressed', 'false'));
             renderMode2List();
         }
     });
@@ -361,13 +351,20 @@ document.addEventListener('DOMContentLoaded', () => {
             showScreen('landing');
             return;
         }
-        mode2ResultsTitleEl.textContent = `${displayLabel} 방향 추천 휴게소`;
-        showScreen('mode2-results');
+        mode2ResultsHeadingEl.textContent = `${displayLabel} 방향 · 앞으로 가는 길`;
         routeRestStopRequest.load(mode2Origin.latitude, mode2Origin.longitude, destinationQuery);
     }
 
-    document.getElementById('finderMode2ResultsBack')?.addEventListener('click', () => {
-        showScreen('mode2-destination');
+    document.getElementById('finderMode2DestinationSubmit')?.addEventListener('click', () => {
+        const query = destinationInputEl.value.trim();
+        if (query === '') {
+            return;
+        }
+        loadMode2Results(resolveDestinationQuery(query), query);
+    });
+
+    document.getElementById('finderMode2Back')?.addEventListener('click', () => {
+        showScreen('landing');
     });
 
     showScreen('landing');

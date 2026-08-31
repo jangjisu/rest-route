@@ -10,16 +10,19 @@
     min-height: 100vh;
 }
 
+.finder-navbar {
+    padding: 10px 20px;
+}
+
 .finder-app {
     max-width: 480px;
     margin: 0 auto;
-    min-height: 100vh;
+    min-height: calc(100vh - 55px);
     position: relative;
 }
 
 .finder-screen {
     padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
-    min-height: 100vh;
     box-sizing: border-box;
 }
 
@@ -29,125 +32,106 @@
 
 /* --- 0. 첫 화면 --- */
 
-.finder-screen-landing {
-    display: flex;
-    align-items: center;
-}
-
-.finder-landing-content {
-    width: 100%;
-}
-
-.finder-landing-kicker {
-    margin: 0 0 8px;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--rr-color-primary);
-    text-transform: uppercase;
-}
-
 .finder-landing-headline {
-    margin: 0 0 12px;
-    font-size: 34px;
-    line-height: 1.25;
-    font-weight: 900;
+    margin: 4px 0 12px;
+    font-size: 30px;
+    line-height: 1.3;
+    font-weight: 800;
     color: var(--rr-color-text-strong);
 }
 
 .finder-landing-sub {
-    margin: 0 0 28px;
-    font-size: 15px;
+    margin: 0 0 24px;
+    font-size: 13.5px;
+    line-height: 1.55;
     color: var(--rr-color-text-secondary);
 }
 
-.finder-landing-actions {
+.finder-landing-tiles {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.finder-tile {
+    flex: 1;
+    height: 108px;
+    border: none;
+    border-radius: 18px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 32px;
-}
-
-.finder-primary-button,
-.finder-secondary-button {
-    width: 100%;
-    border: none;
-    border-radius: var(--rr-radius-button);
-    padding: 16px 20px;
-    font-size: 16px;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    user-select: none;
-    transition: transform 0.15s ease, opacity 0.15s ease;
-}
-
-.finder-primary-button {
-    background: var(--rr-color-primary);
-    color: var(--rr-color-on-primary);
-}
-
-.finder-primary-button:active {
-    transform: scale(0.98);
-}
-
-.finder-secondary-button {
-    background: var(--rr-color-surface-muted);
-    color: var(--rr-color-text-strong);
-    border: 1px solid var(--rr-color-border);
-}
-
-.finder-secondary-button:active {
-    transform: scale(0.98);
-}
-
-.finder-text-button {
-    width: 100%;
-    border: none;
-    background: none;
-    color: var(--rr-color-text-secondary);
-    font-size: 14px;
-    font-family: inherit;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     padding: 10px;
     cursor: pointer;
+    font-family: inherit;
+    user-select: none;
 }
 
-.finder-example-card {
-    background: var(--rr-color-surface);
-    border: 1px solid var(--rr-color-border);
-    border-radius: var(--rr-radius-card);
-    padding: 16px;
-    box-shadow: var(--rr-shadow-card);
+.finder-tile:active {
+    transform: scale(0.98);
+}
+
+.finder-tile-mode1 {
+    background: var(--rr-color-primary-tint);
+}
+
+.finder-tile-mode2 {
+    background: var(--rr-color-accent-tint);
+}
+
+.finder-tile-label {
+    font-size: 12.5px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.finder-tile-mode1 .finder-tile-label {
+    color: var(--rr-color-primary-text);
+}
+
+.finder-tile-mode2 .finder-tile-label {
+    color: var(--rr-color-accent-text);
 }
 
 .finder-example-kicker {
     margin: 0 0 10px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--rr-color-text-secondary);
+}
+
+.finder-example-card {
+    background: var(--rr-color-surface-tint);
+    border-radius: var(--rr-radius-card);
+    padding: 14px;
 }
 
 .finder-example-row {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 8px;
 }
 
 .finder-example-name {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 700;
-    font-size: 15px;
+    font-weight: 800;
+    font-size: 14px;
     color: var(--rr-color-text-strong);
 }
 
 .finder-example-distance {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--rr-color-primary);
+    font-size: 12px;
+    color: var(--rr-color-text-secondary);
     white-space: nowrap;
+}
+
+.finder-example-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
 }
 
 /* --- 배지 --- */
@@ -157,10 +141,10 @@
     align-items: center;
     padding: 3px 9px;
     border-radius: var(--rr-radius-pill);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    background: var(--rr-color-surface-muted);
-    color: var(--rr-color-text-secondary);
+    background: var(--rr-color-primary-tint);
+    color: var(--rr-color-primary-text);
     white-space: nowrap;
 }
 
@@ -189,14 +173,17 @@
 .finder-dialog-close {
     position: absolute;
     top: 14px;
-    right: 16px;
+    right: 14px;
+    width: 26px;
+    height: 26px;
     border: none;
-    background: none;
+    border-radius: 50%;
+    background: var(--rr-color-surface-muted);
     color: var(--rr-color-text-secondary);
-    font-size: 13px;
-    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    padding: 6px 8px;
 }
 
 .finder-permission-body {
@@ -205,22 +192,40 @@
 }
 
 .finder-permission-icon {
-    margin: 0 0 12px;
-    font-size: 32px;
+    margin: 0 auto 12px;
+    display: block;
+}
+
+.finder-permission-icon-primary {
+    color: var(--rr-color-primary-text);
+}
+
+.finder-permission-icon-accent {
+    color: var(--rr-color-accent-text);
 }
 
 .finder-permission-title {
     margin: 0 0 8px;
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 800;
+    line-height: 1.4;
     color: var(--rr-color-text-strong);
 }
 
 .finder-permission-desc {
-    margin: 0 0 24px;
-    font-size: 14px;
+    margin: 0 0 20px;
+    font-size: 13px;
     line-height: 1.5;
     color: var(--rr-color-text-secondary);
+}
+
+.finder-permission-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.finder-permission-single-button {
+    width: 100%;
 }
 
 .finder-permission-error {
@@ -229,7 +234,41 @@
     color: var(--rr-color-accent-strong);
 }
 
-/* --- 목록 화면 공통 --- */
+/* --- 버튼 --- */
+
+.finder-primary-button,
+.finder-secondary-button {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.finder-primary-button {
+    background: var(--rr-color-primary);
+    color: var(--rr-color-on-primary);
+}
+
+.finder-primary-button:active {
+    transform: scale(0.98);
+}
+
+.finder-secondary-button {
+    background: var(--rr-color-surface-muted);
+    color: var(--rr-color-text-strong);
+}
+
+.finder-secondary-button:active {
+    transform: scale(0.98);
+}
+
+/* --- 화면 공통 --- */
 
 .finder-screen-header {
     display: flex;
@@ -242,72 +281,140 @@
     border: none;
     background: var(--rr-color-surface-muted);
     color: var(--rr-color-text-strong);
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
 }
 
 .finder-screen-title {
     margin: 0;
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 800;
     color: var(--rr-color-text-strong);
 }
 
 .finder-screen-sub {
     margin: 0 0 14px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--rr-color-text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rr-color-accent-text);
+}
+
+.finder-screen-sub[hidden] {
+    display: none;
 }
 
 .finder-screen-caption {
-    margin: 20px 0 10px;
-    font-size: 13px;
-    font-weight: 600;
+    margin: 18px 0 8px;
+    font-size: 11px;
+    font-weight: 700;
     color: var(--rr-color-text-secondary);
 }
 
+/* --- 빈 상태(검색 전용 화면) --- */
+
+.finder-empty-state {
+    text-align: center;
+    padding: 12px 0 24px;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-empty-state[hidden] {
+    display: none;
+}
+
+.finder-empty-state svg {
+    margin: 0 auto;
+}
+
+.finder-empty-state-title {
+    margin: 10px 0 0;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.4;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-empty-state-desc {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* --- 검색/입력 박스 --- */
+
 .finder-search-box {
     display: flex;
+    align-items: center;
     gap: 8px;
+}
+
+.finder-search-box-pill {
+    background: var(--rr-color-primary-tint);
+    border-radius: var(--rr-radius-pill);
+    padding: 12px 16px;
+    color: var(--rr-color-primary-text);
+}
+
+.finder-search-box-accent {
+    background: var(--rr-color-accent-tint);
+    color: var(--rr-color-accent-text);
+}
+
+.finder-search-box-pill svg {
+    flex-shrink: 0;
 }
 
 .finder-search-input {
     flex: 1;
-    border: 1px solid var(--rr-color-border-control);
-    border-radius: var(--rr-radius-button);
-    padding: 13px 16px;
-    font-size: 15px;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 14px;
     font-family: inherit;
-    background: var(--rr-color-surface);
     color: var(--rr-color-text);
+}
+
+.finder-search-input::placeholder {
+    color: inherit;
+    opacity: 0.75;
 }
 
 .finder-search-input:focus {
     outline: none;
-    border-color: var(--rr-color-primary);
-    box-shadow: 0 0 0 3px var(--rr-color-focus-ring);
 }
 
 .finder-search-submit {
     border: none;
-    border-radius: var(--rr-radius-button);
-    padding: 0 18px;
-    background: var(--rr-color-primary);
+    border-radius: var(--rr-radius-pill);
+    padding: 6px 14px;
+    background: var(--rr-color-accent);
     color: var(--rr-color-on-primary);
     font-weight: 700;
+    font-size: 12px;
     font-family: inherit;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .finder-notice {
-    margin: 14px 2px 0;
-    font-size: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    margin: 10px 2px 0;
+    font-size: 11px;
+    line-height: 1.45;
     color: var(--rr-color-text-faint);
+}
+
+.finder-notice svg {
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
 .finder-status {
@@ -317,12 +424,17 @@
     color: var(--rr-color-text-secondary);
 }
 
+.finder-status[hidden] {
+    display: none;
+}
+
 /* --- 칩 --- */
 
 .finder-chip-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    margin-top: 10px;
 }
 
 .finder-chip {
@@ -330,20 +442,21 @@
     background: var(--rr-color-surface);
     color: var(--rr-color-text-medium);
     border-radius: var(--rr-radius-pill);
-    padding: 9px 16px;
-    font-size: 14px;
-    font-weight: 600;
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
     font-family: inherit;
     cursor: pointer;
 }
 
 .finder-chip[aria-pressed="true"] {
-    background: var(--rr-color-primary-tint);
-    border-color: var(--rr-color-primary-border);
-    color: var(--rr-color-primary-text);
+    background: var(--rr-color-primary);
+    border-color: var(--rr-color-primary);
+    color: var(--rr-color-on-primary);
 }
 
 .finder-chip-row-filter {
+    margin-top: 6px;
     margin-bottom: 16px;
 }
 
@@ -351,7 +464,7 @@
 
 .finder-result-list {
     list-style: none;
-    margin: 18px 0 0;
+    margin: 14px 0 0;
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -363,10 +476,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: var(--rr-color-surface);
-    border: 1px solid var(--rr-color-border);
-    border-radius: var(--rr-radius-card);
-    padding: 16px;
+    background: var(--rr-color-surface-tint);
+    border-radius: 18px;
+    padding: 14px;
 }
 
 .finder-result-main {
@@ -375,8 +487,8 @@
 
 .finder-result-name {
     margin: 0 0 4px;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 800;
     color: var(--rr-color-text-strong);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -385,7 +497,7 @@
 
 .finder-result-route {
     margin: 0 0 8px;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--rr-color-text-secondary);
 }
 
@@ -397,9 +509,8 @@
 
 .finder-result-distance {
     flex-shrink: 0;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--rr-color-primary);
+    font-size: 13px;
+    color: var(--rr-color-text-secondary);
     white-space: nowrap;
 }
 
