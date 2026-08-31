@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
-import com.restroute.oilprice.service.dto.NationalCheapestOilPrice;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
@@ -16,6 +15,7 @@ import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
+import com.restroute.route.service.dto.QueriedOilPriceStats;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -78,30 +78,25 @@ class RouteRestStopComparisonSummaryServiceTest {
     }
 
     @Test
-    @DisplayName("보유한 유종 중 하나라도 전국 최저가와 같으면 CHEAPEST다")
-    void fuelPriceTier_returnsCheapestWhenAnyFuelMatchesNationalMinimum() {
+    @DisplayName("보유한 유종 중 하나라도 조회된 휴게소들 사이의 최저가와 같으면 CHEAPEST다")
+    void fuelPriceTier_returnsCheapestWhenAnyFuelMatchesQueriedMinimum() {
         RouteRestStopComparisonSummaryService service = new RouteRestStopComparisonSummaryService();
         RestOilPriceEntity oilPrice = oilPrice("1,790원", "1,950원", "1,150원");
-        NationalCheapestOilPrice nationalCheapest = new NationalCheapestOilPrice(1790, 1880, 1100);
+        QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, 1820, 1880, 1900, 1100, 1120);
 
-        FuelPriceTier tier = service.fuelPriceTier(Optional.of(oilPrice), Optional.empty(), nationalCheapest);
+        FuelPriceTier tier = service.fuelPriceTier(Optional.of(oilPrice), stats);
 
         assertThat(tier).isEqualTo(FuelPriceTier.CHEAPEST);
     }
 
     @Test
-    @DisplayName("전국 최저가와는 안 같아도 보유 유종이 평균보다 싸면 BELOW_AVERAGE다")
-    void fuelPriceTier_returnsBelowAverageWhenCheaperThanAverageButNotCheapest() {
+    @DisplayName("조회된 최저가와는 안 같아도 보유 유종이 조회된 평균보다 싸면 BELOW_AVERAGE다")
+    void fuelPriceTier_returnsBelowAverageWhenCheaperThanQueriedAverageButNotCheapest() {
         RouteRestStopComparisonSummaryService service = new RouteRestStopComparisonSummaryService();
         RestOilPriceEntity oilPrice = oilPrice("1,850원", null, null);
-        NationalCheapestOilPrice nationalCheapest = new NationalCheapestOilPrice(1790, 1880, 1100);
-        Optional<NationalOilPriceSummary> nationalOilPriceSummary = Optional.of(NationalOilPriceSummary.of(
-                "2026.07.07",
-                AverageOilPrice.of("B027", "휘발유", "1,893원", "-4.19"),
-                AverageOilPrice.of("D047", "자동차용경유", "1,880원", "-4.51"),
-                AverageOilPrice.of("K015", "자동차용부탄", "1,135원", "+0.01")));
+        QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, 1900, null, null, null, null);
 
-        FuelPriceTier tier = service.fuelPriceTier(Optional.of(oilPrice), nationalOilPriceSummary, nationalCheapest);
+        FuelPriceTier tier = service.fuelPriceTier(Optional.of(oilPrice), stats);
 
         assertThat(tier).isEqualTo(FuelPriceTier.BELOW_AVERAGE);
     }
@@ -111,14 +106,9 @@ class RouteRestStopComparisonSummaryServiceTest {
     void fuelPriceTier_returnsNullWhenNeitherCheapestNorBelowAverage() {
         RouteRestStopComparisonSummaryService service = new RouteRestStopComparisonSummaryService();
         RestOilPriceEntity oilPrice = oilPrice("1,950원", null, null);
-        NationalCheapestOilPrice nationalCheapest = new NationalCheapestOilPrice(1790, 1880, 1100);
-        Optional<NationalOilPriceSummary> nationalOilPriceSummary = Optional.of(NationalOilPriceSummary.of(
-                "2026.07.07",
-                AverageOilPrice.of("B027", "휘발유", "1,893원", "-4.19"),
-                AverageOilPrice.of("D047", "자동차용경유", "1,880원", "-4.51"),
-                AverageOilPrice.of("K015", "자동차용부탄", "1,135원", "+0.01")));
+        QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, 1900, null, null, null, null);
 
-        FuelPriceTier tier = service.fuelPriceTier(Optional.of(oilPrice), nationalOilPriceSummary, nationalCheapest);
+        FuelPriceTier tier = service.fuelPriceTier(Optional.of(oilPrice), stats);
 
         assertThat(tier).isNull();
     }
@@ -127,9 +117,9 @@ class RouteRestStopComparisonSummaryServiceTest {
     @DisplayName("유가 정보 자체가 없으면 등급이 없다(null)")
     void fuelPriceTier_returnsNullWhenNoOilPrice() {
         RouteRestStopComparisonSummaryService service = new RouteRestStopComparisonSummaryService();
-        NationalCheapestOilPrice nationalCheapest = new NationalCheapestOilPrice(1790, 1880, 1100);
+        QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, 1900, null, null, null, null);
 
-        FuelPriceTier tier = service.fuelPriceTier(Optional.empty(), Optional.empty(), nationalCheapest);
+        FuelPriceTier tier = service.fuelPriceTier(Optional.empty(), stats);
 
         assertThat(tier).isNull();
     }

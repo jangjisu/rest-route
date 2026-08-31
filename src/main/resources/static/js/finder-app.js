@@ -38,12 +38,22 @@ function setStatus(element, message) {
     element.textContent = message;
 }
 
+const BADGE_COLOR_CLASS_BY_KEY = {
+    SIZE_LARGE: 'finder-badge-size',
+    TOP_TRAFFIC: 'finder-badge-traffic',
+    FUEL_CHEAPEST: 'finder-badge-accent',
+    FUEL_BELOW_AVERAGE: 'finder-badge-savings',
+    EV_CHARGER: 'finder-badge-ev',
+    HAS_FOOD: 'finder-badge-food'
+};
+
 function renderBadges(container, item) {
     badgesFor(item).forEach((badge) => {
         const span = document.createElement('span');
         span.className = 'finder-badge';
-        if (badge.key === 'FUEL_CHEAPEST') {
-            span.classList.add('finder-badge-accent');
+        const colorClass = BADGE_COLOR_CLASS_BY_KEY[badge.key];
+        if (colorClass) {
+            span.classList.add(colorClass);
         }
         span.textContent = badge.label;
         container.appendChild(span);
@@ -309,7 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderResultCard({
                     name: item.unitName,
                     routeLabel: item.routeName,
-                    distanceLabel: `${formatDistance(item.distanceFromRouteMeters)} 앞`,
+                    // distanceFromRouteMeters는 진행 거리가 아니라 경로 매칭용 도로-좌표 오차값이라
+                    // 사용자에게 "몇 m 앞" 형태로 보여줄 만한 값이 아니다 — 표시하지 않는다.
+                    distanceLabel: '',
                     badgeItem: item
                 })
             );

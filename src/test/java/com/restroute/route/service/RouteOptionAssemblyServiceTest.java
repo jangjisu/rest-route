@@ -7,14 +7,11 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.restroute.common.client.response.KakaoDirectionsResponse.Fare;
 import com.restroute.common.client.response.KakaoDirectionsResponse.Summary;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
-import com.restroute.oilprice.service.RestOilPriceRankService;
-import com.restroute.oilprice.service.dto.NationalCheapestOilPrice;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
@@ -46,21 +43,16 @@ class RouteOptionAssemblyServiceTest {
     @Mock
     private RestStopAggregateQueryService restStopAggregateQueryService;
 
-    @Mock
-    private RestOilPriceRankService restOilPriceRankService;
-
     private RouteOptionAssemblyService service;
 
     @BeforeEach
     void setUp() {
         stubRelatedInfoByCode(Map.of());
-        when(restOilPriceRankService.findNationalCheapestPrices())
-                .thenReturn(new NationalCheapestOilPrice(null, null, null));
         service = new RouteOptionAssemblyService(
                 restStopAggregateQueryService,
                 new RouteRestStopComparisonSummaryService(),
                 new RouteRestStopRecommendationTagService(),
-                restOilPriceRankService);
+                new QueriedOilPriceStatsCalculator());
     }
 
     private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {

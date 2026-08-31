@@ -8,6 +8,41 @@
     color: var(--rr-color-text);
     font-family: var(--rr-font-family);
     min-height: 100vh;
+
+    /* 배지 카테고리별 색상 — 앱 전역 --rr- 토큰에 없는 종류만 새로 정의한다.
+       규모=보라, 이용량=파랑, EV=청록, 먹거리=호박색. 유가 배지는 기존 accent/success 토큰 재사용. */
+    --finder-badge-size-bg: oklch(95% 0.03 300);
+    --finder-badge-size-text: oklch(40% 0.12 300);
+    --finder-badge-traffic-bg: oklch(95% 0.03 250);
+    --finder-badge-traffic-text: oklch(42% 0.12 250);
+    --finder-badge-ev-bg: oklch(94% 0.04 195);
+    --finder-badge-ev-text: oklch(38% 0.09 195);
+    --finder-badge-food-bg: oklch(95% 0.04 75);
+    --finder-badge-food-text: oklch(42% 0.11 75);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .finder-body {
+        --finder-badge-size-bg: oklch(28% 0.06 300);
+        --finder-badge-size-text: oklch(80% 0.12 300);
+        --finder-badge-traffic-bg: oklch(28% 0.06 250);
+        --finder-badge-traffic-text: oklch(78% 0.12 250);
+        --finder-badge-ev-bg: oklch(27% 0.05 195);
+        --finder-badge-ev-text: oklch(78% 0.1 195);
+        --finder-badge-food-bg: oklch(29% 0.06 75);
+        --finder-badge-food-text: oklch(80% 0.11 75);
+    }
+}
+
+:root[data-theme="dark"] .finder-body {
+    --finder-badge-size-bg: oklch(28% 0.06 300);
+    --finder-badge-size-text: oklch(80% 0.12 300);
+    --finder-badge-traffic-bg: oklch(28% 0.06 250);
+    --finder-badge-traffic-text: oklch(78% 0.12 250);
+    --finder-badge-ev-bg: oklch(27% 0.05 195);
+    --finder-badge-ev-text: oklch(78% 0.1 195);
+    --finder-badge-food-bg: oklch(29% 0.06 75);
+    --finder-badge-food-text: oklch(80% 0.11 75);
 }
 
 .finder-navbar {
@@ -151,6 +186,31 @@
 .finder-badge-accent {
     background: var(--rr-color-accent-tint);
     color: var(--rr-color-accent-text);
+}
+
+.finder-badge-savings {
+    background: var(--rr-color-success-bg);
+    color: var(--rr-color-success-text);
+}
+
+.finder-badge-size {
+    background: var(--finder-badge-size-bg);
+    color: var(--finder-badge-size-text);
+}
+
+.finder-badge-traffic {
+    background: var(--finder-badge-traffic-bg);
+    color: var(--finder-badge-traffic-text);
+}
+
+.finder-badge-ev {
+    background: var(--finder-badge-ev-bg);
+    color: var(--finder-badge-ev-text);
+}
+
+.finder-badge-food {
+    background: var(--finder-badge-food-bg);
+    color: var(--finder-badge-food-text);
 }
 
 /* --- 위치 동의 팝업 --- */

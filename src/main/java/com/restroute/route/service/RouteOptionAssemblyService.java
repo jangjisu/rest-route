@@ -1,8 +1,6 @@
 package com.restroute.route.service;
 
 import com.restroute.common.client.response.KakaoDirectionsResponse;
-import com.restroute.oilprice.service.RestOilPriceRankService;
-import com.restroute.oilprice.service.dto.NationalCheapestOilPrice;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.service.RestStopAggregateQueryService;
 import com.restroute.reststop.service.dto.RestStopAggregate;
@@ -10,6 +8,7 @@ import com.restroute.route.controller.response.RouteRestStopResponse.NationalOil
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteSummary;
+import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.dto.RouteCandidate;
 import com.restroute.route.service.dto.RoutePath;
 import com.restroute.route.service.dto.RouteRestStopComparison;
@@ -35,18 +34,19 @@ public class RouteOptionAssemblyService {
     private final RestStopAggregateQueryService restStopAggregateQueryService;
     private final RouteRestStopComparisonSummaryService routeRestStopComparisonSummaryService;
     private final RouteRestStopRecommendationTagService routeRestStopRecommendationTagService;
-    private final RestOilPriceRankService restOilPriceRankService;
+    private final QueriedOilPriceStatsCalculator queriedOilPriceStatsCalculator;
 
     public List<RouteOption> attachDetails(
             List<RouteCandidate> candidates,
             List<RestStopEntity> allRestStops,
             Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         Map<String, RestStopAggregate> aggregatesByServiceAreaCode = aggregatesForCandidates(candidates, allRestStops);
-        NationalCheapestOilPrice nationalCheapestOilPrice = restOilPriceRankService.findNationalCheapestPrices();
+        QueriedOilPriceStats queriedOilPriceStats =
+                queriedOilPriceStatsCalculator.calculate(aggregatesByServiceAreaCode.values());
 
         return candidates.stream()
                 .map(candidate -> toRouteOption(
-                        candidate, aggregatesByServiceAreaCode, nationalOilPriceSummary, nationalCheapestOilPrice))
+                        candidate, aggregatesByServiceAreaCode, nationalOilPriceSummary, queriedOilPriceStats))
                 .toList();
     }
 
@@ -75,9 +75,9 @@ public class RouteOptionAssemblyService {
             RouteCandidate candidate,
             Map<String, RestStopAggregate> aggregatesByServiceAreaCode,
             Optional<NationalOilPriceSummary> nationalOilPriceSummary,
-            NationalCheapestOilPrice nationalCheapestOilPrice) {
+            QueriedOilPriceStats queriedOilPriceStats) {
         List<RouteRestStopItem> restStops = buildResponseItems(
-                candidate.items(), aggregatesByServiceAreaCode, nationalOilPriceSummary, nationalCheapestOilPrice);
+                candidate.items(), aggregatesByServiceAreaCode, nationalOilPriceSummary, queriedOilPriceStats);
         return RouteOption.of(
                 candidate.routeIndex(),
                 routeSummary(
@@ -89,7 +89,7 @@ public class RouteOptionAssemblyService {
             List<RouteRestStopItem> items,
             Map<String, RestStopAggregate> aggregatesByServiceAreaCode,
             Optional<NationalOilPriceSummary> nationalOilPriceSummary,
-            NationalCheapestOilPrice nationalCheapestOilPrice) {
+            QueriedOilPriceStats queriedOilPriceStats) {
         List<RouteRestStopComparison> comparisons = items.stream()
                 .map(item -> RouteRestStopComparison.of(
                         item,
@@ -117,9 +117,7 @@ public class RouteOptionAssemblyService {
                             .withTopTrafficTier(aggregate.topTrafficTier())
                             .withSizeTier(aggregate.sizeTier())
                             .withFuelPriceTier(routeRestStopComparisonSummaryService.fuelPriceTier(
-                                    aggregate.relatedInfo().oilPrice(),
-                                    nationalOilPriceSummary,
-                                    nationalCheapestOilPrice))
+                                    aggregate.relatedInfo().oilPrice(), queriedOilPriceStats))
                             .withComparison(
                                     comparison.summary(),
                                     routeRestStopRecommendationTagService.create(comparison, recommendationStandards));
