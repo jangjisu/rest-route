@@ -1,6 +1,7 @@
 package com.restroute.reststop.service.dto;
 
 import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.domain.SizeTier;
 
 public record RestStopAggregate(
         RestStopEntity restStop,
@@ -11,7 +12,8 @@ public record RestStopAggregate(
         boolean hasEvent,
         Integer maleToiletCount,
         Integer femaleToiletCount,
-        boolean topTrafficTier) {
+        boolean topTrafficTier,
+        SizeTier sizeTier) {
 
     public static RestStopAggregate of(
             RestStopEntity restStop,
@@ -22,7 +24,8 @@ public record RestStopAggregate(
             boolean hasEvent,
             Integer maleToiletCount,
             Integer femaleToiletCount,
-            boolean topTrafficTier) {
+            boolean topTrafficTier,
+            SizeTier sizeTier) {
         return new RestStopAggregate(
                 restStop,
                 relatedInfo,
@@ -32,6 +35,7 @@ public record RestStopAggregate(
                 hasEvent,
                 maleToiletCount,
                 femaleToiletCount,
-                topTrafficTier);
+                topTrafficTier,
+                sizeTier);
     }
 }
