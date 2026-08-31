@@ -1,0 +1,435 @@
+/* ===================================================
+   finder.css — 이름·거리로 찾기 / 목적지로 추천받기 (모바일 전용 진입 흐름)
+   =================================================== */
+
+.finder-body {
+    margin: 0;
+    background: var(--rr-color-bg);
+    color: var(--rr-color-text);
+    font-family: var(--rr-font-family);
+    min-height: 100vh;
+}
+
+.finder-app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+}
+
+.finder-screen {
+    padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.finder-screen[hidden] {
+    display: none;
+}
+
+/* --- 0. 첫 화면 --- */
+
+.finder-screen-landing {
+    display: flex;
+    align-items: center;
+}
+
+.finder-landing-content {
+    width: 100%;
+}
+
+.finder-landing-kicker {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--rr-color-primary);
+    text-transform: uppercase;
+}
+
+.finder-landing-headline {
+    margin: 0 0 12px;
+    font-size: 34px;
+    line-height: 1.25;
+    font-weight: 900;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-landing-sub {
+    margin: 0 0 28px;
+    font-size: 15px;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-landing-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 32px;
+}
+
+.finder-primary-button,
+.finder-secondary-button {
+    width: 100%;
+    border: none;
+    border-radius: var(--rr-radius-button);
+    padding: 16px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.finder-primary-button {
+    background: var(--rr-color-primary);
+    color: var(--rr-color-on-primary);
+}
+
+.finder-primary-button:active {
+    transform: scale(0.98);
+}
+
+.finder-secondary-button {
+    background: var(--rr-color-surface-muted);
+    color: var(--rr-color-text-strong);
+    border: 1px solid var(--rr-color-border);
+}
+
+.finder-secondary-button:active {
+    transform: scale(0.98);
+}
+
+.finder-text-button {
+    width: 100%;
+    border: none;
+    background: none;
+    color: var(--rr-color-text-secondary);
+    font-size: 14px;
+    font-family: inherit;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.finder-example-card {
+    background: var(--rr-color-surface);
+    border: 1px solid var(--rr-color-border);
+    border-radius: var(--rr-radius-card);
+    padding: 16px;
+    box-shadow: var(--rr-shadow-card);
+}
+
+.finder-example-kicker {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-example-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.finder-example-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-example-distance {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--rr-color-primary);
+    white-space: nowrap;
+}
+
+/* --- 배지 --- */
+
+.finder-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: var(--rr-radius-pill);
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--rr-color-surface-muted);
+    color: var(--rr-color-text-secondary);
+    white-space: nowrap;
+}
+
+.finder-badge-accent {
+    background: var(--rr-color-accent-tint);
+    color: var(--rr-color-accent-text);
+}
+
+/* --- 위치 동의 팝업 --- */
+
+.finder-permission-dialog {
+    border: none;
+    border-radius: var(--rr-radius-card) var(--rr-radius-card) 0 0;
+    padding: 0;
+    width: 100%;
+    max-width: 480px;
+    margin: auto auto 0;
+    box-shadow: var(--rr-shadow-card);
+    background: var(--rr-color-surface);
+}
+
+.finder-permission-dialog::backdrop {
+    background: var(--rr-color-backdrop);
+}
+
+.finder-dialog-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    border: none;
+    background: none;
+    color: var(--rr-color-text-secondary);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 6px 8px;
+}
+
+.finder-permission-body {
+    padding: 40px 24px 32px;
+    text-align: center;
+}
+
+.finder-permission-icon {
+    margin: 0 0 12px;
+    font-size: 32px;
+}
+
+.finder-permission-title {
+    margin: 0 0 8px;
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-permission-desc {
+    margin: 0 0 24px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-permission-error {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--rr-color-accent-strong);
+}
+
+/* --- 목록 화면 공통 --- */
+
+.finder-screen-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.finder-back-button {
+    border: none;
+    background: var(--rr-color-surface-muted);
+    color: var(--rr-color-text-strong);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.finder-screen-title {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-screen-sub {
+    margin: 0 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-screen-caption {
+    margin: 20px 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-search-box {
+    display: flex;
+    gap: 8px;
+}
+
+.finder-search-input {
+    flex: 1;
+    border: 1px solid var(--rr-color-border-control);
+    border-radius: var(--rr-radius-button);
+    padding: 13px 16px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--rr-color-surface);
+    color: var(--rr-color-text);
+}
+
+.finder-search-input:focus {
+    outline: none;
+    border-color: var(--rr-color-primary);
+    box-shadow: 0 0 0 3px var(--rr-color-focus-ring);
+}
+
+.finder-search-submit {
+    border: none;
+    border-radius: var(--rr-radius-button);
+    padding: 0 18px;
+    background: var(--rr-color-primary);
+    color: var(--rr-color-on-primary);
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.finder-notice {
+    margin: 14px 2px 0;
+    font-size: 12px;
+    color: var(--rr-color-text-faint);
+}
+
+.finder-status {
+    margin: 24px 0;
+    text-align: center;
+    font-size: 14px;
+    color: var(--rr-color-text-secondary);
+}
+
+/* --- 칩 --- */
+
+.finder-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.finder-chip {
+    border: 1px solid var(--rr-color-border);
+    background: var(--rr-color-surface);
+    color: var(--rr-color-text-medium);
+    border-radius: var(--rr-radius-pill);
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.finder-chip[aria-pressed="true"] {
+    background: var(--rr-color-primary-tint);
+    border-color: var(--rr-color-primary-border);
+    color: var(--rr-color-primary-text);
+}
+
+.finder-chip-row-filter {
+    margin-bottom: 16px;
+}
+
+/* --- 결과 리스트 --- */
+
+.finder-result-list {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.finder-result-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--rr-color-surface);
+    border: 1px solid var(--rr-color-border);
+    border-radius: var(--rr-radius-card);
+    padding: 16px;
+}
+
+.finder-result-main {
+    min-width: 0;
+}
+
+.finder-result-name {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--rr-color-text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.finder-result-route {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-result-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.finder-result-distance {
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--rr-color-primary);
+    white-space: nowrap;
+}
+
+/* --- 로딩 오버레이 --- */
+
+.finder-loading-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--rr-color-backdrop);
+    z-index: 20;
+}
+
+.finder-loading-overlay[hidden] {
+    display: none;
+}
+
+.finder-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid var(--rr-color-surface);
+    border-top-color: var(--rr-color-primary);
+    animation: finder-spin 0.7s linear infinite;
+}
+
+@keyframes finder-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

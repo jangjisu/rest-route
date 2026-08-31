@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="_csrf" th:content="${_csrf?.token}">
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}">
+    <title>휴게소 찾기 — rest-route</title>
+    <script>
+        (function () {
+            try {
+                var stored = window.localStorage.getItem('rr-theme');
+                var theme = stored === 'light' || stored === 'dark'
+                    ? stored
+                    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/finder.css" rel="stylesheet">
+</head>
+<body class="finder-body">
+
+<main id="finderApp" class="finder-app">
+
+    <!-- 0. 첫 화면 -->
+    <section id="finderScreenLanding" class="finder-screen finder-screen-landing" data-finder-screen="landing">
+        <div class="finder-landing-content">
+            <p class="finder-landing-kicker">rest-route</p>
+            <h1 class="finder-landing-headline">휴게소가<br>궁금할 때</h1>
+            <p class="finder-landing-sub">이름으로 바로 찾거나, 가는 길에 맞는 곳을 추천받으세요.</p>
+
+            <div class="finder-landing-actions">
+                <button id="finderEnterMode1" class="finder-primary-button" type="button">
+                    이름·거리로 찾기
+                </button>
+                <button id="finderEnterMode2" class="finder-secondary-button" type="button">
+                    목적지로 추천받기
+                </button>
+            </div>
+
+            <div class="finder-example-card" aria-hidden="true">
+                <p class="finder-example-kicker">이렇게 보여드려요</p>
+                <div class="finder-example-row">
+                    <div class="finder-example-name">
+                        <span>안성(부산)휴게소</span>
+                        <span class="finder-badge finder-badge-accent">제일 저렴</span>
+                    </div>
+                    <span class="finder-example-distance">1.2km</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 위치 동의 팝업: 이름·거리로 찾기 (건너뛰기 가능) -->
+    <dialog id="finderPermissionMode1" class="finder-permission-dialog" aria-labelledby="finderPermissionMode1Title">
+        <button id="finderPermissionMode1Close" class="finder-dialog-close" type="button" aria-label="닫기">
+            닫기
+        </button>
+        <div class="finder-permission-body">
+            <p class="finder-permission-icon" aria-hidden="true">📍</p>
+            <h2 id="finderPermissionMode1Title" class="finder-permission-title">위치를 확인할까요?</h2>
+            <p class="finder-permission-desc">내 위치를 기준으로 가까운 휴게소부터 보여드려요.</p>
+            <button id="finderPermissionMode1Allow" class="finder-primary-button" type="button">위치 허용</button>
+            <button id="finderPermissionMode1Skip" class="finder-text-button" type="button">건너뛰기</button>
+            <p id="finderPermissionMode1Error" class="finder-permission-error" aria-live="polite" hidden></p>
+        </div>
+    </dialog>
+
+    <!-- 위치 동의 팝업: 목적지로 추천받기 (필수) -->
+    <dialog id="finderPermissionMode2" class="finder-permission-dialog" aria-labelledby="finderPermissionMode2Title">
+        <button id="finderPermissionMode2Close" class="finder-dialog-close" type="button" aria-label="닫기">
+            닫기
+        </button>
+        <div class="finder-permission-body">
+            <p class="finder-permission-icon" aria-hidden="true">📍</p>
+            <h2 id="finderPermissionMode2Title" class="finder-permission-title">위치가 필요해요</h2>
+            <p class="finder-permission-desc">출발 위치를 알아야 목적지까지 가는 길의 휴게소를 추천할 수 있어요.</p>
+            <button id="finderPermissionMode2Allow" class="finder-primary-button" type="button">위치 허용</button>
+            <p id="finderPermissionMode2Error" class="finder-permission-error" aria-live="polite" hidden></p>
+        </div>
+    </dialog>
+
+    <!-- 1. 이름·거리로 찾기 -->
+    <section id="finderScreenMode1" class="finder-screen" data-finder-screen="mode1" hidden>
+        <header class="finder-screen-header">
+            <button id="finderMode1Back" class="finder-back-button" type="button" aria-label="첫 화면으로">←</button>
+            <h2 class="finder-screen-title">이름·거리로 찾기</h2>
+        </header>
+        <p id="finderMode1SubHeading" class="finder-screen-sub">내 위치 기준 · 가까운 순</p>
+        <div class="finder-search-box">
+            <input id="finderMode1SearchInput" class="finder-search-input" type="text"
+                   placeholder="휴게소 이름 검색 (예: 안성)" aria-label="휴게소 이름 검색">
+        </div>
+        <p id="finderMode1Status" class="finder-status" aria-live="polite" hidden></p>
+        <ul id="finderMode1List" class="finder-result-list"></ul>
+    </section>
+
+    <!-- 2. 목적지로 추천받기 — 목적지 입력 -->
+    <section id="finderScreenMode2Destination" class="finder-screen" data-finder-screen="mode2-destination" hidden>
+        <header class="finder-screen-header">
+            <button id="finderMode2DestinationBack" class="finder-back-button" type="button" aria-label="첫 화면으로">←</button>
+            <h2 class="finder-screen-title">어디로 가시나요?</h2>
+        </header>
+        <div class="finder-search-box">
+            <input id="finderMode2DestinationInput" class="finder-search-input" type="text"
+                   placeholder="목적지를 입력하세요 (예: 부산역)" aria-label="목적지 검색">
+            <button id="finderMode2DestinationSubmit" class="finder-search-submit" type="button">검색</button>
+        </div>
+        <p class="finder-screen-caption">자주 가는 목적지</p>
+        <div id="finderDestinationChips" class="finder-chip-row"></div>
+        <p class="finder-notice">카카오맵 추천 경로에 포함된 휴게소만 보여드려요.</p>
+    </section>
+
+    <!-- 2. 목적지로 추천받기 — 조건 필터 + 추천 리스트 -->
+    <section id="finderScreenMode2Results" class="finder-screen" data-finder-screen="mode2-results" hidden>
+        <header class="finder-screen-header">
+            <button id="finderMode2ResultsBack" class="finder-back-button" type="button" aria-label="목적지 다시 입력">←</button>
+            <h2 id="finderMode2ResultsTitle" class="finder-screen-title">추천 휴게소</h2>
+        </header>
+        <div id="finderConditionFilters" class="finder-chip-row finder-chip-row-filter"></div>
+        <p id="finderMode2Status" class="finder-status" aria-live="polite" hidden></p>
+        <ul id="finderMode2List" class="finder-result-list"></ul>
+    </section>
+
+</main>
+
+<div id="finderLoadingOverlay" class="finder-loading-overlay" hidden role="status" aria-live="polite">
+    <div class="finder-loading-spinner" aria-hidden="true"></div>
+</div>
+
+<script type="module" src="/js/finder-app.js"></script>
+</body>
+</html>

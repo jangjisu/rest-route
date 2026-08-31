@@ -32,4 +32,10 @@ class HomeControllerTest {
                 .andExpect(model().attributeDoesNotExist("tollGates"))
                 .andExpect(model().attributeDoesNotExist("hourlyPattern"));
     }
+
+    @Test
+    @DisplayName("finder_returns200AndFinderView")
+    void finder_returns200AndFinderView() throws Exception {
+        mockMvc.perform(get("/finder")).andExpect(status().isOk()).andExpect(view().name("finder"));
+    }
 }
