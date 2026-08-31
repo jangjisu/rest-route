@@ -14,7 +14,7 @@ public final class RoutePath {
 
     /**
      * sideOfTravel 계산에서 진행방향 벡터를 구할 때 최근접 지점 기준 앞뒤로 보는 정점 "개수"(거리
-     * 아님). 5는 실측 검증(안성(서울)/안성(부산) 사례)에서 잘 맞았던 경험적인 값이다.
+     * 아님). 이론적 근거가 아니라 실측으로 맞춘 경험값이다.
      */
     private static final int DIRECTION_VECTOR_SPAN_POINTS = 5;
 

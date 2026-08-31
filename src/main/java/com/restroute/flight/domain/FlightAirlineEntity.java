@@ -14,9 +14,8 @@ import lombok.NoArgsConstructor;
 /**
  * 항공권 검색용 항공사 참조 데이터. 인천공항 취항 항공사 API(한국어)와 Travelpayouts
  * airlines.json(영문)을 코드 기준으로 합친다 — 단일 API 응답으로 안 끝나는 병합이라
- * {@code from(Item)} 대신 {@link #of}로 두 값을 직접 받는다. korName/engName 모두 전량
- * 채워진다 — 두 소스가 커버하지 못한 나머지는 수동으로 채워 넣었다(자세한 소스/파이프라인은
- * {@code rules/backend/flight.md} 참고).
+ * {@code from(Item)} 대신 {@link #of}로 두 값을 직접 받는다. korName/engName은 전량
+ * 채워져 있다(소스·파이프라인은 {@code rules/backend/flight.md} 참고).
  *
  * <p>{@code isLowCost}는 Travelpayouts {@code /data/airlines.json}의 {@code is_lowcost}
  * 필드를 코드 기준으로 그대로 가져온 값이다 — 그 소스에 없는 코드는 저비용 여부를 알 수

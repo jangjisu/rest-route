@@ -9,17 +9,17 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
 
-/** mock/실 연동 양쪽에서 공통으로 쓰는 {@link FlightDealResponse} 조립·후처리. */
+/** {@link FlightDealResponse} 조립·후처리 공통 헬퍼. */
 public final class FlightDealResponses {
 
     private static final DateTimeFormatter LEG_TIME_FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-    /** mock은 실제 공휴일 달력 연동이 없어 항상 빈 목록이다. */
+    /** 공휴일을 아직(또는 전혀) 채우지 않는 단계가 쓰는 빈 목록. */
     public static final List<FlightDealResponse.HolidayDay> NO_HOLIDAYS = List.of();
 
     private FlightDealResponses() {}
 
-    /** id는 세션 토큰 + 순번(1부터, 4자리)으로 매긴다 — mock/실 연동 공통 형식. */
+    /** id는 세션 토큰 + 순번(1부터, 4자리)으로 매긴다. */
     public static String idOf(String sessionToken, int index) {
         return "%s_%04d".formatted(sessionToken, index + 1);
     }
@@ -109,7 +109,7 @@ public final class FlightDealResponses {
                 deal.seatsLeft());
     }
 
-    /** mock/실 연동 공통 정렬 — 실 경로는 어셈블러가, mock은 mock 서비스가 마지막 단계에서 부른다. */
+    /** 조립 마지막 단계에서 적용하는 정렬. */
     public static List<FlightDealResponse> sorted(List<FlightDealResponse> items, FlightDealSort sort) {
         return items.stream().sorted(comparatorFor(sort)).toList();
     }

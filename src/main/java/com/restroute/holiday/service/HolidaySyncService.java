@@ -20,12 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
  * flight_holiday를 최신 상태로 맞춘다 — API 응답에 있는데 우리 DB에 없는 날짜는 채워 넣고,
  * 예전에 이 동기화가 채워 넣었던 날짜인데 오늘 응답엔 더 이상 없으면(취소·정정) 지운다.
  *
- * <p>관리자가 admin 페이지에서 직접 등록한 행({@code adminOverridden=true})은 삭제 대상에서
- * 항상 제외한다 — 실제 값의 최종 권한은 관리자 화면에 있고, 이 동기화는 그걸 침범하지 않는다.
- *
- * <p>주말에 걸리는 공휴일(대체공휴일 지정 전의 원래 공휴일 등)도 API 응답에 있으면 그대로
- * 저장한다 — 연차 배지 계산이 "이 날짜가 무슨 공휴일인지" 이름까지 보여줘야 해서, 주말이라고
- * 걸러내면 그 이름 정보가 빠진다.
+ * <p>관리자 등록분 보존, 주말 공휴일 저장 여부 등 이 동기화가 지키는 정책은
+ * {@code docs/domain/holiday.md} "정책과 불변 조건" 참고.
  */
 @Slf4j
 @Service

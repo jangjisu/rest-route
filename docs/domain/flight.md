@@ -84,8 +84,30 @@ Data API(Aviasales)를 조회해 딜 목록을 최저가순/빠른 날짜순으�
 
 - **fan-out 상한**: 검색 하나가 Travelpayouts를 몇 번 호출하든 항상 `MAX_FANOUT_CALLS=20`을
   넘지 않는다(`FlightSearchDestinations`). RANGE는 `destinations × months × nightsWindows`
-  축을 nights 개별→범위 모드, destination 국가별→전체 단일 순으로 단계적으로 낮춰 예산을
-  맞춘다(`FlightRangeCallPlanner` 참고 — 알고리즘 예시 포함).
+  축을 아래 순서로 단계적으로 낮춰 예산을 맞춘다(`FlightRangeCallPlanner`). 개월 수는
+  `dateFrom~dateTo`가 걸치는 달력상 월이라 줄일 수 없다 — grouped_prices가 달 하나 단위로만
+  응답을 주기 때문이다.
+  - **1단계 — nights 축.** 개별 모드는 값 하나하나를 정확한 창(`min=max=그값`)으로 따로
+    조회해 "3박은 얼마, 4박은 얼마"를 각각 보여주지만 nights 개수만큼 호출이 늘어난다.
+    범위 모드는 nights 전체를 `min~max` 창 하나로 뭉쳐 한 번만 조회한다. 예산을 넘으면
+    개별 → 범위로 낮춘다. nights를 생략해 자동 확장된 경우는 최대 90개까지 갈 수 있어
+    개별 모드를 시도조차 하지 않고 바로 범위 모드로 간다.
+  - **2단계 — destination 축.** sector로 여러 국가가 잡혔으면 국가별 조회(N)에 "전체"
+    조회(1)를 얹은 N+1로 예산을 다시 확인해, 넘지 않으면 국가별+전체를 함께 하고 넘으면
+    국가별을 포기하고 전체 하나만 한다. 직접 지정 destination은 이미 1개라 해당 없다.
+  - 이 순서 덕분에 최종 호출 수가 상한을 넘지 않는다 — 전체만 하는 경우는 destination 축이
+    1이라 `1 × months × nightsWindows`인데, `nightsWindows`는 이미 1단계에서 원래 destination
+    개수 기준으로 예산 안에 들도록 정해졌기 때문이다. 예시(1개월 기준):
+
+  ```
+  sector=JAPAN(1개국), nights=[3,4,5]           → 국가별 1×1×3=3, +전체 2×1×3=6 ≤20 → 국가별+전체
+  sector 4개 전부(9개국), nights=[3,4]          → 국가별 9×1×2=18 ≤20 → nights는 개별 유지
+                                                  +전체 10×1×2=20 ≤20 → 국가별+전체
+  sector 4개 전부(9개국), nights=[3,4,5]        → 국가별 9×1×3=27 >20 → nights 범위 모드로 낮춤(9×1×1=9)
+                                                  +전체 10×1×1=10 ≤20 → 국가별+전체
+  sector 4개 전부(9개국), 3개월 걸침, nights=[3] → nights 유지(9×3×1=27>20→범위 9×3×1=27,
+                                                  여전히 초과) → 국가별 포기, 전체만(1×3×1=3)
+  ```
 - **날짜 범위 상한**: `dateTo`는 오늘부터 3개월(`MAX_DATE_RANGE_MONTHS`)을 넘을 수 없다.
   RANGE의 fan-out 방지 목적과 별개로, FIXED 모드에도 동일 상한이 적용되는 건 서비스 자체의
   스코프 제한 때문이다(`FlightSearchRequestValidator` 주석).

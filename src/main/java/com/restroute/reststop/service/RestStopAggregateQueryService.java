@@ -25,12 +25,11 @@ import org.springframework.util.StringUtils;
 /**
  * REST_STOP_SERVICE_AREA_CODE로 연결되는 휴게소 관련 정보(상세/주유/음식/테마/이벤트/EV차저/이미지)를
  * 한 번에 조합해 반환한다. serviceAreaCodes가 null이거나 비어 있으면 코드로 거르지 않고,
- * adminOverridden이 null이면 override 여부로 거르지 않는다. 예: 경로 조회는 특정 코드만, override
- * 여부는 상관없이(null) 조회하고, backfill은 코드 제한 없이(null) override=false인 것만 조회한다.
+ * adminOverridden이 null이면 override 여부로 거르지 않는다.
  *
- * <p>{@link RouteRestStopService}, {@code RestStopServiceAreaCodeBackfillService}처럼 여러 QueryService를
- * 각자 호출하고 서비스 코드 기준으로 직접 짜맞추던 로직을 이 서비스 하나로 대체하기 위한 것이다.
- * {@code RouteOptionAssemblyService}가 이 서비스를 사용해 경로 상의 휴게소 정보를 조합한다.
+ * <p>여러 QueryService를 각자 호출해 서비스 코드 기준으로 직접 짜맞추는 일은 호출부가 아니라
+ * 여기서만 한다 — {@code RouteOptionAssemblyService},
+ * {@code RestStopServiceAreaCodeBackfillService}가 이 서비스를 통해 조합한다.
  */
 @Service
 @RequiredArgsConstructor

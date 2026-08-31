@@ -479,8 +479,6 @@ class RouteRestStopServiceTest {
                 .containsExactly(false, false, false);
     }
 
-    // ---- 아래는 RouteRestStopCandidateFinderTest에서 이관 ----
-
     @Test
     @DisplayName("목적지 검색 결과가 없으면 NotFound (빈 리스트/ null 모두)")
     void emptySearch_throwsNotFound() {

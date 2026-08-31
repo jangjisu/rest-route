@@ -15,18 +15,10 @@ import org.springframework.util.StringUtils;
 
 /**
  * {@link TravelpayoutsPriceItem}(실 연동 원본, RANGE/FIXED 공통)을 {@link FlightDealResponse}(응답
- * 계약)로 바꾼다. {@code id}는 세션 토큰을 아직 몰라서 여기서는 채우지 않는다 — 세션 스토어가
- * 최종 저장 직전에 부여한다.
+ * 계약)로 바꾼다.
  *
- * <p>목적지는 도시코드가 아니라 공항코드({@code destinationAirport})를 기준으로 이름을 채운다 —
- * mock이 이미 공항코드 스타일(FUK/KIX/OKA 등)을 써왔던 것과 응답 계약을 맞추기 위해서다.
- *
- * <p>{@code isLowCost}는 {@link FlightAirlineNameCache#isLowCost}로 채운다 — Travelpayouts
- * {@code /data/airlines.json}의 {@code is_lowcost}를 시딩 단계에서 그대로 가져온 값이다.
- *
- * <p>{@code holidays}는 여기서는 항상 빈 목록이다 — 필터({@link FlightDealPostFilter}) 이후
- * {@link FlightDealHolidayEnricher}가 실제 값을 채운다(필터를 다 거친 뒤라야 어떤 딜이 최종
- * 응답에 남는지 알 수 있어서, 굳이 필터 전인 여기서 미리 계산할 이유가 없다).
+ * <p>{@code id}와 {@code holidays}는 여기서 채우지 않는다 — id는 세션 토큰을 알아야 하고,
+ * holidays는 어떤 딜이 최종 응답에 남는지 알아야 해서 둘 다 뒤 단계의 몫이다.
  */
 @Slf4j
 @Component
@@ -56,6 +48,11 @@ class FlightDealResponseMapper {
         return hasDates;
     }
 
+    /**
+     * 목적지 이름은 도시코드가 아니라 공항코드({@code destinationAirport}) 기준으로 찾는다 — 응답
+     * 계약이 공항코드로 확정돼 있다. {@code id}는 {@link FlightDealSessionStore}가, {@code holidays}는
+     * {@link FlightDealPostFilter} 이후 {@link FlightDealHolidayEnricher}가 채운다.
+     */
     private FlightDealResponse mapOne(TravelpayoutsPriceItem item) {
         OffsetDateTime departureAt = OffsetDateTime.parse(item.departureAt());
         OffsetDateTime returnAt = OffsetDateTime.parse(item.returnAt());

@@ -10,8 +10,7 @@ import org.springframework.stereotype.Service;
 /**
  * 항공권 실 연동 검색 진입점. 무한스크롤을 위해 첫 조회 결과를 세션에 cursor로 저장해두고,
  * 이후 요청은 그 세션을 이어서 페이지만 잘라 준다({@link FlightDealSessionStore}). 실제 딜을
- * 어떻게 구해오는지는 {@link FlightDealFetcher}에 위임한다 — 실 연동/모킹이 이 전략만
- * 바꿔서 이 클래스를 그대로 재사용한다.
+ * 어떻게 구해오는지는 {@link FlightDealFetcher}에 위임한다.
  */
 @Primary
 @Service
@@ -21,7 +20,7 @@ public class FlightSearchService {
     private final FlightDealSessionStore sessionStore;
     private final FlightDealFetcher dealFetcher;
 
-    /** Spring 밖에서(모킹 등) {@link FlightDealFetcher}만 바꿔 조립할 때 쓰는 정적 팩토리. */
+    /** {@link FlightDealFetcher}만 바꿔 같은 검색 흐름을 재사용할 때 쓴다. */
     static FlightSearchService create(FlightDealSessionStore sessionStore, FlightDealFetcher dealFetcher) {
         return new FlightSearchService(sessionStore, dealFetcher);
     }
