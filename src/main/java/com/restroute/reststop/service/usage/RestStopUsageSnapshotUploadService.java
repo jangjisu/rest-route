@@ -44,6 +44,7 @@ public class RestStopUsageSnapshotUploadService {
         List<RestStopEntity> restStops = restStopRepository.findAll();
         backfiller.backfillNames(restStops);
         backfiller.recomputeTopTrafficTier();
+        backfiller.recomputeSizeTier();
     }
 
     private void save(List<RestStopUsageSnapshotRow> rows) {
