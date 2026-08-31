@@ -2,9 +2,11 @@ package com.restroute.route.service;
 
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.oilprice.service.dto.NationalCheapestOilPrice;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
+import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
@@ -44,6 +46,52 @@ class RouteRestStopComparisonSummaryService {
                 totalParkingCount(infos),
                 foodMenuCount,
                 facilityCount(detail, oilConveniences));
+    }
+
+    /**
+     * 보유한 유종 중 하나라도 우리가 추적 중인 전국 최저가와 같으면 CHEAPEST, 아니면 하나라도
+     * 전국 평균보다 싸면 BELOW_AVERAGE, 둘 다 아니면(또는 유가 정보 자체가 없으면) null.
+     */
+    FuelPriceTier fuelPriceTier(
+            Optional<RestOilPriceEntity> oilPrice,
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary,
+            NationalCheapestOilPrice nationalCheapest) {
+        if (oilPrice.isEmpty()) {
+            return null;
+        }
+        if (isCheapest(oilPrice.get(), nationalCheapest)) {
+            return FuelPriceTier.CHEAPEST;
+        }
+        if (isBelowAverage(oilPrice.get(), nationalOilPriceSummary)) {
+            return FuelPriceTier.BELOW_AVERAGE;
+        }
+        return null;
+    }
+
+    private boolean isCheapest(RestOilPriceEntity oilPrice, NationalCheapestOilPrice nationalCheapest) {
+        return matchesCheapest(oilPrice.getGasolinePrice(), nationalCheapest.gasoline())
+                || matchesCheapest(oilPrice.getDieselPrice(), nationalCheapest.diesel())
+                || matchesCheapest(oilPrice.getLpgPrice(), nationalCheapest.lpg());
+    }
+
+    private boolean matchesCheapest(String price, Integer nationalCheapestPrice) {
+        if (nationalCheapestPrice == null) {
+            return false;
+        }
+        return RouteRestStopNumberParser.parsePrice(price)
+                .map(nationalCheapestPrice::equals)
+                .orElse(false);
+    }
+
+    private boolean isBelowAverage(
+            RestOilPriceEntity oilPrice, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+        return isNegative(diffFromAverage(oilPrice.getGasolinePrice(), nationalOilPriceSummary, FuelType.GASOLINE))
+                || isNegative(diffFromAverage(oilPrice.getDieselPrice(), nationalOilPriceSummary, FuelType.DIESEL))
+                || isNegative(diffFromAverage(oilPrice.getLpgPrice(), nationalOilPriceSummary, FuelType.LPG));
+    }
+
+    private boolean isNegative(Integer diff) {
+        return diff != null && diff < 0;
     }
 
     private Integer diffFromAverage(
