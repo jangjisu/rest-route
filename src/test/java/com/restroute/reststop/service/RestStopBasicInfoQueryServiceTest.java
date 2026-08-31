@@ -12,9 +12,12 @@ import com.restroute.evcharger.service.EvChargerQueryService;
 import com.restroute.reststop.controller.response.RestStopBasicInfoResponse;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
 import com.restroute.reststop.repository.RestStopRepository;
+import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststop.service.image.RestStopImageQueryService;
+import com.restroute.reststop.service.usage.dto.RestStopUsageSnapshotRow;
 import com.restroute.reststopcontent.domain.RestThemeEntity;
 import java.util.List;
 import java.util.Optional;
@@ -41,12 +44,19 @@ class RestStopBasicInfoQueryServiceTest {
     @Mock
     private RestStopImageQueryService restStopImageQueryService;
 
+    @Mock
+    private RestStopUsageSnapshotRepository restStopUsageSnapshotRepository;
+
     private RestStopBasicInfoQueryService restStopBasicInfoQueryService;
 
     @BeforeEach
     void setUp() {
         restStopBasicInfoQueryService = new RestStopBasicInfoQueryService(
-                restStopRepository, restStopRelatedInfoQueryService, evChargerQueryService, restStopImageQueryService);
+                restStopRepository,
+                restStopRelatedInfoQueryService,
+                evChargerQueryService,
+                restStopImageQueryService,
+                restStopUsageSnapshotRepository);
         org.mockito.Mockito.lenient()
                 .when(evChargerQueryService.findActiveChargerCount("A00001"))
                 .thenReturn(0);
@@ -88,6 +98,34 @@ class RestStopBasicInfoQueryServiceTest {
         assertThat(response.evChargerCount()).isZero();
         assertThat(response.detailImageUrl()).isEqualTo("/api/rest-stops/A00001/images/detail");
         assertThat(response.themes()).isEmpty();
+        assertThat(response.topTrafficTier()).isFalse();
+    }
+
+    @Test
+    @DisplayName("이용객·교통량 스냅샷이 상위 10% 태그로 매핑돼 있으면 그대로 반환한다")
+    void findByServiceAreaCode_returnsTopTrafficTier() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "죽전(서울)휴게소"));
+        when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
+        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+                .thenReturn(RestStopRelatedInfo.of(
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
+        RestStopUsageSnapshotEntity usageSnapshot = RestStopUsageSnapshotEntity.from(
+                new RestStopUsageSnapshotRow("경부선", "죽전(서울)", "10000", "임대", "1000", "10764"));
+        usageSnapshot.updateTopTrafficTier(true);
+        when(restStopUsageSnapshotRepository.findByRestStopServiceAreaCode("A00001"))
+                .thenReturn(Optional.of(usageSnapshot));
+
+        Optional<RestStopBasicInfoResponse> result = restStopBasicInfoQueryService.findByServiceAreaCode("A00001");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().topTrafficTier()).isTrue();
     }
 
     @Test

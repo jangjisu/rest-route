@@ -16,6 +16,8 @@ import {
     normalizeSalesRankingStoreName,
     formatText,
     formatToiletCount,
+    formatTrafficVolume,
+    formatVisitorCount,
     hasEvents,
     hasFoodMenu,
     hasFoodSections,
@@ -24,6 +26,7 @@ import {
     hasRenderableRestStopDetail,
     hasRestroomInfo,
     hasThemes,
+    hasUsageInfo,
     isMissingValue,
     orderFoodMenus,
     sortSalesRankingProducts,
@@ -219,6 +222,27 @@ test('hasRestroomInfo detects any non-missing toilet count', () => {
     assert.equal(hasRestroomInfo({ femaleToiletCount: '0' }), true);
     assert.equal(hasRestroomInfo({ maleToiletCount: null, femaleToiletCount: null }), false);
     assert.equal(hasRestroomInfo(null), false);
+});
+
+test('hasUsageInfo detects any non-missing usage count', () => {
+    assert.equal(hasUsageInfo({ dailyVisitorCount: 4165 }), true);
+    assert.equal(hasUsageInfo({ dailyTrafficVolume: '0' }), true);
+    assert.equal(hasUsageInfo({ dailyVisitorCount: null, dailyTrafficVolume: null }), false);
+    assert.equal(hasUsageInfo(null), false);
+});
+
+test('formatVisitorCount adds the unit and thousands separators', () => {
+    assert.equal(formatVisitorCount(4165), '4,165명');
+    assert.equal(formatVisitorCount('0'), '0명');
+    assert.equal(formatVisitorCount(null), '정보 없음');
+    assert.equal(formatVisitorCount(-1), '정보 없음');
+});
+
+test('formatTrafficVolume adds the unit and thousands separators', () => {
+    assert.equal(formatTrafficVolume(10764), '10,764대');
+    assert.equal(formatTrafficVolume('0'), '0대');
+    assert.equal(formatTrafficVolume(null), '정보 없음');
+    assert.equal(formatTrafficVolume(-1), '정보 없음');
 });
 
 test('hasThemes is true only when there is at least one theme', () => {

@@ -14,10 +14,13 @@ import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopRestroomEntity;
+import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopRestroomRepository;
+import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststop.service.restroom.dto.RestStopRestroomRow;
+import com.restroute.reststop.service.usage.dto.RestStopUsageSnapshotRow;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,12 +43,18 @@ class RestStopFacilityQueryServiceTest {
     @Mock
     private RestStopRestroomRepository restStopRestroomRepository;
 
+    @Mock
+    private RestStopUsageSnapshotRepository restStopUsageSnapshotRepository;
+
     private RestStopFacilityQueryService restStopFacilityQueryService;
 
     @BeforeEach
     void setUp() {
         restStopFacilityQueryService = new RestStopFacilityQueryService(
-                restStopRepository, restStopRelatedInfoQueryService, restStopRestroomRepository);
+                restStopRepository,
+                restStopRelatedInfoQueryService,
+                restStopRestroomRepository,
+                restStopUsageSnapshotRepository);
     }
 
     @Test
@@ -129,6 +138,34 @@ class RestStopFacilityQueryServiceTest {
         assertThat(result).isPresent();
         assertThat(result.get().maleToiletCount()).isEqualTo(37);
         assertThat(result.get().femaleToiletCount()).isEqualTo(57);
+    }
+
+    @Test
+    @DisplayName("이용객·교통량 스냅샷이 매핑돼 있으면 일 평균 이용객·통행량을 함께 반환한다")
+    void findByServiceAreaCode_returnsUsageSnapshotWhenMapped() {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "죽전(서울)휴게소"));
+        RestStopUsageSnapshotEntity usageSnapshot = RestStopUsageSnapshotEntity.from(
+                new RestStopUsageSnapshotRow("경부선", "죽전(서울)", "10000", "임대", "4165", "10764"));
+        usageSnapshot.updateRestStopServiceAreaCode("A00001");
+        when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
+        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+                .thenReturn(RestStopRelatedInfo.of(
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of()));
+        when(restStopUsageSnapshotRepository.findByRestStopServiceAreaCode("A00001"))
+                .thenReturn(Optional.of(usageSnapshot));
+
+        Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().dailyVisitorCount()).isEqualTo(4165);
+        assertThat(result.get().dailyTrafficVolume()).isEqualTo(10764);
     }
 
     @Test

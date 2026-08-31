@@ -44,7 +44,10 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
             ComparisonSummary comparisonSummary,
             List<RecommendationTag> recommendationTags,
             String listImageUrl,
-            NearbyTraffic nearbyTraffic) {
+            NearbyTraffic nearbyTraffic,
+            Integer maleToiletCount,
+            Integer femaleToiletCount,
+            boolean topTrafficTier) {
 
         public RouteRestStopItem(
                 String serviceAreaCode,
@@ -67,7 +70,10 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     ComparisonSummary.empty(),
                     List.of(),
                     null,
-                    null);
+                    null,
+                    null,
+                    null,
+                    false);
         }
 
         public static RouteRestStopItem of(
@@ -78,20 +84,7 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                 double longitude,
                 long distanceFromRouteMeters) {
             return new RouteRestStopItem(
-                    serviceAreaCode,
-                    unitName,
-                    routeName,
-                    latitude,
-                    longitude,
-                    false,
-                    false,
-                    false,
-                    false,
-                    distanceFromRouteMeters,
-                    ComparisonSummary.empty(),
-                    List.of(),
-                    null,
-                    null);
+                    serviceAreaCode, unitName, routeName, latitude, longitude, distanceFromRouteMeters);
         }
 
         public RouteRestStopItem withDirectionAlternative(boolean hasDirectionAlternative) {
@@ -109,7 +102,10 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     comparisonSummary,
                     recommendationTags,
                     listImageUrl,
-                    nearbyTraffic);
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
         }
 
         public RouteRestStopItem withComparison(
@@ -128,7 +124,10 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     comparisonSummary,
                     List.copyOf(recommendationTags),
                     listImageUrl,
-                    nearbyTraffic);
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
         }
 
         public RouteRestStopItem withEvCharger(boolean hasEvCharger) {
@@ -146,7 +145,10 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     comparisonSummary,
                     recommendationTags,
                     listImageUrl,
-                    nearbyTraffic);
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
         }
 
         public RouteRestStopItem withTheme(boolean hasTheme) {
@@ -164,7 +166,10 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     comparisonSummary,
                     recommendationTags,
                     listImageUrl,
-                    nearbyTraffic);
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
         }
 
         public RouteRestStopItem withEvent(boolean hasEvent) {
@@ -182,7 +187,10 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     comparisonSummary,
                     recommendationTags,
                     listImageUrl,
-                    nearbyTraffic);
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
         }
 
         public RouteRestStopItem withListImageUrl(String listImageUrl) {
@@ -200,7 +208,10 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     comparisonSummary,
                     recommendationTags,
                     listImageUrl,
-                    nearbyTraffic);
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
         }
 
         public RouteRestStopItem withNearbyTraffic(NearbyTraffic nearbyTraffic) {
@@ -218,7 +229,56 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     comparisonSummary,
                     recommendationTags,
                     listImageUrl,
-                    nearbyTraffic);
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
+        }
+
+        /**
+         * 화장실 남/여 변기 수 — {@code RestStopAggregate}에서 조회해 채운다. 매핑된 화장실 데이터가
+         * 없으면 둘 다 null.
+         */
+        public RouteRestStopItem withRestroomCounts(Integer maleToiletCount, Integer femaleToiletCount) {
+            return new RouteRestStopItem(
+                    serviceAreaCode,
+                    unitName,
+                    routeName,
+                    latitude,
+                    longitude,
+                    hasDirectionAlternative,
+                    hasEvCharger,
+                    hasTheme,
+                    hasEvent,
+                    distanceFromRouteMeters,
+                    comparisonSummary,
+                    recommendationTags,
+                    listImageUrl,
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
+        }
+
+        public RouteRestStopItem withTopTrafficTier(boolean topTrafficTier) {
+            return new RouteRestStopItem(
+                    serviceAreaCode,
+                    unitName,
+                    routeName,
+                    latitude,
+                    longitude,
+                    hasDirectionAlternative,
+                    hasEvCharger,
+                    hasTheme,
+                    hasEvent,
+                    distanceFromRouteMeters,
+                    comparisonSummary,
+                    recommendationTags,
+                    listImageUrl,
+                    nearbyTraffic,
+                    maleToiletCount,
+                    femaleToiletCount,
+                    topTrafficTier);
         }
     }
 

@@ -55,8 +55,8 @@ class RouteOptionAssemblyServiceTest {
 
     private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {
         Map<String, RestStopAggregate> aggregates = new HashMap<>();
-        overridesByServiceAreaCode.forEach((code, relatedInfo) ->
-                aggregates.put(code, new RestStopAggregate(null, relatedInfo, false, false, false, false)));
+        overridesByServiceAreaCode.forEach((code, relatedInfo) -> aggregates.put(
+                code, new RestStopAggregate(null, relatedInfo, false, false, false, false, null, null, false)));
         stubAggregates(aggregates);
     }
 
@@ -71,7 +71,16 @@ class RouteOptionAssemblyServiceTest {
                                 code,
                                 overridesByServiceAreaCode.getOrDefault(
                                         code,
-                                        new RestStopAggregate(null, emptyRelatedInfo(), false, false, false, false)));
+                                        new RestStopAggregate(
+                                                null,
+                                                emptyRelatedInfo(),
+                                                false,
+                                                false,
+                                                false,
+                                                false,
+                                                null,
+                                                null,
+                                                false)));
                     }
                     return result;
                 })
@@ -152,7 +161,8 @@ class RouteOptionAssemblyServiceTest {
         RestStopEntity restStop = restStop("A");
         RouteCandidate candidate =
                 new RouteCandidate(0, geometry(new Summary(100L, 200L, null)), List.of(item("A", 37.0001, 127.0001)));
-        stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), true, false, true, true)));
+        stubAggregates(Map.of(
+                "A", new RestStopAggregate(null, emptyRelatedInfo(), true, false, true, true, null, null, false)));
 
         List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(restStop), Optional.empty());
 
@@ -170,7 +180,8 @@ class RouteOptionAssemblyServiceTest {
                 0,
                 geometry(new Summary(100L, 200L, null)),
                 List.of(item("A", 37.0001, 127.0001), item("B", 37.5001, 127.5001)));
-        stubAggregates(Map.of("A", new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false)));
+        stubAggregates(Map.of(
+                "A", new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false, null, null, false)));
 
         List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(first, second), Optional.empty());
 

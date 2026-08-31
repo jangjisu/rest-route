@@ -1,9 +1,13 @@
 package com.restroute.reststop.service.salesranking;
 
+import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopProductSalesRankEntity;
 import com.restroute.reststop.domain.RestStopStoreSalesRankEntity;
 import com.restroute.reststop.repository.RestStopProductSalesRankRepository;
+import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopStoreSalesRankRepository;
+import com.restroute.reststop.service.backfill.RestStopProductSalesRankBackfiller;
+import com.restroute.reststop.service.backfill.RestStopStoreSalesRankBackfiller;
 import com.restroute.reststop.service.salesranking.dto.SalesRankingProductRow;
 import com.restroute.reststop.service.salesranking.dto.SalesRankingStoreRow;
 import com.restroute.reststop.service.salesranking.util.SalesRankingCsvParser;
@@ -16,6 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 판매순위는 매달 CSV로만 갱신되므로, 업로드 요청 하나가 저장 + 이름매칭까지 끝낸다.
+ * 자동 동기화 도메인들이 쓰는 공용 RestStopServiceAreaCodeBackfillService에는 얹지 않는다
+ * (업로드 후 "전체 휴게소명 매핑"을 따로 눌러야 하는 걸 잊어버리는 문제를 구조적으로 없앰).
+ */
 @Service
 @RequiredArgsConstructor
 public class SalesRankingUploadService {
@@ -23,18 +32,31 @@ public class SalesRankingUploadService {
     private final SalesRankingCsvParser csvParser;
     private final RestStopProductSalesRankRepository productRepository;
     private final RestStopStoreSalesRankRepository storeRepository;
+    private final RestStopRepository restStopRepository;
+    private final RestStopProductSalesRankBackfiller productSalesRankBackfiller;
+    private final RestStopStoreSalesRankBackfiller storeSalesRankBackfiller;
     private final TransactionTemplate transactionTemplate;
 
     public int uploadProducts(MultipartFile productFile) {
         List<SalesRankingProductRow> products = csvParser.parseProducts(productFile);
-        transactionTemplate.executeWithoutResult(status -> saveProducts(products));
+        transactionTemplate.executeWithoutResult(status -> {
+            saveProducts(products);
+            productSalesRankBackfiller.backfill(restStops());
+        });
         return products.size();
     }
 
     public int uploadStores(MultipartFile storeFile) {
         List<SalesRankingStoreRow> stores = csvParser.parseStores(storeFile);
-        transactionTemplate.executeWithoutResult(status -> saveStores(stores));
+        transactionTemplate.executeWithoutResult(status -> {
+            saveStores(stores);
+            storeSalesRankBackfiller.backfill(restStops());
+        });
         return stores.size();
+    }
+
+    private List<RestStopEntity> restStops() {
+        return restStopRepository.findAll();
     }
 
     private void saveProducts(List<SalesRankingProductRow> rows) {

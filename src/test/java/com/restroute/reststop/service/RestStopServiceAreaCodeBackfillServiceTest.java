@@ -27,23 +27,11 @@ import com.restroute.oilprice.service.RestOilServiceAreaCodeBackfiller;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
-import com.restroute.reststop.domain.RestStopProductSalesRankEntity;
-import com.restroute.reststop.domain.RestStopRestroomEntity;
-import com.restroute.reststop.domain.RestStopStoreSalesRankEntity;
 import com.restroute.reststop.repository.HighwayServiceAreaInfoRepository;
 import com.restroute.reststop.repository.RestStopDetailRepository;
-import com.restroute.reststop.repository.RestStopProductSalesRankRepository;
 import com.restroute.reststop.repository.RestStopRepository;
-import com.restroute.reststop.repository.RestStopRestroomRepository;
-import com.restroute.reststop.repository.RestStopStoreSalesRankRepository;
 import com.restroute.reststop.service.backfill.HighwayServiceAreaInfoServiceAreaCodeBackfiller;
 import com.restroute.reststop.service.backfill.RestStopDetailServiceAreaCodeBackfiller;
-import com.restroute.reststop.service.backfill.RestStopProductSalesRankBackfiller;
-import com.restroute.reststop.service.backfill.RestStopRestroomBackfiller;
-import com.restroute.reststop.service.backfill.RestStopStoreSalesRankBackfiller;
-import com.restroute.reststop.service.restroom.dto.RestStopRestroomRow;
-import com.restroute.reststop.service.salesranking.dto.SalesRankingProductRow;
-import com.restroute.reststop.service.salesranking.dto.SalesRankingStoreRow;
 import com.restroute.reststopcontent.client.response.RestBestfoodItem;
 import com.restroute.reststopcontent.domain.RestEventEntity;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
@@ -76,11 +64,8 @@ import org.springframework.test.util.ReflectionTestUtils;
     RestFoodServiceAreaCodeBackfiller.class,
     RestOilServiceAreaCodeBackfiller.class,
     RestOilPriceServiceAreaCodeBackfiller.class,
-    RestStopProductSalesRankBackfiller.class,
-    RestStopStoreSalesRankBackfiller.class,
     RestThemeServiceAreaCodeBackfiller.class,
-    RestEventServiceAreaCodeBackfiller.class,
-    RestStopRestroomBackfiller.class
+    RestEventServiceAreaCodeBackfiller.class
 })
 class RestStopServiceAreaCodeBackfillServiceTest {
 
@@ -112,19 +97,10 @@ class RestStopServiceAreaCodeBackfillServiceTest {
     private EvChargerStationMappingRepository evChargerStationMappingRepository;
 
     @Autowired
-    private RestStopProductSalesRankRepository productSalesRankRepository;
-
-    @Autowired
-    private RestStopStoreSalesRankRepository storeSalesRankRepository;
-
-    @Autowired
     private RestThemeRepository restThemeRepository;
 
     @Autowired
     private RestEventRepository restEventRepository;
-
-    @Autowired
-    private RestStopRestroomRepository restStopRestroomRepository;
 
     @Test
     @DisplayName("기존 휴게소 관련 row에 rest_stop_service_area_code를 연결 규칙 순서대로 채운다")
@@ -354,97 +330,6 @@ class RestStopServiceAreaCodeBackfillServiceTest {
         assertThat(evChargerStationMappingRepository.findAll())
                 .singleElement()
                 .extracting(EvChargerStationMappingEntity::getRestStopServiceAreaCode)
-                .isEqualTo("A00001");
-    }
-
-    @Test
-    @DisplayName("판매순위 backfill은 비어 있는 매핑만 유일한 휴게소명으로 연결한다")
-    void backfill_mapsOnlyUnmappedSalesRanksByUniqueName() {
-        restStopRepository.save(RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001")));
-        RestStopProductSalesRankEntity product = RestStopProductSalesRankEntity.from(
-                new SalesRankingProductRow("2026-06", "1", "S000001", "서울만남(부산)휴게소", "M1", "매장", "P1", "상품"));
-        RestStopStoreSalesRankEntity store = RestStopStoreSalesRankEntity.from(
-                new SalesRankingStoreRow("2026-06", "1", "1", "S000001", "서울만남(부산)휴게소", "M1", "매장"));
-        productSalesRankRepository.save(product);
-        storeSalesRankRepository.save(store);
-
-        Map<String, Integer> result = backfillService.backfill();
-
-        assertThat(result.get(RestStopServiceAreaCodeBackfillService.PRODUCT_SALES_RANK_MAPPED_COUNT))
-                .isEqualTo(1);
-        assertThat(result.get(RestStopServiceAreaCodeBackfillService.STORE_SALES_RANK_MAPPED_COUNT))
-                .isEqualTo(1);
-        assertThat(productSalesRankRepository.findAll().get(0).getRestStopServiceAreaCode())
-                .isEqualTo("A00001");
-        assertThat(storeSalesRankRepository.findAll().get(0).getRestStopServiceAreaCode())
-                .isEqualTo("A00001");
-    }
-
-    @Test
-    @DisplayName("판매순위 backfill은 이미 연결된 값과 중복 후보를 변경하지 않는다")
-    void backfill_preservesMappedRanksAndSkipsAmbiguousNames() {
-        restStopRepository.saveAll(List.of(
-                RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001")),
-                RestStopEntity.from(restStopItem("002", "서울만남(부산)휴게소", "A00002"))));
-        RestStopProductSalesRankEntity mapped = RestStopProductSalesRankEntity.from(
-                new SalesRankingProductRow("2026-06", "1", "S000001", "서울만남(부산)휴게소", "M1", "매장", "P1", "상품"));
-        mapped.updateRestStopServiceAreaCode("MANUAL");
-        RestStopStoreSalesRankEntity mappedStore = RestStopStoreSalesRankEntity.from(
-                new SalesRankingStoreRow("2026-06", "1", "1", "S000001", "서울만남(부산)휴게소", "M1", "매장"));
-        mappedStore.updateRestStopServiceAreaCode("MANUAL_STORE");
-        RestStopProductSalesRankEntity ambiguous = RestStopProductSalesRankEntity.from(
-                new SalesRankingProductRow("2026-06", "2", "S000001", "서울만남(부산)휴게소", "M1", "매장", "P2", "상품2"));
-        RestStopStoreSalesRankEntity ambiguousStore = RestStopStoreSalesRankEntity.from(
-                new SalesRankingStoreRow("2026-06", "2", "2", "S000001", "서울만남(부산)휴게소", "M1", "매장"));
-        productSalesRankRepository.saveAll(List.of(mapped, ambiguous));
-        storeSalesRankRepository.saveAll(List.of(mappedStore, ambiguousStore));
-
-        Map<String, Integer> result = backfillService.backfill();
-
-        assertThat(result.get(RestStopServiceAreaCodeBackfillService.PRODUCT_SALES_RANK_MAPPED_COUNT))
-                .isZero();
-        assertThat(productSalesRankRepository.findAll())
-                .extracting(RestStopProductSalesRankEntity::getRestStopServiceAreaCode)
-                .containsExactlyInAnyOrder("MANUAL", "");
-        assertThat(storeSalesRankRepository.findAll())
-                .extracting(RestStopStoreSalesRankEntity::getRestStopServiceAreaCode)
-                .containsExactlyInAnyOrder("MANUAL_STORE", "");
-    }
-
-    @Test
-    @DisplayName("신규 휴게소가 추가된 뒤 다시 backfill하면 기존 미매핑 판매순위를 연결한다")
-    void backfill_mapsPreviouslyUnmappedRankAfterRestStopIsAdded() {
-        RestStopProductSalesRankEntity product = RestStopProductSalesRankEntity.from(
-                new SalesRankingProductRow("2026-06", "1", "S000001", "신규휴게소", "M1", "매장", "P1", "상품"));
-        productSalesRankRepository.save(product);
-
-        Map<String, Integer> firstResult = backfillService.backfill();
-        assertThat(firstResult.get(RestStopServiceAreaCodeBackfillService.PRODUCT_SALES_RANK_MAPPED_COUNT))
-                .isZero();
-
-        restStopRepository.save(RestStopEntity.from(restStopItem("001", "신규휴게소", "A00001")));
-
-        Map<String, Integer> secondResult = backfillService.backfill();
-
-        assertThat(secondResult.get(RestStopServiceAreaCodeBackfillService.PRODUCT_SALES_RANK_MAPPED_COUNT))
-                .isEqualTo(1);
-        assertThat(productSalesRankRepository.findAll().get(0).getRestStopServiceAreaCode())
-                .isEqualTo("A00001");
-    }
-
-    @Test
-    @DisplayName("화장실 현황 backfill은 비어 있는 매핑만 유일한 휴게소명으로 연결한다")
-    void backfill_mapsOnlyUnmappedRestroomsByUniqueName() {
-        restStopRepository.save(RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001")));
-        RestStopRestroomEntity restroom =
-                RestStopRestroomEntity.from(new RestStopRestroomRow("경부선", "서울만남(부산)휴게소", "17", "34"));
-        restStopRestroomRepository.save(restroom);
-
-        Map<String, Integer> result = backfillService.backfill();
-
-        assertThat(result.get(RestStopServiceAreaCodeBackfillService.REST_STOP_RESTROOM_MAPPED_COUNT))
-                .isEqualTo(1);
-        assertThat(restStopRestroomRepository.findAll().get(0).getRestStopServiceAreaCode())
                 .isEqualTo("A00001");
     }
 

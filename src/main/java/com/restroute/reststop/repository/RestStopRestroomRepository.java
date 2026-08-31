@@ -1,6 +1,7 @@
 package com.restroute.reststop.repository;
 
 import com.restroute.reststop.domain.RestStopRestroomEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,6 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface RestStopRestroomRepository extends JpaRepository<RestStopRestroomEntity, Long> {
 
     Optional<RestStopRestroomEntity> findByRestStopServiceAreaCode(String restStopServiceAreaCode);
+
+    List<RestStopRestroomEntity> findAllByRestStopServiceAreaCodeIn(Collection<String> restStopServiceAreaCodes);
 
     List<RestStopRestroomEntity> findAllBySourceRestStopNameContainingIgnoreCaseOrderByIdAsc(String sourceRestStopName);
 
