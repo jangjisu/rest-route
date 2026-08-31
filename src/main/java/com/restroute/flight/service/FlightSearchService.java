@@ -10,8 +10,7 @@ import org.springframework.stereotype.Service;
 /**
  * 항공권 실 연동 검색 진입점. 무한스크롤을 위해 첫 조회 결과를 세션에 cursor로 저장해두고,
  * 이후 요청은 그 세션을 이어서 페이지만 잘라 준다({@link FlightDealSessionStore}). 실제 딜을
- * 어떻게 구해오는지는 {@link FlightDealFetcher}에 위임한다 — 실 연동/모킹이 이 전략만
- * 바꿔서 이 클래스를 그대로 재사용한다.
+ * 어떻게 구해오는지는 {@link FlightDealFetcher}에 위임한다.
  */
 @Primary
 @Service
