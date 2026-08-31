@@ -15,6 +15,7 @@ import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.domain.SizeTier;
 import com.restroute.reststop.service.RestStopAggregateQueryService;
 import com.restroute.reststop.service.dto.RestStopAggregate;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
@@ -172,6 +173,22 @@ class RouteOptionAssemblyServiceTest {
         assertThat(resultItem.hasEvCharger()).isTrue();
         assertThat(resultItem.hasTheme()).isTrue();
         assertThat(resultItem.hasEvent()).isTrue();
+    }
+
+    @Test
+    void attachDetails_copiesSizeTierFromAggregate() {
+        RestStopEntity restStop = restStop("A");
+        RouteCandidate candidate =
+                new RouteCandidate(0, geometry(new Summary(100L, 200L, null)), List.of(item("A", 37.0001, 127.0001)));
+        stubAggregates(Map.of(
+                "A",
+                new RestStopAggregate(
+                        null, emptyRelatedInfo(), false, false, false, false, null, null, false, SizeTier.LARGE)));
+
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(restStop), Optional.empty());
+
+        var resultItem = routes.get(0).restStops().get(0);
+        assertThat(resultItem.sizeTier()).isEqualTo(SizeTier.LARGE);
     }
 
     @Test

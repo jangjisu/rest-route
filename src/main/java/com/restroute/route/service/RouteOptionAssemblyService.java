@@ -108,6 +108,7 @@ public class RouteOptionAssemblyService {
                             .withEvent(aggregate.hasEvent())
                             .withRestroomCounts(aggregate.maleToiletCount(), aggregate.femaleToiletCount())
                             .withTopTrafficTier(aggregate.topTrafficTier())
+                            .withSizeTier(aggregate.sizeTier())
                             .withComparison(
                                     comparison.summary(),
                                     routeRestStopRecommendationTagService.create(comparison, recommendationStandards));
