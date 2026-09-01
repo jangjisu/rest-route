@@ -17,6 +17,13 @@ import {
 import { createFinderRestStopNearbyRequest } from './finder-rest-stop-nearby-request.js';
 import { createRouteRestStopListRequest } from './finder-route-rest-stop-list-request.js';
 import { createPlaceSearchRequest } from './place-search-request.js';
+import {
+    getRememberedInterest,
+    getRememberedLocationAnswer,
+    rememberInterest,
+    rememberLocationAnswer,
+    resetFinderMemory
+} from './finder-session-memory.js';
 
 const FUEL_INTERESTS = new Set(['GASOLINE', 'DIESEL', 'LPG']);
 
@@ -126,30 +133,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ---------- 첫 화면 ---------- */
 
-    document.getElementById('finderEnterMode1')?.addEventListener('click', () => {
-        openDialogById('finderPermissionMode1');
-    });
-    document.getElementById('finderEnterMode2')?.addEventListener('click', () => {
-        openDialogById('finderPermissionMode2');
-    });
-
-    /* ---------- 위치 동의 팝업: 이름·거리로 찾기 ---------- */
-
     const mode1ErrorEl = document.getElementById('finderPermissionMode1Error');
+    const mode2ErrorEl = document.getElementById('finderPermissionMode2Error');
     let mode1Origin = null;
     let mode1Interest = null;
+    let mode2Origin = null;
+    let mode2Interest = null;
     // 연료 선택 팝업은 mode1/mode2가 공유하므로, 팝업을 열기 전에 어느 화면으로 이어질지 표시해둔다.
     let interestPopupTargetMode = 'mode1';
-    let mode2Interest = null;
+
+    document.getElementById('finderEnterMode1')?.addEventListener('click', () => startMode1Entry());
+    document.getElementById('finderEnterMode2')?.addEventListener('click', () => startMode2Entry());
+
+    /**
+     * 이번 탭 세션에서 이미 위치를 답한 적 있으면(허용/건너뛰기 모두) 팝업을 다시 띄우지 않고 바로
+     * 다음 단계로 넘어간다 — 단, 좌표는 여기서 캐시해두지 않고 "허용"이었을 때만 매번 새로 받아온다
+     * (위치가 바뀌었을 수 있어서다). 처음 답하는 탭이면 기존과 동일하게 팝업을 띄운다.
+     */
+    async function startMode1Entry() {
+        const remembered = getRememberedLocationAnswer('mode1');
+        if (remembered === null) {
+            openDialogById('finderPermissionMode1');
+            return;
+        }
+        if (remembered === 'skipped') {
+            mode1Origin = null;
+            proceedFromMode1Location();
+            return;
+        }
+        setLoading(true);
+        const result = await requestCurrentPosition();
+        setLoading(false);
+        mode1Origin = result.granted ? { latitude: result.latitude, longitude: result.longitude } : null;
+        proceedFromMode1Location();
+    }
+
+    async function startMode2Entry() {
+        if (getRememberedLocationAnswer('mode2') !== 'granted') {
+            openDialogById('finderPermissionMode2');
+            return;
+        }
+        setLoading(true);
+        const result = await requestCurrentPosition();
+        setLoading(false);
+        if (!result.granted) {
+            // 이전엔 허용했지만 이번엔 실패(권한 해제 등) — 재시도할 수 있게 팝업으로 안내한다.
+            openDialogById('finderPermissionMode2');
+            return;
+        }
+        mode2Origin = { latitude: result.latitude, longitude: result.longitude };
+        proceedFromMode2Location();
+    }
+
+    /* ---------- 위치 동의 팝업: 이름·거리로 찾기 ---------- */
 
     document.getElementById('finderPermissionMode1Close')?.addEventListener('click', () => {
         closeDialogById('finderPermissionMode1');
     });
     document.getElementById('finderPermissionMode1Skip')?.addEventListener('click', () => {
         mode1Origin = null;
-        interestPopupTargetMode = 'mode1';
+        rememberLocationAnswer('mode1', 'skipped');
         closeDialogById('finderPermissionMode1');
-        openDialogById('finderInterestPopup');
+        proceedFromMode1Location();
     });
     document.getElementById('finderPermissionMode1Allow')?.addEventListener('click', async () => {
         setStatus(mode1ErrorEl, '');
@@ -158,12 +203,37 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoading(false);
 
         mode1Origin = result.granted ? { latitude: result.latitude, longitude: result.longitude } : null;
-        interestPopupTargetMode = 'mode1';
+        rememberLocationAnswer('mode1', result.granted ? 'granted' : 'skipped');
         closeDialogById('finderPermissionMode1');
-        openDialogById('finderInterestPopup');
+        proceedFromMode1Location();
     });
 
+    function proceedFromMode1Location() {
+        interestPopupTargetMode = 'mode1';
+        openInterestPopupOrSkip();
+    }
+
     /* ---------- 연료 선택 팝업 — mode1/mode2가 공유한다. 위치 동의 팝업 다음에 항상 뜬다 ---------- */
+
+    /** 이번 탭 세션에서 이미 연료/EV 관심을 답한 적 있으면 팝업 없이 그 값을 바로 쓴다. */
+    function openInterestPopupOrSkip() {
+        const remembered = getRememberedInterest();
+        if (remembered === undefined) {
+            openDialogById('finderInterestPopup');
+            return;
+        }
+        applyInterest(remembered);
+    }
+
+    function applyInterest(interest) {
+        if (interestPopupTargetMode === 'mode2') {
+            mode2Interest = interest;
+            enterMode2();
+        } else {
+            mode1Interest = interest;
+            enterMode1();
+        }
+    }
 
     const interestChipsEl = document.getElementById('finderInterestChips');
     INTEREST_OPTIONS.forEach((option) => {
@@ -173,35 +243,23 @@ document.addEventListener('DOMContentLoaded', () => {
         button.textContent = option.label;
         button.addEventListener('click', () => {
             closeDialogById('finderInterestPopup');
-            if (interestPopupTargetMode === 'mode2') {
-                mode2Interest = option.key;
-                enterMode2();
-            } else {
-                mode1Interest = option.key;
-                enterMode1();
-            }
+            rememberInterest(option.key);
+            applyInterest(option.key);
         });
         interestChipsEl?.appendChild(button);
     });
     document.getElementById('finderInterestSkip')?.addEventListener('click', () => {
         closeDialogById('finderInterestPopup');
-        if (interestPopupTargetMode === 'mode2') {
-            mode2Interest = null;
-            enterMode2();
-        } else {
-            mode1Interest = null;
-            enterMode1();
-        }
+        rememberInterest(null);
+        applyInterest(null);
     });
     document.getElementById('finderInterestClose')?.addEventListener('click', () => {
         closeDialogById('finderInterestPopup');
+        resetFinderMemory();
         showScreen('landing');
     });
 
     /* ---------- 위치 동의 팝업: 목적지로 추천받기 ---------- */
-
-    const mode2ErrorEl = document.getElementById('finderPermissionMode2Error');
-    let mode2Origin = null;
 
     document.getElementById('finderPermissionMode2Close')?.addEventListener('click', () => {
         closeDialogById('finderPermissionMode2');
@@ -218,10 +276,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         mode2Origin = { latitude: result.latitude, longitude: result.longitude };
-        interestPopupTargetMode = 'mode2';
+        rememberLocationAnswer('mode2', 'granted');
         closeDialogById('finderPermissionMode2');
-        openDialogById('finderInterestPopup');
+        proceedFromMode2Location();
     });
+
+    function proceedFromMode2Location() {
+        interestPopupTargetMode = 'mode2';
+        openInterestPopupOrSkip();
+    }
 
     /* ---------- 1. 이름·거리로 찾기 ---------- */
 
@@ -307,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('finderMode1Back')?.addEventListener('click', () => {
+        resetFinderMemory();
         showScreen('landing');
     });
 
@@ -523,6 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('finderMode2Back')?.addEventListener('click', () => {
+        resetFinderMemory();
         showScreen('landing');
     });
 

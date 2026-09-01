@@ -7,6 +7,7 @@ paths:
   - "src/main/resources/static/js/finder-condition.js"
   - "src/main/resources/static/js/finder-rest-stop-nearby-request.js"
   - "src/main/resources/static/js/finder-route-rest-stop-list-request.js"
+  - "src/main/resources/static/js/finder-session-memory.js"
   - "src/main/resources/static/js/finder-destination-chips.js"
   - "src/main/resources/static/css/finder.css"
   - "src/main/java/com/restroute/reststop/service/RestStopNearbyQueryService.java"
@@ -123,10 +124,16 @@ sources: []
 
 ## 5. 상태와 데이터 수명주기
 
-- **mode1Origin / mode1Interest / mode2Origin**: 페이지 메모리(JS 변수)에만 있는 세션 상태, 새로고침하면
-  초기화된다(서버·로컬스토리지 저장 없음). 관심 항목은 팝업에서 한 번 고르면 그 화면 세션 동안 유지되고,
-  재선택 UI는 없다(다시 고르려면 랜딩부터 재진입).
-  화면 안팎으로 값이 넘어가는 지속 저장소는 없다.
+- **mode1Origin / mode1Interest / mode2Origin / mode2Interest**: 페이지 메모리(JS 변수)에만 있는 상태이고,
+  좌표 자체는 절대 캐시하지 않는다 — 진입할 때마다 `navigator.geolocation.getCurrentPosition()`을 새로
+  호출해서 최신 위치를 받아온다(위치가 바뀌었을 수 있어서다).
+- **`finder-session-memory.js`(`sessionStorage`)**: "이 위치 팝업/연료 팝업에 이미 답했다"는 사실만
+  탭 세션 동안 기억해서, 같은 탭 안에서 mode1/mode2를 다시 들어갈 때 팝업을 또 띄우지 않는다(새로고침에도
+  살아남고, 탭을 닫으면 사라진다 — 다른 탭·다음 방문에는 이어지지 않는다). `finder.locationAnswered.mode1`/
+  `.mode2`는 `'granted'`/`'skipped'`, `finder.interest`는 고른 유종/EV 값(건너뛰었으면 내부적으로
+  `'NONE'` 센티널로 구분 저장 — "아직 안 답함"과 "건너뛰기를 답함"을 구분해야 해서). 재선택 UI는 없고,
+  mode1/mode2 화면의 "첫 화면으로" 뒤로가기를 누르는 순간 전부 초기화된다 — 잘못 골랐을 때 고치는
+  유일한 방법이 랜딩으로 돌아갔다 다시 들어가는 것.
 - **요청 경합**: mode1의 `nearby` 요청과 mode2의 route 요청 모두 요청 ID/AbortController로 최신 요청만 반영하는
   공통 패턴(다른 finder request 모듈과 동일)을 쓴다 — 빠르게 이름을 바꿔 치며 검색해도 늦게 도착한 오래된
   응답이 화면을 덮어쓰지 않는다.
@@ -180,7 +187,8 @@ sources: []
   finder-route-rest-stop-list-request.js`(mode2, `/route-rest-stops/list` 전용) — 둘 다 요청 ID/
   AbortController로 최신 응답만 반영하는 같은 패턴. `static/js/finder-destination-chips.js`(인기 목적지 칩
   4개, 라벨=검색어). mode2의 목적지 후보 검색은 지도 화면과 공유하는 `static/js/place-search-request.js`를
-  그대로 import한다.
+  그대로 import한다. `static/js/finder-session-memory.js`(순수 함수, `sessionStorage` 읽기/쓰기 — 5절)로
+  위치/연료 팝업 재노출 여부를 판단한다.
 - **백엔드 — rest-stop 소유**(이 문서는 소비 관점만 기록): `reststop.service.RestStopNearbyQueryService`,
   `reststop.service.dto.RestStopInterest`, `reststop.controller.response.RestStopNearbyItemResponse`,
   `RestStopController.getNearbyRestStops`.
