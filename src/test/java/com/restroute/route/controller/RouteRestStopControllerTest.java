@@ -70,7 +70,9 @@ class RouteRestStopControllerTest {
                                 null,
                                 null,
                                 null,
-                                false)))));
+                                false,
+                                null,
+                                null)))));
         when(routeRestStopService.findRouteRestStops(eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000)))
                 .thenReturn(response);
 

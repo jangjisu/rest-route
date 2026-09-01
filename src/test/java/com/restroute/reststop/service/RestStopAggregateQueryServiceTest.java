@@ -11,6 +11,7 @@ import com.restroute.evcharger.service.EvChargerQueryService;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopRestroomEntity;
 import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
+import com.restroute.reststop.domain.SizeTier;
 import com.restroute.reststop.repository.RestStopRestroomRepository;
 import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
 import com.restroute.reststop.service.dto.RestStopAggregate;
@@ -205,6 +206,28 @@ class RestStopAggregateQueryServiceTest {
         assertThat(second.maleToiletCount()).isNull();
         assertThat(second.femaleToiletCount()).isNull();
         assertThat(second.topTrafficTier()).isFalse();
+    }
+
+    @Test
+    @DisplayName("부지면적 규모 등급을 코드별로 합쳐서 반환하고, 매핑이 없으면 null로 채운다")
+    void find_combinesSizeTierPerCode() {
+        RestStopEntity withUsageData = restStop("A00001");
+        RestStopEntity withoutUsageData = restStop("A00002");
+        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(any(), any()))
+                .thenReturn(List.of(withUsageData, withoutUsageData));
+
+        RestStopUsageSnapshotEntity usageSnapshot = RestStopUsageSnapshotEntity.from(
+                new RestStopUsageSnapshotRow("경부선", "A휴게소", "1000", "휴게소", "500", "3000"));
+        usageSnapshot.updateRestStopServiceAreaCode("A00001");
+        usageSnapshot.updateSizeTier(SizeTier.LARGE);
+        when(restStopUsageSnapshotRepository.findAllByRestStopServiceAreaCodeIn(any()))
+                .thenReturn(List.of(usageSnapshot));
+
+        Map<String, RestStopAggregate> result =
+                aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(null, null);
+
+        assertThat(result.get("A00001").sizeTier()).isEqualTo(SizeTier.LARGE);
+        assertThat(result.get("A00002").sizeTier()).isNull();
     }
 
     @Test

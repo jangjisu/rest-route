@@ -121,7 +121,8 @@ public class RestStopAggregateQueryService {
                 eventCodes.contains(serviceAreaCode),
                 restroom == null ? null : parseInteger(restroom.getMaleToiletCount()),
                 restroom == null ? null : parseInteger(restroom.getFemaleToiletCount()),
-                usageSnapshot != null && usageSnapshot.isTopTrafficTier());
+                usageSnapshot != null && usageSnapshot.isTopTrafficTier(),
+                usageSnapshot == null ? null : usageSnapshot.getSizeTier());
     }
 
     private Integer parseInteger(String value) {

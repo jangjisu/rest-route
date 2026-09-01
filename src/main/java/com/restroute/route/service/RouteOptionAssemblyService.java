@@ -8,6 +8,7 @@ import com.restroute.route.controller.response.RouteRestStopResponse.NationalOil
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteSummary;
+import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.dto.RouteCandidate;
 import com.restroute.route.service.dto.RoutePath;
 import com.restroute.route.service.dto.RouteRestStopComparison;
@@ -33,15 +34,19 @@ public class RouteOptionAssemblyService {
     private final RestStopAggregateQueryService restStopAggregateQueryService;
     private final RouteRestStopComparisonSummaryService routeRestStopComparisonSummaryService;
     private final RouteRestStopRecommendationTagService routeRestStopRecommendationTagService;
+    private final QueriedOilPriceStatsCalculator queriedOilPriceStatsCalculator;
 
     public List<RouteOption> attachDetails(
             List<RouteCandidate> candidates,
             List<RestStopEntity> allRestStops,
             Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         Map<String, RestStopAggregate> aggregatesByServiceAreaCode = aggregatesForCandidates(candidates, allRestStops);
+        QueriedOilPriceStats queriedOilPriceStats =
+                queriedOilPriceStatsCalculator.calculate(aggregatesByServiceAreaCode.values());
 
         return candidates.stream()
-                .map(candidate -> toRouteOption(candidate, aggregatesByServiceAreaCode, nationalOilPriceSummary))
+                .map(candidate -> toRouteOption(
+                        candidate, aggregatesByServiceAreaCode, nationalOilPriceSummary, queriedOilPriceStats))
                 .toList();
     }
 
@@ -69,9 +74,10 @@ public class RouteOptionAssemblyService {
     private RouteOption toRouteOption(
             RouteCandidate candidate,
             Map<String, RestStopAggregate> aggregatesByServiceAreaCode,
-            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        List<RouteRestStopItem> restStops =
-                buildResponseItems(candidate.items(), aggregatesByServiceAreaCode, nationalOilPriceSummary);
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary,
+            QueriedOilPriceStats queriedOilPriceStats) {
+        List<RouteRestStopItem> restStops = buildResponseItems(
+                candidate.items(), aggregatesByServiceAreaCode, nationalOilPriceSummary, queriedOilPriceStats);
         return RouteOption.of(
                 candidate.routeIndex(),
                 routeSummary(
@@ -82,7 +88,8 @@ public class RouteOptionAssemblyService {
     private List<RouteRestStopItem> buildResponseItems(
             List<RouteRestStopItem> items,
             Map<String, RestStopAggregate> aggregatesByServiceAreaCode,
-            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary,
+            QueriedOilPriceStats queriedOilPriceStats) {
         List<RouteRestStopComparison> comparisons = items.stream()
                 .map(item -> RouteRestStopComparison.of(
                         item,
@@ -108,6 +115,9 @@ public class RouteOptionAssemblyService {
                             .withEvent(aggregate.hasEvent())
                             .withRestroomCounts(aggregate.maleToiletCount(), aggregate.femaleToiletCount())
                             .withTopTrafficTier(aggregate.topTrafficTier())
+                            .withSizeTier(aggregate.sizeTier())
+                            .withFuelPriceTier(routeRestStopComparisonSummaryService.fuelPriceTier(
+                                    aggregate.relatedInfo().oilPrice(), queriedOilPriceStats, nationalOilPriceSummary))
                             .withComparison(
                                     comparison.summary(),
                                     routeRestStopRecommendationTagService.create(comparison, recommendationStandards));

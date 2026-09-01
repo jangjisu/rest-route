@@ -10,6 +10,7 @@ import com.restroute.evcharger.domain.EvChargerStationMappingEntity;
 import com.restroute.evcharger.repository.EvChargerRepository;
 import com.restroute.evcharger.repository.EvChargerStationMappingRepository;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -102,6 +103,38 @@ class EvChargerQueryServiceTest {
 
         assertThat(queryService.findActiveChargerCount("A00001")).isZero();
         assertThat(queryService.findActiveChargerCount(" ")).isZero();
+    }
+
+    @Test
+    @DisplayName("여러 휴게소 코드의 활성 충전기 수를 한 번에 조회한다")
+    void findActiveChargerCounts_returnsCountPerServiceAreaCode() throws Exception {
+        EvChargerStationMappingEntity firstMapping = EvChargerStationMappingEntity.of("ME1");
+        firstMapping.updateMatch("A00001");
+        EvChargerStationMappingEntity secondMapping = EvChargerStationMappingEntity.of("ME2");
+        secondMapping.updateMatch("A00002");
+        when(mappingRepository.findAllByRestStopServiceAreaCodeIn(List.of("A00001", "A00002")))
+                .thenReturn(List.of(firstMapping, secondMapping));
+        when(evChargerRepository.findAllByStatIdInAndDelYn(List.of("ME1", "ME2"), "N"))
+                .thenReturn(List.of(charger("ME1", "01", "N"), charger("ME1", "02", "N"), charger("ME2", "01", "N")));
+
+        Map<String, Integer> result = queryService.findActiveChargerCounts(List.of("A00001", "A00002"));
+
+        assertThat(result).containsExactlyInAnyOrderEntriesOf(Map.of("A00001", 2, "A00002", 1));
+    }
+
+    @Test
+    @DisplayName("매핑이 없는 휴게소 코드는 결과 맵에서 빠진다")
+    void findActiveChargerCounts_omitsCodesWithoutMapping() {
+        when(mappingRepository.findAllByRestStopServiceAreaCodeIn(List.of("A00001")))
+                .thenReturn(List.of());
+
+        assertThat(queryService.findActiveChargerCounts(List.of("A00001"))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("휴게소 코드가 없으면 빈 맵을 반환한다")
+    void findActiveChargerCounts_returnsEmptyMapForBlankInput() {
+        assertThat(queryService.findActiveChargerCounts(List.of())).isEmpty();
     }
 
     private EvChargerEntity charger(String statId, String chgerId, String delYn) throws Exception {

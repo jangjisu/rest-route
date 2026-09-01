@@ -15,6 +15,7 @@ import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.domain.SizeTier;
 import com.restroute.reststop.service.RestStopAggregateQueryService;
 import com.restroute.reststop.service.dto.RestStopAggregate;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
@@ -50,13 +51,14 @@ class RouteOptionAssemblyServiceTest {
         service = new RouteOptionAssemblyService(
                 restStopAggregateQueryService,
                 new RouteRestStopComparisonSummaryService(),
-                new RouteRestStopRecommendationTagService());
+                new RouteRestStopRecommendationTagService(),
+                new QueriedOilPriceStatsCalculator());
     }
 
     private void stubRelatedInfoByCode(Map<String, RestStopRelatedInfo> overridesByServiceAreaCode) {
         Map<String, RestStopAggregate> aggregates = new HashMap<>();
         overridesByServiceAreaCode.forEach((code, relatedInfo) -> aggregates.put(
-                code, new RestStopAggregate(null, relatedInfo, false, false, false, false, null, null, false)));
+                code, new RestStopAggregate(null, relatedInfo, false, false, false, false, null, null, false, null)));
         stubAggregates(aggregates);
     }
 
@@ -80,7 +82,8 @@ class RouteOptionAssemblyServiceTest {
                                                 false,
                                                 null,
                                                 null,
-                                                false)));
+                                                false,
+                                                null)));
                     }
                     return result;
                 })
@@ -162,7 +165,8 @@ class RouteOptionAssemblyServiceTest {
         RouteCandidate candidate =
                 new RouteCandidate(0, geometry(new Summary(100L, 200L, null)), List.of(item("A", 37.0001, 127.0001)));
         stubAggregates(Map.of(
-                "A", new RestStopAggregate(null, emptyRelatedInfo(), true, false, true, true, null, null, false)));
+                "A",
+                new RestStopAggregate(null, emptyRelatedInfo(), true, false, true, true, null, null, false, null)));
 
         List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(restStop), Optional.empty());
 
@@ -170,6 +174,22 @@ class RouteOptionAssemblyServiceTest {
         assertThat(resultItem.hasEvCharger()).isTrue();
         assertThat(resultItem.hasTheme()).isTrue();
         assertThat(resultItem.hasEvent()).isTrue();
+    }
+
+    @Test
+    void attachDetails_copiesSizeTierFromAggregate() {
+        RestStopEntity restStop = restStop("A");
+        RouteCandidate candidate =
+                new RouteCandidate(0, geometry(new Summary(100L, 200L, null)), List.of(item("A", 37.0001, 127.0001)));
+        stubAggregates(Map.of(
+                "A",
+                new RestStopAggregate(
+                        null, emptyRelatedInfo(), false, false, false, false, null, null, false, SizeTier.LARGE)));
+
+        List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(restStop), Optional.empty());
+
+        var resultItem = routes.get(0).restStops().get(0);
+        assertThat(resultItem.sizeTier()).isEqualTo(SizeTier.LARGE);
     }
 
     @Test
@@ -181,7 +201,8 @@ class RouteOptionAssemblyServiceTest {
                 geometry(new Summary(100L, 200L, null)),
                 List.of(item("A", 37.0001, 127.0001), item("B", 37.5001, 127.5001)));
         stubAggregates(Map.of(
-                "A", new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false, null, null, false)));
+                "A",
+                new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false, null, null, false, null)));
 
         List<RouteOption> routes = service.attachDetails(List.of(candidate), List.of(first, second), Optional.empty());
 

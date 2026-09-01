@@ -7,7 +7,7 @@ paths:
   - "src/main/java/com/restroute/controller/response/RouteRestStopResponse.java"
   - "src/main/resources/static/js/rest-stops-map.js"
   - "src/main/resources/static/js/bottom-sheet.js"
-related_domains: ["rest-stop", "oil-price", "ev-charger", "place-search-and-map-config"]
+related_domains: ["rest-stop", "oil-price", "ev-charger", "place-search-and-map-config", "finder"]
 sources: []
 ---
 

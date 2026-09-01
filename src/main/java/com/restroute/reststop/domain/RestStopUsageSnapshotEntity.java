@@ -3,6 +3,8 @@ package com.restroute.reststop.domain;
 import com.restroute.reststop.service.usage.dto.RestStopUsageSnapshotRow;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -36,6 +38,9 @@ public class RestStopUsageSnapshotEntity {
 
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean topTrafficTier;
+
+    @Enumerated(EnumType.STRING)
+    private SizeTier sizeTier;
 
     private String restStopServiceAreaCode;
 
@@ -75,5 +80,9 @@ public class RestStopUsageSnapshotEntity {
 
     public void updateTopTrafficTier(boolean topTrafficTier) {
         this.topTrafficTier = topTrafficTier;
+    }
+
+    public void updateSizeTier(SizeTier sizeTier) {
+        this.sizeTier = sizeTier;
     }
 }

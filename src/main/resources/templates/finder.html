@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="_csrf" th:content="${_csrf?.token}">
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}">
+    <title>휴게소 찾기 — rest-route</title>
+    <script>
+        (function () {
+            try {
+                var stored = window.localStorage.getItem('rr-theme');
+                var theme = stored === 'light' || stored === 'dark'
+                    ? stored
+                    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/finder.css" rel="stylesheet">
+</head>
+<body class="finder-body">
+
+<nav class="rr-navbar finder-navbar">
+    <span class="rr-navbar-brand">
+        <span class="rr-logo-mark" aria-hidden="true">
+            <span class="rr-logo-mark-ring"></span>
+        </span>
+        <span class="rr-navbar-wordmark">rest-route</span>
+    </span>
+    <button id="themeToggleButton" type="button" class="rr-theme-toggle" aria-label="다크 모드로 전환">
+        <span id="themeToggleIcon" class="rr-theme-toggle-icon" aria-hidden="true">🌙</span>
+        <span id="themeToggleLabel" class="rr-theme-toggle-label">라이트</span>
+    </button>
+</nav>
+
+<main id="finderApp" class="finder-app">
+
+    <!-- 0. 첫 화면 -->
+    <section id="finderScreenLanding" class="finder-screen finder-screen-landing" data-finder-screen="landing">
+        <div class="finder-landing-content">
+            <h1 class="finder-landing-headline">휴게소가<br>궁금할 때</h1>
+            <p class="finder-landing-sub">
+                이름을 알거나 근처에서 찾고 싶으면 이름·거리로 찾아보시고,
+                가시는 곳을 알려주시면 목적지로 추천받아보세요.
+            </p>
+
+            <div class="finder-landing-tiles">
+                <button id="finderEnterMode1" class="finder-tile finder-tile-mode1" type="button">
+                    <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                        <circle cx="17" cy="17" r="12" fill="var(--rr-color-primary-tint-strong)"></circle>
+                        <circle cx="17" cy="17" r="8" stroke="var(--rr-color-primary-text)" stroke-width="2.4"></circle>
+                        <line x1="23" y1="23" x2="33" y2="33" stroke="var(--rr-color-primary-text)" stroke-width="2.4" stroke-linecap="round"></line>
+                    </svg>
+                    <span class="finder-tile-label">이름·거리로<br>찾기</span>
+                </button>
+                <button id="finderEnterMode2" class="finder-tile finder-tile-mode2" type="button">
+                    <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                        <circle cx="20" cy="18" r="14" fill="var(--rr-color-accent-border)"></circle>
+                        <path d="M20 10c-3.3 0-6 2.6-6 5.8 0 4.3 6 10.2 6 10.2s6-5.9 6-10.2c0-3.2-2.7-5.8-6-5.8z" stroke="var(--rr-color-accent-text)" stroke-width="2.2" stroke-linejoin="round"></path>
+                        <circle cx="20" cy="15.8" r="2.2" fill="var(--rr-color-accent-text)"></circle>
+                    </svg>
+                    <span class="finder-tile-label">목적지로<br>추천받기</span>
+                </button>
+            </div>
+
+            <p class="finder-example-kicker">이렇게 보여드려요</p>
+            <div class="finder-example-card" aria-hidden="true">
+                <div class="finder-example-row">
+                    <span class="finder-example-name">천안삼거리(서울)휴게소</span>
+                    <span class="finder-example-distance">3.2km</span>
+                </div>
+                <div class="finder-example-badges">
+                    <span class="finder-badge finder-badge-size">대형</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 위치 동의 팝업: 이름·거리로 찾기 (건너뛰기 가능) -->
+    <dialog id="finderPermissionMode1" class="finder-permission-dialog" aria-labelledby="finderPermissionMode1Title">
+        <button id="finderPermissionMode1Close" class="finder-dialog-close" type="button" aria-label="닫기">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <line x1="5" y1="5" x2="19" y2="19"></line>
+                <line x1="19" y1="5" x2="5" y2="19"></line>
+            </svg>
+        </button>
+        <div class="finder-permission-body">
+            <svg class="finder-permission-icon finder-permission-icon-primary" width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <path d="M20 10c-3.3 0-6 2.6-6 5.8 0 4.3 6 10.2 6 10.2s6-5.9 6-10.2c0-3.2-2.7-5.8-6-5.8z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"></path>
+                <circle cx="20" cy="15.8" r="2.4" fill="currentColor"></circle>
+            </svg>
+            <h2 id="finderPermissionMode1Title" class="finder-permission-title">내 위치로 근처 휴게소를<br>보여드릴까요?</h2>
+            <p class="finder-permission-desc">허용하면 거리순으로 보여드려요.<br>안 하셔도 이름 검색은 쓸 수 있어요.</p>
+            <div class="finder-permission-actions">
+                <button id="finderPermissionMode1Skip" class="finder-secondary-button" type="button">건너뛰기</button>
+                <button id="finderPermissionMode1Allow" class="finder-primary-button" type="button">위치 허용</button>
+            </div>
+            <p id="finderPermissionMode1Error" class="finder-permission-error" aria-live="polite" hidden></p>
+        </div>
+    </dialog>
+
+    <!-- 연료 선택 팝업(팝업 2, 신규) — 위치 동의 팝업 다음에 항상 뜬다 -->
+    <dialog id="finderInterestPopup" class="finder-permission-dialog" aria-labelledby="finderInterestTitle">
+        <button id="finderInterestClose" class="finder-dialog-close" type="button" aria-label="닫기">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <line x1="5" y1="5" x2="19" y2="19"></line>
+                <line x1="19" y1="5" x2="5" y2="19"></line>
+            </svg>
+        </button>
+        <div class="finder-permission-body">
+            <svg class="finder-permission-icon finder-permission-icon-primary" width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <rect x="10" y="10" width="14" height="20" rx="2" stroke="currentColor" stroke-width="2.4"></rect>
+                <path d="M24 16h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path>
+                <line x1="13" y1="15" x2="21" y2="15" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></line>
+            </svg>
+            <h2 id="finderInterestTitle" class="finder-permission-title">지금 주행 중이신 차의<br>연료는 무엇인가요?</h2>
+            <p class="finder-permission-desc">휘발유·경유·LPG는 저렴한 곳을,<br>EV는 충전기 있는 곳을 알려드려요.</p>
+            <div id="finderInterestChips" class="finder-chip-row finder-chip-row-center"></div>
+            <button id="finderInterestSkip" class="finder-dialog-skip" type="button">건너뛰기</button>
+        </div>
+    </dialog>
+
+    <!-- 위치 동의 팝업: 목적지로 추천받기 (필수) -->
+    <dialog id="finderPermissionMode2" class="finder-permission-dialog" aria-labelledby="finderPermissionMode2Title">
+        <button id="finderPermissionMode2Close" class="finder-dialog-close" type="button" aria-label="닫기">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <line x1="5" y1="5" x2="19" y2="19"></line>
+                <line x1="19" y1="5" x2="5" y2="19"></line>
+            </svg>
+        </button>
+        <div class="finder-permission-body">
+            <svg class="finder-permission-icon finder-permission-icon-accent" width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <path d="M20 10c-3.3 0-6 2.6-6 5.8 0 4.3 6 10.2 6 10.2s6-5.9 6-10.2c0-3.2-2.7-5.8-6-5.8z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"></path>
+                <circle cx="20" cy="15.8" r="2.4" fill="currentColor"></circle>
+            </svg>
+            <h2 id="finderPermissionMode2Title" class="finder-permission-title">이 기능은 위치 정보가<br>꼭 필요해요</h2>
+            <p class="finder-permission-desc">목적지까지 가는 길에서 실제로<br>앞에 있는 휴게소만 추천할 수 있어요.</p>
+            <button id="finderPermissionMode2Allow" class="finder-primary-button finder-permission-single-button" type="button">
+                위치 허용하고 계속하기
+            </button>
+            <p id="finderPermissionMode2Error" class="finder-permission-error" aria-live="polite" hidden></p>
+        </div>
+    </dialog>
+
+    <!-- 1. 이름·거리로 찾기 -->
+    <section id="finderScreenMode1" class="finder-screen" data-finder-screen="mode1" hidden>
+        <div class="finder-mode1-sticky">
+            <header class="finder-screen-header">
+                <button id="finderMode1Back" class="finder-back-button" type="button" aria-label="첫 화면으로">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M15 4l-8 8 8 8"></path>
+                    </svg>
+                </button>
+                <h2 class="finder-screen-title">이름·거리로 찾기</h2>
+            </header>
+
+            <p id="finderMode1SubHeading" class="finder-screen-sub" hidden></p>
+            <div class="finder-search-box finder-search-box-pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                    <line x1="20" y1="20" x2="15.3" y2="15.3"></line>
+                </svg>
+                <input id="finderMode1SearchInput" class="finder-search-input" type="text"
+                       placeholder="휴게소 이름 검색" aria-label="휴게소 이름 검색">
+            </div>
+        </div>
+
+        <div id="finderMode1EmptyState" class="finder-empty-state" hidden>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                <line x1="20" y1="20" x2="15.3" y2="15.3"></line>
+            </svg>
+            <p class="finder-empty-state-title">휴게소 이름으로<br>검색해보세요</p>
+            <p class="finder-empty-state-desc">위치 권한이 없어서<br>거리순 목록은 못 보여드려요.</p>
+        </div>
+
+        <p id="finderMode1Status" class="finder-status" aria-live="polite" hidden></p>
+        <ul id="finderMode1List" class="finder-result-list"></ul>
+    </section>
+
+    <!-- 2. 목적지로 추천받기 -->
+    <section id="finderScreenMode2" class="finder-screen" data-finder-screen="mode2" hidden>
+        <header class="finder-screen-header">
+            <button id="finderMode2Back" class="finder-back-button" type="button" aria-label="첫 화면으로">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M15 4l-8 8 8 8"></path>
+                </svg>
+            </button>
+            <h2 class="finder-screen-title">목적지로 추천받기</h2>
+        </header>
+
+        <div class="finder-search-box finder-search-box-pill finder-search-box-accent">
+            <svg width="15" height="15" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <path d="M20 10c-3.3 0-6 2.6-6 5.8 0 4.3 6 10.2 6 10.2s6-5.9 6-10.2c0-3.2-2.7-5.8-6-5.8z" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"></path>
+                <circle cx="20" cy="15.8" r="2.2" fill="currentColor"></circle>
+            </svg>
+            <input id="finderMode2DestinationInput" class="finder-search-input" type="text"
+                   placeholder="목적지를 입력하세요" aria-label="목적지 검색">
+            <button id="finderMode2DestinationSubmit" class="finder-search-submit" type="button">검색</button>
+        </div>
+        <div id="finderDestinationChips" class="finder-chip-row"></div>
+        <p class="finder-notice">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+                <line x1="12" y1="11" x2="12" y2="16"></line>
+                <circle cx="12" cy="8" r="0.6" fill="currentColor" stroke="none"></circle>
+            </svg>
+            카카오맵 추천 경로에 포함된 휴게소만 보여드려요
+        </p>
+
+        <div id="finderMode2ConditionSection" hidden>
+            <p class="finder-screen-caption">원하는 조건</p>
+            <div id="finderConditionFilters" class="finder-chip-row finder-chip-row-filter"></div>
+
+            <p id="finderMode2ResultsHeading" class="finder-screen-sub"></p>
+            <p id="finderMode2Status" class="finder-status" aria-live="polite" hidden></p>
+            <ul id="finderMode2List" class="finder-result-list"></ul>
+        </div>
+    </section>
+
+</main>
+
+<div id="finderLoadingOverlay" class="finder-loading-overlay" hidden role="status" aria-live="polite">
+    <div class="finder-loading-spinner" aria-hidden="true"></div>
+</div>
+
+<script type="module" src="/js/finder-app.js"></script>
+</body>
+</html>

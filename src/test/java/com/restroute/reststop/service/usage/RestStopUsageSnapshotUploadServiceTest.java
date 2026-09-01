@@ -83,6 +83,20 @@ class RestStopUsageSnapshotUploadServiceTest {
     }
 
     @Test
+    @DisplayName("업로드 시 규모 등급도 함께 재계산한다")
+    void upload_alsoRecomputesSizeTier() {
+        RestStopUsageSnapshotRow row = row("죽전(서울)");
+        when(csvParser.parse(usageSnapshotFile)).thenReturn(List.of(row));
+        when(usageSnapshotRepository.findAll()).thenReturn(List.of());
+        when(restStopRepository.findAll()).thenReturn(List.of());
+        runTransactionCallback();
+
+        uploadService.upload(usageSnapshotFile);
+
+        verify(backfiller).recomputeSizeTier();
+    }
+
+    @Test
     @DisplayName("백필은 저장이 끝난 뒤에 실행된다")
     void upload_runsBackfillAfterSave() {
         RestStopUsageSnapshotRow row = row("죽전(서울)");

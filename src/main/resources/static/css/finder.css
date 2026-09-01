@@ -1,0 +1,654 @@
+/* ===================================================
+   finder.css — 이름·거리로 찾기 / 목적지로 추천받기 (모바일 전용 진입 흐름)
+   =================================================== */
+
+.finder-body {
+    margin: 0;
+    background: var(--rr-color-bg);
+    color: var(--rr-color-text);
+    font-family: var(--rr-font-family);
+    min-height: 100vh;
+
+    /* 배지 카테고리별 색상 — 앱 전역 --rr- 토큰에 없는 종류만 새로 정의한다.
+       규모=보라, 이용량=파랑, EV=청록, 먹거리=호박색. 유가 배지는 기존 accent/success 토큰 재사용. */
+    --finder-badge-size-bg: oklch(95% 0.03 300);
+    --finder-badge-size-text: oklch(40% 0.12 300);
+    --finder-badge-traffic-bg: oklch(95% 0.03 250);
+    --finder-badge-traffic-text: oklch(42% 0.12 250);
+    --finder-badge-ev-bg: oklch(94% 0.04 195);
+    --finder-badge-ev-text: oklch(38% 0.09 195);
+    --finder-badge-food-bg: oklch(95% 0.04 75);
+    --finder-badge-food-text: oklch(42% 0.11 75);
+    --finder-badge-event-bg: oklch(94% 0.03 220);
+    --finder-badge-event-text: oklch(42% 0.11 220);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .finder-body {
+        --finder-badge-size-bg: oklch(28% 0.06 300);
+        --finder-badge-size-text: oklch(80% 0.12 300);
+        --finder-badge-traffic-bg: oklch(28% 0.06 250);
+        --finder-badge-traffic-text: oklch(78% 0.12 250);
+        --finder-badge-ev-bg: oklch(27% 0.05 195);
+        --finder-badge-ev-text: oklch(78% 0.1 195);
+        --finder-badge-food-bg: oklch(29% 0.06 75);
+        --finder-badge-food-text: oklch(80% 0.11 75);
+        --finder-badge-event-bg: oklch(27% 0.05 220);
+        --finder-badge-event-text: oklch(78% 0.1 220);
+    }
+}
+
+:root[data-theme="dark"] .finder-body {
+    --finder-badge-size-bg: oklch(28% 0.06 300);
+    --finder-badge-size-text: oklch(80% 0.12 300);
+    --finder-badge-traffic-bg: oklch(28% 0.06 250);
+    --finder-badge-traffic-text: oklch(78% 0.12 250);
+    --finder-badge-ev-bg: oklch(27% 0.05 195);
+    --finder-badge-ev-text: oklch(78% 0.1 195);
+    --finder-badge-food-bg: oklch(29% 0.06 75);
+    --finder-badge-food-text: oklch(80% 0.11 75);
+    --finder-badge-event-bg: oklch(27% 0.05 220);
+    --finder-badge-event-text: oklch(78% 0.1 220);
+}
+
+.finder-navbar {
+    padding: 10px 20px;
+}
+
+.finder-app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: calc(100vh - 55px);
+    position: relative;
+}
+
+.finder-screen {
+    padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+}
+
+/* 헤더+검색창까지만 고정 — 목록을 내려도 이름으로 계속 검색할 수 있어야 해서, 그 아래
+   (빈 상태 안내/상태 문구/목록)는 그냥 같이 스크롤된다. 부모 .finder-screen의 위·좌·우
+   패딩을 음수 마진으로 상쇄하고 안에서 다시 채워서, 배경이 화면 끝까지 이어지게 한다. */
+.finder-mode1-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: -24px -20px 0;
+    padding: 24px 20px 18px;
+    background: var(--rr-color-bg);
+}
+
+.finder-screen[hidden] {
+    display: none;
+}
+
+/* --- 0. 첫 화면 --- */
+
+.finder-landing-headline {
+    margin: 4px 0 12px;
+    font-size: 30px;
+    line-height: 1.3;
+    font-weight: 800;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-landing-sub {
+    margin: 0 0 24px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-landing-tiles {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.finder-tile {
+    flex: 1;
+    height: 108px;
+    border: none;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    user-select: none;
+}
+
+.finder-tile:active {
+    transform: scale(0.98);
+}
+
+.finder-tile-mode1 {
+    background: var(--rr-color-primary-tint);
+}
+
+.finder-tile-mode2 {
+    background: var(--rr-color-accent-tint);
+}
+
+.finder-tile-label {
+    font-size: 12.5px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.finder-tile-mode1 .finder-tile-label {
+    color: var(--rr-color-primary-text);
+}
+
+.finder-tile-mode2 .finder-tile-label {
+    color: var(--rr-color-accent-text);
+}
+
+.finder-example-kicker {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-example-card {
+    background: var(--rr-color-surface-tint);
+    border: 1px solid var(--rr-color-border);
+    border-radius: var(--rr-radius-card);
+    padding: 14px;
+}
+
+.finder-example-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.finder-example-name {
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-example-distance {
+    font-size: 12px;
+    color: var(--rr-color-text-secondary);
+    white-space: nowrap;
+}
+
+.finder-example-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/* --- 배지 --- */
+
+.finder-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: var(--rr-radius-pill);
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--rr-color-primary-tint);
+    color: var(--rr-color-primary-text);
+    white-space: nowrap;
+}
+
+.finder-badge-accent {
+    background: var(--rr-color-accent-tint);
+    color: var(--rr-color-accent-text);
+}
+
+.finder-badge-savings {
+    background: var(--rr-color-success-bg);
+    color: var(--rr-color-success-text);
+}
+
+.finder-badge-size {
+    background: var(--finder-badge-size-bg);
+    color: var(--finder-badge-size-text);
+}
+
+.finder-badge-traffic {
+    background: var(--finder-badge-traffic-bg);
+    color: var(--finder-badge-traffic-text);
+}
+
+.finder-badge-ev {
+    background: var(--finder-badge-ev-bg);
+    color: var(--finder-badge-ev-text);
+}
+
+.finder-badge-food {
+    background: var(--finder-badge-food-bg);
+    color: var(--finder-badge-food-text);
+}
+
+.finder-badge-event {
+    background: var(--finder-badge-event-bg);
+    color: var(--finder-badge-event-text);
+}
+
+/* 이용량 상위 10%(이름·거리로 찾기 목록) — 상세 패널(index.html)과 같은 warning 톤으로 맞춘다.
+   목적지로 추천받기의 같은 태그는 .finder-badge-traffic(파랑)을 그대로 쓴다 — 화면이 다르다. */
+.finder-badge-warn {
+    background: var(--rr-color-warning-bg);
+    color: var(--rr-color-warning-text);
+}
+
+/* --- 위치 동의 팝업 --- */
+
+.finder-permission-dialog {
+    border: none;
+    border-radius: var(--rr-radius-card) var(--rr-radius-card) 0 0;
+    padding: 0;
+    width: 100%;
+    max-width: 480px;
+    margin: auto auto 0;
+    box-shadow: var(--rr-shadow-card);
+    background: var(--rr-color-surface);
+}
+
+.finder-permission-dialog::backdrop {
+    background: var(--rr-color-backdrop);
+}
+
+.finder-dialog-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: var(--rr-color-surface-muted);
+    color: var(--rr-color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.finder-permission-body {
+    padding: 40px 24px 32px;
+    text-align: center;
+}
+
+.finder-permission-icon {
+    margin: 0 auto 12px;
+    display: block;
+}
+
+.finder-permission-icon-primary {
+    color: var(--rr-color-primary-text);
+}
+
+.finder-permission-icon-accent {
+    color: var(--rr-color-accent-text);
+}
+
+.finder-permission-title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.4;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-permission-desc {
+    margin: 0 0 20px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-permission-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.finder-permission-single-button {
+    width: 100%;
+}
+
+.finder-dialog-skip {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    border: none;
+    background: none;
+    color: var(--rr-color-text-faint);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.finder-permission-error {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--rr-color-accent-strong);
+}
+
+/* --- 버튼 --- */
+
+.finder-primary-button,
+.finder-secondary-button {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.finder-primary-button {
+    background: var(--rr-color-primary);
+    color: var(--rr-color-on-primary);
+}
+
+.finder-primary-button:active {
+    transform: scale(0.98);
+}
+
+.finder-secondary-button {
+    background: var(--rr-color-surface-muted);
+    color: var(--rr-color-text-strong);
+}
+
+.finder-secondary-button:active {
+    transform: scale(0.98);
+}
+
+/* --- 화면 공통 --- */
+
+.finder-screen-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.finder-back-button {
+    border: none;
+    background: var(--rr-color-surface-muted);
+    color: var(--rr-color-text-strong);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.finder-screen-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-screen-sub {
+    margin: 0 0 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rr-color-accent-text);
+}
+
+.finder-screen-sub[hidden] {
+    display: none;
+}
+
+.finder-screen-caption {
+    margin: 18px 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rr-color-text-secondary);
+}
+
+/* --- 빈 상태(검색 전용 화면) --- */
+
+.finder-empty-state {
+    text-align: center;
+    padding: 12px 0 24px;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-empty-state[hidden] {
+    display: none;
+}
+
+.finder-empty-state svg {
+    margin: 0 auto;
+}
+
+.finder-empty-state-title {
+    margin: 10px 0 0;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.4;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-empty-state-desc {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* --- 검색/입력 박스 --- */
+
+.finder-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.finder-search-box-pill {
+    background: var(--rr-color-primary-tint);
+    border-radius: var(--rr-radius-pill);
+    padding: 12px 16px;
+    color: var(--rr-color-primary-text);
+}
+
+.finder-search-box-accent {
+    background: var(--rr-color-accent-tint);
+    color: var(--rr-color-accent-text);
+}
+
+.finder-search-box-pill svg {
+    flex-shrink: 0;
+}
+
+.finder-search-input {
+    flex: 1;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--rr-color-text);
+}
+
+.finder-search-input::placeholder {
+    color: inherit;
+    opacity: 0.75;
+}
+
+.finder-search-input:focus {
+    outline: none;
+}
+
+.finder-search-submit {
+    border: none;
+    border-radius: var(--rr-radius-pill);
+    padding: 6px 14px;
+    background: var(--rr-color-accent);
+    color: var(--rr-color-on-primary);
+    font-weight: 700;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.finder-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    margin: 10px 2px 0;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--rr-color-text-faint);
+}
+
+.finder-notice svg {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.finder-status {
+    margin: 24px 0;
+    text-align: center;
+    font-size: 14px;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-status[hidden] {
+    display: none;
+}
+
+/* --- 칩 --- */
+
+.finder-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.finder-chip-row-center {
+    justify-content: center;
+}
+
+.finder-chip {
+    border: 1px solid var(--rr-color-border);
+    background: var(--rr-color-surface);
+    color: var(--rr-color-text-medium);
+    border-radius: var(--rr-radius-pill);
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.finder-chip[aria-pressed="true"] {
+    background: var(--rr-color-primary);
+    border-color: var(--rr-color-primary);
+    color: var(--rr-color-on-primary);
+}
+
+.finder-chip-row-filter {
+    margin-top: 6px;
+    margin-bottom: 16px;
+}
+
+/* --- 결과 리스트 --- */
+
+.finder-result-list {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.finder-result-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--rr-color-surface-tint);
+    border: 1px solid var(--rr-color-border);
+    border-radius: 18px;
+    padding: 14px;
+}
+
+.finder-result-main {
+    min-width: 0;
+}
+
+.finder-result-name {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--rr-color-text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.finder-result-route {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-result-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.finder-result-distance {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: var(--rr-color-text-secondary);
+    white-space: nowrap;
+}
+
+/* --- 로딩 오버레이 --- */
+
+.finder-loading-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--rr-color-backdrop);
+    z-index: 20;
+}
+
+.finder-loading-overlay[hidden] {
+    display: none;
+}
+
+.finder-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid var(--rr-color-surface);
+    border-top-color: var(--rr-color-primary);
+    animation: finder-spin 0.7s linear infinite;
+}
+
+@keyframes finder-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

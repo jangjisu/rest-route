@@ -2,14 +2,11 @@
 domain: ev-charger
 aliases: ["전기차 충전소", "EV 충전기", "충전소 매핑"]
 paths:
-  - "src/main/java/com/restroute/domain/EvChargerEntity.java"
-  - "src/main/java/com/restroute/domain/EvChargerStationMappingEntity.java"
-  - "src/main/java/com/restroute/service/evcharger/**"
-  - "src/main/java/com/restroute/client/EvChargerApiClient.java"
-  - "src/main/java/com/restroute/client/response/EvChargerItem.java"
-  - "src/main/java/com/restroute/repository/EvChargerRepository.java"
-  - "src/main/java/com/restroute/repository/EvChargerStationMappingRepository.java"
-related_domains: ["rest-stop", "route"]
+  - "src/main/java/com/restroute/evcharger/domain/**"
+  - "src/main/java/com/restroute/evcharger/service/**"
+  - "src/main/java/com/restroute/evcharger/client/**"
+  - "src/main/java/com/restroute/evcharger/repository/**"
+related_domains: ["rest-stop", "route", "finder"]
 sources:
   - "git log --follow -- src/main/java/com/restroute/domain/EvChargerEntity.java|EvChargerStationMappingEntity.java"
   - "commit 12ffe55 (sync ev chargers and map rest stops, 최초 도입), 458f244 (calculate ev charger station mappings), 75848c0 (integrate ev charger mapping into backfill), 7b21918 (simplify ev charger station mapping), 952f565 (clarify EV charger matching predicates)"
@@ -51,6 +48,7 @@ sources:
 **조회 흐름**
 - `EvChargerQueryService.findChargerMappedServiceAreaCodes`: 여러 서비스area코드를 받아 매핑된 것만 필터(지도/경로 카드 배지용, rest-stop-content의 테마/이벤트 배지와 동일한 패턴).
 - `EvChargerQueryService.findActiveChargerCount`: 특정 휴게소에 매핑된 충전소들의 `statId`를 모은 뒤, `delYn == "N"`인 활성 충전기 개수를 센다(휴게소 상세 화면의 "충전기 N대" 표시용으로 추정).
+- `EvChargerQueryService.findActiveChargerCounts`(복수형): 여러 서비스area코드를 한 번에 받아 `Map<서비스area코드, 개수>`로 배치 반환(N+1 방지, finder "이름·거리로 찾기" 목록용). `statId`별 활성 충전기 개수(`groupingBy`+`counting`)를 먼저 구한 뒤 코드별로 합산 — 활성 `statId` 존재 여부만 세면 한 `statId`에 여러 `chgerId`가 달린 경우 개수가 줄어드는 버그가 생기므로 반드시 이 순서를 지켜야 한다.
 
 ## 4. 정책과 불변 조건
 
@@ -81,4 +79,4 @@ sources:
 - **엔티티**: `com.restroute.domain.{EvChargerEntity, EvChargerStationMappingEntity}`
 - **서비스 패키지**: `com.restroute.service.evcharger` — `EvChargerSyncService`(동기화), `EvChargerQueryService`(조회), `mapping.EvChargerStationMappingCalculator`(매칭 알고리즘), `util.CoordinateDistanceCalculator`(순수 Haversine 계산, 부수효과 없음), `dto.{EvChargerSyncResult, EvChargerFetchSummary, EvChargerCoordinates}`.
 - **진입점**: 동기화는 `RestStopScheduler`/`RestStopStartupInitializer`에서만 트리거. 매핑 재계산은 `RestStopServiceAreaCodeBackfillService.backfillEvChargerMappings`(rest-stop 도메인 소유로 추정)를 통해서만 실행되며, `EvChargerStationMappingCalculator`를 직접 호출하는 다른 진입점은 없음.
-- **소비자(다른 도메인)**: `RestStopBasicInfoQueryService`, `RestStopAggregateQueryService`(rest-stop), `RouteOptionAssemblyService`, `RouteRestStopResponse`(route) — 이 도메인은 자체 컨트롤러 없이 두 도메인에 데이터를 공급하는 역할.
+- **소비자(다른 도메인)**: `RestStopBasicInfoQueryService`, `RestStopAggregateQueryService`(rest-stop), `RouteOptionAssemblyService`, `RouteRestStopResponse`(route), `RestStopNearbyQueryService`(rest-stop, finder 화면의 `/api/rest-stops/nearby` 조합용 — `findActiveChargerCounts` 배치 호출) — 이 도메인은 자체 컨트롤러 없이 다른 도메인에 데이터를 공급하는 역할.
