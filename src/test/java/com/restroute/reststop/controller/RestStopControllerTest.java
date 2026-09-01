@@ -7,8 +7,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.restroute.reststop.controller.response.RestStopDetailViewResponse;
+import com.restroute.reststop.controller.response.RestStopNearbyItemResponse;
 import com.restroute.reststop.domain.RestStopEntity;
+import com.restroute.reststop.service.RestStopNearbyQueryService;
 import com.restroute.reststop.service.RestStopQueryService;
+import com.restroute.reststop.service.dto.RestStopInterest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,11 +29,15 @@ class RestStopControllerTest {
     @Mock
     private RestStopQueryService restStopQueryService;
 
+    @Mock
+    private RestStopNearbyQueryService restStopNearbyQueryService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new RestStopController(restStopQueryService))
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                        new RestStopController(restStopQueryService, restStopNearbyQueryService))
                 .build();
     }
 
@@ -113,5 +120,37 @@ class RestStopControllerTest {
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /api/rest-stops/nearby는 파라미터를 그대로 서비스에 넘기고 결과를 반환한다")
+    void getNearbyRestStops_delegatesToServiceWithParsedParams() throws Exception {
+        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
+        RestStopNearbyItemResponse response =
+                RestStopNearbyItemResponse.of(restStop, 1200.0, null, true, false, false, null, null);
+        when(restStopNearbyQueryService.findNearby(37.5, 127.0, "안성", RestStopInterest.EV))
+                .thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/rest-stops/nearby")
+                        .param("originLat", "37.5")
+                        .param("originLng", "127.0")
+                        .param("name", "안성")
+                        .param("interest", "EV"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data[0].unitName").value("서울만남(부산)휴게소"))
+                .andExpect(jsonPath("$.data[0].distanceMeters").value(1200.0))
+                .andExpect(jsonPath("$.data[0].topTrafficTier").value(true));
+    }
+
+    @Test
+    @DisplayName("GET /api/rest-stops/nearby는 파라미터가 하나도 없어도 동작한다")
+    void getNearbyRestStops_worksWithoutAnyParams() throws Exception {
+        when(restStopNearbyQueryService.findNearby(null, null, null, null)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/rest-stops/nearby"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data").isArray());
     }
 }
