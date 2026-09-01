@@ -63,3 +63,47 @@ export function badgesFor(item) {
 
     return badges;
 }
+
+/**
+ * "이름·거리로 찾기" 연료 선택 팝업에서 고르는 관심 항목 4개.
+ */
+export const INTEREST_OPTIONS = [
+    { key: 'EV', label: 'EV' },
+    { key: 'GASOLINE', label: '휘발유' },
+    { key: 'DIESEL', label: '경유' },
+    { key: 'LPG', label: 'LPG' }
+];
+
+const FUEL_INTEREST_LABEL_BY_KEY = {
+    GASOLINE: '휘발유',
+    DIESEL: '경유',
+    LPG: 'LPG'
+};
+
+/**
+ * "이름·거리로 찾기" 목록(/api/rest-stops/nearby 응답) 카드에 붙일 배지 목록. 규모·이용량·볼거리·
+ * 이벤트는 항상 계산되고, 마지막 하나(EV 충전 개수 또는 유가)는 고른 관심 항목에 한해서만 붙는다.
+ */
+export function nearbyBadgesFor(item, interest) {
+    const badges = [];
+
+    if (item.sizeTier === 'LARGE') {
+        badges.push({ key: 'SIZE_LARGE', label: '규모 큰 곳' });
+    }
+    if (item.topTrafficTier === true) {
+        badges.push({ key: 'TOP_TRAFFIC', label: '이용량 상위 10%' });
+    }
+    if (item.hasTheme === true) {
+        badges.push({ key: 'HAS_THEME', label: '볼거리 있음' });
+    }
+    if (item.hasEvent === true) {
+        badges.push({ key: 'HAS_EVENT', label: '이벤트 진행중' });
+    }
+    if (interest === 'EV' && Number.isFinite(item.evChargerCount) && item.evChargerCount > 0) {
+        badges.push({ key: 'EV_COUNT', label: `EV 충전 ${item.evChargerCount}대` });
+    } else if (FUEL_INTEREST_LABEL_BY_KEY[interest] && item.fuelBelowAverage === true) {
+        badges.push({ key: 'FUEL_BELOW_AVERAGE', label: `${FUEL_INTEREST_LABEL_BY_KEY[interest]} 평균보다 저렴` });
+    }
+
+    return badges;
+}

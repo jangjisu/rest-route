@@ -7,9 +7,8 @@ import { initThemeToggle } from './theme.js';
 import { requestCurrentPosition } from './finder-geolocation.js';
 import { formatDistance, latLngCoordinateOf, sortByDistance } from './finder-distance.js';
 import { DESTINATION_CHIPS, resolveDestinationQuery } from './finder-destination-chips.js';
-import { CONDITION_FILTERS, badgesFor, filterItems } from './finder-condition.js';
-import { createFinderRestStopListRequest } from './finder-rest-stop-list-request.js';
-import { createRestStopNameSearchRequest } from './rest-stop-name-search-request.js';
+import { CONDITION_FILTERS, INTEREST_OPTIONS, badgesFor, filterItems, nearbyBadgesFor } from './finder-condition.js';
+import { createFinderRestStopNearbyRequest } from './finder-rest-stop-nearby-request.js';
 import { createRouteRestStopRequest } from './route-rest-stop-request.js';
 
 function showScreen(screenName) {
@@ -38,7 +37,18 @@ function setStatus(element, message) {
     element.textContent = message;
 }
 
-const BADGE_COLOR_CLASS_BY_KEY = {
+// "이름·거리로 찾기"(nearby) 카드용 색상 — 상세 패널(index.html)과 같은 톤으로 맞춘 것들이 섞여
+// 있어서, "목적지로 추천받기"용 맵과 색이 다른 배지가 있다(예: 이용량 상위 10%).
+const MODE1_BADGE_COLOR_CLASS_BY_KEY = {
+    SIZE_LARGE: 'finder-badge-size',
+    TOP_TRAFFIC: 'finder-badge-warn',
+    HAS_THEME: 'finder-badge-accent',
+    HAS_EVENT: 'finder-badge-event',
+    EV_COUNT: 'finder-badge-ev',
+    FUEL_BELOW_AVERAGE: 'finder-badge-savings'
+};
+
+const MODE2_BADGE_COLOR_CLASS_BY_KEY = {
     SIZE_LARGE: 'finder-badge-size',
     TOP_TRAFFIC: 'finder-badge-traffic',
     FUEL_CHEAPEST: 'finder-badge-accent',
@@ -47,11 +57,11 @@ const BADGE_COLOR_CLASS_BY_KEY = {
     HAS_FOOD: 'finder-badge-food'
 };
 
-function renderBadges(container, item) {
-    badgesFor(item).forEach((badge) => {
+function renderBadges(container, badges, colorClassByKey) {
+    badges.forEach((badge) => {
         const span = document.createElement('span');
         span.className = 'finder-badge';
-        const colorClass = BADGE_COLOR_CLASS_BY_KEY[badge.key];
+        const colorClass = colorClassByKey[badge.key];
         if (colorClass) {
             span.classList.add(colorClass);
         }
@@ -60,7 +70,7 @@ function renderBadges(container, item) {
     });
 }
 
-function renderResultCard({ name, routeLabel, distanceLabel, badgeItem }) {
+function renderResultCard({ name, routeLabel, distanceLabel, badges, colorClassByKey }) {
     const li = document.createElement('li');
     li.className = 'finder-result-card';
 
@@ -81,7 +91,7 @@ function renderResultCard({ name, routeLabel, distanceLabel, badgeItem }) {
 
     const badgeRow = document.createElement('div');
     badgeRow.className = 'finder-result-badges';
-    renderBadges(badgeRow, badgeItem);
+    renderBadges(badgeRow, badges, colorClassByKey);
     if (badgeRow.childElementCount > 0) {
         main.appendChild(badgeRow);
     }
@@ -114,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const mode1ErrorEl = document.getElementById('finderPermissionMode1Error');
     let mode1Origin = null;
+    let mode1Interest = null;
 
     document.getElementById('finderPermissionMode1Close')?.addEventListener('click', () => {
         closeDialogById('finderPermissionMode1');
@@ -121,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('finderPermissionMode1Skip')?.addEventListener('click', () => {
         mode1Origin = null;
         closeDialogById('finderPermissionMode1');
-        enterMode1();
+        openDialogById('finderInterestPopup');
     });
     document.getElementById('finderPermissionMode1Allow')?.addEventListener('click', async () => {
         setStatus(mode1ErrorEl, '');
@@ -131,7 +142,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         mode1Origin = result.granted ? { latitude: result.latitude, longitude: result.longitude } : null;
         closeDialogById('finderPermissionMode1');
+        openDialogById('finderInterestPopup');
+    });
+
+    /* ---------- 연료 선택 팝업(팝업 2, 신규) ---------- */
+
+    const interestChipsEl = document.getElementById('finderInterestChips');
+    INTEREST_OPTIONS.forEach((option) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'finder-chip';
+        button.textContent = option.label;
+        button.addEventListener('click', () => {
+            mode1Interest = option.key;
+            closeDialogById('finderInterestPopup');
+            enterMode1();
+        });
+        interestChipsEl?.appendChild(button);
+    });
+    document.getElementById('finderInterestSkip')?.addEventListener('click', () => {
+        mode1Interest = null;
+        closeDialogById('finderInterestPopup');
         enterMode1();
+    });
+    document.getElementById('finderInterestClose')?.addEventListener('click', () => {
+        closeDialogById('finderInterestPopup');
+        showScreen('landing');
     });
 
     /* ---------- 위치 동의 팝업: 목적지로 추천받기 ---------- */
@@ -165,42 +201,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const mode1SearchInputEl = document.getElementById('finderMode1SearchInput');
     const mode1StatusEl = document.getElementById('finderMode1Status');
     const mode1ListEl = document.getElementById('finderMode1List');
-    let mode1AllRestStops = [];
 
-    const restStopListRequest = createFinderRestStopListRequest({
+    const nearbyRequest = createFinderRestStopNearbyRequest({
         onState: (state) => {
             if (state.status === 'loading') {
-                setStatus(mode1StatusEl, '불러오는 중...');
+                setStatus(mode1StatusEl, mode1SearchInputEl.value.trim() ? '검색 중...' : '불러오는 중...');
                 return;
             }
             if (state.status === 'error') {
                 setStatus(mode1StatusEl, '휴게소 목록을 불러오지 못했어요.');
                 return;
             }
-            mode1AllRestStops = state.restStops;
-            renderMode1List(mode1AllRestStops.length === 0 ? [] : sortByDistance(mode1AllRestStops, mode1Origin));
-        }
-    });
-
-    const nameSearchRequest = createRestStopNameSearchRequest({
-        onState: (state) => {
-            if (state.status === 'loading') {
-                setStatus(mode1StatusEl, '검색 중...');
-                return;
-            }
-            if (state.status === 'error') {
-                setStatus(mode1StatusEl, '검색에 실패했어요.');
-                return;
-            }
-            const restStops = mode1Origin ? sortByDistance(state.restStops, mode1Origin) : state.restStops;
-            renderMode1List(restStops);
+            renderMode1List(state.restStops);
         }
     });
 
     function renderMode1List(restStops) {
         mode1ListEl.innerHTML = '';
         if (restStops.length === 0) {
-            setStatus(mode1StatusEl, mode1Origin || mode1SearchInputEl.value.trim() !== '' ? '검색 결과가 없어요.' : '');
+            setStatus(mode1StatusEl, '검색 결과가 없어요.');
             return;
         }
         setStatus(mode1StatusEl, '');
@@ -212,9 +231,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     distanceLabel: Number.isFinite(restStop.distanceMeters)
                         ? formatDistance(restStop.distanceMeters)
                         : '',
-                    badgeItem: restStop
+                    badges: nearbyBadgesFor(restStop, mode1Interest),
+                    colorClassByKey: MODE1_BADGE_COLOR_CLASS_BY_KEY
                 })
             );
+        });
+    }
+
+    function runMode1Query(name) {
+        const trimmedName = (name ?? '').trim();
+        if (!mode1Origin && trimmedName === '') {
+            mode1ListEl.innerHTML = '';
+            setStatus(mode1StatusEl, '');
+            return;
+        }
+        nearbyRequest.load({
+            originLat: mode1Origin?.latitude,
+            originLng: mode1Origin?.longitude,
+            name: trimmedName,
+            interest: mode1Interest
         });
     }
 
@@ -228,29 +263,18 @@ document.addEventListener('DOMContentLoaded', () => {
             mode1EmptyStateEl.hidden = true;
             mode1SubHeadingEl.hidden = false;
             mode1SubHeadingEl.textContent = '내 위치 기준 · 가까운 순';
-            restStopListRequest.load();
         } else {
             mode1EmptyStateEl.hidden = false;
             mode1SubHeadingEl.hidden = true;
         }
+        runMode1Query('');
     }
 
     let mode1SearchDebounceTimer;
     mode1SearchInputEl?.addEventListener('input', () => {
         clearTimeout(mode1SearchDebounceTimer);
         const query = mode1SearchInputEl.value.trim();
-
-        if (query === '') {
-            if (mode1Origin) {
-                renderMode1List(sortByDistance(mode1AllRestStops, mode1Origin));
-            } else {
-                mode1ListEl.innerHTML = '';
-                setStatus(mode1StatusEl, '');
-            }
-            return;
-        }
-
-        mode1SearchDebounceTimer = setTimeout(() => nameSearchRequest.load(query), 250);
+        mode1SearchDebounceTimer = setTimeout(() => runMode1Query(query), 250);
     });
 
     document.getElementById('finderMode1Back')?.addEventListener('click', () => {
@@ -322,7 +346,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 내 위치 기준 직선 거리(sortByDistance가 채운 distanceMeters). 경로 매칭용
                     // 오차값인 distanceFromRouteMeters는 진행 거리가 아니라서 쓰지 않는다.
                     distanceLabel: Number.isFinite(item.distanceMeters) ? formatDistance(item.distanceMeters) : '',
-                    badgeItem: item
+                    badges: badgesFor(item),
+                    colorClassByKey: MODE2_BADGE_COLOR_CLASS_BY_KEY
                 })
             );
         });

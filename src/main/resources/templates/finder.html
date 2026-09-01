@@ -105,6 +105,27 @@
         </div>
     </dialog>
 
+    <!-- 연료 선택 팝업(팝업 2, 신규) — 위치 동의 팝업 다음에 항상 뜬다 -->
+    <dialog id="finderInterestPopup" class="finder-permission-dialog" aria-labelledby="finderInterestTitle">
+        <button id="finderInterestClose" class="finder-dialog-close" type="button" aria-label="닫기">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <line x1="5" y1="5" x2="19" y2="19"></line>
+                <line x1="19" y1="5" x2="5" y2="19"></line>
+            </svg>
+        </button>
+        <div class="finder-permission-body">
+            <svg class="finder-permission-icon finder-permission-icon-primary" width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <rect x="10" y="10" width="14" height="20" rx="2" stroke="currentColor" stroke-width="2.4"></rect>
+                <path d="M24 16h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path>
+                <line x1="13" y1="15" x2="21" y2="15" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></line>
+            </svg>
+            <h2 id="finderInterestTitle" class="finder-permission-title">지금 주행 중이신 차의<br>연료는 무엇인가요?</h2>
+            <p class="finder-permission-desc">휘발유·경유·LPG는 저렴한 곳을,<br>EV는 충전기 있는 곳을 알려드려요.</p>
+            <div id="finderInterestChips" class="finder-chip-row finder-chip-row-center"></div>
+            <button id="finderInterestSkip" class="finder-dialog-skip" type="button">건너뛰기</button>
+        </div>
+    </dialog>
+
     <!-- 위치 동의 팝업: 목적지로 추천받기 (필수) -->
     <dialog id="finderPermissionMode2" class="finder-permission-dialog" aria-labelledby="finderPermissionMode2Title">
         <button id="finderPermissionMode2Close" class="finder-dialog-close" type="button" aria-label="닫기">
