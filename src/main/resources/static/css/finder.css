@@ -10,15 +10,11 @@
     min-height: 100vh;
 
     /* 배지 카테고리별 색상 — 앱 전역 --rr- 토큰에 없는 종류만 새로 정의한다.
-       규모=보라, 이용량=파랑, EV=청록, 먹거리=호박색. 유가 배지는 기존 accent/success 토큰 재사용. */
+       규모=보라, EV=청록. 유가/이용량 배지는 기존 accent/success/warning 토큰 재사용. */
     --finder-badge-size-bg: oklch(95% 0.03 300);
     --finder-badge-size-text: oklch(40% 0.12 300);
-    --finder-badge-traffic-bg: oklch(95% 0.03 250);
-    --finder-badge-traffic-text: oklch(42% 0.12 250);
     --finder-badge-ev-bg: oklch(94% 0.04 195);
     --finder-badge-ev-text: oklch(38% 0.09 195);
-    --finder-badge-food-bg: oklch(95% 0.04 75);
-    --finder-badge-food-text: oklch(42% 0.11 75);
     --finder-badge-event-bg: oklch(94% 0.03 220);
     --finder-badge-event-text: oklch(42% 0.11 220);
 }
@@ -27,12 +23,8 @@
     :root:not([data-theme="light"]) .finder-body {
         --finder-badge-size-bg: oklch(28% 0.06 300);
         --finder-badge-size-text: oklch(80% 0.12 300);
-        --finder-badge-traffic-bg: oklch(28% 0.06 250);
-        --finder-badge-traffic-text: oklch(78% 0.12 250);
         --finder-badge-ev-bg: oklch(27% 0.05 195);
         --finder-badge-ev-text: oklch(78% 0.1 195);
-        --finder-badge-food-bg: oklch(29% 0.06 75);
-        --finder-badge-food-text: oklch(80% 0.11 75);
         --finder-badge-event-bg: oklch(27% 0.05 220);
         --finder-badge-event-text: oklch(78% 0.1 220);
     }
@@ -41,12 +33,8 @@
 :root[data-theme="dark"] .finder-body {
     --finder-badge-size-bg: oklch(28% 0.06 300);
     --finder-badge-size-text: oklch(80% 0.12 300);
-    --finder-badge-traffic-bg: oklch(28% 0.06 250);
-    --finder-badge-traffic-text: oklch(78% 0.12 250);
     --finder-badge-ev-bg: oklch(27% 0.05 195);
     --finder-badge-ev-text: oklch(78% 0.1 195);
-    --finder-badge-food-bg: oklch(29% 0.06 75);
-    --finder-badge-food-text: oklch(80% 0.11 75);
     --finder-badge-event-bg: oklch(27% 0.05 220);
     --finder-badge-event-text: oklch(78% 0.1 220);
 }
@@ -217,19 +205,9 @@
     color: var(--finder-badge-size-text);
 }
 
-.finder-badge-traffic {
-    background: var(--finder-badge-traffic-bg);
-    color: var(--finder-badge-traffic-text);
-}
-
 .finder-badge-ev {
     background: var(--finder-badge-ev-bg);
     color: var(--finder-badge-ev-text);
-}
-
-.finder-badge-food {
-    background: var(--finder-badge-food-bg);
-    color: var(--finder-badge-food-text);
 }
 
 .finder-badge-event {
@@ -237,8 +215,7 @@
     color: var(--finder-badge-event-text);
 }
 
-/* 이용량 상위 10%(이름·거리로 찾기 목록) — 상세 패널(index.html)과 같은 warning 톤으로 맞춘다.
-   목적지로 추천받기의 같은 태그는 .finder-badge-traffic(파랑)을 그대로 쓴다 — 화면이 다르다. */
+/* 이용량 상위 10% — mode1/mode2 둘 다 상세 패널(index.html)과 같은 warning 톤을 쓴다(v2부터 통일). */
 .finder-badge-warn {
     background: var(--rr-color-warning-bg);
     color: var(--rr-color-warning-text);
@@ -335,6 +312,58 @@
     margin: 12px 0 0;
     font-size: 13px;
     color: var(--rr-color-accent-strong);
+}
+
+/* --- 목적지 후보 팝업(v2 신규) --- */
+
+.finder-candidate-body {
+    padding: 32px 20px 24px;
+    text-align: left;
+}
+
+.finder-candidate-body .finder-permission-title {
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.finder-candidate-body .finder-status {
+    margin: 20px 0;
+}
+
+.finder-candidate-list {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.finder-candidate-item {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--rr-color-border);
+    background: var(--rr-color-surface-tint);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.finder-candidate-item-name {
+    margin: 0 0 3px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--rr-color-text-strong);
+}
+
+.finder-candidate-item-address {
+    margin: 0;
+    font-size: 12px;
+    color: var(--rr-color-text-secondary);
 }
 
 /* --- 버튼 --- */

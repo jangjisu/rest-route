@@ -148,6 +148,21 @@
         </div>
     </dialog>
 
+    <!-- 목적지 후보 팝업(v2 신규) — 목적지를 직접 입력해 검색했을 때만 뜬다 -->
+    <dialog id="finderDestinationCandidatePopup" class="finder-permission-dialog" aria-labelledby="finderDestinationCandidateTitle">
+        <button id="finderDestinationCandidateClose" class="finder-dialog-close" type="button" aria-label="닫기">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <line x1="5" y1="5" x2="19" y2="19"></line>
+                <line x1="19" y1="5" x2="5" y2="19"></line>
+            </svg>
+        </button>
+        <div class="finder-candidate-body">
+            <h2 id="finderDestinationCandidateTitle" class="finder-permission-title">목적지를 선택해주세요</h2>
+            <p id="finderDestinationCandidateStatus" class="finder-status" aria-live="polite" hidden></p>
+            <ul id="finderDestinationCandidateList" class="finder-candidate-list"></ul>
+        </div>
+    </dialog>
+
     <!-- 1. 이름·거리로 찾기 -->
     <section id="finderScreenMode1" class="finder-screen" data-finder-screen="mode1" hidden>
         <div class="finder-mode1-sticky">
