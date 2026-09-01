@@ -5,11 +5,24 @@
 import { closeDialogById, openDialogById } from './utils.js';
 import { initThemeToggle } from './theme.js';
 import { requestCurrentPosition } from './finder-geolocation.js';
-import { formatDistance, latLngCoordinateOf, sortByDistance } from './finder-distance.js';
-import { DESTINATION_CHIPS, resolveDestinationQuery } from './finder-destination-chips.js';
-import { CONDITION_FILTERS, INTEREST_OPTIONS, badgesFor, filterItems, nearbyBadgesFor } from './finder-condition.js';
+import { formatDistance } from './finder-distance.js';
+import { DESTINATION_CHIPS } from './finder-destination-chips.js';
+import {
+    INTEREST_OPTIONS,
+    mode2BadgesFor,
+    mode2ConditionFilters,
+    mode2FilterItems,
+    nearbyBadgesFor
+} from './finder-condition.js';
 import { createFinderRestStopNearbyRequest } from './finder-rest-stop-nearby-request.js';
-import { createRouteRestStopRequest } from './route-rest-stop-request.js';
+import { createRouteRestStopListRequest } from './finder-route-rest-stop-list-request.js';
+import { createPlaceSearchRequest } from './place-search-request.js';
+
+const FUEL_INTERESTS = new Set(['GASOLINE', 'DIESEL', 'LPG']);
+
+function fuelTypeParam(interest) {
+    return FUEL_INTERESTS.has(interest) ? interest : undefined;
+}
 
 function showScreen(screenName) {
     document.querySelectorAll('[data-finder-screen]').forEach((section) => {
@@ -37,8 +50,7 @@ function setStatus(element, message) {
     element.textContent = message;
 }
 
-// "이름·거리로 찾기"(nearby) 카드용 색상 — 상세 패널(index.html)과 같은 톤으로 맞춘 것들이 섞여
-// 있어서, "목적지로 추천받기"용 맵과 색이 다른 배지가 있다(예: 이용량 상위 10%).
+// "이름·거리로 찾기"(nearby) 카드용 색상. mode2와 판정 함수·색상 맵이 완전히 분리돼 있다.
 const MODE1_BADGE_COLOR_CLASS_BY_KEY = {
     SIZE_LARGE: 'finder-badge-size',
     TOP_TRAFFIC: 'finder-badge-warn',
@@ -48,13 +60,14 @@ const MODE1_BADGE_COLOR_CLASS_BY_KEY = {
     FUEL_BELOW_AVERAGE: 'finder-badge-savings'
 };
 
+// v2부터 이용량 상위 10%는 mode1과 같은 색(warn)으로 통일했다. 제일 저렴/평균보다 저렴도 결국 같은
+// "저렴" 태그라 색을 통일했다(savings) — CHEAPEST/BELOW_AVERAGE는 문구만 다르고 색은 같다.
 const MODE2_BADGE_COLOR_CLASS_BY_KEY = {
     SIZE_LARGE: 'finder-badge-size',
-    TOP_TRAFFIC: 'finder-badge-traffic',
-    FUEL_CHEAPEST: 'finder-badge-accent',
+    TOP_TRAFFIC: 'finder-badge-warn',
+    FUEL_CHEAPEST: 'finder-badge-savings',
     FUEL_BELOW_AVERAGE: 'finder-badge-savings',
-    EV_CHARGER: 'finder-badge-ev',
-    HAS_FOOD: 'finder-badge-food'
+    EV_CHARGER: 'finder-badge-ev'
 };
 
 function renderBadges(container, badges, colorClassByKey) {
@@ -125,12 +138,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const mode1ErrorEl = document.getElementById('finderPermissionMode1Error');
     let mode1Origin = null;
     let mode1Interest = null;
+    // 연료 선택 팝업은 mode1/mode2가 공유하므로, 팝업을 열기 전에 어느 화면으로 이어질지 표시해둔다.
+    let interestPopupTargetMode = 'mode1';
+    let mode2Interest = null;
 
     document.getElementById('finderPermissionMode1Close')?.addEventListener('click', () => {
         closeDialogById('finderPermissionMode1');
     });
     document.getElementById('finderPermissionMode1Skip')?.addEventListener('click', () => {
         mode1Origin = null;
+        interestPopupTargetMode = 'mode1';
         closeDialogById('finderPermissionMode1');
         openDialogById('finderInterestPopup');
     });
@@ -141,11 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoading(false);
 
         mode1Origin = result.granted ? { latitude: result.latitude, longitude: result.longitude } : null;
+        interestPopupTargetMode = 'mode1';
         closeDialogById('finderPermissionMode1');
         openDialogById('finderInterestPopup');
     });
 
-    /* ---------- 연료 선택 팝업(팝업 2, 신규) ---------- */
+    /* ---------- 연료 선택 팝업 — mode1/mode2가 공유한다. 위치 동의 팝업 다음에 항상 뜬다 ---------- */
 
     const interestChipsEl = document.getElementById('finderInterestChips');
     INTEREST_OPTIONS.forEach((option) => {
@@ -154,16 +172,26 @@ document.addEventListener('DOMContentLoaded', () => {
         button.className = 'finder-chip';
         button.textContent = option.label;
         button.addEventListener('click', () => {
-            mode1Interest = option.key;
             closeDialogById('finderInterestPopup');
-            enterMode1();
+            if (interestPopupTargetMode === 'mode2') {
+                mode2Interest = option.key;
+                enterMode2();
+            } else {
+                mode1Interest = option.key;
+                enterMode1();
+            }
         });
         interestChipsEl?.appendChild(button);
     });
     document.getElementById('finderInterestSkip')?.addEventListener('click', () => {
-        mode1Interest = null;
         closeDialogById('finderInterestPopup');
-        enterMode1();
+        if (interestPopupTargetMode === 'mode2') {
+            mode2Interest = null;
+            enterMode2();
+        } else {
+            mode1Interest = null;
+            enterMode1();
+        }
     });
     document.getElementById('finderInterestClose')?.addEventListener('click', () => {
         closeDialogById('finderInterestPopup');
@@ -190,8 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         mode2Origin = { latitude: result.latitude, longitude: result.longitude };
+        interestPopupTargetMode = 'mode2';
         closeDialogById('finderPermissionMode2');
-        enterMode2();
+        openDialogById('finderInterestPopup');
     });
 
     /* ---------- 1. 이름·거리로 찾기 ---------- */
@@ -285,7 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const destinationInputEl = document.getElementById('finderMode2DestinationInput');
     const destinationChipsEl = document.getElementById('finderDestinationChips');
-    const conditionSectionEl = document.getElementById('finderMode2ConditionSection');
+    const mode2FilterSectionEl = document.getElementById('finderMode2FilterSection');
+    const mode2ResultsSectionEl = document.getElementById('finderMode2ResultsSection');
     const mode2ResultsHeadingEl = document.getElementById('finderMode2ResultsHeading');
     const mode2FiltersEl = document.getElementById('finderConditionFilters');
     const mode2StatusEl = document.getElementById('finderMode2Status');
@@ -293,45 +323,60 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedFilterKeys = new Set();
     let mode2RestStopItems = [];
 
+    // 조건 필터(sticky 영역)와 결과 목록(스크롤 영역)은 서로 다른 컨테이너지만 항상 같이 나타나고
+    // 같이 숨겨진다 — 검색 전에는 둘 다 숨김, 결과가 오면(성공/실패 모두) 둘 다 보여준다.
+    function setMode2ResultsVisible(visible) {
+        mode2FilterSectionEl.hidden = !visible;
+        mode2ResultsSectionEl.hidden = !visible;
+    }
+
     DESTINATION_CHIPS.forEach((chip) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'finder-chip';
         button.textContent = chip.label;
-        button.addEventListener('click', () => loadMode2Results(chip.destinationQuery, chip.label));
+        button.addEventListener('click', () =>
+            loadMode2Results({ destinationQuery: chip.destinationQuery, displayLabel: chip.label })
+        );
         destinationChipsEl?.appendChild(button);
     });
 
-    CONDITION_FILTERS.forEach((filter) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'finder-chip';
-        button.setAttribute('aria-pressed', 'false');
-        button.textContent = filter.label;
-        button.addEventListener('click', () => {
-            const isSelected = selectedFilterKeys.has(filter.key);
-            if (isSelected) {
-                selectedFilterKeys.delete(filter.key);
-            } else {
-                selectedFilterKeys.add(filter.key);
-            }
-            button.setAttribute('aria-pressed', String(!isSelected));
-            renderMode2List();
+    function renderMode2Filters() {
+        if (!mode2FiltersEl) {
+            return;
+        }
+        mode2FiltersEl.innerHTML = '';
+        mode2ConditionFilters(mode2Interest).forEach((filter) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'finder-chip';
+            button.setAttribute('aria-pressed', 'false');
+            button.textContent = filter.label;
+            button.addEventListener('click', () => {
+                const isSelected = selectedFilterKeys.has(filter.key);
+                if (isSelected) {
+                    selectedFilterKeys.delete(filter.key);
+                } else {
+                    selectedFilterKeys.add(filter.key);
+                }
+                button.setAttribute('aria-pressed', String(!isSelected));
+                renderMode2List();
+            });
+            mode2FiltersEl.appendChild(button);
         });
-        mode2FiltersEl?.appendChild(button);
-    });
+    }
 
     function enterMode2() {
         showScreen('mode2');
         destinationInputEl.value = '';
-        conditionSectionEl.hidden = true;
+        setMode2ResultsVisible(false);
         mode2ListEl.innerHTML = '';
         selectedFilterKeys.clear();
-        mode2FiltersEl?.querySelectorAll('.finder-chip').forEach((button) => button.setAttribute('aria-pressed', 'false'));
+        renderMode2Filters();
     }
 
     function renderMode2List() {
-        const filtered = filterItems(mode2RestStopItems, [...selectedFilterKeys]);
+        const filtered = mode2FilterItems(mode2RestStopItems, [...selectedFilterKeys]);
         mode2ListEl.innerHTML = '';
         if (filtered.length === 0) {
             setStatus(mode2StatusEl, '조건에 맞는 휴게소가 없어요.');
@@ -343,17 +388,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderResultCard({
                     name: item.unitName,
                     routeLabel: item.routeName,
-                    // 내 위치 기준 직선 거리(sortByDistance가 채운 distanceMeters). 경로 매칭용
-                    // 오차값인 distanceFromRouteMeters는 진행 거리가 아니라서 쓰지 않는다.
                     distanceLabel: Number.isFinite(item.distanceMeters) ? formatDistance(item.distanceMeters) : '',
-                    badges: badgesFor(item),
+                    badges: mode2BadgesFor(item, mode2Interest),
                     colorClassByKey: MODE2_BADGE_COLOR_CLASS_BY_KEY
                 })
             );
         });
     }
 
-    const routeRestStopRequest = createRouteRestStopRequest({
+    const routeRestStopListRequest = createRouteRestStopListRequest({
         onState: (state) => {
             if (state.status === 'loading') {
                 setLoading(true);
@@ -361,9 +404,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             setLoading(false);
-            conditionSectionEl.hidden = false;
+            setMode2ResultsVisible(true);
             selectedFilterKeys.clear();
-            mode2FiltersEl?.querySelectorAll('.finder-chip').forEach((button) => button.setAttribute('aria-pressed', 'false'));
+            renderMode2Filters();
 
             if (state.status === 'not-found') {
                 mode2RestStopItems = [];
@@ -378,21 +421,92 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const restStops = state.data.routes?.[0]?.restStops ?? [];
-            // 기본 정렬은 지금 내 위치로부터 가까운 순 — 목적지로 추천받기는 위치 정보를 이미
-            // 받아서 진행하므로 그 좌표를 그대로 재사용한다.
-            mode2RestStopItems = sortByDistance(restStops, mode2Origin, latLngCoordinateOf);
+            mode2RestStopItems = state.restStops;
             renderMode2List();
         }
     });
 
-    function loadMode2Results(destinationQuery, displayLabel) {
+    function loadMode2Results({ destinationQuery, destinationLat, destinationLng, destinationName, displayLabel }) {
         if (!mode2Origin) {
             showScreen('landing');
             return;
         }
         mode2ResultsHeadingEl.textContent = `${displayLabel} 방향 · 앞으로 가는 길`;
-        routeRestStopRequest.load(mode2Origin.latitude, mode2Origin.longitude, destinationQuery);
+        routeRestStopListRequest.load({
+            originLat: mode2Origin.latitude,
+            originLng: mode2Origin.longitude,
+            destinationQuery,
+            destinationLat,
+            destinationLng,
+            destinationName,
+            fuelType: fuelTypeParam(mode2Interest)
+        });
+    }
+
+    /* ---------- 목적지 후보 팝업(v2 신규) — 직접 입력한 목적지만 거친다 ---------- */
+
+    const candidateStatusEl = document.getElementById('finderDestinationCandidateStatus');
+    const candidateListEl = document.getElementById('finderDestinationCandidateList');
+
+    const placeSearchRequest = createPlaceSearchRequest({
+        onState: (state) => {
+            if (state.status === 'loading') {
+                candidateListEl.innerHTML = '';
+                setStatus(candidateStatusEl, '검색 중...');
+                return;
+            }
+            if (state.status === 'external-unavailable') {
+                candidateListEl.innerHTML = '';
+                setStatus(candidateStatusEl, '장소 검색을 잠시 이용할 수 없어요.');
+                return;
+            }
+            if (state.status !== 'success') {
+                candidateListEl.innerHTML = '';
+                setStatus(candidateStatusEl, '검색 결과를 불러오지 못했어요.');
+                return;
+            }
+            renderCandidates(state.candidates);
+        }
+    });
+
+    function renderCandidates(candidates) {
+        candidateListEl.innerHTML = '';
+        if (candidates.length === 0) {
+            setStatus(candidateStatusEl, '검색 결과가 없어요.');
+            return;
+        }
+        setStatus(candidateStatusEl, '');
+        candidates.forEach((candidate) => {
+            const li = document.createElement('li');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'finder-candidate-item';
+
+            const name = document.createElement('p');
+            name.className = 'finder-candidate-item-name';
+            name.textContent = candidate.name || '이름 정보 없음';
+            button.appendChild(name);
+
+            if (candidate.address) {
+                const address = document.createElement('p');
+                address.className = 'finder-candidate-item-address';
+                address.textContent = candidate.address;
+                button.appendChild(address);
+            }
+
+            button.addEventListener('click', () => {
+                closeDialogById('finderDestinationCandidatePopup');
+                loadMode2Results({
+                    destinationLat: candidate.latitude,
+                    destinationLng: candidate.longitude,
+                    destinationName: candidate.name,
+                    displayLabel: candidate.name || '목적지'
+                });
+            });
+
+            li.appendChild(button);
+            candidateListEl.appendChild(li);
+        });
     }
 
     document.getElementById('finderMode2DestinationSubmit')?.addEventListener('click', () => {
@@ -400,7 +514,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (query === '') {
             return;
         }
-        loadMode2Results(resolveDestinationQuery(query), query);
+        openDialogById('finderDestinationCandidatePopup');
+        placeSearchRequest.load(query);
+    });
+
+    document.getElementById('finderDestinationCandidateClose')?.addEventListener('click', () => {
+        closeDialogById('finderDestinationCandidatePopup');
     });
 
     document.getElementById('finderMode2Back')?.addEventListener('click', () => {
