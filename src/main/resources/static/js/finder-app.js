@@ -60,11 +60,12 @@ const MODE1_BADGE_COLOR_CLASS_BY_KEY = {
     FUEL_BELOW_AVERAGE: 'finder-badge-savings'
 };
 
-// v2부터 이용량 상위 10%는 mode1과 같은 색(warn)으로 통일했다.
+// v2부터 이용량 상위 10%는 mode1과 같은 색(warn)으로 통일했다. 제일 저렴/평균보다 저렴도 결국 같은
+// "저렴" 태그라 색을 통일했다(savings) — CHEAPEST/BELOW_AVERAGE는 문구만 다르고 색은 같다.
 const MODE2_BADGE_COLOR_CLASS_BY_KEY = {
     SIZE_LARGE: 'finder-badge-size',
     TOP_TRAFFIC: 'finder-badge-warn',
-    FUEL_CHEAPEST: 'finder-badge-accent',
+    FUEL_CHEAPEST: 'finder-badge-savings',
     FUEL_BELOW_AVERAGE: 'finder-badge-savings',
     EV_CHARGER: 'finder-badge-ev'
 };
@@ -313,13 +314,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const destinationInputEl = document.getElementById('finderMode2DestinationInput');
     const destinationChipsEl = document.getElementById('finderDestinationChips');
-    const conditionSectionEl = document.getElementById('finderMode2ConditionSection');
+    const mode2FilterSectionEl = document.getElementById('finderMode2FilterSection');
+    const mode2ResultsSectionEl = document.getElementById('finderMode2ResultsSection');
     const mode2ResultsHeadingEl = document.getElementById('finderMode2ResultsHeading');
     const mode2FiltersEl = document.getElementById('finderConditionFilters');
     const mode2StatusEl = document.getElementById('finderMode2Status');
     const mode2ListEl = document.getElementById('finderMode2List');
     const selectedFilterKeys = new Set();
     let mode2RestStopItems = [];
+
+    // 조건 필터(sticky 영역)와 결과 목록(스크롤 영역)은 서로 다른 컨테이너지만 항상 같이 나타나고
+    // 같이 숨겨진다 — 검색 전에는 둘 다 숨김, 결과가 오면(성공/실패 모두) 둘 다 보여준다.
+    function setMode2ResultsVisible(visible) {
+        mode2FilterSectionEl.hidden = !visible;
+        mode2ResultsSectionEl.hidden = !visible;
+    }
 
     DESTINATION_CHIPS.forEach((chip) => {
         const button = document.createElement('button');
@@ -360,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function enterMode2() {
         showScreen('mode2');
         destinationInputEl.value = '';
-        conditionSectionEl.hidden = true;
+        setMode2ResultsVisible(false);
         mode2ListEl.innerHTML = '';
         selectedFilterKeys.clear();
         renderMode2Filters();
@@ -395,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             setLoading(false);
-            conditionSectionEl.hidden = false;
+            setMode2ResultsVisible(true);
             selectedFilterKeys.clear();
             renderMode2Filters();
 

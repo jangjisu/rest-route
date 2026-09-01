@@ -80,12 +80,15 @@ export function mode2BadgesFor(item, interest) {
 }
 
 /**
- * "목적지로 추천받기" 조건 필터 칩 구성. 규모는 항상 뜨고, 나머지 한 자리는 배지와 똑같이 관심
- * 항목에 따라 EV 충전 또는 유가 저렴한 곳만 뜬다(둘 다 뜨는 일은 없다). "유가 저렴한 곳" 하나가
- * 제일 저렴/평균보다 저렴을 모두 매칭한다 — 별도로 "제일 저렴" 필터는 없다.
+ * "목적지로 추천받기" 조건 필터 칩 구성. 규모·이용량 2개는 배지처럼 항상 뜨고, 나머지 한 자리만
+ * 관심 항목에 따라 EV 충전 또는 유가 저렴한 곳으로 바뀐다(둘 다 뜨는 일은 없다). "유가 저렴한 곳"
+ * 하나가 제일 저렴/평균보다 저렴을 모두 매칭한다 — 별도로 "제일 저렴" 필터는 없다.
  */
 export function mode2ConditionFilters(interest) {
-    const filters = [{ key: 'LARGE_SIZE', label: '규모 큰 곳' }];
+    const filters = [
+        { key: 'LARGE_SIZE', label: '규모 큰 곳' },
+        { key: 'TOP_TRAFFIC', label: '이용량 많은 곳' }
+    ];
     if (interest === 'EV') {
         filters.push({ key: 'EV_CHARGER', label: 'EV 충전' });
     } else if (FUEL_INTEREST_LABEL_BY_KEY[interest]) {
@@ -98,6 +101,8 @@ export function mode2MatchesFilter(item, filterKey) {
     switch (filterKey) {
         case 'LARGE_SIZE':
             return item.sizeTier === 'LARGE';
+        case 'TOP_TRAFFIC':
+            return item.topTrafficTier === true;
         case 'EV_CHARGER':
             return Number.isFinite(item.evChargerCount) && item.evChargerCount > 0;
         case 'CHEAP_FUEL':

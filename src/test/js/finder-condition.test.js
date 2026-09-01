@@ -100,10 +100,23 @@ test('mode2BadgesFor distinguishes CHEAPEST from BELOW_AVERAGE only when a fuel 
     assert.deepEqual(mode2BadgesFor(routeItem({ fuelPriceTier: 'CHEAPEST' }), null), []);
 });
 
-test('mode2ConditionFilters always includes size, plus EV or cheap-fuel depending on interest', () => {
-    assert.deepEqual(mode2ConditionFilters(null).map((filter) => filter.key), ['LARGE_SIZE']);
-    assert.deepEqual(mode2ConditionFilters('EV').map((filter) => filter.key), ['LARGE_SIZE', 'EV_CHARGER']);
-    assert.deepEqual(mode2ConditionFilters('DIESEL').map((filter) => filter.key), ['LARGE_SIZE', 'CHEAP_FUEL']);
+test('mode2ConditionFilters always includes size and traffic, plus EV or cheap-fuel depending on interest', () => {
+    assert.deepEqual(mode2ConditionFilters(null).map((filter) => filter.key), ['LARGE_SIZE', 'TOP_TRAFFIC']);
+    assert.deepEqual(mode2ConditionFilters('EV').map((filter) => filter.key), [
+        'LARGE_SIZE',
+        'TOP_TRAFFIC',
+        'EV_CHARGER'
+    ]);
+    assert.deepEqual(mode2ConditionFilters('DIESEL').map((filter) => filter.key), [
+        'LARGE_SIZE',
+        'TOP_TRAFFIC',
+        'CHEAP_FUEL'
+    ]);
+});
+
+test('mode2MatchesFilter TOP_TRAFFIC matches topTrafficTier', () => {
+    assert.equal(mode2MatchesFilter(routeItem({ topTrafficTier: true }), 'TOP_TRAFFIC'), true);
+    assert.equal(mode2MatchesFilter(routeItem({ topTrafficTier: false }), 'TOP_TRAFFIC'), false);
 });
 
 test('mode2MatchesFilter CHEAP_FUEL matches either CHEAPEST or BELOW_AVERAGE, not a separate cheapest filter', () => {
