@@ -2,27 +2,12 @@
 domain: rest-stop
 aliases: ["휴게소", "rest-stop-core", "RestStop"]
 paths:
-  - "src/main/java/com/restroute/domain/RestStopEntity.java"
-  - "src/main/java/com/restroute/domain/RestStopDetailEntity.java"
-  - "src/main/java/com/restroute/domain/RestStopImageEntity.java"
-  - "src/main/java/com/restroute/domain/HighwayServiceAreaInfoEntity.java"
-  - "src/main/java/com/restroute/domain/RestStopProductSalesRankEntity.java"
-  - "src/main/java/com/restroute/domain/RestStopStoreSalesRankEntity.java"
-  - "src/main/java/com/restroute/repository/RestStop*.java"
-  - "src/main/java/com/restroute/repository/HighwayServiceAreaInfoRepository.java"
-  - "src/main/java/com/restroute/service/RestStop*.java"
-  - "src/main/java/com/restroute/service/HighwayServiceAreaInfoSyncService.java"
-  - "src/main/java/com/restroute/service/image/**"
-  - "src/main/java/com/restroute/service/salesranking/**"
-  - "src/main/java/com/restroute/service/backfill/**"
-  - "src/main/java/com/restroute/service/admin/AdminRestStopEditService.java"
-  - "src/main/java/com/restroute/controller/RestStop*.java"
-  - "src/main/java/com/restroute/controller/admin/AdminRestStop*.java"
-  - "src/main/java/com/restroute/controller/response/RestStop*.java"
-  - "src/main/java/com/restroute/controller/response/AdminRestStopEditableResponse.java"
-  - "src/main/java/com/restroute/scheduler/RestStopScheduler.java"
-  - "src/main/java/com/restroute/scheduler/RestStopStartupInitializer.java"
-related_domains: ["rest-stop-content", "oil-price", "ev-charger", "route"]
+  - "src/main/java/com/restroute/reststop/domain/**"
+  - "src/main/java/com/restroute/reststop/repository/**"
+  - "src/main/java/com/restroute/reststop/service/**"
+  - "src/main/java/com/restroute/reststop/controller/**"
+  - "src/main/java/com/restroute/reststop/scheduler/**"
+related_domains: ["rest-stop-content", "oil-price", "ev-charger", "route", "finder"]
 sources:
   - "DATA.md"
   - "DATA_LOOKUP_KEY_DESIGN.md"
@@ -83,7 +68,9 @@ sources:
 
 **사용자 조회 흐름**: 목록(`GET /api/rest-stops`) → 검색(`GET /api/rest-stops/search?name=`) → 상세 진입 시
 기본정보(`basic-info`)·영업시설(`facilities`)·이미지(`images/detail|list`)·판매순위(`sales-rankings`)를 화면 섹션별로
-각각 별도 API로 호출한다(하나의 통합 응답으로 묶지 않는 설계).
+각각 별도 API로 호출한다(하나의 통합 응답으로 묶지 않는 설계). 이와 별도로 모바일 `/finder` 페이지의 "이름·거리로
+찾기" 화면은 `GET /api/rest-stops/nearby` 하나로 목록+거리+배지 태그를 한 번에 받는다 — 이 엔드포인트의 상세 계약과
+소비 화면은 [[finder]] 문서 소관.
 
 **관리자 편집 흐름**: 관리자가 `GET .../editable`로 현재 값을 조회 → `PUT .../editable`로 저장(성공 시 두 엔티티 모두
 `admin_overridden=true`로 전환) → 필요 시 `DELETE .../editable/override`로 다시 자동 동기화 대상으로 되돌린다. 외부
@@ -172,6 +159,10 @@ API에 없는 휴게소는 `POST /api/admin/rest-stops`로 신규 생성하며 �
 - **route 도메인과의 결합**: `RouteOptionAssemblyService`(route 도메인)가 `RestStopAggregateQueryService`를 호출해
   EV차저/이미지/테마/이벤트/연관정보를 한 번에 조합받는다 — 예전에는 각 QueryService를 개별 호출했으나 리팩터링으로
   단일 진입점으로 교체됨(커밋 `94ab307`).
+- **finder 도메인과의 결합**: `RestStopNearbyQueryService`(이 도메인 소유)가 `RestStopAggregateQueryService` +
+  ev-charger/oil-price 조회를 조합해 `GET /api/rest-stops/nearby` 하나로 내려준다. 위치·이름·관심 항목(연료/EV)
+  파라미터가 전부 optional이며, 값이 없으면 해당 출력 필드를 `null`로 내려 프런트가 있으면 표시/없으면 생략하는
+  방식으로 처리한다(별도 API 분기 없음). 상세는 [[finder]] 문서.
 
 ## 8. 코드 경계와 진입점
 
@@ -188,6 +179,10 @@ API에 없는 휴게소는 `POST /api/admin/rest-stops`로 신규 생성하며 �
   `RestStopFacilityQueryService`, `RestStopSalesRankingQueryService`, `RestStopRelatedInfoQueryService`(연관 도메인
   N+1 없이 배치 조합), `RestStopAggregateQueryService`(route 등 외부 소비자를 위한 최상위 조합).
   `service/image/RestStopImageQueryService`, `RestStopImageCommandService`.
+- **근처 조회(finder 전용)**: `service/RestStopNearbyQueryService`, `service/dto/RestStopInterest`(EV/GASOLINE/DIESEL/
+  LPG), `controller/response/RestStopNearbyItemResponse`. `RestStopController`가 `getRestStops`/`searchRestStops`
+  (지도 화면용, 태그 없음)와 함께 `getNearbyRestStops`(`/nearby`, finder 화면용, 태그+거리 포함)를 소유 — 두 계열은
+  서로 대체하지 않고 각자의 소비 화면을 가진 별개 엔드포인트다.
 - **판매순위 업로드**: `service/salesranking/SalesRankingUploadService`, `util/SalesRankingRestStopNameNormalizer`.
 - **관리자 편집**: `service/admin/AdminRestStopEditService`.
 - **스케줄러/부트스트랩**: `scheduler/RestStopScheduler`(cron 등록), `scheduler/RestStopStartupInitializer`
