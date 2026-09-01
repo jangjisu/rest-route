@@ -2,9 +2,8 @@
 domain: route
 aliases: ["경로 휴게소 검색", "route-rest-stop"]
 paths:
-  - "src/main/java/com/restroute/controller/RouteRestStopController.java"
-  - "src/main/java/com/restroute/service/route/**"
-  - "src/main/java/com/restroute/controller/response/RouteRestStopResponse.java"
+  - "src/main/java/com/restroute/route/controller/**"
+  - "src/main/java/com/restroute/route/service/**"
   - "src/main/resources/static/js/rest-stops-map.js"
   - "src/main/resources/static/js/bottom-sheet.js"
 related_domains: ["rest-stop", "oil-price", "ev-charger", "place-search-and-map-config", "finder"]
@@ -125,3 +124,11 @@ sources: []
 - **예외**: `service/route/exception/RouteRestStopNotFoundException`.
 - 이 도메인은 `FlightSearchService`(`flight` 도메인)의 "얇은 오케스트레이터 + 이름 붙은
   단계별 협력자" 구성을 참고해 리팩토링된 것으로, 그 패턴을 따르는 두 번째 사례다.
+- **finder mode2 전용 진입점**([[finder]] 소비, 상세는 그 문서 참고): `RouteRestStopController.
+  getRouteRestStopList()`(`GET /api/route-rest-stops/list`)는 위 1~5단계 중 좌표/경로 관련 부품
+  (`RouteResolverService`/`RouteCoordinateReducer`/`RouteRestStopMatcher`)만 재사용하고,
+  `RouteOptionAssemblyService`는 거치지 않는다 — 대신 `RouteRestStopListQueryService`가 대안 경로 중
+  첫 번째만 골라 거리(서버 계산)·유가(`RouteRestStopFuelTierCalculator`, 요청 유종 1개만 스코프)를 직접
+  조립한다. 기존 `getRouteRestStops()`(지도 화면용, 대안 경로 전체·이미지·먹거리 포함)는 계약을 그대로
+  유지하려고 손대지 않았다 — 계약이 달라져야 할 때는 기존 진입점을 고치지 않고 새 진입점을 추가한다는
+  판단.
