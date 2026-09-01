@@ -150,14 +150,26 @@
 
     <!-- 1. 이름·거리로 찾기 -->
     <section id="finderScreenMode1" class="finder-screen" data-finder-screen="mode1" hidden>
-        <header class="finder-screen-header">
-            <button id="finderMode1Back" class="finder-back-button" type="button" aria-label="첫 화면으로">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M15 4l-8 8 8 8"></path>
+        <div class="finder-mode1-sticky">
+            <header class="finder-screen-header">
+                <button id="finderMode1Back" class="finder-back-button" type="button" aria-label="첫 화면으로">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M15 4l-8 8 8 8"></path>
+                    </svg>
+                </button>
+                <h2 class="finder-screen-title">이름·거리로 찾기</h2>
+            </header>
+
+            <p id="finderMode1SubHeading" class="finder-screen-sub" hidden></p>
+            <div class="finder-search-box finder-search-box-pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                    <line x1="20" y1="20" x2="15.3" y2="15.3"></line>
                 </svg>
-            </button>
-            <h2 class="finder-screen-title">이름·거리로 찾기</h2>
-        </header>
+                <input id="finderMode1SearchInput" class="finder-search-input" type="text"
+                       placeholder="휴게소 이름 검색" aria-label="휴게소 이름 검색">
+            </div>
+        </div>
 
         <div id="finderMode1EmptyState" class="finder-empty-state" hidden>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -168,15 +180,6 @@
             <p class="finder-empty-state-desc">위치 권한이 없어서<br>거리순 목록은 못 보여드려요.</p>
         </div>
 
-        <p id="finderMode1SubHeading" class="finder-screen-sub" hidden></p>
-        <div class="finder-search-box finder-search-box-pill">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
-                <circle cx="10.5" cy="10.5" r="6.5"></circle>
-                <line x1="20" y1="20" x2="15.3" y2="15.3"></line>
-            </svg>
-            <input id="finderMode1SearchInput" class="finder-search-input" type="text"
-                   placeholder="휴게소 이름 검색" aria-label="휴게소 이름 검색">
-        </div>
         <p id="finderMode1Status" class="finder-status" aria-live="polite" hidden></p>
         <ul id="finderMode1List" class="finder-result-list"></ul>
     </section>

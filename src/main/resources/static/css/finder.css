@@ -67,6 +67,18 @@
     box-sizing: border-box;
 }
 
+/* 헤더+검색창까지만 고정 — 목록을 내려도 이름으로 계속 검색할 수 있어야 해서, 그 아래
+   (빈 상태 안내/상태 문구/목록)는 그냥 같이 스크롤된다. 부모 .finder-screen의 위·좌·우
+   패딩을 음수 마진으로 상쇄하고 안에서 다시 채워서, 배경이 화면 끝까지 이어지게 한다. */
+.finder-mode1-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: -24px -20px 0;
+    padding: 24px 20px 18px;
+    background: var(--rr-color-bg);
+}
+
 .finder-screen[hidden] {
     display: none;
 }
