@@ -69,7 +69,7 @@
 
 | 구분 | 기술 |
 |---|---|
-| Backend | Spring Boot 3.5.0, Java 17 |
+| Backend | Spring Boot 3.5.16, Java 25 |
 | HTTP Client | Spring Cloud OpenFeign |
 | Database | H2 file DB, Spring Data JPA |
 | Frontend | Thymeleaf, Bootstrap 5, Vanilla JavaScript |
