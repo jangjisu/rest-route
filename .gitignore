@@ -58,6 +58,8 @@ API.md
 docs/**
 !docs/domain/
 !docs/domain/**
+!docs/images/
+!docs/images/**
 
 ### OS metadata ###
 .DS_Store
