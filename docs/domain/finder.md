@@ -197,5 +197,6 @@ sources: []
 - **백엔드 — route 소유**(이 문서는 소비 관점만 기록): `route.service.RouteRestStopListQueryService`,
   `route.service.RouteRestStopFuelTierCalculator`, `route.controller.response.RouteRestStopListItemResponse`,
   `RouteRestStopController.getRouteRestStopList`.
-- **진입점**: 브라우저에서 `GET /finder` 하나(서버 사이드 뷰 컨트롤러가 렌더링하는 단일 템플릿, 화면
-  전환은 전부 클라이언트 사이드).
+- **진입점**: `GET /finder`(서버 사이드 뷰 컨트롤러가 렌더링하는 단일 템플릿, 화면 전환은 전부
+  클라이언트 사이드) — `HomeController`가 `GET /`도 User-Agent로 모바일 기기를 감지하면 같은
+  `finder` 뷰로 보낸다(그 외는 지도 화면 `index`).

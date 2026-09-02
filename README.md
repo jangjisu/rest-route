@@ -1,10 +1,40 @@
 # RestRoute
 
 이동 경로에 있는 고속도로 휴게소를 찾고, 위치·시설·먹거리·주유 정보를 비교하는 Spring Boot 애플리케이션입니다.
+모바일에서는 이름·거리·목적지 기준으로 빠르게 찾는 화면 하나만 쓰고, 데스크톱에서는 지도로 전국 휴게소를 살펴봅니다 — 접속 기기에 따라 자동으로 갈립니다.
+
+## 화면
+
+### 모바일
+
+<https://www.rest-route.o-r.kr>에 모바일 기기로 접속하면 자동으로 이 화면이 뜹니다.
+
+랜딩에서 "이름·거리로 찾기"(현재 위치 기준 가까운 순, 이름 검색)와 "목적지로 추천받기"(가는 방향 경로 위 휴게소, 인기 목적지 칩) 중 고릅니다. 규모·이용량·유가·EV 충전 조건에 따라 배지가 붙습니다.
+
+<table>
+<tr>
+<td><img src="docs/images/mobile-landing.png" width="220" alt="랜딩 화면"><br>랜딩</td>
+<td><img src="docs/images/mobile-nearby-search.png" width="220" alt="이름·거리로 찾기"><br>이름·거리로 찾기</td>
+<td><img src="docs/images/mobile-destination-recommendation.png" width="220" alt="목적지로 추천받기"><br>목적지로 추천받기</td>
+<td><img src="docs/images/mobile-detail.png" width="220" alt="휴게소 상세"><br>휴게소 상세</td>
+</tr>
+</table>
+
+휴게소 하나를 고르면 주차·화장실·이용현황·주유 가격·인기 판매·위치·편의시설·이벤트까지 한 화면에서 볼 수 있습니다.
+
+### 데스크톱
+
+<https://www.rest-route.o-r.kr>에 데스크톱으로 접속하면 뜨는 화면입니다(모바일 기기로 접속하면 대신 위 모바일 화면으로 연결됩니다). 전국 휴게소 위치를 지도로 확인하고, 출발지·목적지를 검색하면 그 경로 위 휴게소를 순서대로 보여줍니다.
+
+<img src="docs/images/desktop-map.png" width="800" alt="지도 화면 — 전국 휴게소 위치와 경로 검색">
+
+출발지·도착지를 검색하면 경로 위 휴게소를 국가 평균 유가, 주유·먹거리·테마·이벤트·EV 충전 필터와 함께 순서대로 보여줍니다. 휴게소 상세 정보는 모바일 화면과 완전히 같은 컴포넌트를 공유합니다 — 어느 화면에서 열어도 같은 정보, 같은 동작입니다.
+
+<img src="docs/images/desktop-route-search.png" width="800" alt="경로 검색 결과 — 경로상 휴게소와 국가 평균 유가, 조건 필터">
 
 ## 현재 기능
 
-### 지도와 휴게소 상세
+### 지도와 휴게소 상세(데스크톱)
 
 - 네이버 지도에 전국 휴게소 위치와 현재 위치를 표시합니다.
 - 휴게소 마커를 선택하면 노선, 방향, 주소, 편의시설, 운영 상태와 주차 정보를 보여줍니다.
@@ -13,12 +43,19 @@
 - 전기차 충전소가 있는 휴게소인지 경로 결과에서 확인할 수 있고, 상세 화면에서 active 충전기 대수를 보여줍니다.
 - 주유 가격은 사용자가 단건 갱신할 수 있으며, 최근 10분 이내 갱신된 값은 외부 API를 다시 호출하지 않습니다.
 
-### 경로상 휴게소 탐색
+### 경로상 휴게소 탐색(데스크톱)
 
 - 현재 위치와 사용자가 선택한 목적지를 기준으로 카카오 자동차 경로를 조회합니다.
 - 목적지 검색 결과가 여러 개면 이름과 주소를 보여주고 사용자가 직접 선택하게 합니다.
 - 경로와 출발·도착 마커를 지도에 표시합니다.
 - 기본 1km 범위 안의 휴게소를 경로 순서대로 보여주고, 목록에서 상세 정보로 이동할 수 있습니다.
+
+### 모바일 빠른 탐색
+
+- **이름·거리로 찾기**: 위치를 허용하면 가까운 순으로, 허용하지 않으면 이름 검색만으로 찾습니다. 규모·이용량 상위 10%·볼거리·이벤트 배지와, 선택한 연료/EV 관심에 따른 유가·충전기 배지가 붙습니다.
+- **목적지로 추천받기**: 인기 목적지 칩(부산역/대전역/강릉역/광주송정역) 또는 직접 검색으로 목적지를 정하면, 그 방향 경로 위 휴게소를 거리순으로 추천합니다. 규모·이용량은 항상, 유가/EV 충전은 관심 항목에 따라 배지가 붙고, 조건 필터로 좁혀볼 수 있습니다.
+- 위치·연료 관심 팝업은 같은 탭 안에서 다시 묻지 않고, 한쪽 화면에서 실제로 위치를 허용하면 다른 화면도 같이 허용된 것으로 기억합니다.
+- 결과 카드를 누르면 지도 화면과 동일한 상세 팝업이 페이지 이동 없이 바텀시트로 뜨고, 스와이프로 닫을 수 있습니다.
 
 ### 데이터 동기화
 
@@ -40,33 +77,6 @@
 | Place and Route | Kakao Local API, Kakao Mobility Directions API |
 | Test | JUnit 5, Spring Boot Test, Node.js test runner, JaCoCo |
 | Quality | Checkstyle, Spotless, Palantir Java Format, ESLint, SonarQube |
-
-## 로컬 실행
-
-### 1. API 키 설정
-
-다음 환경 변수를 설정합니다.
-
-```bash
-export EX_API_KEY=YOUR_EX_API_KEY
-export NAVER_MAPS_NCP_KEY_ID=YOUR_NAVER_MAPS_NCP_KEY_ID
-export KAKAO_REST_API_KEY=YOUR_KAKAO_REST_API_KEY
-export EV_API_KEY=YOUR_EV_API_KEY
-```
-
-한국도로공사 키는 Git에서 제외된 `src/main/resources/application-local.properties`에도 설정할 수 있습니다.
-
-```properties
-ex.api.key=YOUR_EX_API_KEY
-```
-
-### 2. 애플리케이션 실행
-
-```bash
-./gradlew bootRun
-```
-
-브라우저에서 `http://localhost:8080`에 접속합니다. 로컬 데이터는 `./data/rest-route` H2 파일에 유지됩니다.
 
 ## Docker 배포
 
@@ -175,26 +185,6 @@ GitHub Actions로 테스트와 배포를 분리해서 운영합니다.
 ```
 
 서버 접속 정보(`LIGHTSAIL_HOST`, `LIGHTSAIL_USER`, `LIGHTSAIL_SSH_KEY`)는 GitHub repo secrets로 관리하며, 배포 전용 SSH 키는 서버의 `~/.ssh/authorized_keys`에 공개키만 등록해 사용합니다.
-
-## 주요 내부 API
-
-| Method | Endpoint | 설명 |
-|---|---|---|
-| `GET` | `/api/map-config` | 네이버 지도 클라이언트 키 설정 조회 |
-| `GET` | `/api/rest-stops` | 저장된 휴게소 목록 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}` | 휴게소 기본 식별·위치 정보 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}/basic-info` | 휴게소 기본 정보와 주소·전화번호·브랜드 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}/facilities` | 편의시설과 주차 정보 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}/oil-info` | 주유 가격·정유사·전화번호·주유소 편의시설 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}/foods` | 대표 먹거리와 전체 메뉴 조회 |
-| `POST` | `/api/rest-stops/{serviceAreaCode}/oil-price/refresh` | 휴게소 주유 가격 단건 갱신 |
-| `GET` | `/api/national-oil-prices/summary` | 전국 평균 유가 요약 조회 |
-| `GET` | `/api/place-search?query=...` | 목적지 후보 목록 조회 |
-| `GET` | `/api/route-rest-stops` | 경로와 경로상 휴게소의 비교 정보 조회 |
-
-휴게소 상세 화면은 기본 정보 조회를 기준으로 시설·주유·먹거리 정보를 각 feature API에서 함께 조회합니다. 전국 평균 유가 요약은 경로 응답에 포함되지 않으며 `/api/national-oil-prices/summary`에서 별도로 조회합니다.
-
-요청과 응답, 외부 API 연결 상세는 `API.md`를 참고합니다.
 
 ## 검증
 
