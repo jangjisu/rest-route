@@ -24,9 +24,9 @@ sources: []
 배지 태그를 붙여 보여준다.
 
 포함: 위치 권한 팝업, 연료/EV 관심 선택 팝업(두 화면 공유), 각 화면의 목록 조회·정렬·조건 필터, 배지
-판정·색상 매핑.
-제외: 배지가 참조하는 원본 데이터의 동기화·계산 자체(각 도메인 소유 — 2·7절), 지도 렌더링, 휴게소 상세
-화면 진입(카드 클릭 시 상세로 이어질 예정이나 이번 범위 밖).
+판정·색상 매핑, 결과 카드 클릭 시 지도 화면과 같은 상세 팝업 열기(마크업·모듈 재사용).
+제외: 배지가 참조하는 원본 데이터의 동기화·계산 자체(각 도메인 소유 — 2·7절), 지도 렌더링, 상세 정보
+자체의 조회·계산([[rest-stop-content]]/[[rest-stop]] 소유 — 이 도메인은 재사용만 한다).
 
 ## 2. 용어와 핵심 엔티티
 
@@ -75,6 +75,9 @@ sources: []
 ([[place-search-and-map-config]] `GET /api/place-search`)로 후보 팝업을 띄워 하나를 고른 뒤 그 좌표로
 같은 엔드포인트를 호출한다 → 조건 필터 칩(규모·이용량은 항상, 나머지 한 자리만 관심 항목에 따라 EV
 충전 또는 유가 저렴한 곳)을 선택하면 프런트에서 AND 필터링만 수행한다(서버 재호출 없음).
+
+**휴게소 상세**: 두 화면 모두 결과 카드를 누르면(클릭/Enter/Space) 지도 화면(`index.html`)과 같은 상세
+팝업이 finder 화면 안에서 그대로 뜬다(페이지 이동 없음, 8절). 닫기 전까지 검색/필터 상태는 유지된다.
 
 **실패/빈 결과**: 이름·거리로 찾기는 검색 결과가 없거나 위치·이름 둘 다 없으면 상태 텍스트만 보여주고
 목록을 비운다(별도 에러 코드 없음 — nearby 엔드포인트는 파라미터가 전부 optional이라 항상 200과 빈
@@ -158,6 +161,8 @@ sources: []
   재사용할 뿐 서로 대체하지 않는다.
 - **`GET /api/place-search`**([[place-search-and-map-config]] 소유): 목적지를 직접 입력했을 때만
   호출한다(인기 칩은 안 씀). 지도 화면의 목적지 후보 검색과 동일한 API·응답 형태를 그대로 재사용한다.
+- **휴게소 상세 API 6종**([[rest-stop-content]]/[[rest-stop]] 소유, `GET /api/rest-stops/{code}/*`): 카드
+  클릭 시 지도 화면과 동일하게 `rest-stop-detail-request.js`가 그대로 호출한다(계약은 해당 문서 소관).
 
 ## 8. 코드 경계와 진입점
 
@@ -180,6 +185,11 @@ sources: []
   요청 ID/AbortController로 최신 응답만 반영하는 같은 패턴. `finder-destination-chips.js`(인기 목적지
   칩 4개, 라벨=검색어). 목적지 후보 검색은 지도 화면과 공유하는 `place-search-request.js`를 그대로
   import한다.
+- `finder-rest-stop-detail.js` — 상세 팝업 열기/닫기, 주유 요금 갱신, 먹거리 모달 이벤트를 묶는다.
+  지도 화면(`rest-stops-map.js`)과 똑같이 `rest-stop-detail-view.js`/`rest-stop-detail-request.js`를
+  수정 없이 import하되, 부트스트랩 토스트(`showApiUnavailableAlert`) 자리엔 `onExternalUnavailable`을
+  no-op으로 넘긴다(부트스트랩 없는 finder에선 상세 팝업 안 상태 문구가 같은 내용을 이미 보여준다).
+  `finder-app.js`가 이 모듈의 `openDetail`을 두 화면 모듈에 그대로 넘겨준다.
 - **백엔드 — rest-stop 소유**(이 문서는 소비 관점만 기록): `reststop.service.RestStopNearbyQueryService`,
   `reststop.service.dto.RestStopInterest`, `reststop.controller.response.RestStopNearbyItemResponse`,
   `RestStopController.getNearbyRestStops`.
