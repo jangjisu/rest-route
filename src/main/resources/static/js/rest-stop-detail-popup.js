@@ -19,10 +19,13 @@
 import { createRestStopDetailRequest } from './rest-stop-detail-request.js';
 import { createRestStopDetailView } from './rest-stop-detail-view.js';
 
-// 바텀시트로 보이는 화면 폭 — rest-stops-map.js의 MOBILE_DETAIL_SHEET_MEDIA와 같은 기준.
-// finder는 항상 이 폭 안에서만 쓰이므로 매번 이 조건에 걸려 스와이프 닫기가 항상 켜진다.
-const SHEET_MEDIA = '(max-width: 991.98px)';
 const SWIPE_DISMISS_THRESHOLD_PX = 120;
+// 지금 바텀시트로 보이는지는 화면 폭을 직접 재지 않고 style.css/finder.css가 패널에 실어 둔
+// --rest-stop-detail-sheet-mode 값으로 물어본다 — finder는 브라우저 창 폭과 무관하게 항상
+// 바텀시트지만(finder.css), 지도 화면은 좁을 때만 바텀시트라(style.css 미디어쿼리) 화면 폭
+// 조건 자체가 페이지마다 다르다. 폭을 여기서 직접 재면 finder 쪽 조건이 늘 맞다고 잘못
+// 가정하게 된다(실제로 그래서 넓은 브라우저 창에서 스와이프 닫기가 안 먹는 버그가 있었다).
+const SHEET_MODE_PROPERTY = '--rest-stop-detail-sheet-mode';
 
 // body에 이 클래스가 있으면(좁은 화면 + 열려 있음) style.css가 뒤 화면을 덮는 스크림을 그린다.
 // 지도 화면이 원래 쓰던 클래스라 이름을 그대로 재사용한다.
@@ -238,7 +241,7 @@ export function createRestStopDetailPopup(document, {
     bindSwipeToDismiss();
 
     function isSheetMode() {
-        return globalThis.matchMedia?.(SHEET_MEDIA).matches ?? false;
+        return globalThis.getComputedStyle?.(root).getPropertyValue(SHEET_MODE_PROPERTY).trim() === '1';
     }
 
     function bindEvents() {
@@ -257,7 +260,7 @@ export function createRestStopDetailPopup(document, {
         }, { signal });
     }
 
-    // 바텀시트로 보일 때(SHEET_MEDIA)만 헤더를 아래로 끌어서 닫을 수 있다 — 데스크톱처럼
+    // 바텀시트로 보일 때(isSheetMode)만 헤더를 아래로 끌어서 닫을 수 있다 — 데스크톱처럼
     // 옆 패널로 붙어 있을 땐(index.html 넓은 화면) 끌어서 닫는 제스처가 어울리지 않는다.
     function bindSwipeToDismiss() {
         const header = root.querySelector('.rest-stop-detail-header');
@@ -269,6 +272,18 @@ export function createRestStopDetailPopup(document, {
         let dragging = false;
         let startClientY = 0;
 
+        // setPointerCapture/releasePointerCapture는 "지금 이 포인터가 실제로 눌려 있는 상태"가
+        // 아니면 NotFoundError를 던진다(예: pointercancel 이후, 혹은 실제 기기가 아닌 합성
+        // 이벤트) — 있으면 좋은 최적화일 뿐 핵심 로직은 아니라서, 실패해도 드래그 자체는
+        // 그대로 진행되게 무시한다.
+        function safeCapture(fn) {
+            try {
+                fn();
+            } catch {
+                // no-op
+            }
+        }
+
         function onPointerDown(event) {
             if (!isSheetMode() || event.target.closest('button')) {
                 return;
@@ -276,7 +291,7 @@ export function createRestStopDetailPopup(document, {
             dragging = true;
             startClientY = event.clientY;
             root.style.transition = 'none';
-            header.setPointerCapture?.(event.pointerId);
+            safeCapture(() => header.setPointerCapture?.(event.pointerId));
         }
 
         function onPointerMove(event) {
@@ -292,10 +307,10 @@ export function createRestStopDetailPopup(document, {
                 return;
             }
             dragging = false;
-            header.releasePointerCapture?.(event.pointerId);
             const delta = Math.max(0, event.clientY - startClientY);
             root.style.transition = '';
             root.style.transform = '';
+            safeCapture(() => header.releasePointerCapture?.(event.pointerId));
             if (delta > SWIPE_DISMISS_THRESHOLD_PX) {
                 onCloseRequest?.();
             }

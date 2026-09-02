@@ -293,6 +293,18 @@ body.rest-stop-detail-sheet-open {
     overflow: hidden;
 }
 
+/* 뒷배경 스크림 — 예전엔 좁은 화면(아래 991.98px 미디어쿼리)에서만 걸었는데, 이 클래스 자체를
+   rest-stop-detail-popup.js가 페이지별 --rest-stop-detail-sheet-mode 값을 보고 알아서
+   붙이므로(지도 화면은 좁을 때만, finder는 항상) 여기서 화면 폭을 또 재면 안 된다 — 재면
+   finder가 넓은 브라우저 창에서 스크림 없이 뒤 화면이 그대로 눌리는 버그가 생긴다. */
+body.rest-stop-detail-sheet-open::before {
+    position: fixed;
+    inset: 0;
+    z-index: 1190;
+    background-color: var(--rr-color-scrim);
+    content: '';
+}
+
 body.global-loading-open {
     overflow: hidden;
 }
@@ -1532,6 +1544,10 @@ body.global-loading-open {
     box-shadow: none;
     overflow-y: auto;
     overscroll-behavior: contain; /* 끝까지 스크롤해도 뒤에 있는 화면으로 안 새게 막는다 */
+    /* 지금 바텀시트로 보이는지를 JS(rest-stop-detail-popup.js)가 화면 폭을 다시 재는 대신
+       CSS 값으로 직접 물어본다 — finder는 화면 폭과 무관하게 항상 1(.finder-detail-panel),
+       지도 화면은 좁을 때만(아래 미디어쿼리) 1이라 폭 조건이 서로 다르다. */
+    --rest-stop-detail-sheet-mode: 0;
 }
 
 .rest-stop-detail-header {
@@ -1542,7 +1558,10 @@ body.global-loading-open {
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1.25rem 1.25rem 0.9rem;
+    /* 오른쪽 padding은 절대 위치인 닫기 버튼(.rest-stop-detail-close-button, 26px + right 14px)
+       자리를 항상 비워둔다 — 없으면 먹거리 버튼이 flex로 오른쪽 끝까지 밀려서 닫기 버튼과
+       겹친다. */
+    padding: 1.25rem 48px 0.9rem 1.25rem;
     border-bottom: 1px solid var(--rr-color-border);
     background-color: var(--rr-color-surface);
 }
@@ -2141,14 +2160,6 @@ body.global-loading-open {
 }
 
 @media (max-width: 991.98px) {
-    body.rest-stop-detail-sheet-open::before {
-        position: fixed;
-        inset: 0;
-        z-index: 1190;
-        background-color: var(--rr-color-scrim);
-        content: '';
-    }
-
     .rest-stop-map-layout:has(.rest-stop-detail-panel:not(.d-none)) {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -2167,6 +2178,7 @@ body.global-loading-open {
         border-radius: 20px 20px 0 0;
         box-shadow: 0 -8px 24px oklch(30% 0.02 60 / 0.16);
         overscroll-behavior: contain;
+        --rest-stop-detail-sheet-mode: 1;
     }
 
     .rest-stop-map-layout {
@@ -2181,6 +2193,7 @@ body.global-loading-open {
     .rest-stop-detail-header {
         border-radius: 20px 20px 0 0;
         padding-top: 1.15rem;
+        touch-action: none; /* 헤더를 끌 때 브라우저 자체 스크롤/당겨서 새로고침과 안 겹치게 */
     }
 
     .rest-stop-detail-drag-handle {

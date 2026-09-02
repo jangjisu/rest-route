@@ -69,6 +69,9 @@ export function initializeNearbySearch(document, { openDetail }) {
 
     function runQuery(name) {
         const trimmedName = (name ?? '').trim();
+        // "휴게소 이름으로 검색해보세요" 안내는 위치도 검색어도 없을 때만 보여준다 — 위치 없이
+        // 들어와서 한 번 보여준 뒤에도 그대로 남아 있던 버그(검색어를 입력해도 안 사라짐)를 고쳤다.
+        emptyStateEl.hidden = Boolean(origin) || trimmedName !== '';
         if (!origin && trimmedName === '') {
             listEl.innerHTML = '';
             setStatus(statusEl, '');
@@ -92,14 +95,12 @@ export function initializeNearbySearch(document, { openDetail }) {
         setStatus(statusEl, '');
 
         if (origin) {
-            emptyStateEl.hidden = true;
             subHeadingEl.hidden = false;
             subHeadingEl.textContent = '내 위치 기준 · 가까운 순';
         } else {
-            emptyStateEl.hidden = false;
             subHeadingEl.hidden = true;
         }
-        runQuery('');
+        runQuery(''); // emptyStateEl.hidden도 여기서 origin/검색어 기준으로 같이 정해진다
     }
 
     let searchDebounceTimer;

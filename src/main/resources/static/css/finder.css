@@ -682,12 +682,15 @@
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -8px 24px oklch(30% 0.02 60 / 0.16);
     padding-bottom: env(safe-area-inset-bottom);
+    /* finder는 브라우저 창 폭과 무관하게 항상 바텀시트라, 지도 화면의 폭 조건과 달리
+       무조건 1이다 — rest-stop-detail-popup.js가 이 값으로 스와이프 닫기를 켤지 정한다. */
+    --rest-stop-detail-sheet-mode: 1;
 }
 
 .finder-detail-panel .rest-stop-detail-header {
     border-radius: 20px 20px 0 0;
     padding-top: 1.15rem;
-    padding-right: 48px; /* 절대 위치인 닫기 버튼(.rest-stop-detail-close-button) 자리 확보 */
+    touch-action: none; /* 헤더를 끌 때 브라우저 자체 스크롤/당겨서 새로고침과 안 겹치게 */
 }
 
 .finder-detail-panel .rest-stop-detail-drag-handle {
