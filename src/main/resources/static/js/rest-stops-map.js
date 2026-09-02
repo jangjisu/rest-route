@@ -7,7 +7,6 @@ import {
     showGlobalLoading
 } from './utils.js';
 import { formatText } from './rest-stop-detail-formatters.js';
-import { createRestStopDetailRequest } from './rest-stop-detail-request.js';
 import { createRouteRestStopRequest } from './route-rest-stop-request.js';
 import { createNationalOilPriceRequest } from './national-oil-price-request.js';
 import { createPlaceSearchRequest } from './place-search-request.js';
@@ -16,7 +15,7 @@ import {
     ROUTE_POINT_TARGET,
     createRoutePointSelection
 } from './route-point-selection.js';
-import { createRestStopDetailView } from './rest-stop-detail-view.js';
+import { createRestStopDetailPopup } from './rest-stop-detail-popup.js';
 import { createRouteRestStopView, renderNationalOilPriceState } from './route-rest-stop-view.js';
 import { initBottomSheetDrag } from './bottom-sheet.js';
 import { trackScreenView } from './analytics.js';
@@ -41,8 +40,7 @@ const GEOLOCATION_OPTIONS = {
 let map;
 let naverMaps;
 let selectedInfoWindow;
-let detailView;
-let detailRequest;
+let detailPopup;
 let detailPanelEventController;
 let mapInitializationId = 0;
 let currentLocation;
@@ -80,21 +78,22 @@ export async function initRestStopMap() {
     removeRouteMapClickListener();
     clearRouteMapDraftMarker();
     routePointSelection = createRoutePointSelection();
-    detailRequest?.invalidate();
+    detailPopup?.destroy();
     detailPanelEventController?.abort();
     detailPanelEventController = new globalThis.AbortController();
-    detailView = createRestStopDetailView({
+    detailPopup = createRestStopDetailPopup(document, {
+        mountTarget: document.querySelector('.rest-stop-map-layout'),
         onPopupUpdate: updateSelectedPopup,
         onPresentationChange: updateDetailSheetPresentation,
-        refreshOilPrice: (serviceAreaCode) => detailRequest.refreshOilPrice(serviceAreaCode)
+        onCloseRequest: () => closeDetailPanel({ restoreMapFocus: true }),
+        onRouteBack: returnToRouteResultModal
     });
     routeView = createRouteRestStopView({ onSelectRestStop: selectRouteRestStop });
-    detailRequest = createRestStopDetailRequest({ onState: detailView.renderState });
     routeRequest = createRouteRestStopRequest({ onState: renderRouteState });
     nationalOilPriceRequest = createNationalOilPriceRequest({ onState: handleNationalOilPriceState });
     placeSearchRequest = createPlaceSearchRequest({ onState: renderPlaceSearchState });
     restStopNameSearchRequest = createRestStopNameSearchRequest({ onState: renderRestStopNameSearchState });
-    bindDetailPanelEvents();
+    bindPageLevelDetailEvents();
     bindDetailSheetPresentation();
 
     try {
@@ -400,35 +399,13 @@ export function shouldShowRouteResultBackButton(openedFromRouteResult, isMobileS
     return openedFromRouteResult === true && isMobileSheet === true;
 }
 
-function bindDetailPanelEvents() {
-    const closeButton = document.getElementById('restStopDetailClose');
-    if (!closeButton || !detailPanelEventController) {
+// 상세 팝업 자체의 이벤트(닫기·먹거리 모달·주유 갱신)는 rest-stop-detail-popup.js가 갖고 있다.
+// 여기서는 이 페이지에만 있는 다른 모달들과 함께 있을 때의 Escape 키 우선순위만 다룬다.
+function bindPageLevelDetailEvents() {
+    if (!detailPanelEventController) {
         return;
     }
 
-    closeButton.addEventListener('click', () => {
-        closeDetailPanel({ restoreMapFocus: true });
-    }, { signal: detailPanelEventController.signal });
-    document.getElementById('restStopDetailRouteBack')?.addEventListener('click', returnToRouteResultModal, {
-        signal: detailPanelEventController.signal
-    });
-    document.getElementById('restStopOilRefreshButton')?.addEventListener('click', () => detailView.refreshOilInfo(), {
-        signal: detailPanelEventController.signal
-    });
-    document.getElementById('restStopFoodToggle')?.addEventListener('click', () => detailView.toggleFoodMenu(), {
-        signal: detailPanelEventController.signal
-    });
-    document.getElementById('restStopFoodOpen')?.addEventListener('click', () => detailView.openFoodModal(), {
-        signal: detailPanelEventController.signal
-    });
-    document.getElementById('restStopFoodModalClose')?.addEventListener('click', () => detailView.closeFoodModal(), {
-        signal: detailPanelEventController.signal
-    });
-    document.getElementById('restStopFoodModal')?.addEventListener('click', (event) => {
-        if (event.target === event.currentTarget) {
-            detailView.closeFoodModal();
-        }
-    }, { signal: detailPanelEventController.signal });
     document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') {
             return;
@@ -438,7 +415,7 @@ function bindDetailPanelEvents() {
             cancelRouteMapSelection();
             return;
         }
-        if (document.getElementById('restStopFoodModal')?.open) {
+        if (detailPopup?.isFoodModalOpen()) {
             return;
         }
         if (document.getElementById('routeResultModal')?.open) {
@@ -450,8 +427,7 @@ function bindDetailPanelEvents() {
         if (document.getElementById('routeOriginModal')?.open) {
             return;
         }
-        const panel = document.getElementById('restStopDetailPanel');
-        if (panel && !panel.classList.contains('d-none')) {
+        if (detailPopup?.isOpen()) {
             closeDetailPanel({ restoreMapFocus: true });
         }
     }, { signal: detailPanelEventController.signal });
@@ -479,27 +455,17 @@ function updateDetailSheetPresentation() {
 }
 
 function openDetailPanel(restStop, { fromRouteResult = false } = {}) {
-    const panel = document.getElementById('restStopDetailPanel');
-    if (!panel || !detailRequest) {
+    if (!detailPopup) {
         return;
     }
 
     detailOpenedFromRouteResult = fromRouteResult;
-    detailView.open(restStop);
-    panel.classList.remove('d-none');
+    detailPopup.open(restStop);
     updateDetailSheetPresentation();
-    detailRequest.load(restStop.serviceAreaCode);
 }
 
 function closeDetailPanel({ restoreMapFocus = false } = {}) {
-    detailRequest?.invalidate();
-    detailView?.closeFoodModal();
-
-    const panel = document.getElementById('restStopDetailPanel');
-    if (panel) {
-        panel.classList.add('d-none');
-        panel.setAttribute('aria-busy', 'false');
-    }
+    detailPopup?.close();
     detailOpenedFromRouteResult = false;
     updateDetailSheetPresentation();
 

@@ -1583,31 +1583,57 @@ body.global-loading-open {
     gap: 0.75rem;
 }
 
-.rest-stop-detail-actions .btn-primary {
-    border-color: transparent;
+/* 부트스트랩 없는 finder.html도 쓰는 상세 팝업(rest-stop-detail-popup.js)이라, 버튼도 부트스트랩
+   .btn 클래스에 기대지 않고 이 파일에서 자체 완결된 스타일로 정의한다. */
+
+.d-none {
+    display: none !important;
+}
+
+.rest-stop-detail-close-button {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background-color: var(--rr-color-surface-muted);
+    color: var(--rr-color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.rest-stop-detail-food-open-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    border-radius: var(--rr-radius-pill);
     background-color: var(--rr-color-primary);
     color: var(--rr-color-on-primary);
+    font-family: inherit;
+    cursor: pointer;
 }
 
-.rest-stop-detail-content .btn-outline-primary {
-    border-color: var(--rr-color-primary-border);
+.rest-stop-detail-refresh-button,
+.rest-stop-detail-food-toggle-button {
+    border: 1px solid var(--rr-color-primary-border);
+    border-radius: var(--rr-radius-pill);
+    padding: 6px 12px;
     background-color: var(--rr-color-primary-tint);
     color: var(--rr-color-primary-text);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
 }
 
-.rest-stop-detail-content .btn-outline-primary:hover,
-.rest-stop-detail-content .btn-outline-primary:focus {
-    border-color: var(--rr-color-primary-border);
-    background-color: var(--rr-color-primary-tint-strong);
-    color: var(--rr-color-primary-text);
-}
-
-.rest-stop-detail-close {
-    flex: 0 0 44px;
-    width: 44px;
-    height: 44px;
-    margin: -0.65rem -0.65rem 0 0;
-    background-position: center;
+.rest-stop-detail-food-toggle-button {
+    margin-bottom: 0.6rem;
 }
 
 .rest-stop-detail-kicker {
@@ -2095,19 +2121,6 @@ body.global-loading-open {
 .rest-stop-food-modal-body {
     padding: 1rem 1.25rem 1.25rem;
     overflow-y: auto;
-}
-
-.rest-stop-food-modal-body .btn-outline-primary {
-    border-color: var(--rr-color-primary-border);
-    background-color: var(--rr-color-primary-tint);
-    color: var(--rr-color-primary-text);
-}
-
-.rest-stop-food-modal-body .btn-outline-primary:hover,
-.rest-stop-food-modal-body .btn-outline-primary:focus {
-    border-color: var(--rr-color-primary-border);
-    background-color: var(--rr-color-primary-tint-strong);
-    color: var(--rr-color-primary-text);
 }
 
 @media (max-width: 991.98px) {
