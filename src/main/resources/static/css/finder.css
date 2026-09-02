@@ -661,22 +661,35 @@
 }
 
 /* --- 휴게소 상세 배치 (마크업·나머지 스타일은 rest-stop-detail-popup.js + style.css가 지도
-   화면과 공유 — 여기서는 finder만 다른 "전체 화면으로 띄우기"만 오버라이드한다) --- */
+   화면과 공유) — 지도 화면은 넓은 화면에선 옆 패널, 좁은 화면(991.98px 이하)에선 아래에서
+   올라오는 바텀시트가 되는데(style.css), finder는 항상 좁은 화면 전용이라 그 바텀시트 모습을
+   화면 폭과 무관하게 그대로 쓴다. */
 
 .finder-detail-panel {
     position: fixed;
-    inset: 0;
     z-index: 30;
+    inset: auto 0 0 0;
+    width: 100%;
     max-width: 480px;
-    height: 100dvh;
     margin: 0 auto;
+    min-height: 0;
+    height: auto;
+    max-height: 85vh;
     border: none;
-    border-radius: 0;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 24px oklch(30% 0.02 60 / 0.16);
+    overscroll-behavior: contain;
     padding-bottom: env(safe-area-inset-bottom);
 }
 
 .finder-detail-panel .rest-stop-detail-header {
+    border-radius: 20px 20px 0 0;
+    padding-top: 1.15rem;
     padding-right: 48px; /* 절대 위치인 닫기 버튼(.rest-stop-detail-close-button) 자리 확보 */
+}
+
+.finder-detail-panel .rest-stop-detail-drag-handle {
+    display: block;
 }
 
 /* --- 로딩 오버레이 --- */

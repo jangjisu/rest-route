@@ -17,9 +17,15 @@
 import { createRestStopDetailRequest } from './rest-stop-detail-request.js';
 import { createRestStopDetailView } from './rest-stop-detail-view.js';
 
+// 바텀시트로 보이는 화면 폭 — rest-stops-map.js의 MOBILE_DETAIL_SHEET_MEDIA와 같은 기준.
+// finder는 항상 이 폭 안에서만 쓰이므로 매번 이 조건에 걸려 스와이프 닫기가 항상 켜진다.
+const SHEET_MEDIA = '(max-width: 991.98px)';
+const SWIPE_DISMISS_THRESHOLD_PX = 120;
+
 const POPUP_MARKUP = `
 <aside id="restStopDetailPanel" class="rest-stop-detail-panel d-none" aria-labelledby="restStopDetailName" aria-busy="false">
     <div class="rest-stop-detail-header">
+        <div class="rest-stop-detail-drag-handle" aria-hidden="true"></div>
         <div class="rest-stop-detail-heading">
             <button id="restStopDetailRouteBack" class="rest-stop-detail-back d-none" type="button"
                     aria-label="경로 결과로 돌아가기" aria-controls="routeResultModal">
@@ -223,6 +229,7 @@ export function createRestStopDetailPopup(document, {
 
     const controller = new globalThis.AbortController();
     bindEvents();
+    bindSwipeToDismiss();
 
     function bindEvents() {
         const { signal } = controller;
@@ -238,6 +245,60 @@ export function createRestStopDetailPopup(document, {
                 detailView.closeFoodModal();
             }
         }, { signal });
+    }
+
+    // 바텀시트로 보일 때(SHEET_MEDIA)만 헤더를 아래로 끌어서 닫을 수 있다 — 데스크톱처럼
+    // 옆 패널로 붙어 있을 땐(index.html 넓은 화면) 끌어서 닫는 제스처가 어울리지 않는다.
+    function bindSwipeToDismiss() {
+        const header = root.querySelector('.rest-stop-detail-header');
+        if (!header) {
+            return;
+        }
+
+        const { signal } = controller;
+        let dragging = false;
+        let startClientY = 0;
+
+        function isSheetMode() {
+            return globalThis.matchMedia?.(SHEET_MEDIA).matches ?? false;
+        }
+
+        function onPointerDown(event) {
+            if (!isSheetMode() || event.target.closest('button')) {
+                return;
+            }
+            dragging = true;
+            startClientY = event.clientY;
+            root.style.transition = 'none';
+            header.setPointerCapture?.(event.pointerId);
+        }
+
+        function onPointerMove(event) {
+            if (!dragging) {
+                return;
+            }
+            const delta = Math.max(0, event.clientY - startClientY);
+            root.style.transform = `translateY(${delta}px)`;
+        }
+
+        function onPointerUp(event) {
+            if (!dragging) {
+                return;
+            }
+            dragging = false;
+            header.releasePointerCapture?.(event.pointerId);
+            const delta = Math.max(0, event.clientY - startClientY);
+            root.style.transition = '';
+            root.style.transform = '';
+            if (delta > SWIPE_DISMISS_THRESHOLD_PX) {
+                onCloseRequest?.();
+            }
+        }
+
+        header.addEventListener('pointerdown', onPointerDown, { signal });
+        header.addEventListener('pointermove', onPointerMove, { signal });
+        header.addEventListener('pointerup', onPointerUp, { signal });
+        header.addEventListener('pointercancel', onPointerUp, { signal });
     }
 
     function open(restStop) {

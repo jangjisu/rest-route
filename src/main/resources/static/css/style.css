@@ -1546,6 +1546,21 @@ body.global-loading-open {
     background-color: var(--rr-color-surface);
 }
 
+/* 바텀시트로 보일 때만(아래 991.98px 미디어쿼리, finder.css) 보이는 드래그 핸들 — 실제 DOM
+   요소라서(예전엔 ::before였다) 스와이프 닫기 제스처의 대상이 될 수 있다. 모양은 항상 같고
+   display만 컨텍스트별로 켠다. */
+.rest-stop-detail-drag-handle {
+    display: none;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: var(--rr-color-border-strong);
+    transform: translateX(-50%);
+}
+
 .rest-stop-detail-heading {
     min-width: 0;
 }
@@ -2166,16 +2181,8 @@ body.global-loading-open {
         padding-top: 1.15rem;
     }
 
-    .rest-stop-detail-header::before {
-        position: absolute;
-        top: 8px;
-        left: 50%;
-        width: 36px;
-        height: 4px;
-        border-radius: 2px;
-        background-color: var(--rr-color-border-strong);
-        content: '';
-        transform: translateX(-50%);
+    .rest-stop-detail-drag-handle {
+        display: block;
     }
 
     .rest-stop-food-open {
