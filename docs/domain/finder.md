@@ -3,12 +3,7 @@ domain: finder
 aliases: ["휴게소 찾기", "finder 페이지", "이름·거리로 찾기", "목적지로 추천받기"]
 paths:
   - "src/main/resources/templates/finder.html"
-  - "src/main/resources/static/js/finder-app.js"
-  - "src/main/resources/static/js/finder-condition.js"
-  - "src/main/resources/static/js/finder-rest-stop-nearby-request.js"
-  - "src/main/resources/static/js/finder-route-rest-stop-list-request.js"
-  - "src/main/resources/static/js/finder-session-memory.js"
-  - "src/main/resources/static/js/finder-destination-chips.js"
+  - "src/main/resources/static/js/finder-*.js"
   - "src/main/resources/static/css/finder.css"
   - "src/main/java/com/restroute/reststop/service/RestStopNearbyQueryService.java"
   - "src/main/java/com/restroute/reststop/service/dto/RestStopInterest.java"
@@ -46,8 +41,9 @@ sources: []
 - **RestStopInterest** (`reststop.service.dto.RestStopInterest`): `EV`/`GASOLINE`/`DIESEL`/`LPG`. 위치 팝업
   다음에 뜨는 연료 선택 팝업에서 고르며, 건너뛰면 `null`로 취급되어 그 관심 배지 자체가 안 붙는다(질문 문구:
   "지금 주행 중이신 차의 연료는 무엇인가요?"). 이 팝업(`finderInterestPopup`)은 mode1/mode2가 완전히 공유하는
-  같은 DOM/컴포넌트다 — `finder-app.js`의 `interestPopupTargetMode` 변수로 팝업을 연 게 어느 모드인지만
-  구분해서, 완료 후 `enterMode1()`/`enterMode2()` 중 하나로 분기한다.
+  같은 DOM/컴포넌트고, `finder-entry-flow.js`(8절) 하나가 소유한다 — 내부의
+  `interestPopupTargetMode` 변수로 팝업을 연 게 어느 모드인지만 구분해서, 완료 후
+  `onMode1Ready`/`onMode2Ready` 콜백 중 하나로 분기해 mode1.js/mode2.js에 넘긴다.
 - **route.service.dto.FuelType**: `GASOLINE`/`DIESEL`/`LPG` 3종(EV 없음). mode2가 백엔드에 유가 판정을 요청할
   때 쓰는 요청 파라미터 타입 — `RestStopInterest`와 값 이름은 겹치지만 타입은 다르다(프런트가 `interest`에서
   EV를 제외하고 문자열로만 실어 보낸다).
@@ -181,14 +177,26 @@ sources: []
 
 ## 8. 코드 경계와 진입점
 
-- **템플릿/정적 자원**: `templates/finder.html`, `static/js/finder-app.js`(화면 상태·이벤트 오케스트레이션),
-  `static/js/finder-condition.js`(배지 판정 순수 함수, mode1/mode2 분리), `static/css/finder.css`.
+- **프런트 모듈 구성** — `finder-app.js`는 조립부일 뿐이고(`DOMContentLoaded`에서 아래 셋을 엮기만 함),
+  실제 로직은 관심사별로 나뉘어 있다:
+  - `finder-app.js` — 조립부. `initializeMode1`/`initializeMode2`가 반환한 `enterMode1`/`enterMode2`를
+    `initializeFinderEntryFlow`의 콜백으로 연결한다.
+  - `finder-entry-flow.js` — 랜딩 타일 클릭부터 위치 동의 팝업(모드별)·연료 관심 팝업(공유)까지. 좌표+
+    관심 항목이 정해지면 `onMode1Ready`/`onMode2Ready` 콜백으로만 넘기고, mode1/mode2가 그걸로 뭘
+    하는지는 모른다.
+  - `finder-mode1.js` / `finder-mode2.js` — 각 화면의 검색·필터·목록 렌더링·요청 호출·뒤로가기. 서로의
+    존재를 모른다(둘 다 `enterModeN(origin, interest)`를 인자로 받는 함수 형태로만 노출).
+  - `finder-render.js` — `showScreen`/`setLoading`/`setStatus`/`renderResultCard` 등 mode1/mode2가
+    공유하는 순수 렌더링 헬퍼. `document`를 인자로 받아서(`admin-rest-stop-image.js`와 같은 패턴)
+    테스트에서 가짜 DOM으로 검증할 수 있다.
+  - `finder-condition.js`(배지 판정 순수 함수, mode1/mode2 분리), `static/css/finder.css`.
 - **요청 모듈**: `static/js/finder-rest-stop-nearby-request.js`(mode1, `/nearby` 전용), `static/js/
   finder-route-rest-stop-list-request.js`(mode2, `/route-rest-stops/list` 전용) — 둘 다 요청 ID/
   AbortController로 최신 응답만 반영하는 같은 패턴. `static/js/finder-destination-chips.js`(인기 목적지 칩
   4개, 라벨=검색어). mode2의 목적지 후보 검색은 지도 화면과 공유하는 `static/js/place-search-request.js`를
   그대로 import한다. `static/js/finder-session-memory.js`(순수 함수, `sessionStorage` 읽기/쓰기 — 5절)로
-  위치/연료 팝업 재노출 여부를 판단한다.
+  위치/연료 팝업 재노출 여부를 판단하고, `finder-entry-flow.js`만 이 모듈을 직접 참조한다(mode1/mode2는
+  "첫 화면으로" 뒤로가기에서 `resetFinderMemory()`만 직접 호출).
 - **백엔드 — rest-stop 소유**(이 문서는 소비 관점만 기록): `reststop.service.RestStopNearbyQueryService`,
   `reststop.service.dto.RestStopInterest`, `reststop.controller.response.RestStopNearbyItemResponse`,
   `RestStopController.getNearbyRestStops`.
