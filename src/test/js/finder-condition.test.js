@@ -3,10 +3,10 @@ import test from 'node:test';
 
 import {
     INTEREST_OPTIONS,
-    mode2BadgesFor,
-    mode2ConditionFilters,
-    mode2FilterItems,
-    mode2MatchesFilter,
+    destinationBadgesFor,
+    destinationConditionFilters,
+    destinationFilterItems,
+    destinationMatchesFilter,
     nearbyBadgesFor
 } from '../../main/resources/static/js/finder-condition.js';
 
@@ -71,78 +71,78 @@ function routeItem(overrides = {}) {
     };
 }
 
-test('mode2BadgesFor shows size/traffic regardless of interest, and hides the last slot when skipped', () => {
-    const badges = mode2BadgesFor(routeItem({ sizeTier: 'LARGE', topTrafficTier: true }), null);
+test('destinationBadgesFor shows size/traffic regardless of interest, and hides the last slot when skipped', () => {
+    const badges = destinationBadgesFor(routeItem({ sizeTier: 'LARGE', topTrafficTier: true }), null);
 
     assert.deepEqual(badges.map((badge) => badge.key), ['SIZE_LARGE', 'TOP_TRAFFIC']);
 });
 
-test('mode2BadgesFor adds an EV badge with the charger count only when interest is EV', () => {
+test('destinationBadgesFor adds an EV badge with the charger count only when interest is EV', () => {
     const item = routeItem({ evChargerCount: 5 });
 
-    assert.deepEqual(mode2BadgesFor(item, 'EV'), [{ key: 'EV_CHARGER', label: 'EV 충전 5대' }]);
-    assert.deepEqual(mode2BadgesFor(item, 'DIESEL'), []);
+    assert.deepEqual(destinationBadgesFor(item, 'EV'), [{ key: 'EV_CHARGER', label: 'EV 충전 5대' }]);
+    assert.deepEqual(destinationBadgesFor(item, 'DIESEL'), []);
 });
 
-test('mode2BadgesFor hides the EV badge when the charger count is missing or zero', () => {
-    assert.deepEqual(mode2BadgesFor(routeItem({ evChargerCount: null }), 'EV'), []);
-    assert.deepEqual(mode2BadgesFor(routeItem({ evChargerCount: 0 }), 'EV'), []);
+test('destinationBadgesFor hides the EV badge when the charger count is missing or zero', () => {
+    assert.deepEqual(destinationBadgesFor(routeItem({ evChargerCount: null }), 'EV'), []);
+    assert.deepEqual(destinationBadgesFor(routeItem({ evChargerCount: 0 }), 'EV'), []);
 });
 
-test('mode2BadgesFor distinguishes CHEAPEST from BELOW_AVERAGE only when a fuel interest is selected', () => {
-    assert.deepEqual(mode2BadgesFor(routeItem({ fuelPriceTier: 'CHEAPEST' }), 'GASOLINE'), [
+test('destinationBadgesFor distinguishes CHEAPEST from BELOW_AVERAGE only when a fuel interest is selected', () => {
+    assert.deepEqual(destinationBadgesFor(routeItem({ fuelPriceTier: 'CHEAPEST' }), 'GASOLINE'), [
         { key: 'FUEL_CHEAPEST', label: '제일 저렴' }
     ]);
-    assert.deepEqual(mode2BadgesFor(routeItem({ fuelPriceTier: 'BELOW_AVERAGE' }), 'LPG'), [
+    assert.deepEqual(destinationBadgesFor(routeItem({ fuelPriceTier: 'BELOW_AVERAGE' }), 'LPG'), [
         { key: 'FUEL_BELOW_AVERAGE', label: '평균보다 저렴' }
     ]);
-    assert.deepEqual(mode2BadgesFor(routeItem({ fuelPriceTier: 'CHEAPEST' }), 'EV'), []);
-    assert.deepEqual(mode2BadgesFor(routeItem({ fuelPriceTier: 'CHEAPEST' }), null), []);
+    assert.deepEqual(destinationBadgesFor(routeItem({ fuelPriceTier: 'CHEAPEST' }), 'EV'), []);
+    assert.deepEqual(destinationBadgesFor(routeItem({ fuelPriceTier: 'CHEAPEST' }), null), []);
 });
 
-test('mode2ConditionFilters always includes size and traffic, plus EV or cheap-fuel depending on interest', () => {
-    assert.deepEqual(mode2ConditionFilters(null).map((filter) => filter.key), ['LARGE_SIZE', 'TOP_TRAFFIC']);
-    assert.deepEqual(mode2ConditionFilters('EV').map((filter) => filter.key), [
+test('destinationConditionFilters always includes size and traffic, plus EV or cheap-fuel depending on interest', () => {
+    assert.deepEqual(destinationConditionFilters(null).map((filter) => filter.key), ['LARGE_SIZE', 'TOP_TRAFFIC']);
+    assert.deepEqual(destinationConditionFilters('EV').map((filter) => filter.key), [
         'LARGE_SIZE',
         'TOP_TRAFFIC',
         'EV_CHARGER'
     ]);
-    assert.deepEqual(mode2ConditionFilters('DIESEL').map((filter) => filter.key), [
+    assert.deepEqual(destinationConditionFilters('DIESEL').map((filter) => filter.key), [
         'LARGE_SIZE',
         'TOP_TRAFFIC',
         'CHEAP_FUEL'
     ]);
 });
 
-test('mode2MatchesFilter TOP_TRAFFIC matches topTrafficTier', () => {
-    assert.equal(mode2MatchesFilter(routeItem({ topTrafficTier: true }), 'TOP_TRAFFIC'), true);
-    assert.equal(mode2MatchesFilter(routeItem({ topTrafficTier: false }), 'TOP_TRAFFIC'), false);
+test('destinationMatchesFilter TOP_TRAFFIC matches topTrafficTier', () => {
+    assert.equal(destinationMatchesFilter(routeItem({ topTrafficTier: true }), 'TOP_TRAFFIC'), true);
+    assert.equal(destinationMatchesFilter(routeItem({ topTrafficTier: false }), 'TOP_TRAFFIC'), false);
 });
 
-test('mode2MatchesFilter CHEAP_FUEL matches either CHEAPEST or BELOW_AVERAGE, not a separate cheapest filter', () => {
-    assert.equal(mode2MatchesFilter(routeItem({ fuelPriceTier: 'CHEAPEST' }), 'CHEAP_FUEL'), true);
-    assert.equal(mode2MatchesFilter(routeItem({ fuelPriceTier: 'BELOW_AVERAGE' }), 'CHEAP_FUEL'), true);
-    assert.equal(mode2MatchesFilter(routeItem({ fuelPriceTier: null }), 'CHEAP_FUEL'), false);
-    assert.equal(mode2MatchesFilter(routeItem(), 'FUEL_CHEAPEST'), false);
+test('destinationMatchesFilter CHEAP_FUEL matches either CHEAPEST or BELOW_AVERAGE, not a separate cheapest filter', () => {
+    assert.equal(destinationMatchesFilter(routeItem({ fuelPriceTier: 'CHEAPEST' }), 'CHEAP_FUEL'), true);
+    assert.equal(destinationMatchesFilter(routeItem({ fuelPriceTier: 'BELOW_AVERAGE' }), 'CHEAP_FUEL'), true);
+    assert.equal(destinationMatchesFilter(routeItem({ fuelPriceTier: null }), 'CHEAP_FUEL'), false);
+    assert.equal(destinationMatchesFilter(routeItem(), 'FUEL_CHEAPEST'), false);
 });
 
-test('mode2FilterItems keeps only items matching every selected filter (AND)', () => {
+test('destinationFilterItems keeps only items matching every selected filter (AND)', () => {
     const items = [
         routeItem({ sizeTier: 'LARGE', evChargerCount: 2 }),
         routeItem({ sizeTier: 'LARGE', evChargerCount: null }),
         routeItem({ sizeTier: null, evChargerCount: 2 })
     ];
 
-    const result = mode2FilterItems(items, ['LARGE_SIZE', 'EV_CHARGER']);
+    const result = destinationFilterItems(items, ['LARGE_SIZE', 'EV_CHARGER']);
 
     assert.equal(result.length, 1);
     assert.equal(result[0].sizeTier, 'LARGE');
     assert.equal(result[0].evChargerCount, 2);
 });
 
-test('mode2FilterItems returns everything when no filter is selected', () => {
+test('destinationFilterItems returns everything when no filter is selected', () => {
     const items = [routeItem(), routeItem()];
 
-    assert.equal(mode2FilterItems(items, []).length, 2);
-    assert.equal(mode2FilterItems(items, undefined).length, 2);
+    assert.equal(destinationFilterItems(items, []).length, 2);
+    assert.equal(destinationFilterItems(items, undefined).length, 2);
 });

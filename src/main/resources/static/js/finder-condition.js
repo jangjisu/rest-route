@@ -1,7 +1,7 @@
 /**
- * "이름·거리로 찾기"(mode1)와 "목적지로 추천받기"(mode2)의 배지·필터 판정. 두 화면은 서로 다른
- * 응답 필드를 쓰고(mode1: nearby API, mode2: route-rest-stops/list API) 색상도 완전히 분리돼 있어
- * 판정 함수도 섞지 않는다.
+ * "이름·거리로 찾기"(finder-nearby-search.js)와 "목적지로 추천받기"(finder-destination-recommendation.js)의
+ * 배지·필터 판정. 두 화면은 서로 다른 응답 필드를 쓰고(각각 nearby API / route-rest-stops/list API)
+ * 색상도 완전히 분리돼 있어 판정 함수도 섞지 않는다.
  */
 
 /**
@@ -55,7 +55,7 @@ export function nearbyBadgesFor(item, interest) {
  * 유가 등급은 이미 백엔드가 선택한 유종 하나로 스코프해서 내려주므로 여기서는 CHEAPEST/BELOW_AVERAGE를
  * 그대로 문구로 옮기기만 한다.
  */
-export function mode2BadgesFor(item, interest) {
+export function destinationBadgesFor(item, interest) {
     const badges = [];
 
     if (item.sizeTier === 'LARGE') {
@@ -84,7 +84,7 @@ export function mode2BadgesFor(item, interest) {
  * 관심 항목에 따라 EV 충전 또는 유가 저렴한 곳으로 바뀐다(둘 다 뜨는 일은 없다). "유가 저렴한 곳"
  * 하나가 제일 저렴/평균보다 저렴을 모두 매칭한다 — 별도로 "제일 저렴" 필터는 없다.
  */
-export function mode2ConditionFilters(interest) {
+export function destinationConditionFilters(interest) {
     const filters = [
         { key: 'LARGE_SIZE', label: '규모 큰 곳' },
         { key: 'TOP_TRAFFIC', label: '이용량 많은 곳' }
@@ -97,7 +97,7 @@ export function mode2ConditionFilters(interest) {
     return filters;
 }
 
-export function mode2MatchesFilter(item, filterKey) {
+export function destinationMatchesFilter(item, filterKey) {
     switch (filterKey) {
         case 'LARGE_SIZE':
             return item.sizeTier === 'LARGE';
@@ -115,9 +115,9 @@ export function mode2MatchesFilter(item, filterKey) {
 /**
  * 선택된 필터 키 목록을 모두 만족하는 아이템만 남긴다(AND). 선택된 필터가 없으면 전체 통과.
  */
-export function mode2FilterItems(items, selectedFilterKeys) {
+export function destinationFilterItems(items, selectedFilterKeys) {
     if (!selectedFilterKeys || selectedFilterKeys.length === 0) {
         return items;
     }
-    return items.filter((item) => selectedFilterKeys.every((filterKey) => mode2MatchesFilter(item, filterKey)));
+    return items.filter((item) => selectedFilterKeys.every((filterKey) => destinationMatchesFilter(item, filterKey)));
 }
