@@ -619,6 +619,14 @@
     padding: 14px;
 }
 
+.finder-result-card[role="button"] {
+    cursor: pointer;
+}
+
+.finder-result-card[role="button"]:active {
+    transform: scale(0.99);
+}
+
 .finder-result-main {
     min-width: 0;
 }
@@ -650,6 +658,43 @@
     font-size: 13px;
     color: var(--rr-color-text-secondary);
     white-space: nowrap;
+}
+
+/* --- 휴게소 상세 배치 (마크업·나머지 스타일은 rest-stop-detail-popup.js + style.css가 지도
+   화면과 공유) — 지도 화면은 넓은 화면에선 옆 패널, 좁은 화면(991.98px 이하)에선 아래에서
+   올라오는 바텀시트가 되는데(style.css), finder는 항상 좁은 화면 전용이라 그 바텀시트 모습을
+   화면 폭과 무관하게 그대로 쓴다. 열려 있는 동안 뒷배경을 막는 스크림(body.rest-stop-detail-sheet-open
+   ::before, z-index 1190)도 style.css의 것을 그대로 쓰므로, 패널 z-index를 그 위(1200)로
+   맞춰야 한다 — finder 안의 다른 요소들(로딩 오버레이 20 등)보다는 훨씬 큰 값이라 순서는
+   그대로 유지된다. */
+
+.finder-detail-panel {
+    position: fixed;
+    z-index: 1200;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 0;
+    height: auto;
+    max-height: 85vh;
+    border: none;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 24px oklch(30% 0.02 60 / 0.16);
+    padding-bottom: env(safe-area-inset-bottom);
+    /* finder는 브라우저 창 폭과 무관하게 항상 바텀시트라, 지도 화면의 폭 조건과 달리
+       무조건 1이다 — rest-stop-detail-popup.js가 이 값으로 스와이프 닫기를 켤지 정한다. */
+    --rest-stop-detail-sheet-mode: 1;
+}
+
+.finder-detail-panel .rest-stop-detail-header {
+    border-radius: 20px 20px 0 0;
+    padding-top: 1.15rem;
+    touch-action: none; /* 헤더를 끌 때 브라우저 자체 스크롤/당겨서 새로고침과 안 겹치게 */
+}
+
+.finder-detail-panel .rest-stop-detail-drag-handle {
+    display: block;
 }
 
 /* --- 로딩 오버레이 --- */

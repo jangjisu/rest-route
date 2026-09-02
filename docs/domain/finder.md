@@ -24,9 +24,9 @@ sources: []
 배지 태그를 붙여 보여준다.
 
 포함: 위치 권한 팝업, 연료/EV 관심 선택 팝업(두 화면 공유), 각 화면의 목록 조회·정렬·조건 필터, 배지
-판정·색상 매핑.
-제외: 배지가 참조하는 원본 데이터의 동기화·계산 자체(각 도메인 소유 — 2·7절), 지도 렌더링, 휴게소 상세
-화면 진입(카드 클릭 시 상세로 이어질 예정이나 이번 범위 밖).
+판정·색상 매핑, 결과 카드 클릭 시 지도 화면과 같은 상세 팝업 열기(마크업·모듈 재사용).
+제외: 배지가 참조하는 원본 데이터의 동기화·계산 자체(각 도메인 소유 — 2·7절), 지도 렌더링, 상세 정보
+자체의 조회·계산([[rest-stop-content]]/[[rest-stop]] 소유 — 이 도메인은 재사용만 한다).
 
 ## 2. 용어와 핵심 엔티티
 
@@ -76,6 +76,9 @@ sources: []
 같은 엔드포인트를 호출한다 → 조건 필터 칩(규모·이용량은 항상, 나머지 한 자리만 관심 항목에 따라 EV
 충전 또는 유가 저렴한 곳)을 선택하면 프런트에서 AND 필터링만 수행한다(서버 재호출 없음).
 
+**휴게소 상세**: 두 화면 모두 결과 카드를 누르면(클릭/Enter/Space) 지도 화면(`index.html`)과 같은 상세
+팝업이 finder 화면 안에서 그대로 뜬다(페이지 이동 없음, 8절). 닫기 전까지 검색/필터 상태는 유지된다.
+
 **실패/빈 결과**: 이름·거리로 찾기는 검색 결과가 없거나 위치·이름 둘 다 없으면 상태 텍스트만 보여주고
 목록을 비운다(별도 에러 코드 없음 — nearby 엔드포인트는 파라미터가 전부 optional이라 항상 200과 빈
 배열/부분 필드로 응답). 목적지로 추천받기는 목적지를 못 찾거나 경로 API 실패 시 상태 텍스트로
@@ -115,10 +118,11 @@ sources: []
   세션 동안 기억해서, 같은 탭 안에서 다시 들어갈 때 팝업을 또 띄우지 않는다(새로고침에도 살아남고, 탭을
   닫으면 사라진다 — 다른 탭·다음 방문에는 이어지지 않는다). `finder.locationAnswered.nearby-search`/
   `.destination-recommendation`는 `'granted'`/`'skipped'`, `finder.interest`는 고른 유종/EV 값(건너뛰면
-  내부적으로 `'NONE'` 센티널로 구분 저장 — "아직 안 답함"과 "건너뛰기를 답함"을 구분해야 해서). 재선택
-  UI는 없고, "첫 화면으로" 뒤로가기로도 초기화되지 않는다 — 랜딩으로 돌아갈 수 있는 유일한 경로가
-  뒤로가기라, 거기서 초기화하면 화면을 오갈 때마다 매번 다시 물어보게 돼 애초에 기억을 두는 의미가
-  없어진다. 잘못 골랐을 때 고치는 방법은 탭을 닫았다 새로 여는 것뿐이다(sessionStorage 자체 수명).
+  `'NONE'` 센티널로 "안 답함"과 구분 저장). 재선택 UI는 없고 "첫 화면으로" 뒤로가기로도 초기화되지
+  않는다(뒤로가기가 랜딩으로 가는 유일한 경로라, 거기서 초기화하면 매번 다시 물어보게 돼 기억을
+  두는 의미가 없어진다). 잘못 골랐을 땐 탭을 닫았다 새로 여는 것뿐이다(sessionStorage 수명 그대로).
+  **위치 허용 기억은 두 화면이 공유한다**: 브라우저 권한이 탭 전체에 하나뿐이라, 한쪽에서 실제로
+  허용되면 `finder-entry-flow.js`가 두 화면 기억을 모두 `'granted'`로 갱신한다.
 - **요청 경합**: 두 화면의 목록 요청 모두 요청 ID/AbortController로 최신 요청만 반영하는 공통 패턴을
   쓴다 — 빠르게 조건을 바꿔가며 검색해도 늦게 도착한 오래된 응답이 화면을 덮어쓰지 않는다.
 - **캐시**: 없음. 검색어·위치가 바뀔 때마다 매번 재호출.
@@ -158,6 +162,9 @@ sources: []
   재사용할 뿐 서로 대체하지 않는다.
 - **`GET /api/place-search`**([[place-search-and-map-config]] 소유): 목적지를 직접 입력했을 때만
   호출한다(인기 칩은 안 씀). 지도 화면의 목적지 후보 검색과 동일한 API·응답 형태를 그대로 재사용한다.
+- **휴게소 상세 API 6종**([[rest-stop-content]]/[[rest-stop]] 소유, `GET /api/rest-stops/{code}/*`): 카드
+  클릭 시 지도 화면과 동일하게 `rest-stop-detail-popup.js`(내부의 `rest-stop-detail-request.js`)가 그대로
+  호출한다(계약은 해당 문서 소관).
 
 ## 8. 코드 경계와 진입점
 
@@ -180,6 +187,10 @@ sources: []
   요청 ID/AbortController로 최신 응답만 반영하는 같은 패턴. `finder-destination-chips.js`(인기 목적지
   칩 4개, 라벨=검색어). 목적지 후보 검색은 지도 화면과 공유하는 `place-search-request.js`를 그대로
   import한다.
+- `finder-rest-stop-detail.js` — `rest-stop-detail-popup.js`(지도 화면과 완전히 공유, 마크업까지 그
+  모듈이 직접 만들어 붙인다 — finder.html엔 상세 팝업 마크업이 없다)를 호출하는 얇은 어댑터. finder가
+  얹는 건 부트스트랩 토스트(`showApiUnavailableAlert`, 기본값) 자리의 no-op과 Escape 키 처리뿐이다.
+  `finder-app.js`가 이 모듈의 `openDetail`을 두 화면 모듈에 그대로 넘겨준다.
 - **백엔드 — rest-stop 소유**(이 문서는 소비 관점만 기록): `reststop.service.RestStopNearbyQueryService`,
   `reststop.service.dto.RestStopInterest`, `reststop.controller.response.RestStopNearbyItemResponse`,
   `RestStopController.getNearbyRestStops`.

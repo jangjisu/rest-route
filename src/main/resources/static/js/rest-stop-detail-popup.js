@@ -1,0 +1,372 @@
+/**
+ * 휴게소 상세 팝업 — 지도 화면(index.html)과 finder 화면(finder.html)이 공유하는 컴포넌트.
+ *
+ * 마크업을 이 모듈이 직접 만들어서 mountTarget에 붙이기 때문에, 어느 페이지든
+ * `createRestStopDetailPopup(document, {...})`만 호출하면 된다 — 페이지 템플릿에 상세 팝업
+ * 마크업을 따로 작성할 필요가 없다. 실제 렌더링은 그대로 rest-stop-detail-view.js/
+ * rest-stop-detail-request.js에 위임한다(둘 다 id로 DOM을 직접 조회·조작할 뿐이라, 마크업이
+ * 어떻게 만들어졌든 상관없이 동작한다).
+ *
+ * 이 모듈이 갖는 것: 마크업, 열기/닫기, 주유 요금 갱신, 먹거리 모달(열기/닫기/토글/배경 클릭 닫기),
+ * 바텀시트로 보일 때(좁은 화면) 뒷배경을 막는 스크림(클릭·스크롤이 뒤로 새지 않게)과 헤더를 끌어
+ * 내려 닫는 스와이프. 이 모듈이 갖지 않는 것(페이지마다 다르므로 호출하는 쪽이 책임진다): 다른
+ * 모달과 함께 있는 Escape 키 우선순위, 지도 화면 전용 "경로 결과로 돌아가기" 버튼의 표시 여부,
+ * 닫을 때 지도 포커스를 되돌리는 것 같은 페이지별 후처리. 그런 페이지별 동작은 `onCloseRequest`
+ * (닫기 버튼·먹거리 모달 배경 클릭·스와이프 시 호출)로 위임받아서, 호출하는 쪽이 실제 닫기 방식을
+ * 정한다.
+ */
+
+import { createRestStopDetailRequest } from './rest-stop-detail-request.js';
+import { createRestStopDetailView } from './rest-stop-detail-view.js';
+
+const SWIPE_DISMISS_THRESHOLD_PX = 120;
+// 지금 바텀시트로 보이는지는 화면 폭을 직접 재지 않고 style.css/finder.css가 패널에 실어 둔
+// --rest-stop-detail-sheet-mode 값으로 물어본다 — finder는 브라우저 창 폭과 무관하게 항상
+// 바텀시트지만(finder.css), 지도 화면은 좁을 때만 바텀시트라(style.css 미디어쿼리) 화면 폭
+// 조건 자체가 페이지마다 다르다. 폭을 여기서 직접 재면 finder 쪽 조건이 늘 맞다고 잘못
+// 가정하게 된다(실제로 그래서 넓은 브라우저 창에서 스와이프 닫기가 안 먹는 버그가 있었다).
+const SHEET_MODE_PROPERTY = '--rest-stop-detail-sheet-mode';
+
+// body에 이 클래스가 있으면(좁은 화면 + 열려 있음) style.css가 뒤 화면을 덮는 스크림을 그린다.
+// 지도 화면이 원래 쓰던 클래스라 이름을 그대로 재사용한다.
+const SHEET_OPEN_BODY_CLASS = 'rest-stop-detail-sheet-open';
+
+const POPUP_MARKUP = `
+<aside id="restStopDetailPanel" class="rest-stop-detail-panel d-none" aria-labelledby="restStopDetailName" aria-busy="false">
+    <div class="rest-stop-detail-header">
+        <div class="rest-stop-detail-drag-handle" aria-hidden="true"></div>
+        <div class="rest-stop-detail-heading">
+            <button id="restStopDetailRouteBack" class="rest-stop-detail-back d-none" type="button"
+                    aria-label="경로 결과로 돌아가기" aria-controls="routeResultModal">
+                <span aria-hidden="true">←</span>
+            </button>
+            <div class="rest-stop-detail-kicker">선택한 휴게소</div>
+            <h2 id="restStopDetailName" class="rest-stop-detail-name"></h2>
+            <div class="rest-stop-detail-badges">
+                <span id="restStopDetailEvCharger" class="rest-stop-detail-ev-charger d-none">
+                    <i aria-hidden="true">⚡</i>
+                    <span id="restStopDetailEvChargerText"></span>
+                </span>
+                <span id="restStopDetailTrafficBadge" class="rest-stop-detail-traffic-badge d-none">
+                    <span aria-hidden="true">🚗</span>이용량 상위 10%
+                </span>
+                <ul id="restStopDetailThemes" class="rest-stop-detail-theme-badges d-none"></ul>
+            </div>
+        </div>
+        <div class="rest-stop-detail-actions">
+            <button id="restStopFoodOpen" class="rest-stop-food-open rest-stop-detail-food-open-button d-none" type="button"
+                    aria-haspopup="dialog" aria-controls="restStopFoodModal">
+                <span aria-hidden="true">🍽️</span>먹거리
+            </button>
+        </div>
+        <button id="restStopDetailClose" class="rest-stop-detail-close-button" type="button" aria-label="상세 정보 닫기">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <line x1="5" y1="5" x2="19" y2="19"></line>
+                <line x1="19" y1="5" x2="5" y2="19"></line>
+            </svg>
+        </button>
+    </div>
+    <div id="restStopDetailStatus" class="rest-stop-detail-status" aria-live="polite"></div>
+    <div id="restStopDetailContent" class="rest-stop-detail-content d-none">
+        <figure id="restStopDetailImageWrapper" class="rest-stop-detail-image-wrapper d-none">
+            <img id="restStopDetailImage" class="rest-stop-detail-image" alt="">
+        </figure>
+        <section class="rest-stop-detail-section" aria-labelledby="restStopDetailParkingHeading">
+            <h3 id="restStopDetailParkingHeading" class="rest-stop-detail-section-title">
+                <span class="rest-stop-detail-section-icon" aria-hidden="true">🅿️</span>주차 정보
+            </h3>
+            <dl class="rest-stop-detail-list">
+                <dt>총 주차 대수</dt>
+                <dd id="restStopDetailTotalParking"></dd>
+                <dt>대형 / 소형 / 장애인</dt>
+                <dd id="restStopDetailParkingBreakdown"></dd>
+            </dl>
+        </section>
+        <section id="restStopRestroomSection" class="rest-stop-detail-section d-none" aria-labelledby="restStopDetailRestroomHeading">
+            <h3 id="restStopDetailRestroomHeading" class="rest-stop-detail-section-title">
+                <span class="rest-stop-detail-section-icon" aria-hidden="true">🚻</span>화장실 정보
+            </h3>
+            <div class="rest-stop-detail-stat-grid">
+                <div class="rest-stop-detail-stat">
+                    <span class="rest-stop-detail-stat-label">🚹 남성</span>
+                    <span id="restStopDetailRestroomMale" class="rest-stop-detail-stat-value"></span>
+                </div>
+                <div class="rest-stop-detail-stat">
+                    <span class="rest-stop-detail-stat-label">🚺 여성</span>
+                    <span id="restStopDetailRestroomFemale" class="rest-stop-detail-stat-value"></span>
+                </div>
+            </div>
+        </section>
+        <section id="restStopUsageSection" class="rest-stop-detail-section d-none" aria-labelledby="restStopDetailUsageHeading">
+            <h3 id="restStopDetailUsageHeading" class="rest-stop-detail-section-title">
+                <span class="rest-stop-detail-section-icon" aria-hidden="true">📊</span>이용 현황
+            </h3>
+            <div class="rest-stop-detail-stat-grid">
+                <div class="rest-stop-detail-stat">
+                    <span class="rest-stop-detail-stat-label">1일 평균 이용객</span>
+                    <span id="restStopDetailDailyVisitorCount" class="rest-stop-detail-stat-value"></span>
+                </div>
+                <div class="rest-stop-detail-stat">
+                    <span class="rest-stop-detail-stat-label">1일 평균 통행량</span>
+                    <span id="restStopDetailDailyTrafficVolume" class="rest-stop-detail-stat-value"></span>
+                </div>
+            </div>
+        </section>
+        <section id="restStopOilSection" class="rest-stop-detail-section" aria-labelledby="restStopDetailOilHeading">
+            <div class="rest-stop-detail-section-header">
+                <h3 id="restStopDetailOilHeading" class="rest-stop-detail-section-title">
+                    <span class="rest-stop-detail-section-icon" aria-hidden="true">⛽</span>주유 정보
+                </h3>
+                <button id="restStopOilRefreshButton" class="rest-stop-detail-refresh-button" type="button">실시간 요금 갱신</button>
+            </div>
+            <p id="restStopOilRefreshStatus" class="rest-stop-detail-meta" aria-live="polite"></p>
+            <h4 class="rest-stop-detail-subtitle">요금</h4>
+            <dl class="rest-stop-detail-list">
+                <dt>휘발유</dt>
+                <dd id="restStopOilGasolinePrice"></dd>
+                <dt>경유</dt>
+                <dd id="restStopOilDieselPrice"></dd>
+                <dt>LPG</dt>
+                <dd id="restStopOilLpgPrice"></dd>
+            </dl>
+            <h4 class="rest-stop-detail-subtitle">기본 정보</h4>
+            <dl class="rest-stop-detail-list">
+                <dt>정유사</dt>
+                <dd id="restStopOilCompany"></dd>
+                <dt>전화번호</dt>
+                <dd id="restStopOilTelNo"></dd>
+            </dl>
+            <h4 class="rest-stop-detail-subtitle">주유소 편의시설</h4>
+            <ul id="restStopOilConvenienceTags" class="rest-stop-detail-tags"></ul>
+            <p id="restStopOilConvenienceFallback" class="rest-stop-detail-missing d-none"></p>
+            <ul id="restStopOilConvenienceDetails" class="rest-stop-oil-convenience-details"></ul>
+        </section>
+        <section id="restStopSalesRankingSection" class="rest-stop-detail-section d-none" aria-labelledby="restStopSalesRankingHeading">
+            <div class="rest-stop-detail-section-header">
+                <h3 id="restStopSalesRankingHeading" class="rest-stop-detail-section-title">
+                    <span class="rest-stop-detail-section-icon" aria-hidden="true">🛍️</span>인기 판매
+                </h3>
+                <span id="restStopSalesRankingMonth" class="rest-stop-detail-meta"></span>
+            </div>
+            <p class="rest-stop-sales-ranking-caption">휴게소 내 판매순위</p>
+            <div class="rest-stop-sales-ranking-columns">
+                <section id="restStopStoreRankingColumn" class="rest-stop-sales-ranking-column" aria-labelledby="restStopStoreRankingHeading">
+                    <h4 id="restStopStoreRankingHeading">인기 매장</h4>
+                    <ol id="restStopStoreRankingList" class="rest-stop-sales-ranking-list"></ol>
+                </section>
+                <section id="restStopProductRankingColumn" class="rest-stop-sales-ranking-column" aria-labelledby="restStopProductRankingHeading">
+                    <h4 id="restStopProductRankingHeading">인기 상품</h4>
+                    <ol id="restStopProductRankingList" class="rest-stop-sales-ranking-list"></ol>
+                </section>
+            </div>
+        </section>
+        <section class="rest-stop-detail-section" aria-labelledby="restStopDetailLocationHeading">
+            <h3 id="restStopDetailLocationHeading" class="rest-stop-detail-section-title">
+                <span class="rest-stop-detail-section-icon" aria-hidden="true">📍</span>위치 정보
+            </h3>
+            <dl class="rest-stop-detail-list">
+                <dt>노선</dt>
+                <dd id="restStopDetailRoute"></dd>
+                <dt>방향</dt>
+                <dd id="restStopDetailDirection"></dd>
+                <dt>주소</dt>
+                <dd id="restStopDetailAddress"></dd>
+            </dl>
+        </section>
+        <section class="rest-stop-detail-section" aria-labelledby="restStopDetailConvenienceHeading">
+            <h3 id="restStopDetailConvenienceHeading" class="rest-stop-detail-section-title">
+                <span class="rest-stop-detail-section-icon" aria-hidden="true">👥</span>편의시설
+            </h3>
+            <ul id="restStopDetailConvenience" class="rest-stop-detail-tags"></ul>
+            <p id="restStopDetailConvenienceFallback" class="rest-stop-detail-missing d-none"></p>
+        </section>
+        <section class="rest-stop-detail-section" aria-labelledby="restStopDetailOperationHeading">
+            <h3 id="restStopDetailOperationHeading" class="rest-stop-detail-section-title">운영 상태</h3>
+            <dl class="rest-stop-detail-list">
+                <dt>경정비</dt>
+                <dd id="restStopDetailMaintenance"></dd>
+                <dt>화물휴게소</dt>
+                <dd id="restStopDetailFreight"></dd>
+            </dl>
+        </section>
+        <section id="restStopDetailEventSection" class="rest-stop-detail-section d-none" aria-labelledby="restStopDetailEventHeading">
+            <h3 id="restStopDetailEventHeading" class="rest-stop-detail-section-title">
+                <span class="rest-stop-detail-section-icon" aria-hidden="true">🎉</span>진행 중인 이벤트
+            </h3>
+            <ul id="restStopDetailEventList" class="rest-stop-detail-event-list"></ul>
+        </section>
+    </div>
+    <dialog id="restStopFoodModal" class="rest-stop-food-modal" aria-labelledby="restStopFoodModalTitle">
+        <div class="rest-stop-food-modal-header">
+            <h3 id="restStopFoodModalTitle" class="rest-stop-food-modal-title">먹거리</h3>
+            <button id="restStopFoodModalClose" class="rest-stop-detail-close-button" type="button" aria-label="먹거리 닫기">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                    <line x1="5" y1="5" x2="19" y2="19"></line>
+                    <line x1="19" y1="5" x2="5" y2="19"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="rest-stop-food-modal-body">
+            <button id="restStopFoodToggle" class="rest-stop-detail-food-toggle-button d-none" type="button"
+                    aria-expanded="false" aria-controls="restStopFoodList">전체 메뉴 보기</button>
+            <ul id="restStopFoodList" class="rest-stop-food-list"></ul>
+        </div>
+    </dialog>
+</aside>`;
+
+export function createRestStopDetailPopup(document, {
+    mountTarget = document.body,
+    onPopupUpdate,
+    onPresentationChange,
+    onExternalUnavailable,
+    onCloseRequest,
+    onRouteBack
+} = {}) {
+    const root = document.createRange().createContextualFragment(POPUP_MARKUP).firstElementChild;
+    mountTarget.appendChild(root);
+
+    const detailRequest = createRestStopDetailRequest({
+        document,
+        onState: (state) => detailView.renderState(state)
+    });
+    const detailView = createRestStopDetailView({
+        onPopupUpdate,
+        onPresentationChange,
+        refreshOilPrice: (serviceAreaCode) => detailRequest.refreshOilPrice(serviceAreaCode),
+        onExternalUnavailable
+    });
+
+    const controller = new globalThis.AbortController();
+    bindEvents();
+    bindSwipeToDismiss();
+
+    function isSheetMode() {
+        return globalThis.getComputedStyle?.(root).getPropertyValue(SHEET_MODE_PROPERTY).trim() === '1';
+    }
+
+    function bindEvents() {
+        const { signal } = controller;
+
+        document.getElementById('restStopDetailClose')?.addEventListener('click', () => onCloseRequest?.(), { signal });
+        document.getElementById('restStopDetailRouteBack')?.addEventListener('click', () => onRouteBack?.(), { signal });
+        document.getElementById('restStopOilRefreshButton')?.addEventListener('click', () => detailView.refreshOilInfo(), { signal });
+        document.getElementById('restStopFoodToggle')?.addEventListener('click', () => detailView.toggleFoodMenu(), { signal });
+        document.getElementById('restStopFoodOpen')?.addEventListener('click', () => detailView.openFoodModal(), { signal });
+        document.getElementById('restStopFoodModalClose')?.addEventListener('click', () => detailView.closeFoodModal(), { signal });
+        document.getElementById('restStopFoodModal')?.addEventListener('click', (event) => {
+            if (event.target === event.currentTarget) {
+                detailView.closeFoodModal();
+            }
+        }, { signal });
+    }
+
+    // 바텀시트로 보일 때(isSheetMode)만 헤더를 아래로 끌어서 닫을 수 있다 — 데스크톱처럼
+    // 옆 패널로 붙어 있을 땐(index.html 넓은 화면) 끌어서 닫는 제스처가 어울리지 않는다.
+    function bindSwipeToDismiss() {
+        const header = root.querySelector('.rest-stop-detail-header');
+        if (!header) {
+            return;
+        }
+
+        const { signal } = controller;
+        let dragging = false;
+        let startClientY = 0;
+
+        // setPointerCapture/releasePointerCapture는 "지금 이 포인터가 실제로 눌려 있는 상태"가
+        // 아니면 NotFoundError를 던진다(예: pointercancel 이후, 혹은 실제 기기가 아닌 합성
+        // 이벤트) — 있으면 좋은 최적화일 뿐 핵심 로직은 아니라서, 실패해도 드래그 자체는
+        // 그대로 진행되게 무시한다.
+        function safeCapture(fn) {
+            try {
+                fn();
+            } catch {
+                // no-op
+            }
+        }
+
+        function onPointerDown(event) {
+            if (!isSheetMode() || event.target.closest('button')) {
+                return;
+            }
+            dragging = true;
+            startClientY = event.clientY;
+            root.style.transition = 'none';
+            safeCapture(() => header.setPointerCapture?.(event.pointerId));
+        }
+
+        function onPointerMove(event) {
+            if (!dragging) {
+                return;
+            }
+            const delta = Math.max(0, event.clientY - startClientY);
+            root.style.transform = `translateY(${delta}px)`;
+        }
+
+        function onPointerUp(event) {
+            if (!dragging) {
+                return;
+            }
+            dragging = false;
+            const delta = Math.max(0, event.clientY - startClientY);
+            root.style.transition = '';
+            root.style.transform = '';
+            safeCapture(() => header.releasePointerCapture?.(event.pointerId));
+            if (delta > SWIPE_DISMISS_THRESHOLD_PX) {
+                onCloseRequest?.();
+            }
+        }
+
+        header.addEventListener('pointerdown', onPointerDown, { signal });
+        header.addEventListener('pointermove', onPointerMove, { signal });
+        header.addEventListener('pointerup', onPointerUp, { signal });
+        header.addEventListener('pointercancel', onPointerUp, { signal });
+    }
+
+    // 좁은 화면(바텀시트로 보일 때)에만 뒷배경 스크림을 켠다 — 넓은 화면(index.html 옆 패널)에선
+    // 배경도 같이 쓰는 화면이라 막으면 안 된다. 열려 있을 때만 유지하고, 화면 폭이 바뀔 수 있어
+    // 리사이즈 때도 다시 불러야 한다(updatePresentation로 노출).
+    function updatePresentation() {
+        document.body.classList.toggle(SHEET_OPEN_BODY_CLASS, isSheetMode() && isOpen());
+    }
+
+    function open(restStop) {
+        detailView.open(restStop);
+        root.classList.remove('d-none');
+        detailRequest.load(restStop.serviceAreaCode);
+        updatePresentation();
+    }
+
+    function close() {
+        detailRequest.invalidate();
+        detailView.closeFoodModal();
+        root.classList.add('d-none');
+        root.setAttribute('aria-busy', 'false');
+        updatePresentation();
+    }
+
+    function isOpen() {
+        return !root.classList.contains('d-none');
+    }
+
+    function isFoodModalOpen() {
+        return Boolean(document.getElementById('restStopFoodModal')?.open);
+    }
+
+    function destroy() {
+        controller.abort();
+        root.remove();
+        document.body.classList.remove(SHEET_OPEN_BODY_CLASS);
+    }
+
+    return {
+        root,
+        open,
+        close,
+        isOpen,
+        isFoodModalOpen,
+        closeFoodModal: () => detailView.closeFoodModal(),
+        refreshOilInfo: () => detailView.refreshOilInfo(),
+        updatePresentation,
+        destroy
+    };
+}

@@ -31,6 +31,16 @@ export function initializeFinderEntryFlow(
     let interestPopupTargetScreen = 'nearby-search';
     let pendingOrigin = null;
 
+    // 위치 허용은 브라우저 권한 자체가 화면별이 아니라 탭 전체에 하나다 — 한쪽 화면에서 실제로
+    // 허용됐으면 다른 화면도 이미 쓸 수 있는 상태라, 기억도 같이 "허용"으로 갱신해야 한다. 안
+    // 하면 예를 들어 이름·거리로 찾기에서 건너뛴 뒤 목적지로 추천받기에서 허용해도, 다시 이름·
+    // 거리로 찾기에 들어갔을 때 여전히 "건너뜀"으로 기억돼 있어서 매번 새로 물어보지도, 이미
+    // 허용된 위치를 쓰지도 못하는 채로 남는다.
+    function markLocationGrantedForBothScreens() {
+        rememberLocationAnswer('nearby-search', 'granted');
+        rememberLocationAnswer('destination-recommendation', 'granted');
+    }
+
     document.getElementById('finderEnterMode1')?.addEventListener('click', () => startNearbySearchEntry());
     document.getElementById('finderEnterMode2')?.addEventListener('click', () => startDestinationRecommendationEntry());
 
@@ -90,7 +100,11 @@ export function initializeFinderEntryFlow(
         setLoading(document, false);
 
         const origin = result.granted ? { latitude: result.latitude, longitude: result.longitude } : null;
-        rememberLocationAnswer('nearby-search', result.granted ? 'granted' : 'skipped');
+        if (result.granted) {
+            markLocationGrantedForBothScreens();
+        } else {
+            rememberLocationAnswer('nearby-search', 'skipped');
+        }
         closeDialogById('finderPermissionMode1');
         proceedFromNearbySearchLocation(origin);
     });
@@ -117,7 +131,7 @@ export function initializeFinderEntryFlow(
             return;
         }
 
-        rememberLocationAnswer('destination-recommendation', 'granted');
+        markLocationGrantedForBothScreens();
         closeDialogById('finderPermissionMode2');
         proceedFromDestinationRecommendationLocation({ latitude: result.latitude, longitude: result.longitude });
     });
