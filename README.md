@@ -30,10 +30,9 @@
 
 <img src="docs/images/index-map-live.png" width="800" alt="지도 화면 — 전국 휴게소 위치와 경로 검색">
 
-휴게소 상세 정보는 모바일 화면과 완전히 같은 컴포넌트를 공유합니다 — 어느 화면에서 열어도 같은 정보, 같은 동작입니다.
+출발지·도착지를 검색하면 경로 위 휴게소를 국가 평균 유가, 주유·먹거리·테마·이벤트·EV 충전 필터와 함께 순서대로 보여줍니다. 휴게소 상세 정보는 모바일 화면과 완전히 같은 컴포넌트를 공유합니다 — 어느 화면에서 열어도 같은 정보, 같은 동작입니다.
 
-<img src="docs/images/index-detail-mobile.png" width="260" alt="지도 화면(index.html)에서 연 같은 상세 패널">
-<br><sub>지도 화면(index.html)에서 연 상세 — 모바일 화면과 완전히 같은 정보·마크업</sub>
+<img src="docs/images/index-route-search.png" width="800" alt="경로 검색 결과 — 경로상 휴게소와 국가 평균 유가, 조건 필터">
 
 ## 현재 기능
 
