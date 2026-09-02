@@ -5,34 +5,32 @@
 
 ## 화면
 
-### 모바일 — `/finder`
+### 모바일
 
-모바일에서는 이 화면 하나만 씁니다. <https://www.rest-route.o-r.kr/finder>에서 바로 써볼 수 있고, 모바일 기기로 루트 주소(`/`)에 접속해도 자동으로 이 화면으로 연결됩니다.
+<https://www.rest-route.o-r.kr>에 모바일 기기로 접속하면 자동으로 이 화면이 뜹니다.
 
 랜딩에서 "이름·거리로 찾기"(현재 위치 기준 가까운 순, 이름 검색)와 "목적지로 추천받기"(가는 방향 경로 위 휴게소, 인기 목적지 칩) 중 고릅니다. 규모·이용량·유가·EV 충전 조건에 따라 배지가 붙습니다.
 
 <table>
 <tr>
-<td><img src="docs/images/finder-landing.png" width="220" alt="랜딩 화면"><br>랜딩</td>
-<td><img src="docs/images/finder-nearby-search.png" width="220" alt="이름·거리로 찾기"><br>이름·거리로 찾기</td>
-<td><img src="docs/images/finder-destination-recommendation.png" width="220" alt="목적지로 추천받기"><br>목적지로 추천받기</td>
-<td><img src="docs/images/finder-detail.png" width="220" alt="휴게소 상세"><br>휴게소 상세</td>
+<td><img src="docs/images/mobile-landing.png" width="220" alt="랜딩 화면"><br>랜딩</td>
+<td><img src="docs/images/mobile-nearby-search.png" width="220" alt="이름·거리로 찾기"><br>이름·거리로 찾기</td>
+<td><img src="docs/images/mobile-destination-recommendation.png" width="220" alt="목적지로 추천받기"><br>목적지로 추천받기</td>
+<td><img src="docs/images/mobile-detail.png" width="220" alt="휴게소 상세"><br>휴게소 상세</td>
 </tr>
 </table>
 
 휴게소 하나를 고르면 주차·화장실·이용현황·주유 가격·인기 판매·위치·편의시설·이벤트까지 한 화면에서 볼 수 있습니다.
 
-### 데스크톱 — `/`
+### 데스크톱
 
-데스크톱 전용 화면입니다. 모바일 기기로 접속하면 이 화면 대신 위 `/finder` 화면으로 자동 연결됩니다.
+<https://www.rest-route.o-r.kr>에 데스크톱으로 접속하면 뜨는 화면입니다(모바일 기기로 접속하면 대신 위 모바일 화면으로 연결됩니다). 전국 휴게소 위치를 지도로 확인하고, 출발지·목적지를 검색하면 그 경로 위 휴게소를 순서대로 보여줍니다.
 
-<https://www.rest-route.o-r.kr>에서 전국 휴게소 위치를 지도로 확인하고, 출발지·목적지를 검색하면 그 경로 위 휴게소를 순서대로 보여줍니다.
-
-<img src="docs/images/index-map-live.png" width="800" alt="지도 화면 — 전국 휴게소 위치와 경로 검색">
+<img src="docs/images/desktop-map.png" width="800" alt="지도 화면 — 전국 휴게소 위치와 경로 검색">
 
 출발지·도착지를 검색하면 경로 위 휴게소를 국가 평균 유가, 주유·먹거리·테마·이벤트·EV 충전 필터와 함께 순서대로 보여줍니다. 휴게소 상세 정보는 모바일 화면과 완전히 같은 컴포넌트를 공유합니다 — 어느 화면에서 열어도 같은 정보, 같은 동작입니다.
 
-<img src="docs/images/index-route-search.png" width="800" alt="경로 검색 결과 — 경로상 휴게소와 국가 평균 유가, 조건 필터">
+<img src="docs/images/desktop-route-search.png" width="800" alt="경로 검색 결과 — 경로상 휴게소와 국가 평균 유가, 조건 필터">
 
 ## 현재 기능
 
