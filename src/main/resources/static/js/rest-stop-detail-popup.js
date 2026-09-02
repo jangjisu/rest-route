@@ -7,11 +7,13 @@
  * rest-stop-detail-request.js에 위임한다(둘 다 id로 DOM을 직접 조회·조작할 뿐이라, 마크업이
  * 어떻게 만들어졌든 상관없이 동작한다).
  *
- * 이 모듈이 갖는 것: 마크업, 열기/닫기, 주유 요금 갱신, 먹거리 모달(열기/닫기/토글/배경 클릭 닫기).
- * 이 모듈이 갖지 않는 것(페이지마다 다르므로 호출하는 쪽이 책임진다): 다른 모달과 함께 있는 Escape
- * 키 우선순위, 지도 화면 전용 "경로 결과로 돌아가기" 버튼의 표시 여부, 모바일 시트 프레젠테이션,
+ * 이 모듈이 갖는 것: 마크업, 열기/닫기, 주유 요금 갱신, 먹거리 모달(열기/닫기/토글/배경 클릭 닫기),
+ * 바텀시트로 보일 때(좁은 화면) 뒷배경을 막는 스크림(클릭·스크롤이 뒤로 새지 않게)과 헤더를 끌어
+ * 내려 닫는 스와이프. 이 모듈이 갖지 않는 것(페이지마다 다르므로 호출하는 쪽이 책임진다): 다른
+ * 모달과 함께 있는 Escape 키 우선순위, 지도 화면 전용 "경로 결과로 돌아가기" 버튼의 표시 여부,
  * 닫을 때 지도 포커스를 되돌리는 것 같은 페이지별 후처리. 그런 페이지별 동작은 `onCloseRequest`
- * (닫기 버튼·먹거리 모달 배경 클릭 시 호출)로 위임받아서, 호출하는 쪽이 실제 닫기 방식을 정한다.
+ * (닫기 버튼·먹거리 모달 배경 클릭·스와이프 시 호출)로 위임받아서, 호출하는 쪽이 실제 닫기 방식을
+ * 정한다.
  */
 
 import { createRestStopDetailRequest } from './rest-stop-detail-request.js';
@@ -21,6 +23,10 @@ import { createRestStopDetailView } from './rest-stop-detail-view.js';
 // finder는 항상 이 폭 안에서만 쓰이므로 매번 이 조건에 걸려 스와이프 닫기가 항상 켜진다.
 const SHEET_MEDIA = '(max-width: 991.98px)';
 const SWIPE_DISMISS_THRESHOLD_PX = 120;
+
+// body에 이 클래스가 있으면(좁은 화면 + 열려 있음) style.css가 뒤 화면을 덮는 스크림을 그린다.
+// 지도 화면이 원래 쓰던 클래스라 이름을 그대로 재사용한다.
+const SHEET_OPEN_BODY_CLASS = 'rest-stop-detail-sheet-open';
 
 const POPUP_MARKUP = `
 <aside id="restStopDetailPanel" class="rest-stop-detail-panel d-none" aria-labelledby="restStopDetailName" aria-busy="false">
@@ -231,6 +237,10 @@ export function createRestStopDetailPopup(document, {
     bindEvents();
     bindSwipeToDismiss();
 
+    function isSheetMode() {
+        return globalThis.matchMedia?.(SHEET_MEDIA).matches ?? false;
+    }
+
     function bindEvents() {
         const { signal } = controller;
 
@@ -258,10 +268,6 @@ export function createRestStopDetailPopup(document, {
         const { signal } = controller;
         let dragging = false;
         let startClientY = 0;
-
-        function isSheetMode() {
-            return globalThis.matchMedia?.(SHEET_MEDIA).matches ?? false;
-        }
 
         function onPointerDown(event) {
             if (!isSheetMode() || event.target.closest('button')) {
@@ -301,10 +307,18 @@ export function createRestStopDetailPopup(document, {
         header.addEventListener('pointercancel', onPointerUp, { signal });
     }
 
+    // 좁은 화면(바텀시트로 보일 때)에만 뒷배경 스크림을 켠다 — 넓은 화면(index.html 옆 패널)에선
+    // 배경도 같이 쓰는 화면이라 막으면 안 된다. 열려 있을 때만 유지하고, 화면 폭이 바뀔 수 있어
+    // 리사이즈 때도 다시 불러야 한다(updatePresentation로 노출).
+    function updatePresentation() {
+        document.body.classList.toggle(SHEET_OPEN_BODY_CLASS, isSheetMode() && isOpen());
+    }
+
     function open(restStop) {
         detailView.open(restStop);
         root.classList.remove('d-none');
         detailRequest.load(restStop.serviceAreaCode);
+        updatePresentation();
     }
 
     function close() {
@@ -312,6 +326,7 @@ export function createRestStopDetailPopup(document, {
         detailView.closeFoodModal();
         root.classList.add('d-none');
         root.setAttribute('aria-busy', 'false');
+        updatePresentation();
     }
 
     function isOpen() {
@@ -325,6 +340,7 @@ export function createRestStopDetailPopup(document, {
     function destroy() {
         controller.abort();
         root.remove();
+        document.body.classList.remove(SHEET_OPEN_BODY_CLASS);
     }
 
     return {
@@ -335,6 +351,7 @@ export function createRestStopDetailPopup(document, {
         isFoodModalOpen,
         closeFoodModal: () => detailView.closeFoodModal(),
         refreshOilInfo: () => detailView.refreshOilInfo(),
+        updatePresentation,
         destroy
     };
 }

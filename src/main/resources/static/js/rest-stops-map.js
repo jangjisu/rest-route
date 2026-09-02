@@ -448,9 +448,9 @@ function isMobileDetailSheet() {
 }
 
 function updateDetailSheetPresentation() {
-    const panel = document.getElementById('restStopDetailPanel');
-    const isOpen = panel && !panel.classList.contains('d-none');
-    document.body.classList.toggle('rest-stop-detail-sheet-open', Boolean(isOpen && isMobileDetailSheet()));
+    // 뒷배경 스크림 자체는 rest-stop-detail-popup.js가 갖고 있고(좁은 화면일 때만), 여기선
+    // 화면 폭이 바뀔 수 있어(리사이즈) 다시 계산해달라고 알려주기만 한다.
+    detailPopup?.updatePresentation();
     updateRouteResultBackButton();
 }
 

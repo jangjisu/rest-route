@@ -1531,6 +1531,7 @@ body.global-loading-open {
     background-color: var(--rr-color-surface);
     box-shadow: none;
     overflow-y: auto;
+    overscroll-behavior: contain; /* 끝까지 스크롤해도 뒤에 있는 화면으로 안 새게 막는다 */
 }
 
 .rest-stop-detail-header {
@@ -2136,6 +2137,7 @@ body.global-loading-open {
 .rest-stop-food-modal-body {
     padding: 1rem 1.25rem 1.25rem;
     overflow-y: auto;
+    overscroll-behavior: contain; /* 끝까지 스크롤해도 뒤에 있는 화면(리스트 등)으로 안 새게 막는다 */
 }
 
 @media (max-width: 991.98px) {
