@@ -5,13 +5,9 @@
 
 ## 화면
 
-### 지도에서 살펴보기
+### 모바일에서 빠르게 찾기 — `/finder`
 
-전국 휴게소 위치를 지도에서 확인하고, 출발지·목적지를 검색하면 그 경로 위 휴게소를 순서대로 보여줍니다.
-
-<img src="docs/images/index-map-live.png" width="800" alt="지도 화면 — 전국 휴게소 위치와 경로 검색">
-
-### 모바일에서 빠르게 찾기
+<https://www.rest-route.o-r.kr/finder>에서 바로 써볼 수 있습니다. 모바일 기기로 루트 주소(`/`)에 접속하면 자동으로 이 화면으로 연결됩니다.
 
 랜딩에서 "이름·거리로 찾기"(현재 위치 기준 가까운 순, 이름 검색)와 "목적지로 추천받기"(가는 방향 경로 위 휴게소, 인기 목적지 칩) 중 고릅니다. 규모·이용량·유가·EV 충전 조건에 따라 배지가 붙습니다.
 
@@ -24,7 +20,15 @@
 </tr>
 </table>
 
-휴게소 하나를 고르면 주차·화장실·이용현황·주유 가격·인기 판매·위치·편의시설·이벤트까지 한 화면에서 볼 수 있습니다. 이 상세 화면은 지도 화면과 모바일 화면이 완전히 같은 컴포넌트를 공유합니다 — 어느 화면에서 열어도 같은 정보, 같은 동작입니다.
+휴게소 하나를 고르면 주차·화장실·이용현황·주유 가격·인기 판매·위치·편의시설·이벤트까지 한 화면에서 볼 수 있습니다.
+
+### 지도에서 살펴보기 — `/`
+
+데스크톱에서 <https://www.rest-route.o-r.kr>에 접속하면 보이는 화면입니다. 전국 휴게소 위치를 지도에서 확인하고, 출발지·목적지를 검색하면 그 경로 위 휴게소를 순서대로 보여줍니다.
+
+<img src="docs/images/index-map-live.png" width="800" alt="지도 화면 — 전국 휴게소 위치와 경로 검색">
+
+휴게소 상세 정보는 모바일 화면과 완전히 같은 컴포넌트를 공유합니다 — 어느 화면에서 열어도 같은 정보, 같은 동작입니다.
 
 <img src="docs/images/index-detail-mobile.png" width="260" alt="지도 화면(index.html)에서 연 같은 상세 패널">
 <br><sub>지도 화면(index.html)에서 연 상세 — 모바일 화면과 완전히 같은 정보·마크업</sub>
@@ -74,33 +78,6 @@
 | Place and Route | Kakao Local API, Kakao Mobility Directions API |
 | Test | JUnit 5, Spring Boot Test, Node.js test runner, JaCoCo |
 | Quality | Checkstyle, Spotless, Palantir Java Format, ESLint, SonarQube |
-
-## 로컬 실행
-
-### 1. API 키 설정
-
-다음 환경 변수를 설정합니다.
-
-```bash
-export EX_API_KEY=YOUR_EX_API_KEY
-export NAVER_MAPS_NCP_KEY_ID=YOUR_NAVER_MAPS_NCP_KEY_ID
-export KAKAO_REST_API_KEY=YOUR_KAKAO_REST_API_KEY
-export EV_API_KEY=YOUR_EV_API_KEY
-```
-
-한국도로공사 키는 Git에서 제외된 `src/main/resources/application-local.properties`에도 설정할 수 있습니다.
-
-```properties
-ex.api.key=YOUR_EX_API_KEY
-```
-
-### 2. 애플리케이션 실행
-
-```bash
-./gradlew bootRun
-```
-
-브라우저에서 `http://localhost:8080`에 접속합니다. 로컬 데이터는 `./data/rest-route` H2 파일에 유지됩니다.
 
 ## Docker 배포
 
@@ -209,28 +186,6 @@ GitHub Actions로 테스트와 배포를 분리해서 운영합니다.
 ```
 
 서버 접속 정보(`LIGHTSAIL_HOST`, `LIGHTSAIL_USER`, `LIGHTSAIL_SSH_KEY`)는 GitHub repo secrets로 관리하며, 배포 전용 SSH 키는 서버의 `~/.ssh/authorized_keys`에 공개키만 등록해 사용합니다.
-
-## 주요 내부 API
-
-| Method | Endpoint | 설명 |
-|---|---|---|
-| `GET` | `/api/map-config` | 네이버 지도 클라이언트 키 설정 조회 |
-| `GET` | `/api/rest-stops` | 저장된 휴게소 목록 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}` | 휴게소 기본 식별·위치 정보 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}/basic-info` | 휴게소 기본 정보와 주소·전화번호·브랜드 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}/facilities` | 편의시설과 주차 정보 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}/oil-info` | 주유 가격·정유사·전화번호·주유소 편의시설 조회 |
-| `GET` | `/api/rest-stops/{serviceAreaCode}/foods` | 대표 먹거리와 전체 메뉴 조회 |
-| `POST` | `/api/rest-stops/{serviceAreaCode}/oil-price/refresh` | 휴게소 주유 가격 단건 갱신 |
-| `GET` | `/api/national-oil-prices/summary` | 전국 평균 유가 요약 조회 |
-| `GET` | `/api/place-search?query=...` | 목적지 후보 목록 조회 |
-| `GET` | `/api/route-rest-stops` | 경로와 경로상 휴게소의 비교 정보 조회(지도 화면 전용) |
-| `GET` | `/api/rest-stops/nearby` | 위치·이름·연료 관심 기준 휴게소 목록 조회(`/finder` 이름·거리로 찾기 전용) |
-| `GET` | `/api/route-rest-stops/list` | 출발지·목적지·연료 관심 기준 경로상 휴게소 목록 조회(`/finder` 목적지로 추천받기 전용) |
-
-휴게소 상세 화면은 기본 정보 조회를 기준으로 시설·주유·먹거리 정보를 각 feature API에서 함께 조회합니다. 전국 평균 유가 요약은 경로 응답에 포함되지 않으며 `/api/national-oil-prices/summary`에서 별도로 조회합니다. `/finder`의 두 목록 API는 지도 화면이 쓰는 `/api/route-rest-stops`와 같은 내부 부품을 재사용하되 응답 형태가 달라 별도 엔드포인트로 분리했습니다.
-
-요청과 응답, 외부 API 연결 상세는 `API.md`를 참고합니다.
 
 ## 검증
 
