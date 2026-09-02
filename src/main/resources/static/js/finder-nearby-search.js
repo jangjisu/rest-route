@@ -20,7 +20,7 @@ const NEARBY_BADGE_COLOR_CLASS_BY_KEY = {
     FUEL_BELOW_AVERAGE: 'finder-badge-savings'
 };
 
-export function initializeNearbySearch(document) {
+export function initializeNearbySearch(document, { openDetail }) {
     const emptyStateEl = document.getElementById('finderMode1EmptyState');
     const subHeadingEl = document.getElementById('finderMode1SubHeading');
     const searchInputEl = document.getElementById('finderMode1SearchInput');
@@ -60,7 +60,8 @@ export function initializeNearbySearch(document) {
                         ? formatDistance(restStop.distanceMeters)
                         : '',
                     badges: nearbyBadgesFor(restStop, interest),
-                    colorClassByKey: NEARBY_BADGE_COLOR_CLASS_BY_KEY
+                    colorClassByKey: NEARBY_BADGE_COLOR_CLASS_BY_KEY,
+                    onSelect: () => openDetail(restStop)
                 })
             );
         });

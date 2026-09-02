@@ -44,9 +44,20 @@ export function setStatus(element, message) {
     element.textContent = message;
 }
 
-export function renderResultCard(document, { name, routeLabel, distanceLabel, badges, colorClassByKey }) {
+export function renderResultCard(document, { name, routeLabel, distanceLabel, badges, colorClassByKey, onSelect }) {
     const li = document.createElement('li');
     li.className = 'finder-result-card';
+    if (onSelect) {
+        li.tabIndex = 0;
+        li.setAttribute('role', 'button');
+        li.addEventListener('click', onSelect);
+        li.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect();
+            }
+        });
+    }
 
     const main = document.createElement('div');
     main.className = 'finder-result-main';

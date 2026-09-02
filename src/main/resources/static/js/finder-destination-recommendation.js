@@ -29,7 +29,7 @@ const DESTINATION_BADGE_COLOR_CLASS_BY_KEY = {
     EV_CHARGER: 'finder-badge-ev'
 };
 
-export function initializeDestinationRecommendation(document) {
+export function initializeDestinationRecommendation(document, { openDetail }) {
     const destinationInputEl = document.getElementById('finderMode2DestinationInput');
     const destinationChipsEl = document.getElementById('finderDestinationChips');
     const filterSectionEl = document.getElementById('finderMode2FilterSection');
@@ -104,7 +104,8 @@ export function initializeDestinationRecommendation(document) {
                     routeLabel: item.routeName,
                     distanceLabel: Number.isFinite(item.distanceMeters) ? formatDistance(item.distanceMeters) : '',
                     badges: destinationBadgesFor(item, interest),
-                    colorClassByKey: DESTINATION_BADGE_COLOR_CLASS_BY_KEY
+                    colorClassByKey: DESTINATION_BADGE_COLOR_CLASS_BY_KEY,
+                    onSelect: () => openDetail(item)
                 })
             );
         });

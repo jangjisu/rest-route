@@ -619,6 +619,14 @@
     padding: 14px;
 }
 
+.finder-result-card[role="button"] {
+    cursor: pointer;
+}
+
+.finder-result-card[role="button"]:active {
+    transform: scale(0.99);
+}
+
 .finder-result-main {
     min-width: 0;
 }
@@ -650,6 +658,61 @@
     font-size: 13px;
     color: var(--rr-color-text-secondary);
     white-space: nowrap;
+}
+
+/* --- 휴게소 상세 (index.html의 rest-stop-detail-* 마크업·스타일을 그대로 재사용) ---
+   .rest-stop-detail-* 클래스 자체는 style.css에 있고 finder.html도 style.css를 불러오므로
+   내용 스타일은 그대로 적용된다. 여기서는 (1) 부트스트랩 없이 전체 화면으로 띄우기 위한
+   배치 오버라이드, (2) 부트스트랩 버튼(.btn 등) 대신 쓰는 finder 전용 버튼만 새로 정의한다. */
+
+.d-none {
+    display: none !important;
+}
+
+.finder-detail-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    max-width: 480px;
+    height: 100dvh;
+    margin: 0 auto;
+    border: none;
+    border-radius: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.finder-detail-panel .rest-stop-detail-header {
+    padding-right: 48px; /* 절대 위치인 닫기 버튼(.finder-dialog-close) 자리 확보 */
+}
+
+.finder-food-open-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    border-radius: var(--rr-radius-pill);
+    background: var(--rr-color-primary);
+    color: var(--rr-color-on-primary);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.finder-detail-refresh-button,
+.finder-food-toggle {
+    border: 1px solid var(--rr-color-primary-border);
+    border-radius: var(--rr-radius-pill);
+    padding: 6px 12px;
+    background: var(--rr-color-primary-tint);
+    color: var(--rr-color-primary-text);
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.finder-food-toggle {
+    margin-bottom: 10px;
 }
 
 /* --- 로딩 오버레이 --- */

@@ -427,9 +427,17 @@ function createEventItem(event, name) {
  * 휴게소 상세 패널의 상태·렌더링을 전담한다. currentDetail/foodExpanded 같은 가변 상태는
  * 이 View가 직접 소유하고, 메인 모듈(rest-stops-map.js)의 전역 상태를 역참조하지 않는다.
  * 지도 팝업 갱신(onPopupUpdate)과 모바일 시트 레이아웃 갱신(onPresentationChange), 실시간
- * 유가 재조회(refreshOilPrice)는 메인이 주입하는 콜백으로 처리한다.
+ * 유가 재조회(refreshOilPrice)는 메인이 주입하는 콜백으로 처리한다. 외부 API 장애 알림
+ * (onExternalUnavailable)은 기본값이 index.html의 Bootstrap 토스트(showApiUnavailableAlert)라
+ * 이 화면의 기존 동작은 그대로고, Bootstrap이 없는 다른 페이지(finder 등)는 자기 방식의 콜백을
+ * 넘기면 된다.
  */
-export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, refreshOilPrice }) {
+export function createRestStopDetailView({
+    onPopupUpdate,
+    onPresentationChange,
+    refreshOilPrice,
+    onExternalUnavailable = showApiUnavailableAlert
+}) {
     let currentDetail;
     let selectedRestStopName = '';
     let selectedServiceAreaCode = '';
@@ -459,7 +467,7 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
 
         if (state.status === 'success') {
             if (state.externalUnavailable) {
-                showApiUnavailableAlert();
+                onExternalUnavailable();
             }
 
             renderDetail(state.data);
@@ -475,7 +483,7 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
         }
 
         if (state.status === 'external-unavailable') {
-            showApiUnavailableAlert();
+            onExternalUnavailable();
         }
 
         content.classList.add('d-none');
@@ -652,7 +660,7 @@ export function createRestStopDetailView({ onPopupUpdate, onPresentationChange, 
         }
 
         if (result.status === 'external-unavailable') {
-            showApiUnavailableAlert();
+            onExternalUnavailable();
         }
 
         status.textContent = oilRefreshStatusMessage(result.status);
