@@ -2,7 +2,9 @@
  * "이름·거리로 찾기"/"목적지로 추천받기" 진입 팝업(위치 동의, 연료/EV 관심)을 매번 다시 묻지
  * 않기 위한 탭 세션 기억. sessionStorage를 쓰므로 이 탭을 닫기 전까지만 유지되고(새로고침에는
  * 살아남음), 다른 탭이나 다음 방문에는 이어지지 않는다 — 좌표 자체는 여기서 캐시하지 않고 매번
- * 새로 받아온다(허용 여부만 기억).
+ * 새로 받아온다(허용 여부만 기억). 잘못 고른 걸 다시 고르는 방법은 탭을 닫았다 새로 여는 것뿐이다
+ * (화면 안에서 되돌리는 UI는 의도적으로 만들지 않았다 — "첫 화면으로"만 눌러도 초기화되면 화면을
+ * 오갈 때마다 매번 다시 물어보게 돼서 애초에 이 기억을 두는 의미가 없어진다).
  *
  * 저장소는 인자로 주입받는다(기본값 `globalThis.sessionStorage`) — 프라이빗 브라우징 등으로
  * sessionStorage 접근 자체가 막혀 있어도 조용히 무시하고, 테스트에서는 가짜 저장소를 넣을 수 있다.
@@ -36,14 +38,6 @@ function write(storage, key, value) {
     }
 }
 
-function remove(storage, key) {
-    try {
-        (storage ?? defaultStorage())?.removeItem(key);
-    } catch {
-        // no-op
-    }
-}
-
 /** @param {'nearby-search'|'destination-recommendation'} mode @param {'granted'|'skipped'} answer */
 export function rememberLocationAnswer(mode, answer, storage) {
     write(storage, LOCATION_KEY_PREFIX + mode, answer);
@@ -70,11 +64,4 @@ export function getRememberedInterest(storage) {
         return undefined;
     }
     return value === INTEREST_SKIPPED_SENTINEL ? null : value;
-}
-
-/** "첫 화면으로" 뒤로가기 등 랜딩으로 돌아가는 순간 전부 초기화한다 — 잘못 고른 걸 고치는 유일한 방법. */
-export function resetFinderMemory(storage) {
-    remove(storage, LOCATION_KEY_PREFIX + 'nearby-search');
-    remove(storage, LOCATION_KEY_PREFIX + 'destination-recommendation');
-    remove(storage, INTEREST_KEY);
 }

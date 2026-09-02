@@ -116,8 +116,9 @@ sources: []
   닫으면 사라진다 — 다른 탭·다음 방문에는 이어지지 않는다). `finder.locationAnswered.nearby-search`/
   `.destination-recommendation`는 `'granted'`/`'skipped'`, `finder.interest`는 고른 유종/EV 값(건너뛰면
   내부적으로 `'NONE'` 센티널로 구분 저장 — "아직 안 답함"과 "건너뛰기를 답함"을 구분해야 해서). 재선택
-  UI는 없고, "첫 화면으로" 뒤로가기를 누르는 순간 전부 초기화된다 — 잘못 골랐을 때 고치는 유일한
-  방법이 랜딩으로 돌아갔다 다시 들어가는 것.
+  UI는 없고, "첫 화면으로" 뒤로가기로도 초기화되지 않는다 — 랜딩으로 돌아갈 수 있는 유일한 경로가
+  뒤로가기라, 거기서 초기화하면 화면을 오갈 때마다 매번 다시 물어보게 돼 애초에 기억을 두는 의미가
+  없어진다. 잘못 골랐을 때 고치는 방법은 탭을 닫았다 새로 여는 것뿐이다(sessionStorage 자체 수명).
 - **요청 경합**: 두 화면의 목록 요청 모두 요청 ID/AbortController로 최신 요청만 반영하는 공통 패턴을
   쓴다 — 빠르게 조건을 바꿔가며 검색해도 늦게 도착한 오래된 응답이 화면을 덮어쓰지 않는다.
 - **캐시**: 없음. 검색어·위치가 바뀔 때마다 매번 재호출.
@@ -173,8 +174,7 @@ sources: []
   순수 렌더링 헬퍼. `document`를 인자로 받아서(`admin-rest-stop-image.js`와 같은 패턴) 테스트에서 가짜
   DOM으로 검증할 수 있다.
 - `finder-condition.js` — 배지·필터 판정 순수 함수(화면별로 분리). `finder-session-memory.js` — 위치/
-  연료 팝업 재노출 여부 판단(`sessionStorage` 읽기/쓰기, 5절); `finder-entry-flow.js`만 직접 참조하고
-  각 화면은 "첫 화면으로" 뒤로가기에서 `resetFinderMemory()`만 호출한다.
+  연료 팝업 재노출 여부 판단(`sessionStorage` 읽기/쓰기, 5절)을 `finder-entry-flow.js`만 직접 참조한다.
 - **요청 모듈**: `finder-rest-stop-nearby-request.js`(이름·거리로 찾기, `/nearby` 전용),
   `finder-route-rest-stop-list-request.js`(목적지로 추천받기, `/route-rest-stops/list` 전용) — 둘 다
   요청 ID/AbortController로 최신 응답만 반영하는 같은 패턴. `finder-destination-chips.js`(인기 목적지

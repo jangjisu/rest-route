@@ -8,7 +8,6 @@ import { formatDistance } from './finder-distance.js';
 import { nearbyBadgesFor } from './finder-condition.js';
 import { createFinderRestStopNearbyRequest } from './finder-rest-stop-nearby-request.js';
 import { renderResultCard, setStatus, showScreen } from './finder-render.js';
-import { resetFinderMemory } from './finder-session-memory.js';
 
 // 상세 패널(index.html)과 같은 톤으로 맞춘 색상들이 섞여 있어서, "목적지로 추천받기"용 맵과 색이
 // 다른 배지가 있다(예: 이용량 상위 10%는 같지만, 그쪽엔 없는 볼거리/이벤트가 여기만 있음).
@@ -110,7 +109,6 @@ export function initializeNearbySearch(document) {
     });
 
     document.getElementById('finderMode1Back')?.addEventListener('click', () => {
-        resetFinderMemory();
         showScreen(document, 'landing');
     });
 

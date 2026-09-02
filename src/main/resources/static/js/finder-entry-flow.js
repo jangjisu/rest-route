@@ -16,8 +16,7 @@ import {
     getRememberedInterest,
     getRememberedLocationAnswer,
     rememberInterest,
-    rememberLocationAnswer,
-    resetFinderMemory
+    rememberLocationAnswer
 } from './finder-session-memory.js';
 import { INTEREST_OPTIONS } from './finder-condition.js';
 
@@ -169,7 +168,6 @@ export function initializeFinderEntryFlow(
     });
     document.getElementById('finderInterestClose')?.addEventListener('click', () => {
         closeDialogById('finderInterestPopup');
-        resetFinderMemory();
         showScreen(document, 'landing');
     });
 }

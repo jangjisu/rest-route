@@ -5,8 +5,7 @@ import {
     getRememberedInterest,
     getRememberedLocationAnswer,
     rememberInterest,
-    rememberLocationAnswer,
-    resetFinderMemory
+    rememberLocationAnswer
 } from '../../main/resources/static/js/finder-session-memory.js';
 
 function fakeSessionStorage() {
@@ -51,24 +50,10 @@ test('rememberInterest(null) is remembered as an explicit skip, not "unanswered"
     assert.equal(getRememberedInterest(storage), null);
 });
 
-test('resetFinderMemory clears location answers for both modes and the interest choice', () => {
-    const storage = fakeSessionStorage();
-    rememberLocationAnswer('nearby-search', 'granted', storage);
-    rememberLocationAnswer('destination-recommendation', 'granted', storage);
-    rememberInterest('EV', storage);
-
-    resetFinderMemory(storage);
-
-    assert.equal(getRememberedLocationAnswer('nearby-search', storage), null);
-    assert.equal(getRememberedLocationAnswer('destination-recommendation', storage), null);
-    assert.equal(getRememberedInterest(storage), undefined);
-});
-
 test('all functions no-op safely when sessionStorage is unavailable (private browsing etc.)', () => {
     assert.doesNotThrow(() => {
         rememberLocationAnswer('nearby-search', 'granted', undefined);
         rememberInterest('EV', undefined);
-        resetFinderMemory(undefined);
     });
     assert.equal(getRememberedLocationAnswer('nearby-search', undefined), null);
     assert.equal(getRememberedInterest(undefined), undefined);

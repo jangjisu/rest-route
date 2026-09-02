@@ -12,7 +12,6 @@ import { destinationBadgesFor, destinationConditionFilters, destinationFilterIte
 import { createRouteRestStopListRequest } from './finder-route-rest-stop-list-request.js';
 import { createPlaceSearchRequest } from './place-search-request.js';
 import { renderResultCard, setLoading, setStatus, showScreen } from './finder-render.js';
-import { resetFinderMemory } from './finder-session-memory.js';
 
 const FUEL_INTERESTS = new Set(['GASOLINE', 'DIESEL', 'LPG']);
 
@@ -235,7 +234,6 @@ export function initializeDestinationRecommendation(document) {
     });
 
     document.getElementById('finderMode2Back')?.addEventListener('click', () => {
-        resetFinderMemory();
         showScreen(document, 'landing');
     });
 
