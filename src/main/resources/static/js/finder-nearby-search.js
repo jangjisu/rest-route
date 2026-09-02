@@ -1,7 +1,7 @@
 /**
  * "이름·거리로 찾기" 화면 전용 — 검색 입력, 목록 요청·렌더링, 뒤로가기. 위치·연료 관심을 어떻게
- * 얻는지는 전혀 모르고, 진입 흐름(finder-entry-flow.js)이 다 정한 뒤 {@link initializeMode1}이
- * 반환하는 `enterMode1(origin, interest)`을 호출해줄 때 받기만 한다.
+ * 얻는지는 전혀 모르고, 진입 흐름(finder-entry-flow.js)이 다 정한 뒤 {@link initializeNearbySearch}가
+ * 반환하는 `enterNearbySearch(origin, interest)`를 호출해줄 때 받기만 한다.
  */
 
 import { formatDistance } from './finder-distance.js';
@@ -10,9 +10,9 @@ import { createFinderRestStopNearbyRequest } from './finder-rest-stop-nearby-req
 import { renderResultCard, setStatus, showScreen } from './finder-render.js';
 import { resetFinderMemory } from './finder-session-memory.js';
 
-// 상세 패널(index.html)과 같은 톤으로 맞춘 색상들이 섞여 있어서, mode2용 맵과 색이 다른 배지가
-// 있다(예: 이용량 상위 10%는 같지만, mode2에는 없는 볼거리/이벤트가 여기만 있음).
-const MODE1_BADGE_COLOR_CLASS_BY_KEY = {
+// 상세 패널(index.html)과 같은 톤으로 맞춘 색상들이 섞여 있어서, "목적지로 추천받기"용 맵과 색이
+// 다른 배지가 있다(예: 이용량 상위 10%는 같지만, 그쪽엔 없는 볼거리/이벤트가 여기만 있음).
+const NEARBY_BADGE_COLOR_CLASS_BY_KEY = {
     SIZE_LARGE: 'finder-badge-size',
     TOP_TRAFFIC: 'finder-badge-warn',
     HAS_THEME: 'finder-badge-accent',
@@ -21,7 +21,7 @@ const MODE1_BADGE_COLOR_CLASS_BY_KEY = {
     FUEL_BELOW_AVERAGE: 'finder-badge-savings'
 };
 
-export function initializeMode1(document) {
+export function initializeNearbySearch(document) {
     const emptyStateEl = document.getElementById('finderMode1EmptyState');
     const subHeadingEl = document.getElementById('finderMode1SubHeading');
     const searchInputEl = document.getElementById('finderMode1SearchInput');
@@ -61,7 +61,7 @@ export function initializeMode1(document) {
                         ? formatDistance(restStop.distanceMeters)
                         : '',
                     badges: nearbyBadgesFor(restStop, interest),
-                    colorClassByKey: MODE1_BADGE_COLOR_CLASS_BY_KEY
+                    colorClassByKey: NEARBY_BADGE_COLOR_CLASS_BY_KEY
                 })
             );
         });
@@ -82,7 +82,7 @@ export function initializeMode1(document) {
         });
     }
 
-    function enterMode1(nextOrigin, nextInterest) {
+    function enterNearbySearch(nextOrigin, nextInterest) {
         origin = nextOrigin;
         interest = nextInterest;
 
@@ -114,5 +114,5 @@ export function initializeMode1(document) {
         showScreen(document, 'landing');
     });
 
-    return { enterMode1 };
+    return { enterNearbySearch };
 }

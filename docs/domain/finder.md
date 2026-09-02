@@ -42,12 +42,13 @@ sources: []
   다음에 뜨는 연료 선택 팝업에서 고르며, 건너뛰면 `null`로 취급되어 그 관심 배지 자체가 안 붙는다(질문 문구:
   "지금 주행 중이신 차의 연료는 무엇인가요?"). 이 팝업(`finderInterestPopup`)은 mode1/mode2가 완전히 공유하는
   같은 DOM/컴포넌트고, `finder-entry-flow.js`(8절) 하나가 소유한다 — 내부의
-  `interestPopupTargetMode` 변수로 팝업을 연 게 어느 모드인지만 구분해서, 완료 후
-  `onMode1Ready`/`onMode2Ready` 콜백 중 하나로 분기해 mode1.js/mode2.js에 넘긴다.
+  `interestPopupTargetScreen` 변수(`'nearby-search'`/`'destination-recommendation'`)로 팝업을 연 게
+  어느 화면인지만 구분해서, 완료 후 `onNearbySearchReady`/`onDestinationRecommendationReady` 콜백 중
+  하나로 분기해 finder-nearby-search.js/finder-destination-recommendation.js에 넘긴다.
 - **route.service.dto.FuelType**: `GASOLINE`/`DIESEL`/`LPG` 3종(EV 없음). mode2가 백엔드에 유가 판정을 요청할
   때 쓰는 요청 파라미터 타입 — `RestStopInterest`와 값 이름은 겹치지만 타입은 다르다(프런트가 `interest`에서
   EV를 제외하고 문자열로만 실어 보낸다).
-- **배지(태그)**: mode1과 mode2는 판정 함수(`finder-condition.js`의 `nearbyBadgesFor` / `mode2BadgesFor`)가
+- **배지(태그)**: mode1과 mode2는 판정 함수(`finder-condition.js`의 `nearbyBadgesFor` / `destinationBadgesFor`)가
   완전히 독립이다. mode1은 4개(규모/이용량/볼거리/이벤트) 항상 + 관심 항목 1개, mode2는 2개(규모/이용량)
   항상 + 관심 항목 1개(v2부터 규모·이용량·EV충전·유가만 남고 먹거리는 뺐다). 색상은 v2부터
   "이용량 상위 10%"를 포함해 둘 다 상세 패널 기준(`--rr-color-warning-*`)으로 통일했다(v1에서는 mode2만 파란색을
@@ -77,7 +78,7 @@ sources: []
 거리 오름차순으로 정렬해 내려주므로 프런트는 정렬하지 않는다.
 
 **mode2 흐름**: 위치 팝업은 Allow만 있고(위치 확보 실패 시 에러 메시지, 재시도) 위치 없이는 mode2로 진입하지
-않는다 → Allow 성공 시 mode1과 같은 연료 선택 팝업으로 이어진다(`interestPopupTargetMode='mode2'`) → 목적지를
+않는다 → Allow 성공 시 mode1과 같은 연료 선택 팝업으로 이어진다(`interestPopupTargetScreen='destination-recommendation'`) → 목적지를
 정하는 방법이 두 갈래다: **인기 칩**(부산역/대전역/강릉역/광주송정역) 클릭은 후보 선택 없이 바로
 `/api/route-rest-stops/list`를 호출하고, **직접 입력 후 검색**은 먼저 place-search
 ([[place-search-and-map-config]] `GET /api/place-search`)로 후보 팝업(`finderDestinationCandidatePopup`)을
@@ -111,10 +112,10 @@ sources: []
   mode2는 v1에서는 먹거리 배지·필터가 있었으나 v2에서 mode1과 맞춰 없앴다.
 - **mode2 배지·필터는 항상 관심 항목당 1개만 켜진다**: 규모/이용량 2개는 관심과 무관하게 항상 계산되고,
   마지막 자리는 `interest === 'EV'`면 EV 충전(대수), 유종이면 유가 등급 하나만 붙는다 — 두 신호가 동시에
-  붙는 경우는 없다. 조건 필터 칩 구성(`mode2ConditionFilters`)도 배지와 정확히 대응해서 규모·이용량은
-  항상, 나머지 한 자리만 관심 항목에 맞춰 보인다(건너뛰었으면 규모·이용량 칩 2개뿐).
+  붙는 경우는 없다. 조건 필터 칩 구성(`destinationConditionFilters`)도 배지와 정확히 대응해서
+  규모·이용량은 항상, 나머지 한 자리만 관심 항목에 맞춰 보인다(건너뛰었으면 규모·이용량 칩 2개뿐).
 - **"유가 저렴한 곳" 필터 하나가 CHEAPEST/BELOW_AVERAGE를 모두 매칭한다** — "제일 저렴"만 따로 거르는 필터는
-  없다(`mode2MatchesFilter`의 `CHEAP_FUEL`).
+  없다(`destinationMatchesFilter`의 `CHEAP_FUEL`).
 - **인기 목적지 칩은 place-search 후보 팝업을 타지 않는다**: 이미 검증된 단일 역 이름이라 후보 선택 없이
   바로 route-rest-stops/list를 호출한다(빠른 경로 유지). 직접 입력만 후보 팝업을 거친다.
 
@@ -125,9 +126,10 @@ sources: []
   호출해서 최신 위치를 받아온다(위치가 바뀌었을 수 있어서다).
 - **`finder-session-memory.js`(`sessionStorage`)**: "이 위치 팝업/연료 팝업에 이미 답했다"는 사실만
   탭 세션 동안 기억해서, 같은 탭 안에서 mode1/mode2를 다시 들어갈 때 팝업을 또 띄우지 않는다(새로고침에도
-  살아남고, 탭을 닫으면 사라진다 — 다른 탭·다음 방문에는 이어지지 않는다). `finder.locationAnswered.mode1`/
-  `.mode2`는 `'granted'`/`'skipped'`, `finder.interest`는 고른 유종/EV 값(건너뛰었으면 내부적으로
-  `'NONE'` 센티널로 구분 저장 — "아직 안 답함"과 "건너뛰기를 답함"을 구분해야 해서). 재선택 UI는 없고,
+  살아남고, 탭을 닫으면 사라진다 — 다른 탭·다음 방문에는 이어지지 않는다).
+  `finder.locationAnswered.nearby-search`/`.destination-recommendation`는 `'granted'`/`'skipped'`,
+  `finder.interest`는 고른 유종/EV 값(건너뛰었으면 내부적으로 `'NONE'` 센티널로 구분 저장 — "아직 안
+  답함"과 "건너뛰기를 답함"을 구분해야 해서). 재선택 UI는 없고,
   mode1/mode2 화면의 "첫 화면으로" 뒤로가기를 누르는 순간 전부 초기화된다 — 잘못 골랐을 때 고치는
   유일한 방법이 랜딩으로 돌아갔다 다시 들어가는 것.
 - **요청 경합**: mode1의 `nearby` 요청과 mode2의 route 요청 모두 요청 ID/AbortController로 최신 요청만 반영하는
@@ -179,13 +181,17 @@ sources: []
 
 - **프런트 모듈 구성** — `finder-app.js`는 조립부일 뿐이고(`DOMContentLoaded`에서 아래 셋을 엮기만 함),
   실제 로직은 관심사별로 나뉘어 있다:
-  - `finder-app.js` — 조립부. `initializeMode1`/`initializeMode2`가 반환한 `enterMode1`/`enterMode2`를
-    `initializeFinderEntryFlow`의 콜백으로 연결한다.
+  - `finder-app.js` — 조립부. `initializeNearbySearch`/`initializeDestinationRecommendation`이 반환한
+    `enterNearbySearch`/`enterDestinationRecommendation`을 `initializeFinderEntryFlow`의 콜백으로
+    연결한다.
   - `finder-entry-flow.js` — 랜딩 타일 클릭부터 위치 동의 팝업(모드별)·연료 관심 팝업(공유)까지. 좌표+
-    관심 항목이 정해지면 `onMode1Ready`/`onMode2Ready` 콜백으로만 넘기고, mode1/mode2가 그걸로 뭘
-    하는지는 모른다.
-  - `finder-mode1.js` / `finder-mode2.js` — 각 화면의 검색·필터·목록 렌더링·요청 호출·뒤로가기. 서로의
-    존재를 모른다(둘 다 `enterModeN(origin, interest)`를 인자로 받는 함수 형태로만 노출).
+    관심 항목이 정해지면 `onNearbySearchReady`/`onDestinationRecommendationReady` 콜백으로만 넘기고,
+    mode1/mode2가 그걸로 뭘 하는지는 모른다.
+  - `finder-nearby-search.js`("이름·거리로 찾기") / `finder-destination-recommendation.js`("목적지로
+    추천받기") — 각 화면의 검색·필터·목록 렌더링·요청 호출·뒤로가기. 서로의 존재를 모른다(둘 다
+    `enterNearbySearch(origin, interest)`/`enterDestinationRecommendation(origin, interest)`를 인자로
+    받는 함수 형태로만 노출). 파일명은 내부 개발 단계에서 쓰던 mode1/mode2 같은 번호가 아니라 화면의
+    실제 역할을 그대로 딴 것이다.
   - `finder-render.js` — `showScreen`/`setLoading`/`setStatus`/`renderResultCard` 등 mode1/mode2가
     공유하는 순수 렌더링 헬퍼. `document`를 인자로 받아서(`admin-rest-stop-image.js`와 같은 패턴)
     테스트에서 가짜 DOM으로 검증할 수 있다.

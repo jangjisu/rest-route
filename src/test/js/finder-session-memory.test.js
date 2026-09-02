@@ -20,16 +20,16 @@ function fakeSessionStorage() {
 
 test('getRememberedLocationAnswer returns null before anything is remembered', () => {
     const storage = fakeSessionStorage();
-    assert.equal(getRememberedLocationAnswer('mode1', storage), null);
+    assert.equal(getRememberedLocationAnswer('nearby-search', storage), null);
 });
 
 test('rememberLocationAnswer stores per-mode and is read back independently', () => {
     const storage = fakeSessionStorage();
-    rememberLocationAnswer('mode1', 'granted', storage);
-    rememberLocationAnswer('mode2', 'skipped', storage);
+    rememberLocationAnswer('nearby-search', 'granted', storage);
+    rememberLocationAnswer('destination-recommendation', 'skipped', storage);
 
-    assert.equal(getRememberedLocationAnswer('mode1', storage), 'granted');
-    assert.equal(getRememberedLocationAnswer('mode2', storage), 'skipped');
+    assert.equal(getRememberedLocationAnswer('nearby-search', storage), 'granted');
+    assert.equal(getRememberedLocationAnswer('destination-recommendation', storage), 'skipped');
 });
 
 test('getRememberedInterest returns undefined before anything is remembered (distinct from a remembered skip)', () => {
@@ -53,23 +53,23 @@ test('rememberInterest(null) is remembered as an explicit skip, not "unanswered"
 
 test('resetFinderMemory clears location answers for both modes and the interest choice', () => {
     const storage = fakeSessionStorage();
-    rememberLocationAnswer('mode1', 'granted', storage);
-    rememberLocationAnswer('mode2', 'granted', storage);
+    rememberLocationAnswer('nearby-search', 'granted', storage);
+    rememberLocationAnswer('destination-recommendation', 'granted', storage);
     rememberInterest('EV', storage);
 
     resetFinderMemory(storage);
 
-    assert.equal(getRememberedLocationAnswer('mode1', storage), null);
-    assert.equal(getRememberedLocationAnswer('mode2', storage), null);
+    assert.equal(getRememberedLocationAnswer('nearby-search', storage), null);
+    assert.equal(getRememberedLocationAnswer('destination-recommendation', storage), null);
     assert.equal(getRememberedInterest(storage), undefined);
 });
 
 test('all functions no-op safely when sessionStorage is unavailable (private browsing etc.)', () => {
     assert.doesNotThrow(() => {
-        rememberLocationAnswer('mode1', 'granted', undefined);
+        rememberLocationAnswer('nearby-search', 'granted', undefined);
         rememberInterest('EV', undefined);
         resetFinderMemory(undefined);
     });
-    assert.equal(getRememberedLocationAnswer('mode1', undefined), null);
+    assert.equal(getRememberedLocationAnswer('nearby-search', undefined), null);
     assert.equal(getRememberedInterest(undefined), undefined);
 });

@@ -1,8 +1,9 @@
 /**
- * 랜딩 화면의 두 타일부터 위치 동의 팝업, 연료/EV 관심 팝업까지 — mode1/mode2가 실제 화면
- * (검색·목록)을 그리기 전까지 거치는 공통 진입 절차. mode1/mode2 각각이 무엇을 "그리는지"는 전혀
- * 모르고, 좌표+관심 항목이 정해지면 `onMode1Ready`/`onMode2Ready` 콜백에 넘겨주기만 한다 —
- * 그래야 mode1.js/mode2.js가 이 파일을 몰라도 되고, 이 파일도 mode1.js/mode2.js를 몰라도 된다.
+ * 랜딩 화면의 두 타일부터 위치 동의 팝업, 연료/EV 관심 팝업까지 — 이름·거리로 찾기/목적지로
+ * 추천받기가 실제 화면(검색·목록)을 그리기 전까지 거치는 공통 진입 절차. 그 둘이 무엇을
+ * "그리는지"는 전혀 모르고, 좌표+관심 항목이 정해지면 `onNearbySearchReady`/
+ * `onDestinationRecommendationReady` 콜백에 넘겨주기만 한다 — 그래야 finder-nearby-search.js/
+ * finder-destination-recommendation.js가 이 파일을 몰라도 되고, 이 파일도 그 둘을 몰라도 된다.
  *
  * 위치 동의(모드별 dialog)와 연료/EV 관심(공유 dialog)에 이미 이번 탭 세션에서 답했으면
  * `finder-session-memory.js` 기억을 보고 팝업 없이 바로 다음 단계로 넘어간다 — 좌표 자체는 여기서
@@ -20,40 +21,45 @@ import {
 } from './finder-session-memory.js';
 import { INTEREST_OPTIONS } from './finder-condition.js';
 
-export function initializeFinderEntryFlow(document, { requestCurrentPosition, onMode1Ready, onMode2Ready } = {}) {
+export function initializeFinderEntryFlow(
+    document,
+    { requestCurrentPosition, onNearbySearchReady, onDestinationRecommendationReady } = {}
+) {
     const mode1ErrorEl = document.getElementById('finderPermissionMode1Error');
     const mode2ErrorEl = document.getElementById('finderPermissionMode2Error');
-    // 연료 선택 팝업은 mode1/mode2가 공유하므로, 팝업을 열기 전에 어느 쪽으로 이어질지와 그때까지
+    // 연료 선택 팝업은 두 화면이 공유하므로, 팝업을 열기 전에 어느 쪽으로 이어질지와 그때까지
     // 받아둔 좌표를 표시해둔다.
-    let interestPopupTargetMode = 'mode1';
+    let interestPopupTargetScreen = 'nearby-search';
     let pendingOrigin = null;
 
-    document.getElementById('finderEnterMode1')?.addEventListener('click', () => startMode1Entry());
-    document.getElementById('finderEnterMode2')?.addEventListener('click', () => startMode2Entry());
+    document.getElementById('finderEnterMode1')?.addEventListener('click', () => startNearbySearchEntry());
+    document.getElementById('finderEnterMode2')?.addEventListener('click', () => startDestinationRecommendationEntry());
 
     /**
      * 이번 탭 세션에서 이미 위치를 답한 적 있으면(허용/건너뛰기 모두) 팝업을 다시 띄우지 않고 바로
      * 다음 단계로 넘어간다 — 단, 좌표는 여기서 캐시해두지 않고 "허용"이었을 때만 매번 새로 받아온다
      * (위치가 바뀌었을 수 있어서다). 처음 답하는 탭이면 기존과 동일하게 팝업을 띄운다.
      */
-    async function startMode1Entry() {
-        const remembered = getRememberedLocationAnswer('mode1');
+    async function startNearbySearchEntry() {
+        const remembered = getRememberedLocationAnswer('nearby-search');
         if (remembered === null) {
             openDialogById('finderPermissionMode1');
             return;
         }
         if (remembered === 'skipped') {
-            proceedFromMode1Location(null);
+            proceedFromNearbySearchLocation(null);
             return;
         }
         setLoading(document, true);
         const result = await requestCurrentPosition();
         setLoading(document, false);
-        proceedFromMode1Location(result.granted ? { latitude: result.latitude, longitude: result.longitude } : null);
+        proceedFromNearbySearchLocation(
+            result.granted ? { latitude: result.latitude, longitude: result.longitude } : null
+        );
     }
 
-    async function startMode2Entry() {
-        if (getRememberedLocationAnswer('mode2') !== 'granted') {
+    async function startDestinationRecommendationEntry() {
+        if (getRememberedLocationAnswer('destination-recommendation') !== 'granted') {
             openDialogById('finderPermissionMode2');
             return;
         }
@@ -65,7 +71,7 @@ export function initializeFinderEntryFlow(document, { requestCurrentPosition, on
             openDialogById('finderPermissionMode2');
             return;
         }
-        proceedFromMode2Location({ latitude: result.latitude, longitude: result.longitude });
+        proceedFromDestinationRecommendationLocation({ latitude: result.latitude, longitude: result.longitude });
     }
 
     /* ---------- 위치 동의 팝업: 이름·거리로 찾기 ---------- */
@@ -74,9 +80,9 @@ export function initializeFinderEntryFlow(document, { requestCurrentPosition, on
         closeDialogById('finderPermissionMode1');
     });
     document.getElementById('finderPermissionMode1Skip')?.addEventListener('click', () => {
-        rememberLocationAnswer('mode1', 'skipped');
+        rememberLocationAnswer('nearby-search', 'skipped');
         closeDialogById('finderPermissionMode1');
-        proceedFromMode1Location(null);
+        proceedFromNearbySearchLocation(null);
     });
     document.getElementById('finderPermissionMode1Allow')?.addEventListener('click', async () => {
         setStatus(mode1ErrorEl, '');
@@ -85,13 +91,13 @@ export function initializeFinderEntryFlow(document, { requestCurrentPosition, on
         setLoading(document, false);
 
         const origin = result.granted ? { latitude: result.latitude, longitude: result.longitude } : null;
-        rememberLocationAnswer('mode1', result.granted ? 'granted' : 'skipped');
+        rememberLocationAnswer('nearby-search', result.granted ? 'granted' : 'skipped');
         closeDialogById('finderPermissionMode1');
-        proceedFromMode1Location(origin);
+        proceedFromNearbySearchLocation(origin);
     });
 
-    function proceedFromMode1Location(origin) {
-        interestPopupTargetMode = 'mode1';
+    function proceedFromNearbySearchLocation(origin) {
+        interestPopupTargetScreen = 'nearby-search';
         pendingOrigin = origin;
         openInterestPopupOrSkip();
     }
@@ -112,18 +118,18 @@ export function initializeFinderEntryFlow(document, { requestCurrentPosition, on
             return;
         }
 
-        rememberLocationAnswer('mode2', 'granted');
+        rememberLocationAnswer('destination-recommendation', 'granted');
         closeDialogById('finderPermissionMode2');
-        proceedFromMode2Location({ latitude: result.latitude, longitude: result.longitude });
+        proceedFromDestinationRecommendationLocation({ latitude: result.latitude, longitude: result.longitude });
     });
 
-    function proceedFromMode2Location(origin) {
-        interestPopupTargetMode = 'mode2';
+    function proceedFromDestinationRecommendationLocation(origin) {
+        interestPopupTargetScreen = 'destination-recommendation';
         pendingOrigin = origin;
         openInterestPopupOrSkip();
     }
 
-    /* ---------- 연료 선택 팝업 — mode1/mode2가 공유한다. 위치 동의 팝업 다음에 항상 뜬다 ---------- */
+    /* ---------- 연료 선택 팝업 — 두 화면이 공유한다. 위치 동의 팝업 다음에 항상 뜬다 ---------- */
 
     /** 이번 탭 세션에서 이미 연료/EV 관심을 답한 적 있으면 팝업 없이 그 값을 바로 쓴다. */
     function openInterestPopupOrSkip() {
@@ -136,10 +142,10 @@ export function initializeFinderEntryFlow(document, { requestCurrentPosition, on
     }
 
     function applyInterest(interest) {
-        if (interestPopupTargetMode === 'mode2') {
-            onMode2Ready?.(pendingOrigin, interest);
+        if (interestPopupTargetScreen === 'destination-recommendation') {
+            onDestinationRecommendationReady?.(pendingOrigin, interest);
         } else {
-            onMode1Ready?.(pendingOrigin, interest);
+            onNearbySearchReady?.(pendingOrigin, interest);
         }
     }
 

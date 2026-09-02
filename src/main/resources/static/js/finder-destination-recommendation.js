@@ -1,14 +1,14 @@
 /**
  * "목적지로 추천받기" 화면 전용 — 목적지 검색(인기 칩/직접 입력+후보 팝업), 조건 필터, 목록
  * 요청·렌더링, 뒤로가기. 위치·연료 관심을 어떻게 얻는지는 전혀 모르고, 진입 흐름
- * (finder-entry-flow.js)이 다 정한 뒤 {@link initializeMode2}이 반환하는
- * `enterMode2(origin, interest)`을 호출해줄 때 받기만 한다.
+ * (finder-entry-flow.js)이 다 정한 뒤 {@link initializeDestinationRecommendation}이 반환하는
+ * `enterDestinationRecommendation(origin, interest)`을 호출해줄 때 받기만 한다.
  */
 
 import { closeDialogById, openDialogById } from './utils.js';
 import { formatDistance } from './finder-distance.js';
 import { DESTINATION_CHIPS } from './finder-destination-chips.js';
-import { mode2BadgesFor, mode2ConditionFilters, mode2FilterItems } from './finder-condition.js';
+import { destinationBadgesFor, destinationConditionFilters, destinationFilterItems } from './finder-condition.js';
 import { createRouteRestStopListRequest } from './finder-route-rest-stop-list-request.js';
 import { createPlaceSearchRequest } from './place-search-request.js';
 import { renderResultCard, setLoading, setStatus, showScreen } from './finder-render.js';
@@ -20,9 +20,9 @@ function fuelTypeParam(interest) {
     return FUEL_INTERESTS.has(interest) ? interest : undefined;
 }
 
-// v2부터 이용량 상위 10%는 mode1과 같은 색(warn)으로 통일했다. 제일 저렴/평균보다 저렴도 결국 같은
-// "저렴" 태그라 색을 통일했다(savings) — CHEAPEST/BELOW_AVERAGE는 문구만 다르고 색은 같다.
-const MODE2_BADGE_COLOR_CLASS_BY_KEY = {
+// v2부터 이용량 상위 10%는 이름·거리로 찾기와 같은 색(warn)으로 통일했다. 제일 저렴/평균보다 저렴도
+// 결국 같은 "저렴" 태그라 색을 통일했다(savings) — CHEAPEST/BELOW_AVERAGE는 문구만 다르고 색은 같다.
+const DESTINATION_BADGE_COLOR_CLASS_BY_KEY = {
     SIZE_LARGE: 'finder-badge-size',
     TOP_TRAFFIC: 'finder-badge-warn',
     FUEL_CHEAPEST: 'finder-badge-savings',
@@ -30,7 +30,7 @@ const MODE2_BADGE_COLOR_CLASS_BY_KEY = {
     EV_CHARGER: 'finder-badge-ev'
 };
 
-export function initializeMode2(document) {
+export function initializeDestinationRecommendation(document) {
     const destinationInputEl = document.getElementById('finderMode2DestinationInput');
     const destinationChipsEl = document.getElementById('finderDestinationChips');
     const filterSectionEl = document.getElementById('finderMode2FilterSection');
@@ -70,7 +70,7 @@ export function initializeMode2(document) {
             return;
         }
         filtersEl.innerHTML = '';
-        mode2ConditionFilters(interest).forEach((filter) => {
+        destinationConditionFilters(interest).forEach((filter) => {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'finder-chip';
@@ -91,7 +91,7 @@ export function initializeMode2(document) {
     }
 
     function renderList() {
-        const filtered = mode2FilterItems(restStopItems, [...selectedFilterKeys]);
+        const filtered = destinationFilterItems(restStopItems, [...selectedFilterKeys]);
         listEl.innerHTML = '';
         if (filtered.length === 0) {
             setStatus(statusEl, '조건에 맞는 휴게소가 없어요.');
@@ -104,8 +104,8 @@ export function initializeMode2(document) {
                     name: item.unitName,
                     routeLabel: item.routeName,
                     distanceLabel: Number.isFinite(item.distanceMeters) ? formatDistance(item.distanceMeters) : '',
-                    badges: mode2BadgesFor(item, interest),
-                    colorClassByKey: MODE2_BADGE_COLOR_CLASS_BY_KEY
+                    badges: destinationBadgesFor(item, interest),
+                    colorClassByKey: DESTINATION_BADGE_COLOR_CLASS_BY_KEY
                 })
             );
         });
@@ -239,7 +239,7 @@ export function initializeMode2(document) {
         showScreen(document, 'landing');
     });
 
-    function enterMode2(nextOrigin, nextInterest) {
+    function enterDestinationRecommendation(nextOrigin, nextInterest) {
         origin = nextOrigin;
         interest = nextInterest;
 
@@ -251,5 +251,5 @@ export function initializeMode2(document) {
         renderFilters();
     }
 
-    return { enterMode2 };
+    return { enterDestinationRecommendation };
 }

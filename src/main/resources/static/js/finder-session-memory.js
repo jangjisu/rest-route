@@ -44,7 +44,7 @@ function remove(storage, key) {
     }
 }
 
-/** @param {'mode1'|'mode2'} mode @param {'granted'|'skipped'} answer */
+/** @param {'nearby-search'|'destination-recommendation'} mode @param {'granted'|'skipped'} answer */
 export function rememberLocationAnswer(mode, answer, storage) {
     write(storage, LOCATION_KEY_PREFIX + mode, answer);
 }
@@ -74,7 +74,7 @@ export function getRememberedInterest(storage) {
 
 /** "첫 화면으로" 뒤로가기 등 랜딩으로 돌아가는 순간 전부 초기화한다 — 잘못 고른 걸 고치는 유일한 방법. */
 export function resetFinderMemory(storage) {
-    remove(storage, LOCATION_KEY_PREFIX + 'mode1');
-    remove(storage, LOCATION_KEY_PREFIX + 'mode2');
+    remove(storage, LOCATION_KEY_PREFIX + 'nearby-search');
+    remove(storage, LOCATION_KEY_PREFIX + 'destination-recommendation');
     remove(storage, INTEREST_KEY);
 }
