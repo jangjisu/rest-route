@@ -1,6 +1,7 @@
 package com.restroute.oilprice.domain;
 
 import com.restroute.oilprice.client.response.RestOilPriceItem;
+import com.restroute.route.dto.FuelType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -77,6 +78,15 @@ public class RestOilPriceEntity {
 
     public void updateRestStopServiceAreaCode(String restStopServiceAreaCode) {
         this.restStopServiceAreaCode = restStopServiceAreaCode;
+    }
+
+    public String getPriceByFuelType(FuelType fuelType) {
+        return switch (fuelType) {
+            case GASOLINE -> gasolinePrice;
+            case DIESEL -> dieselPrice;
+            case LPG -> lpgPrice;
+            case EV -> null;
+        };
     }
 
     private void apply(RestOilPriceItem item) {

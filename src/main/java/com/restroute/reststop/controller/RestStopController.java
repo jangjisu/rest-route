@@ -7,7 +7,8 @@ import com.restroute.reststop.controller.response.RestStopItemResponse;
 import com.restroute.reststop.controller.response.RestStopNearbyItemResponse;
 import com.restroute.reststop.service.RestStopNearbyQueryService;
 import com.restroute.reststop.service.RestStopQueryService;
-import com.restroute.reststop.service.dto.RestStopInterest;
+import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -47,22 +48,22 @@ public class RestStopController {
     }
 
     /**
-     * "이름·거리로 찾기" 목록 전용 API — originLat/originLng/name/interest 전부 선택이다. 위치가
-     * 없으면 거리 없이, 이름이 없으면 전체를, 관심 항목이 없으면 그 태그 없이 내려준다.
+     * "이름·거리로 찾기" 목록 전용 API — originLat/originLng/name/fuelType 전부 선택이다. 위치가
+     * 없으면 거리 없이, 이름이 없으면 전체를, 유종이 없으면 그 태그 없이 내려준다.
      *
      * @param originLat 내 위치 위도. 있으면 거리순으로 정렬해서 내려준다
      * @param originLng 내 위치 경도
      * @param name 휴게소명 검색어(부분 일치, 대소문자 무시)
-     * @param interest 관심 있는 연료(EV/GASOLINE/DIESEL/LPG)
+     * @param fuelType 연료 타입(EV/GASOLINE/DIESEL/LPG)
      */
     @GetMapping("/nearby")
     public ResponseEntity<ApiResponse<List<RestStopNearbyItemResponse>>> getNearbyRestStops(
             @RequestParam(required = false) Double originLat,
             @RequestParam(required = false) Double originLng,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) RestStopInterest interest) {
-        return ResponseEntity.ok(
-                ApiResponse.success(restStopNearbyQueryService.findNearby(originLat, originLng, name, interest)));
+            @RequestParam(required = false) FuelType fuelType) {
+        return ResponseEntity.ok(ApiResponse.success(
+                restStopNearbyQueryService.findNearby(originLat, originLng, name, FuelTypeSelection.of(fuelType))));
     }
 
     @GetMapping("/{serviceAreaCode}")

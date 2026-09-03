@@ -1,5 +1,6 @@
 package com.restroute.route.service;
 
+import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,7 +30,8 @@ import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopListItemResponse;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.service.dto.FuelType;
+import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.exception.RouteRestStopNotFoundException;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class RouteRestStopListQueryServiceTest {
@@ -153,7 +156,7 @@ class RouteRestStopListQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(far, near));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, null);
+                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
 
         assertThat(items)
                 .extracting(RouteRestStopListItemResponse::serviceAreaCode)
@@ -171,7 +174,7 @@ class RouteRestStopListQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(far));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, null);
+                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
 
         assertThat(items).isEmpty();
         verifyNoInteractions(restStopAggregateQueryService, evChargerQueryService);
@@ -191,7 +194,7 @@ class RouteRestStopListQueryServiceTest {
                         null, emptyRelatedInfo(), false, false, false, false, null, null, true, SizeTier.LARGE)));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, null);
+                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
 
         assertThat(items).singleElement().satisfies(item -> {
             assertThat(item.sizeTier()).isEqualTo(SizeTier.LARGE);
@@ -211,7 +214,7 @@ class RouteRestStopListQueryServiceTest {
         when(evChargerQueryService.findActiveChargerCounts(any())).thenReturn(Map.of("A", 3, "B", 0));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, null);
+                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
 
         assertThat(items)
                 .filteredOn(item -> item.serviceAreaCode().equals("A"))
@@ -235,7 +238,7 @@ class RouteRestStopListQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, null);
+                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
 
         assertThat(items)
                 .singleElement()
@@ -253,10 +256,10 @@ class RouteRestStopListQueryServiceTest {
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         RestStopEntity cheaperElsewhere = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop, cheaperElsewhere));
-        RestOilPriceEntity oilPrice = mock(RestOilPriceEntity.class);
-        when(oilPrice.getDieselPrice()).thenReturn("1,850원");
-        RestOilPriceEntity cheaperOilPrice = mock(RestOilPriceEntity.class);
-        when(cheaperOilPrice.getDieselPrice()).thenReturn("1,700원");
+        RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem("000001", "테스트주유소"));
+        ReflectionTestUtils.setField(oilPrice, "dieselPrice", "1,850원");
+        RestOilPriceEntity cheaperOilPrice = RestOilPriceEntity.from(restOilPriceItem("000002", "테스트주유소2"));
+        ReflectionTestUtils.setField(cheaperOilPrice, "dieselPrice", "1,700원");
         stubAggregates(Map.of(
                 "A",
                 new RestStopAggregate(
@@ -305,8 +308,8 @@ class RouteRestStopListQueryServiceTest {
                         AverageOilPrice.of("D047", "자동차용경유", "1,900원", "-4.51"),
                         AverageOilPrice.of("K015", "자동차용부탄", "1,135원", "+0.01"))));
 
-        List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelType.DIESEL);
+        List<RouteRestStopListItemResponse> items = service.findRouteRestStops(
+                37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.of(FuelType.DIESEL));
 
         assertThat(items)
                 .filteredOn(item -> item.serviceAreaCode().equals("A"))
@@ -320,7 +323,8 @@ class RouteRestStopListQueryServiceTest {
     void destinationNotFound_throwsNotFound() {
         when(kakaoMapClient.searchKeyword("없는곳")).thenReturn(new KakaoLocalSearchResponse(List.of()));
 
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "없는곳", null, null, null, 1000, null))
+        assertThatThrownBy(() ->
+                        service.findRouteRestStops(37.0, 127.0, "없는곳", null, null, null, 1000, FuelTypeSelection.NONE))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
     }
 }

@@ -2,7 +2,7 @@ package com.restroute.route.service;
 
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.RecommendationTag;
-import com.restroute.route.service.dto.FuelType;
+import com.restroute.route.dto.FuelType;
 import com.restroute.route.service.dto.RouteRestStopComparison;
 import com.restroute.route.service.dto.RouteRestStopRecommendationStandards;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
@@ -61,7 +61,7 @@ class RouteRestStopRecommendationTagService {
         if (!price.get().equals(lowestPrice)) {
             return;
         }
-        tags.add(RecommendationTag.of(fuelType.tagKey(), fuelType.tagLabel()));
+        tags.add(RecommendationTag.of("lowest-" + fuelType.engDescription(), fuelType.korDescription() + " 최저가"));
     }
 
     private void addLargestParkingTag(
@@ -91,6 +91,7 @@ class RouteRestStopRecommendationTagService {
             case GASOLINE -> RouteRestStopNumberParser.parsePrice(summary.gasolinePrice());
             case DIESEL -> RouteRestStopNumberParser.parsePrice(summary.dieselPrice());
             case LPG -> RouteRestStopNumberParser.parsePrice(summary.lpgPrice());
+            case EV -> Optional.empty();
         };
     }
 }

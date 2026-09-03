@@ -12,8 +12,8 @@ import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopListItemResponse;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
+import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.RouteResolverService.RawRouteResult;
-import com.restroute.route.service.dto.FuelType;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.dto.ResolvedRoute.RouteGeometry;
 import com.restroute.route.service.exception.RouteRestStopNotFoundException;
@@ -55,7 +55,7 @@ public class RouteRestStopListQueryService {
             Double destinationLongitude,
             String destinationName,
             int radiusMeters,
-            FuelType fuelType) {
+            FuelTypeSelection fuelSelection) {
         RawRouteResult raw = routeResolverService.resolveDestinationAndRoute(
                 originLatitude,
                 originLongitude,
@@ -77,7 +77,7 @@ public class RouteRestStopListQueryService {
         QueriedOilPriceStats queriedOilPriceStats =
                 queriedOilPriceStatsCalculator.calculate(aggregatesByServiceAreaCode.values());
         Optional<NationalOilPriceSummary> nationalOilPriceSummary =
-                fuelType != null ? nationalOilPriceService.getTodaySummary() : Optional.empty();
+                fuelSelection.wantsFuelPriceInfo() ? nationalOilPriceService.getTodaySummary() : Optional.empty();
 
         return matched.stream()
                 .map(item -> toItem(
@@ -86,7 +86,7 @@ public class RouteRestStopListQueryService {
                         originLongitude,
                         aggregatesByServiceAreaCode.get(item.serviceAreaCode()),
                         evChargerCountsByServiceAreaCode,
-                        fuelType,
+                        fuelSelection,
                         queriedOilPriceStats,
                         nationalOilPriceSummary))
                 .sorted(Comparator.comparingDouble(RouteRestStopListItemResponse::distanceMeters))
@@ -121,14 +121,14 @@ public class RouteRestStopListQueryService {
             double originLongitude,
             RestStopAggregate aggregate,
             Map<String, Integer> evChargerCountsByServiceAreaCode,
-            FuelType fuelType,
+            FuelTypeSelection fuelSelection,
             QueriedOilPriceStats queriedOilPriceStats,
             Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         double distanceMeters =
                 CoordinateDistanceCalculator.meters(originLatitude, originLongitude, item.latitude(), item.longitude());
         Integer evChargerCount = evChargerCount(evChargerCountsByServiceAreaCode.get(item.serviceAreaCode()));
         FuelPriceTier fuelPriceTier = routeRestStopFuelTierCalculator.tier(
-                fuelType, aggregate.relatedInfo().oilPrice(), queriedOilPriceStats, nationalOilPriceSummary);
+                fuelSelection, aggregate.relatedInfo().oilPrice(), queriedOilPriceStats, nationalOilPriceSummary);
 
         return RouteRestStopListItemResponse.of(
                 item.serviceAreaCode(),

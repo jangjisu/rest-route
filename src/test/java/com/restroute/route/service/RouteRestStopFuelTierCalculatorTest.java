@@ -1,28 +1,33 @@
 package com.restroute.route.service;
 
+import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 
 import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.service.dto.FuelType;
+import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class RouteRestStopFuelTierCalculatorTest {
 
     private final RouteRestStopFuelTierCalculator calculator = new RouteRestStopFuelTierCalculator();
 
+    /**
+     * {@code getPriceByFuelType}가 실제 엔티티 필드를 그대로 읽으므로 mock이 아니라 실제 엔티티를
+     * 만들고 필드만 원하는 값으로 덮어써야 한다 — mock은 스텁 안 한 필드 접근까지는 대신해주지 못한다.
+     */
     private RestOilPriceEntity oilPrice(String gasoline, String diesel, String lpg) {
-        RestOilPriceEntity entity = mock(RestOilPriceEntity.class);
-        lenient().when(entity.getGasolinePrice()).thenReturn(gasoline);
-        lenient().when(entity.getDieselPrice()).thenReturn(diesel);
-        lenient().when(entity.getLpgPrice()).thenReturn(lpg);
+        RestOilPriceEntity entity = RestOilPriceEntity.from(restOilPriceItem("000001", "테스트주유소"));
+        ReflectionTestUtils.setField(entity, "gasolinePrice", gasoline);
+        ReflectionTestUtils.setField(entity, "dieselPrice", diesel);
+        ReflectionTestUtils.setField(entity, "lpgPrice", lpg);
         return entity;
     }
 
@@ -40,7 +45,7 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice("1,790원", "1,950원", "1,150원");
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, 1880, 1100);
 
-        FuelPriceTier tier = calculator.tier(null, Optional.of(oilPrice), stats, Optional.empty());
+        FuelPriceTier tier = calculator.tier(FuelTypeSelection.NONE, Optional.of(oilPrice), stats, Optional.empty());
 
         assertThat(tier).isNull();
     }
@@ -50,7 +55,8 @@ class RouteRestStopFuelTierCalculatorTest {
     void tier_returnsNullWhenNoOilPrice() {
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, null, null);
 
-        FuelPriceTier tier = calculator.tier(FuelType.GASOLINE, Optional.empty(), stats, Optional.empty());
+        FuelPriceTier tier =
+                calculator.tier(FuelTypeSelection.of(FuelType.GASOLINE), Optional.empty(), stats, Optional.empty());
 
         assertThat(tier).isNull();
     }
@@ -61,7 +67,8 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice("1,950원", "1,880원", "1,100원");
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1950, 1880, 900);
 
-        FuelPriceTier tier = calculator.tier(FuelType.DIESEL, Optional.of(oilPrice), stats, Optional.empty());
+        FuelPriceTier tier =
+                calculator.tier(FuelTypeSelection.of(FuelType.DIESEL), Optional.of(oilPrice), stats, Optional.empty());
 
         assertThat(tier).isEqualTo(FuelPriceTier.CHEAPEST);
     }
@@ -72,8 +79,11 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice("1,850원", null, null);
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, null, null);
 
-        FuelPriceTier tier =
-                calculator.tier(FuelType.GASOLINE, Optional.of(oilPrice), stats, nationalAverage("1,900원", null, null));
+        FuelPriceTier tier = calculator.tier(
+                FuelTypeSelection.of(FuelType.GASOLINE),
+                Optional.of(oilPrice),
+                stats,
+                nationalAverage("1,900원", null, null));
 
         assertThat(tier).isEqualTo(FuelPriceTier.BELOW_AVERAGE);
     }
@@ -84,8 +94,11 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice("1,950원", "1,700원", "1,000원");
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1700, 1700, 1000);
 
-        FuelPriceTier tier =
-                calculator.tier(FuelType.GASOLINE, Optional.of(oilPrice), stats, nationalAverage("1,900원", null, null));
+        FuelPriceTier tier = calculator.tier(
+                FuelTypeSelection.of(FuelType.GASOLINE),
+                Optional.of(oilPrice),
+                stats,
+                nationalAverage("1,900원", null, null));
 
         assertThat(tier).isNull();
     }
@@ -96,8 +109,11 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice(null, "1,950원", null);
         QueriedOilPriceStats stats = new QueriedOilPriceStats(null, 1790, null);
 
-        FuelPriceTier tier =
-                calculator.tier(FuelType.DIESEL, Optional.of(oilPrice), stats, nationalAverage(null, "1,900원", null));
+        FuelPriceTier tier = calculator.tier(
+                FuelTypeSelection.of(FuelType.DIESEL),
+                Optional.of(oilPrice),
+                stats,
+                nationalAverage(null, "1,900원", null));
 
         assertThat(tier).isNull();
     }
@@ -108,7 +124,8 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice(null, null, "1,150원");
         QueriedOilPriceStats stats = new QueriedOilPriceStats(null, null, 1000);
 
-        FuelPriceTier tier = calculator.tier(FuelType.LPG, Optional.of(oilPrice), stats, Optional.empty());
+        FuelPriceTier tier =
+                calculator.tier(FuelTypeSelection.of(FuelType.LPG), Optional.of(oilPrice), stats, Optional.empty());
 
         assertThat(tier).isNull();
     }

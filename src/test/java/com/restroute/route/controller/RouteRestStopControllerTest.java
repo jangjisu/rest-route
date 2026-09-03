@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,9 +19,10 @@ import com.restroute.route.controller.response.RouteRestStopResponse.Destination
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteSummary;
+import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.RouteRestStopListQueryService;
 import com.restroute.route.service.RouteRestStopService;
-import com.restroute.route.service.dto.FuelType;
 import com.restroute.route.service.exception.RouteRestStopNotFoundException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -161,7 +161,14 @@ class RouteRestStopControllerTest {
         List<RouteRestStopListItemResponse> response =
                 List.of(RouteRestStopListItemResponse.of("A", "A휴게소", "경부선", 850.5, null, true, 3, null));
         when(routeRestStopListQueryService.findRouteRestStops(
-                        eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000), eq(FuelType.DIESEL)))
+                        eq(37.0),
+                        eq(127.0),
+                        eq("부산"),
+                        any(),
+                        any(),
+                        any(),
+                        eq(1000),
+                        eq(FuelTypeSelection.of(FuelType.DIESEL))))
                 .thenReturn(response);
 
         mockMvc.perform(get("/api/route-rest-stops/list")
@@ -180,7 +187,7 @@ class RouteRestStopControllerTest {
     @DisplayName("GET /api/route-rest-stops/list는 fuelType 없이도 동작한다")
     void getRouteRestStopList_worksWithoutFuelType() throws Exception {
         when(routeRestStopListQueryService.findRouteRestStops(
-                        eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000), isNull()))
+                        eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000), eq(FuelTypeSelection.NONE)))
                 .thenReturn(List.of());
 
         mockMvc.perform(get("/api/route-rest-stops/list")

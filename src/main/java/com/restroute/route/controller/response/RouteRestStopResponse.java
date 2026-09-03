@@ -1,6 +1,7 @@
 package com.restroute.route.controller.response;
 
 import com.restroute.reststop.domain.SizeTier;
+import com.restroute.route.dto.FuelType;
 import java.util.List;
 
 public record RouteRestStopResponse(Destination destination, List<RouteOption> routes) {
@@ -395,6 +396,15 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
         public static NationalOilPriceSummary of(
                 String tradeDate, AverageOilPrice gasoline, AverageOilPrice diesel, AverageOilPrice lpg) {
             return new NationalOilPriceSummary(tradeDate, gasoline, diesel, lpg);
+        }
+
+        public String getAveragePriceByFuelType(FuelType fuelType) {
+            return switch (fuelType) {
+                case GASOLINE -> gasoline.price();
+                case DIESEL -> diesel.price();
+                case LPG -> lpg.price();
+                case EV -> null;
+            };
         }
     }
 
