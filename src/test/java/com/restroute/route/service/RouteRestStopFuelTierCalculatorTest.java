@@ -1,28 +1,32 @@
 package com.restroute.route.service;
 
+import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 
 import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.service.dto.FuelType;
+import com.restroute.route.dto.FuelType;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class RouteRestStopFuelTierCalculatorTest {
 
     private final RouteRestStopFuelTierCalculator calculator = new RouteRestStopFuelTierCalculator();
 
+    /**
+     * {@code getPriceByFuelType}가 실제 엔티티 필드를 그대로 읽으므로 mock이 아니라 실제 엔티티를
+     * 만들고 필드만 원하는 값으로 덮어써야 한다 — mock은 스텁 안 한 필드 접근까지는 대신해주지 못한다.
+     */
     private RestOilPriceEntity oilPrice(String gasoline, String diesel, String lpg) {
-        RestOilPriceEntity entity = mock(RestOilPriceEntity.class);
-        lenient().when(entity.getGasolinePrice()).thenReturn(gasoline);
-        lenient().when(entity.getDieselPrice()).thenReturn(diesel);
-        lenient().when(entity.getLpgPrice()).thenReturn(lpg);
+        RestOilPriceEntity entity = RestOilPriceEntity.from(restOilPriceItem("000001", "테스트주유소"));
+        ReflectionTestUtils.setField(entity, "gasolinePrice", gasoline);
+        ReflectionTestUtils.setField(entity, "dieselPrice", diesel);
+        ReflectionTestUtils.setField(entity, "lpgPrice", lpg);
         return entity;
     }
 

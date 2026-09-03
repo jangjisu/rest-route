@@ -2,9 +2,8 @@ package com.restroute.route.service;
 
 import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.route.controller.response.FuelPriceTier;
-import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.service.dto.FuelType;
+import com.restroute.route.dto.FuelType;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
 import java.util.Optional;
@@ -26,11 +25,12 @@ public class RouteRestStopFuelTierCalculator {
         if (fuelType == null || oilPrice.isEmpty()) {
             return null;
         }
-        Optional<Integer> price = RouteRestStopNumberParser.parsePrice(priceOf(fuelType, oilPrice.get()));
+        Optional<Integer> price =
+                RouteRestStopNumberParser.parsePrice(oilPrice.get().getPriceByFuelType(fuelType));
         if (price.isEmpty()) {
             return null;
         }
-        if (price.get().equals(minOf(fuelType, queriedStats))) {
+        if (price.get().equals(queriedStats.minByFuelType(fuelType))) {
             return FuelPriceTier.CHEAPEST;
         }
         if (isBelowNationalAverage(fuelType, price.get(), nationalOilPriceSummary)) {
@@ -39,36 +39,12 @@ public class RouteRestStopFuelTierCalculator {
         return null;
     }
 
-    private String priceOf(FuelType fuelType, RestOilPriceEntity oilPrice) {
-        return switch (fuelType) {
-            case GASOLINE -> oilPrice.getGasolinePrice();
-            case DIESEL -> oilPrice.getDieselPrice();
-            case LPG -> oilPrice.getLpgPrice();
-        };
-    }
-
-    private Integer minOf(FuelType fuelType, QueriedOilPriceStats queriedStats) {
-        return switch (fuelType) {
-            case GASOLINE -> queriedStats.gasolineMin();
-            case DIESEL -> queriedStats.dieselMin();
-            case LPG -> queriedStats.lpgMin();
-        };
-    }
-
     private boolean isBelowNationalAverage(
             FuelType fuelType, int price, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         return nationalOilPriceSummary
-                .map(summary -> averageOilPrice(fuelType, summary))
-                .flatMap(average -> RouteRestStopNumberParser.parsePrice(average.price()))
+                .map(summary -> summary.getAveragePriceByFuelType(fuelType))
+                .flatMap(RouteRestStopNumberParser::parsePrice)
                 .map(average -> price < average)
                 .orElse(false);
-    }
-
-    private AverageOilPrice averageOilPrice(FuelType fuelType, NationalOilPriceSummary summary) {
-        return switch (fuelType) {
-            case GASOLINE -> summary.gasoline();
-            case DIESEL -> summary.diesel();
-            case LPG -> summary.lpg();
-        };
     }
 }

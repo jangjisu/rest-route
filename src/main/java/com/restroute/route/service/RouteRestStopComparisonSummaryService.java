@@ -6,10 +6,9 @@ import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.route.controller.response.FuelPriceTier;
-import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.service.dto.FuelType;
+import com.restroute.route.dto.FuelType;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
 import java.util.List;
@@ -107,16 +106,8 @@ class RouteRestStopComparisonSummaryService {
     private Optional<Integer> averagePrice(
             Optional<NationalOilPriceSummary> nationalOilPriceSummary, FuelType fuelType) {
         return nationalOilPriceSummary
-                .map(summary -> averageOilPrice(summary, fuelType))
-                .flatMap(price -> RouteRestStopNumberParser.parsePrice(price.price()));
-    }
-
-    private AverageOilPrice averageOilPrice(NationalOilPriceSummary summary, FuelType fuelType) {
-        return switch (fuelType) {
-            case GASOLINE -> summary.gasoline();
-            case DIESEL -> summary.diesel();
-            case LPG -> summary.lpg();
-        };
+                .map(summary -> summary.getAveragePriceByFuelType(fuelType))
+                .flatMap(RouteRestStopNumberParser::parsePrice);
     }
 
     private Integer totalParkingCount(List<HighwayServiceAreaInfoEntity> infos) {
