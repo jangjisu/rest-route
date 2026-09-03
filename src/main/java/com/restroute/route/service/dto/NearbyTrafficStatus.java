@@ -1,7 +1,9 @@
 package com.restroute.route.service.dto;
 
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public enum NearbyTrafficStatus {
     SMOOTH("smooth", "원활"),
     SLOW("slow", "서행"),
@@ -10,11 +12,6 @@ public enum NearbyTrafficStatus {
 
     private final String key;
     private final String label;
-
-    NearbyTrafficStatus(String key, String label) {
-        this.key = key;
-        this.label = label;
-    }
 
     public String key() {
         return key;
