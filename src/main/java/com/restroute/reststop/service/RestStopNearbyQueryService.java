@@ -128,13 +128,8 @@ public class RestStopNearbyQueryService {
         }
 
         FuelType fuelType = fuelSelection.fuelType();
-        Optional<Integer> price =
-                RouteRestStopNumberParser.parsePrice(oilPrice.get().getPriceByFuelType(fuelType));
-        Optional<Integer> average = RouteRestStopNumberParser.parsePrice(
-                nationalOilPriceSummary.get().getAveragePriceByFuelType(fuelType));
-        if (price.isEmpty() || average.isEmpty()) {
-            return null;
-        }
-        return price.get() < average.get() ? true : null;
+        String price = oilPrice.get().getPriceByFuelType(fuelType);
+        String averagePrice = nationalOilPriceSummary.get().getAveragePriceByFuelType(fuelType);
+        return RouteRestStopNumberParser.isBelowAverage(price, averagePrice) ? true : null;
     }
 }

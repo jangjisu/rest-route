@@ -84,13 +84,16 @@ class RouteRestStopComparisonSummaryService {
 
     private boolean isBelowNationalAverage(
             RestOilPriceEntity oilPrice, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        return isNegative(diffFromAverage(oilPrice.getGasolinePrice(), nationalOilPriceSummary, FuelType.GASOLINE))
-                || isNegative(diffFromAverage(oilPrice.getDieselPrice(), nationalOilPriceSummary, FuelType.DIESEL))
-                || isNegative(diffFromAverage(oilPrice.getLpgPrice(), nationalOilPriceSummary, FuelType.LPG));
+        return isBelowAverage(oilPrice.getGasolinePrice(), FuelType.GASOLINE, nationalOilPriceSummary)
+                || isBelowAverage(oilPrice.getDieselPrice(), FuelType.DIESEL, nationalOilPriceSummary)
+                || isBelowAverage(oilPrice.getLpgPrice(), FuelType.LPG, nationalOilPriceSummary);
     }
 
-    private boolean isNegative(Integer diff) {
-        return diff != null && diff < 0;
+    private boolean isBelowAverage(
+            String price, FuelType fuelType, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+        String averagePrice =
+                nationalOilPriceSummary.map(summary -> summary.getAveragePriceByFuelType(fuelType)).orElse(null);
+        return RouteRestStopNumberParser.isBelowAverage(price, averagePrice);
     }
 
     private Integer diffFromAverage(
