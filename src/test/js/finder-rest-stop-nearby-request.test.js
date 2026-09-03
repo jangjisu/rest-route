@@ -47,11 +47,11 @@ test('이름이 있으면 앞뒤 공백을 지우고 name으로 실어 보낸다
     }).load({ name: '  안성  ' });
 });
 
-test('관심 항목이 있으면 interest를 실어 보낸다', async () => {
+test('관심 항목이 있으면 fuelType으로 실어 보낸다', async () => {
     const { onState } = collect();
     await createFinderRestStopNearbyRequest({
         fetchImpl: async (url) => {
-            assert.equal(url, '/api/rest-stops/nearby?interest=EV');
+            assert.equal(url, '/api/rest-stops/nearby?fuelType=EV');
             return jsonResponse(200, { code: 'SUCCESS', data: [] });
         },
         onState
@@ -62,7 +62,7 @@ test('세 값이 모두 있으면 전부 실어 보낸다', async () => {
     const { onState } = collect();
     await createFinderRestStopNearbyRequest({
         fetchImpl: async (url) => {
-            assert.equal(url, '/api/rest-stops/nearby?originLat=37.5&originLng=127&name=%EC%95%88%EC%84%B1&interest=DIESEL');
+            assert.equal(url, '/api/rest-stops/nearby?originLat=37.5&originLng=127&name=%EC%95%88%EC%84%B1&fuelType=DIESEL');
             return jsonResponse(200, { code: 'SUCCESS', data: [] });
         },
         onState
