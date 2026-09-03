@@ -12,6 +12,7 @@ import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.service.RestStopNearbyQueryService;
 import com.restroute.reststop.service.RestStopQueryService;
 import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,7 +129,7 @@ class RestStopControllerTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestStopNearbyItemResponse response =
                 RestStopNearbyItemResponse.of(restStop, 1200.0, null, true, false, false, null, null);
-        when(restStopNearbyQueryService.findNearby(37.5, 127.0, "안성", FuelType.EV))
+        when(restStopNearbyQueryService.findNearby(37.5, 127.0, "안성", FuelTypeSelection.of(FuelType.EV)))
                 .thenReturn(List.of(response));
 
         mockMvc.perform(get("/api/rest-stops/nearby")
@@ -146,7 +147,8 @@ class RestStopControllerTest {
     @Test
     @DisplayName("GET /api/rest-stops/nearby는 파라미터가 하나도 없어도 동작한다")
     void getNearbyRestStops_worksWithoutAnyParams() throws Exception {
-        when(restStopNearbyQueryService.findNearby(null, null, null, null)).thenReturn(List.of());
+        when(restStopNearbyQueryService.findNearby(null, null, null, FuelTypeSelection.NONE))
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/api/rest-stops/nearby"))
                 .andExpect(status().isOk())

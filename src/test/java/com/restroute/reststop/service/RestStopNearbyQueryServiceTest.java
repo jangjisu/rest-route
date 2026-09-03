@@ -18,6 +18,7 @@ import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +89,7 @@ class RestStopNearbyQueryServiceTest {
                         "A00001",
                         aggregate(relatedInfoWithOilPrice(Optional.empty()), true, true, false, SizeTier.LARGE)));
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, null, null);
+        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, null, FuelTypeSelection.NONE);
 
         assertThat(result).hasSize(1);
         RestStopNearbyItemResponse item = result.get(0);
@@ -108,7 +109,7 @@ class RestStopNearbyQueryServiceTest {
         RestStopEntity restStop = restStop("A00001", "안성(서울)휴게소", "37.5", "127.0");
         when(restStopQueryService.searchByName("안성")).thenReturn(List.of(restStop));
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, "안성", null);
+        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, "안성", FuelTypeSelection.NONE);
 
         assertThat(result).extracting(RestStopNearbyItemResponse::unitName).containsExactly("안성(서울)휴게소");
     }
@@ -120,7 +121,7 @@ class RestStopNearbyQueryServiceTest {
         RestStopEntity near = restStop("A00002", "가까운휴게소", "37.501", "127.001");
         when(restStopQueryService.findAll()).thenReturn(List.of(far, near));
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(37.5, 127.0, null, null);
+        List<RestStopNearbyItemResponse> result = service.findNearby(37.5, 127.0, null, FuelTypeSelection.NONE);
 
         assertThat(result).extracting(RestStopNearbyItemResponse::unitName).containsExactly("가까운휴게소", "먼휴게소");
         assertThat(result.get(0).distanceMeters()).isLessThan(result.get(1).distanceMeters());
@@ -133,7 +134,7 @@ class RestStopNearbyQueryServiceTest {
         RestStopEntity valid = restStop("A00002", "좌표있음", "37.5", "127.0");
         when(restStopQueryService.findAll()).thenReturn(List.of(broken, valid));
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(37.5, 127.0, null, null);
+        List<RestStopNearbyItemResponse> result = service.findNearby(37.5, 127.0, null, FuelTypeSelection.NONE);
 
         assertThat(result).extracting(RestStopNearbyItemResponse::unitName).containsExactly("좌표있음", "좌표없음");
         assertThat(result.get(1).distanceMeters()).isNull();
@@ -148,7 +149,8 @@ class RestStopNearbyQueryServiceTest {
         when(evChargerQueryService.findActiveChargerCounts(List.of("A00001", "A00002")))
                 .thenReturn(Map.of("A00001", 8));
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, null, FuelType.EV);
+        List<RestStopNearbyItemResponse> result =
+                service.findNearby(null, null, null, FuelTypeSelection.of(FuelType.EV));
 
         Map<String, Integer> countByName = new HashMap<>();
         result.forEach(item -> countByName.put(item.unitName(), item.evChargerCount()));
@@ -162,7 +164,7 @@ class RestStopNearbyQueryServiceTest {
         RestStopEntity restStop = restStop("A00001", "휴게소", "37.5", "127.0");
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
 
-        service.findNearby(null, null, null, FuelType.GASOLINE);
+        service.findNearby(null, null, null, FuelTypeSelection.of(FuelType.GASOLINE));
 
         org.mockito.Mockito.verifyNoInteractions(evChargerQueryService);
     }
@@ -189,7 +191,8 @@ class RestStopNearbyQueryServiceTest {
         when(nationalOilPriceService.getTodaySummary())
                 .thenReturn(Optional.of(nationalAverage("1,900원", "1,800원", "1,100원")));
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, null, FuelType.GASOLINE);
+        List<RestStopNearbyItemResponse> result =
+                service.findNearby(null, null, null, FuelTypeSelection.of(FuelType.GASOLINE));
 
         assertThat(result.get(0).fuelBelowAverage()).isTrue();
     }
@@ -208,7 +211,8 @@ class RestStopNearbyQueryServiceTest {
         when(nationalOilPriceService.getTodaySummary())
                 .thenReturn(Optional.of(nationalAverage("1,900원", "1,800원", "1,100원")));
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, null, FuelType.GASOLINE);
+        List<RestStopNearbyItemResponse> result =
+                service.findNearby(null, null, null, FuelTypeSelection.of(FuelType.GASOLINE));
 
         assertThat(result.get(0).fuelBelowAverage()).isNull();
     }
@@ -220,7 +224,8 @@ class RestStopNearbyQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         when(nationalOilPriceService.getTodaySummary()).thenReturn(Optional.empty());
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, null, FuelType.DIESEL);
+        List<RestStopNearbyItemResponse> result =
+                service.findNearby(null, null, null, FuelTypeSelection.of(FuelType.DIESEL));
 
         assertThat(result.get(0).fuelBelowAverage()).isNull();
     }
@@ -230,7 +235,7 @@ class RestStopNearbyQueryServiceTest {
     void findNearby_returnsEmptyListWhenNoRestStopsFound() {
         when(restStopQueryService.searchByName("없는이름")).thenReturn(List.of());
 
-        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, "없는이름", null);
+        List<RestStopNearbyItemResponse> result = service.findNearby(null, null, "없는이름", FuelTypeSelection.NONE);
 
         assertThat(result).isEmpty();
         org.mockito.Mockito.verifyNoInteractions(restStopAggregateQueryService);

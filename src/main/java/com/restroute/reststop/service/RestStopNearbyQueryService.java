@@ -9,6 +9,7 @@ import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.service.dto.RestStopAggregate;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.util.RouteCoordinateFormat;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
 import java.util.Comparator;
@@ -35,7 +36,7 @@ public class RestStopNearbyQueryService {
 
     @Transactional(readOnly = true)
     public List<RestStopNearbyItemResponse> findNearby(
-            Double originLat, Double originLng, String name, FuelType fuelType) {
+            Double originLat, Double originLng, String name, FuelTypeSelection fuelSelection) {
         List<RestStopEntity> restStops =
                 StringUtils.hasText(name) ? restStopQueryService.searchByName(name) : restStopQueryService.findAll();
         if (restStops.isEmpty()) {
@@ -44,30 +45,19 @@ public class RestStopNearbyQueryService {
 
         Map<String, RestStopAggregate> aggregatesByServiceAreaCode =
                 restStopAggregateQueryService.findByRestStopsAndAdminOverridden(restStops, null);
-        boolean fuelPriceRequested = fuelType != null && fuelType.havePriceInfo();
-        Map<String, Integer> evChargerCountsByServiceAreaCode = evChargerCountsFor(fuelType, restStops);
+        Map<String, Integer> evChargerCountsByServiceAreaCode = evChargerCountsFor(fuelSelection, restStops);
         Optional<NationalOilPriceSummary> nationalOilPriceSummary =
-                fuelPriceRequested ? nationalOilPriceService.getTodaySummary() : Optional.empty();
+                fuelSelection.wantsFuelPriceInfo() ? nationalOilPriceService.getTodaySummary() : Optional.empty();
 
         List<RestStopNearbyItemResponse> items = restStops.stream()
-                .map(restStop -> {
-                    if (fuelPriceRequested) {
-                        return toNotEvItem(
-                                restStop,
-                                originLat,
-                                originLng,
-                                fuelType,
-                                aggregatesByServiceAreaCode.get(restStop.getServiceAreaCode()),
-                                nationalOilPriceSummary);
-                    }
-
-                    return toEvItem(
-                            restStop,
-                            originLat,
-                            originLng,
-                            aggregatesByServiceAreaCode.get(restStop.getServiceAreaCode()),
-                            evChargerCount(restStop, evChargerCountsByServiceAreaCode));
-                })
+                .map(restStop -> toItem(
+                        restStop,
+                        originLat,
+                        originLng,
+                        fuelSelection,
+                        aggregatesByServiceAreaCode.get(restStop.getServiceAreaCode()),
+                        evChargerCountsByServiceAreaCode,
+                        nationalOilPriceSummary))
                 .toList();
 
         if (originLat == null || originLng == null) {
@@ -79,66 +69,29 @@ public class RestStopNearbyQueryService {
                 .toList();
     }
 
-    private Map<String, Integer> evChargerCountsFor(FuelType fuelType, List<RestStopEntity> restStops) {
-        if (fuelType != FuelType.EV) {
+    private RestStopNearbyItemResponse toItem(
+            RestStopEntity restStop,
+            Double originLat,
+            Double originLng,
+            FuelTypeSelection fuelSelection,
+            RestStopAggregate aggregate,
+            Map<String, Integer> evChargerCountsByServiceAreaCode,
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+        Double distance = distanceMeters(originLat, originLng, restStop);
+        if (fuelSelection.wantsFuelPriceInfo()) {
+            return RestStopNearbyItemResponse.ofFuelPriceInfo(
+                    restStop, distance, aggregate, fuelBelowAverage(aggregate, fuelSelection, nationalOilPriceSummary));
+        }
+        return RestStopNearbyItemResponse.ofEvChargerInfo(
+                restStop, distance, aggregate, evChargerCount(restStop, evChargerCountsByServiceAreaCode));
+    }
+
+    private Map<String, Integer> evChargerCountsFor(FuelTypeSelection fuelSelection, List<RestStopEntity> restStops) {
+        if (!fuelSelection.wantsEvChargerInfo()) {
             return Map.of();
         }
         return evChargerQueryService.findActiveChargerCounts(
                 restStops.stream().map(RestStopEntity::getServiceAreaCode).toList());
-    }
-
-    private RestStopNearbyItemResponse toEvItem(
-            RestStopEntity restStop,
-            Double originLat,
-            Double originLng,
-            RestStopAggregate aggregate,
-            Integer evChargerCount) {
-
-        if (aggregate == null) {
-            return RestStopNearbyItemResponse.of(
-                    restStop,
-                    distanceMeters(originLat, originLng, restStop),
-                    null,
-                    false,
-                    false,
-                    false,
-                    evChargerCount,
-                    null);
-        }
-
-        return RestStopNearbyItemResponse.of(
-                restStop,
-                distanceMeters(originLat, originLng, restStop),
-                aggregate.sizeTier(),
-                aggregate.topTrafficTier(),
-                aggregate.hasTheme(),
-                aggregate.hasEvent(),
-                evChargerCount,
-                null);
-    }
-
-    private RestStopNearbyItemResponse toNotEvItem(
-            RestStopEntity restStop,
-            Double originLat,
-            Double originLng,
-            FuelType fuelType,
-            RestStopAggregate aggregate,
-            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-
-        if (aggregate == null) {
-            return RestStopNearbyItemResponse.of(
-                    restStop, distanceMeters(originLat, originLng, restStop), null, false, false, false, null, null);
-        }
-
-        return RestStopNearbyItemResponse.of(
-                restStop,
-                distanceMeters(originLat, originLng, restStop),
-                aggregate.sizeTier(),
-                aggregate.topTrafficTier(),
-                aggregate.hasTheme(),
-                aggregate.hasEvent(),
-                null,
-                fuelBelowAverage(aggregate, fuelType, nationalOilPriceSummary));
     }
 
     private Double distanceMeters(Double originLat, Double originLng, RestStopEntity restStop) {
@@ -163,7 +116,9 @@ public class RestStopNearbyQueryService {
      * "평균보다 안 싸다"는 배지 자체를 안 보여줘야 해서 false를 따로 구분하지 않는다.
      */
     private Boolean fuelBelowAverage(
-            RestStopAggregate aggregate, FuelType fuelType, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
+            RestStopAggregate aggregate,
+            FuelTypeSelection fuelSelection,
+            Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
         if (aggregate == null || nationalOilPriceSummary.isEmpty()) {
             return null;
         }
@@ -172,6 +127,7 @@ public class RestStopNearbyQueryService {
             return null;
         }
 
+        FuelType fuelType = fuelSelection.fuelType();
         Optional<Integer> price =
                 RouteRestStopNumberParser.parsePrice(oilPrice.get().getPriceByFuelType(fuelType));
         Optional<Integer> average = RouteRestStopNumberParser.parsePrice(
