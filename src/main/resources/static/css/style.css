@@ -378,6 +378,8 @@ body.global-loading-open {
     display: flex;
     align-items: center;
     gap: 9px;
+    color: inherit;
+    text-decoration: none;
 }
 
 .rr-logo-mark {
