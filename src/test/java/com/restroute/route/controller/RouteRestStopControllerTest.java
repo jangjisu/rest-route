@@ -20,9 +20,9 @@ import com.restroute.route.controller.response.RouteRestStopResponse.Destination
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteSummary;
+import com.restroute.route.dto.FuelType;
 import com.restroute.route.service.RouteRestStopListQueryService;
 import com.restroute.route.service.RouteRestStopService;
-import com.restroute.route.service.dto.FuelType;
 import com.restroute.route.service.exception.RouteRestStopNotFoundException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
