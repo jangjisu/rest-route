@@ -87,11 +87,6 @@ class RouteRestStopRecommendationTagService {
     }
 
     private Optional<Integer> priceOf(ComparisonSummary summary, FuelType fuelType) {
-        return switch (fuelType) {
-            case GASOLINE -> RouteRestStopNumberParser.parsePrice(summary.gasolinePrice());
-            case DIESEL -> RouteRestStopNumberParser.parsePrice(summary.dieselPrice());
-            case LPG -> RouteRestStopNumberParser.parsePrice(summary.lpgPrice());
-            case EV -> Optional.empty();
-        };
+        return RouteRestStopNumberParser.parsePrice(summary.getPriceByFuelType(fuelType));
     }
 }
