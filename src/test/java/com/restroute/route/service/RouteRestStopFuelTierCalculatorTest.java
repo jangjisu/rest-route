@@ -8,6 +8,7 @@ import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +45,7 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice("1,790원", "1,950원", "1,150원");
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, 1880, 1100);
 
-        FuelPriceTier tier = calculator.tier(null, Optional.of(oilPrice), stats, Optional.empty());
+        FuelPriceTier tier = calculator.tier(FuelTypeSelection.NONE, Optional.of(oilPrice), stats, Optional.empty());
 
         assertThat(tier).isNull();
     }
@@ -54,7 +55,8 @@ class RouteRestStopFuelTierCalculatorTest {
     void tier_returnsNullWhenNoOilPrice() {
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, null, null);
 
-        FuelPriceTier tier = calculator.tier(FuelType.GASOLINE, Optional.empty(), stats, Optional.empty());
+        FuelPriceTier tier =
+                calculator.tier(FuelTypeSelection.of(FuelType.GASOLINE), Optional.empty(), stats, Optional.empty());
 
         assertThat(tier).isNull();
     }
@@ -65,7 +67,8 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice("1,950원", "1,880원", "1,100원");
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1950, 1880, 900);
 
-        FuelPriceTier tier = calculator.tier(FuelType.DIESEL, Optional.of(oilPrice), stats, Optional.empty());
+        FuelPriceTier tier =
+                calculator.tier(FuelTypeSelection.of(FuelType.DIESEL), Optional.of(oilPrice), stats, Optional.empty());
 
         assertThat(tier).isEqualTo(FuelPriceTier.CHEAPEST);
     }
@@ -76,8 +79,11 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice("1,850원", null, null);
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1790, null, null);
 
-        FuelPriceTier tier =
-                calculator.tier(FuelType.GASOLINE, Optional.of(oilPrice), stats, nationalAverage("1,900원", null, null));
+        FuelPriceTier tier = calculator.tier(
+                FuelTypeSelection.of(FuelType.GASOLINE),
+                Optional.of(oilPrice),
+                stats,
+                nationalAverage("1,900원", null, null));
 
         assertThat(tier).isEqualTo(FuelPriceTier.BELOW_AVERAGE);
     }
@@ -88,8 +94,11 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice("1,950원", "1,700원", "1,000원");
         QueriedOilPriceStats stats = new QueriedOilPriceStats(1700, 1700, 1000);
 
-        FuelPriceTier tier =
-                calculator.tier(FuelType.GASOLINE, Optional.of(oilPrice), stats, nationalAverage("1,900원", null, null));
+        FuelPriceTier tier = calculator.tier(
+                FuelTypeSelection.of(FuelType.GASOLINE),
+                Optional.of(oilPrice),
+                stats,
+                nationalAverage("1,900원", null, null));
 
         assertThat(tier).isNull();
     }
@@ -100,8 +109,11 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice(null, "1,950원", null);
         QueriedOilPriceStats stats = new QueriedOilPriceStats(null, 1790, null);
 
-        FuelPriceTier tier =
-                calculator.tier(FuelType.DIESEL, Optional.of(oilPrice), stats, nationalAverage(null, "1,900원", null));
+        FuelPriceTier tier = calculator.tier(
+                FuelTypeSelection.of(FuelType.DIESEL),
+                Optional.of(oilPrice),
+                stats,
+                nationalAverage(null, "1,900원", null));
 
         assertThat(tier).isNull();
     }
@@ -112,7 +124,8 @@ class RouteRestStopFuelTierCalculatorTest {
         RestOilPriceEntity oilPrice = oilPrice(null, null, "1,150원");
         QueriedOilPriceStats stats = new QueriedOilPriceStats(null, null, 1000);
 
-        FuelPriceTier tier = calculator.tier(FuelType.LPG, Optional.of(oilPrice), stats, Optional.empty());
+        FuelPriceTier tier =
+                calculator.tier(FuelTypeSelection.of(FuelType.LPG), Optional.of(oilPrice), stats, Optional.empty());
 
         assertThat(tier).isNull();
     }

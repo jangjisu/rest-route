@@ -4,6 +4,7 @@ import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.dto.FuelType;
+import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
 import java.util.Optional;
@@ -18,13 +19,14 @@ import org.springframework.stereotype.Component;
 public class RouteRestStopFuelTierCalculator {
 
     public FuelPriceTier tier(
-            FuelType fuelType,
+            FuelTypeSelection fuelSelection,
             Optional<RestOilPriceEntity> oilPrice,
             QueriedOilPriceStats queriedStats,
             Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        if (fuelType == null || oilPrice.isEmpty()) {
+        if (!fuelSelection.wantsFuelPriceInfo() || oilPrice.isEmpty()) {
             return null;
         }
+        FuelType fuelType = fuelSelection.fuelType();
         Optional<Integer> price =
                 RouteRestStopNumberParser.parsePrice(oilPrice.get().getPriceByFuelType(fuelType));
         if (price.isEmpty()) {
