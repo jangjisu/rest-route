@@ -27,26 +27,19 @@ public class RouteRestStopFuelTierCalculator {
             return null;
         }
         FuelType fuelType = fuelSelection.fuelType();
-        Optional<Integer> price =
-                RouteRestStopNumberParser.parsePrice(oilPrice.get().getPriceByFuelType(fuelType));
+        String rawPrice = oilPrice.get().getPriceByFuelType(fuelType);
+        Optional<Integer> price = RouteRestStopNumberParser.parsePrice(rawPrice);
         if (price.isEmpty()) {
             return null;
         }
         if (price.get().equals(queriedStats.minByFuelType(fuelType))) {
             return FuelPriceTier.CHEAPEST;
         }
-        if (isBelowNationalAverage(fuelType, price.get(), nationalOilPriceSummary)) {
+        String averagePrice =
+                nationalOilPriceSummary.map(summary -> summary.getAveragePriceByFuelType(fuelType)).orElse(null);
+        if (RouteRestStopNumberParser.isBelowAverage(rawPrice, averagePrice)) {
             return FuelPriceTier.BELOW_AVERAGE;
         }
         return null;
-    }
-
-    private boolean isBelowNationalAverage(
-            FuelType fuelType, int price, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        return nationalOilPriceSummary
-                .map(summary -> summary.getAveragePriceByFuelType(fuelType))
-                .flatMap(RouteRestStopNumberParser::parsePrice)
-                .map(average -> price < average)
-                .orElse(false);
     }
 }

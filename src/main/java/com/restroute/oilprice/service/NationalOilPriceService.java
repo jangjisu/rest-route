@@ -103,16 +103,13 @@ public class NationalOilPriceService {
                 entity.getProductCode(), entity.getProductName(), entity.formattedPrice(), entity.getDiff());
     }
 
+    @RequiredArgsConstructor
     private enum Product {
         GASOLINE("B027"),
         DIESEL("D047"),
         LPG("K015");
 
         private final String code;
-
-        Product(String code) {
-            this.code = code;
-        }
 
         private String code() {
             return code;

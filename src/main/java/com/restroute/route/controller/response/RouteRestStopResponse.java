@@ -388,6 +388,15 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                     foodMenuCount,
                     facilityCount);
         }
+
+        public String getPriceByFuelType(FuelType fuelType) {
+            return switch (fuelType) {
+                case GASOLINE -> gasolinePrice;
+                case DIESEL -> dieselPrice;
+                case LPG -> lpgPrice;
+                case EV -> null;
+            };
+        }
     }
 
     public record NationalOilPriceSummary(

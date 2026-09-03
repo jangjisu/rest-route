@@ -102,7 +102,7 @@ public class RouteRestStopListQueryService {
                 .map(routeCoordinateReducer::reduce)
                 .filter(geometry -> !geometry.path().isEmpty())
                 .findFirst()
-                .orElseThrow(() -> new RouteRestStopNotFoundException("경로 좌표가 없습니다."));
+                .orElseThrow(RouteRestStopNotFoundException::emptyRoutePath);
     }
 
     private Map<String, RestStopAggregate> aggregatesFor(

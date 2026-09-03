@@ -36,4 +36,17 @@ public final class RouteRestStopNumberParser {
             return 0;
         }
     }
+
+    /**
+     * price가 averagePrice보다 쌀 때만 true. 둘 중 하나라도 숫자로 못 바꾸면 false —
+     * "평균보다 싸다"고 확신할 근거가 없다는 뜻이라 안 싼 것과 같게 취급한다.
+     */
+    public static boolean isBelowAverage(String price, String averagePrice) {
+        Optional<Integer> parsedPrice = parsePrice(price);
+        Optional<Integer> parsedAverage = parsePrice(averagePrice);
+        if (parsedPrice.isEmpty() || parsedAverage.isEmpty()) {
+            return false;
+        }
+        return parsedPrice.get() < parsedAverage.get();
+    }
 }
