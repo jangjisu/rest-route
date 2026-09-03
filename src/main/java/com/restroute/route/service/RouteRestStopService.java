@@ -71,7 +71,7 @@ public class RouteRestStopService {
                 .filter(geometry -> !geometry.path().isEmpty())
                 .toList();
         if (routes.isEmpty()) {
-            throw new RouteRestStopNotFoundException("경로 좌표가 없습니다.");
+            throw RouteRestStopNotFoundException.emptyRoutePath();
         }
         return routes;
     }

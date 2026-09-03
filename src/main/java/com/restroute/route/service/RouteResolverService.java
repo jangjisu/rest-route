@@ -36,7 +36,7 @@ public class RouteResolverService {
                 RouteCoordinateFormat.toParam(destination.longitude(), destination.latitude()));
         if (directions.failedToRoute()) {
             KakaoDirectionsResponse.Route failedRoute = directions.firstRoute();
-            throw new RouteRestStopNotFoundException(
+            throw RouteRestStopNotFoundException.routeNotFound(
                     routeFailureMessage(failedRoute == null ? null : failedRoute.resultCode()));
         }
 
@@ -67,14 +67,14 @@ public class RouteResolverService {
     private Destination destinationFromQuery(String destinationQuery) {
         KakaoLocalSearchResponse search = kakaoMapClient.searchKeyword(destinationQuery);
         if (search.isEmpty()) {
-            throw new RouteRestStopNotFoundException("목적지 검색 결과가 없습니다: " + destinationQuery);
+            throw RouteRestStopNotFoundException.destinationNotFound(destinationQuery);
         }
 
         KakaoLocalSearchResponse.Document document = search.first();
         Double longitude = RouteCoordinateFormat.parse(document.x());
         Double latitude = RouteCoordinateFormat.parse(document.y());
         if (longitude == null || latitude == null) {
-            throw new RouteRestStopNotFoundException("목적지 좌표를 해석하지 못했습니다.");
+            throw RouteRestStopNotFoundException.destinationCoordinateUnresolved();
         }
 
         return Destination.of(document.label(), latitude, longitude);

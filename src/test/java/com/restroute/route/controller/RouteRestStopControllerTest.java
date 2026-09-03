@@ -130,7 +130,7 @@ class RouteRestStopControllerTest {
     void notFound_returns404() throws Exception {
         when(routeRestStopService.findRouteRestStops(
                         anyDouble(), anyDouble(), anyString(), any(), any(), any(), anyInt()))
-                .thenThrow(new RouteRestStopNotFoundException("없음"));
+                .thenThrow(RouteRestStopNotFoundException.destinationNotFound("없는곳"));
 
         mockMvc.perform(get("/api/route-rest-stops")
                         .param("originLat", "37.0")
