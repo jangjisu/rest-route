@@ -11,7 +11,7 @@ import { createCandidateListItem } from './candidate-list-item.js';
 import { createRouteRestStopRequest } from './route-rest-stop-request.js';
 import { createNationalOilPriceRequest } from './national-oil-price-request.js';
 import { createPlaceSearchRequest } from './place-search-request.js';
-import { createRestStopNameSearchRequest } from './rest-stop-name-search-request.js';
+import { initRestStopNameSearch } from './rest-stops-name-search.js';
 import {
     ROUTE_POINT_TARGET,
     createRoutePointSelection
@@ -48,7 +48,6 @@ let currentLocation;
 let currentLocationMarker;
 let routeRequest;
 let placeSearchRequest;
-let restStopNameSearchRequest;
 let routePolylines = [];
 let routeMarkers = [];
 let currentRouteData;
@@ -93,7 +92,6 @@ export async function initRestStopMap() {
     routeRequest = createRouteRestStopRequest({ onState: renderRouteState });
     nationalOilPriceRequest = createNationalOilPriceRequest({ onState: handleNationalOilPriceState });
     placeSearchRequest = createPlaceSearchRequest({ onState: renderPlaceSearchState });
-    restStopNameSearchRequest = createRestStopNameSearchRequest({ onState: renderRestStopNameSearchState });
     bindPageLevelDetailEvents();
     bindDetailSheetPresentation();
 
@@ -128,7 +126,11 @@ export async function initRestStopMap() {
         map = createMap(mapElement, naverMaps, initialCenter);
         bindLocateControl();
         bindRouteSearch();
-        bindRestStopNameSearch();
+        initRestStopNameSearch(document, {
+            signal: detailPanelEventController.signal,
+            openRestStopPopupAt,
+            openDetailPanel
+        });
         bindRouteMapClick();
         bindMarkerModeToggle();
         bottomSheetController = initBottomSheetDrag(document, window);
@@ -630,112 +632,6 @@ function bindRouteSearch() {
         }
     }, { signal });
     updateRoutePointSummary();
-}
-
-function bindRestStopNameSearch() {
-    if (!detailPanelEventController) {
-        return;
-    }
-
-    const signal = detailPanelEventController.signal;
-    document.getElementById('restStopNameSearchButton')?.addEventListener('click', searchRestStopByName, { signal });
-    document.getElementById('restStopNameSearchInput')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            searchRestStopByName();
-        }
-    }, { signal });
-    document.getElementById('restStopSearchModalClose')?.addEventListener('click', closeRestStopSearchModal, {
-        signal
-    });
-    document.getElementById('restStopSearchModal')?.addEventListener('click', (event) => {
-        if (event.target === event.currentTarget) {
-            closeRestStopSearchModal();
-        }
-    }, { signal });
-}
-
-function setRestStopNameSearchStatus(message) {
-    const status = document.getElementById('restStopNameSearchStatus');
-    if (!status) {
-        return;
-    }
-    status.hidden = message === '';
-    status.textContent = message;
-}
-
-function searchRestStopByName() {
-    const query = document.getElementById('restStopNameSearchInput')?.value.trim() ?? '';
-    if (query === '') {
-        setRestStopNameSearchStatus('휴게소명을 입력해주세요.');
-        return;
-    }
-    restStopNameSearchRequest?.load(query);
-}
-
-function renderRestStopNameSearchState(state) {
-    if (state.status === 'loading') {
-        setRestStopNameSearchStatus('검색하는 중입니다...');
-        return;
-    }
-
-    if (state.status === 'success') {
-        if (state.restStops.length === 0) {
-            setRestStopNameSearchStatus('검색 결과가 없습니다.');
-            return;
-        }
-        if (state.restStops.length === 1) {
-            setRestStopNameSearchStatus('');
-            selectRestStopSearchResult(state.restStops[0]);
-            return;
-        }
-        setRestStopNameSearchStatus('');
-        renderRestStopSearchCandidates(state.restStops);
-        openRestStopSearchModal();
-        return;
-    }
-
-    setRestStopNameSearchStatus('검색에 실패했습니다. 잠시 후 다시 시도해주세요.');
-}
-
-function renderRestStopSearchCandidates(restStops) {
-    const list = document.getElementById('restStopSearchList');
-    if (!list) {
-        return;
-    }
-    list.replaceChildren();
-    restStops.forEach((restStop) => list.appendChild(createRestStopSearchCandidateItem(restStop)));
-}
-
-function createRestStopSearchCandidateItem(restStop) {
-    return createCandidateListItem(document, {
-        itemClassName: 'route-result-item route-candidate-item',
-        buttonClassName: 'route-candidate-button',
-        primaryClassName: 'route-result-name',
-        secondaryClassName: 'route-result-meta',
-        primaryText: formatText(restStop?.unitName, '이름 정보 없음'),
-        secondaryText: formatText(restStop?.routeName, '노선 정보 없음'),
-        onSelect: () => selectRestStopSearchResult(restStop)
-    });
-}
-
-function selectRestStopSearchResult(restStop) {
-    closeRestStopSearchModal();
-
-    const latitude = Number.parseFloat(restStop.yValue);
-    const longitude = Number.parseFloat(restStop.xValue);
-    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-        openRestStopPopupAt(restStop, new naverMaps.LatLng(latitude, longitude));
-        return;
-    }
-    openDetailPanel(restStop);
-}
-
-function openRestStopSearchModal() {
-    openDialogById('restStopSearchModal');
-}
-
-function closeRestStopSearchModal() {
-    closeDialogById('restStopSearchModal');
 }
 
 function openRouteOriginModal() {
@@ -1305,7 +1201,7 @@ function renderRouteSelection() {
             if (routePointSelection.getMapTarget()) {
                 return;
             }
-            openRestStopPopupAt(restStop, position);
+            openRestStopPopupAt(restStop, { latitude: restStop.latitude, longitude: restStop.longitude });
         });
 
         routeMarkers.push(marker);
@@ -1411,11 +1307,12 @@ function fitMapToPath(latLngs) {
 }
 
 
-function openRestStopPopupAt(restStop, position, { fromRouteResult = false } = {}) {
+function openRestStopPopupAt(restStop, { latitude, longitude }, { fromRouteResult = false } = {}) {
     if (selectedInfoWindow) {
         selectedInfoWindow.close();
     }
 
+    const position = new naverMaps.LatLng(latitude, longitude);
     const infoWindow = new naverMaps.InfoWindow({
         content: createPopupContent(restStop)
     });
@@ -1430,7 +1327,7 @@ function selectRouteRestStop(restStop) {
     closeRouteResultModal();
 
     if (Number.isFinite(restStop?.latitude) && Number.isFinite(restStop?.longitude)) {
-        openRestStopPopupAt(restStop, new naverMaps.LatLng(restStop.latitude, restStop.longitude), {
+        openRestStopPopupAt(restStop, { latitude: restStop.latitude, longitude: restStop.longitude }, {
             fromRouteResult: true
         });
         return;
