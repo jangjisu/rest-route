@@ -1,53 +1,43 @@
+import { createRequestTracker } from './request-tracker.js';
+
 const NATIONAL_OIL_PRICE_SUMMARY_ENDPOINT = '/api/national-oil-prices/summary';
 
 export function createNationalOilPriceRequest({ fetchImpl = fetch, onState = () => {} } = {}) {
-    let currentRequestId = 0;
-    let activeRequestController;
-
-    function emitIfCurrent(requestId, state) {
-        if (requestId === currentRequestId) {
-            onState(state);
-        }
-    }
+    const tracker = createRequestTracker({ onState });
 
     async function load() {
-        activeRequestController?.abort();
-        activeRequestController = new globalThis.AbortController();
-
-        const requestId = ++currentRequestId;
-        emitIfCurrent(requestId, { status: 'loading' });
+        const request = tracker.begin();
+        request.emit({ status: 'loading' });
 
         try {
             const response = await fetchImpl(
                 NATIONAL_OIL_PRICE_SUMMARY_ENDPOINT,
-                { signal: activeRequestController.signal }
+                { signal: request.signal }
             );
             const body = await response.json();
 
             if (body?.code === 'EXTERNAL_API_UNAVAILABLE') {
-                emitIfCurrent(requestId, { status: 'external-unavailable' });
+                request.emit({ status: 'external-unavailable' });
                 return;
             }
 
             if (response.ok && body?.code === 'SUCCESS' && hasValidData(body)) {
-                emitIfCurrent(requestId, { status: 'success', data: body.data });
+                request.emit({ status: 'success', data: body.data });
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         } catch (error) {
-            if (error?.name === 'AbortError') {
+            if (request.isAborted(error)) {
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         }
     }
 
     function invalidate() {
-        currentRequestId += 1;
-        activeRequestController?.abort();
-        activeRequestController = undefined;
+        tracker.invalidate();
         onState({ status: 'idle' });
     }
 

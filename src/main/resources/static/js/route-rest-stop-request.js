@@ -1,30 +1,22 @@
+import { createRequestTracker } from './request-tracker.js';
+
 const ROUTE_REST_STOPS_ENDPOINT = '/api/route-rest-stops';
 
 export function createRouteRestStopRequest({ fetchImpl = fetch, onState = () => {} } = {}) {
-    let currentRequestId = 0;
-    let activeRequestController;
-
-    function emitIfCurrent(requestId, state) {
-        if (requestId === currentRequestId) {
-            onState(state);
-        }
-    }
+    const tracker = createRequestTracker({ onState });
 
     async function load(originLatitude, originLongitude, destinationQuery, destinationLat, destinationLng, destinationName) {
-        activeRequestController?.abort();
-        activeRequestController = new globalThis.AbortController();
-
-        const requestId = ++currentRequestId;
+        const request = tracker.begin();
         const query = typeof destinationQuery === 'string' ? destinationQuery.trim() : '';
         const hasOrigin = Number.isFinite(originLatitude) && Number.isFinite(originLongitude);
         const hasCoordinates = Number.isFinite(destinationLat) && Number.isFinite(destinationLng);
 
         if (!hasOrigin || (query === '' && !hasCoordinates)) {
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
             return;
         }
 
-        emitIfCurrent(requestId, { status: 'loading' });
+        request.emit({ status: 'loading' });
 
         try {
             let url = `${ROUTE_REST_STOPS_ENDPOINT}?originLat=${originLatitude}&originLng=${originLongitude}`;
@@ -37,16 +29,16 @@ export function createRouteRestStopRequest({ fetchImpl = fetch, onState = () => 
             if (!hasCoordinates) {
                 url += `&destinationQuery=${encodeURIComponent(query)}`;
             }
-            const response = await fetchImpl(url, { signal: activeRequestController.signal });
+            const response = await fetchImpl(url, { signal: request.signal });
             const body = await response.json();
 
             if (response.status === 404 && body?.code === 'NOT_FOUND') {
-                emitIfCurrent(requestId, { status: 'not-found', message: body?.message });
+                request.emit({ status: 'not-found', message: body?.message });
                 return;
             }
 
             if (body?.code === 'EXTERNAL_API_UNAVAILABLE') {
-                emitIfCurrent(requestId, { status: 'external-unavailable' });
+                request.emit({ status: 'external-unavailable' });
                 return;
             }
 
@@ -54,24 +46,22 @@ export function createRouteRestStopRequest({ fetchImpl = fetch, onState = () => 
                 && typeof body?.data === 'object'
                 && !Array.isArray(body.data);
             if (response.ok && body?.code === 'SUCCESS' && hasValidData) {
-                emitIfCurrent(requestId, { status: 'success', data: body.data });
+                request.emit({ status: 'success', data: body.data });
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         } catch (error) {
-            if (error?.name === 'AbortError') {
+            if (request.isAborted(error)) {
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         }
     }
 
     function invalidate() {
-        currentRequestId += 1;
-        activeRequestController?.abort();
-        activeRequestController = undefined;
+        tracker.invalidate();
         onState({ status: 'idle' });
     }
 
