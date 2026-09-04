@@ -10,7 +10,6 @@ import com.restroute.reststop.service.RestStopSyncService;
 import com.restroute.reststopcontent.service.RestEventSyncService;
 import com.restroute.reststopcontent.service.RestFoodSyncService;
 import com.restroute.reststopcontent.service.RestThemeSyncService;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -36,113 +35,17 @@ public class RestStopStartupInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        initializeRestStops();
-        initializeRestStopDetails();
-        initializeRestOils();
-        initializeRestOilPrices();
-        initializeRestFoods();
+        SafeSyncRunner.runInitial("rest stop", "rest_stop", restStopSyncService::initializeRestStopsIfEmpty);
+        SafeSyncRunner.runInitial(
+                "rest stop detail", "rest_stop_detail", restStopDetailSyncService::initializeRestStopDetailsIfEmpty);
+        SafeSyncRunner.runInitial("rest oil", "rest_oil", restOilSyncService::initializeRestOilsIfEmpty);
+        SafeSyncRunner.runInitial(
+                "rest oil price", "rest_oil_price", restOilPriceSyncService::initializeRestOilPricesIfEmpty);
+        SafeSyncRunner.runInitial("rest food", "rest_food", restFoodSyncService::initializeRestFoodsIfEmpty);
         initializeEvChargers();
-        initializeRestThemes();
-        initializeRestEvents();
+        SafeSyncRunner.runInitial("rest theme", "rest_theme", restThemeSyncService::initializeRestThemesIfEmpty);
+        SafeSyncRunner.runInitial("rest event", "rest_event", restEventSyncService::initializeRestEventsIfEmpty);
         backfillRestStopServiceAreaCodes();
-    }
-
-    private void initializeRestStops() {
-        try {
-            int savedCount = restStopSyncService.initializeRestStopsIfEmpty();
-            if (savedCount > 0) {
-                log.info("Initial rest stop sync completed. savedCount={}", savedCount);
-                return;
-            }
-
-            log.info("Initial rest stop sync skipped because rest_stop table already has data.");
-        } catch (RuntimeException e) {
-            log.error("Initial rest stop sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void initializeRestStopDetails() {
-        try {
-            int detailSavedCount = restStopDetailSyncService.initializeRestStopDetailsIfEmpty();
-            if (detailSavedCount > 0) {
-                log.info("Initial rest stop detail sync completed. detailSavedCount={}", detailSavedCount);
-                return;
-            }
-
-            log.info("Initial rest stop detail sync skipped because rest_stop_detail table already has data.");
-        } catch (RuntimeException e) {
-            log.error("Initial rest stop detail sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void initializeRestOils() {
-        try {
-            int savedCount = restOilSyncService.initializeRestOilsIfEmpty();
-            if (savedCount > 0) {
-                log.info("Initial rest oil sync completed. savedCount={}", savedCount);
-                return;
-            }
-
-            log.info("Initial rest oil sync skipped because rest_oil table already has data.");
-        } catch (RuntimeException e) {
-            log.error("Initial rest oil sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void initializeRestOilPrices() {
-        try {
-            int savedCount = restOilPriceSyncService.initializeRestOilPricesIfEmpty();
-            if (savedCount > 0) {
-                log.info("Initial rest oil price sync completed. savedCount={}", savedCount);
-                return;
-            }
-
-            log.info("Initial rest oil price sync skipped because rest_oil_price table already has data.");
-        } catch (RuntimeException e) {
-            log.error("Initial rest oil price sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void initializeRestFoods() {
-        try {
-            int savedCount = restFoodSyncService.initializeRestFoodsIfEmpty();
-            if (savedCount > 0) {
-                log.info("Initial rest food sync completed. savedCount={}", savedCount);
-                return;
-            }
-
-            log.info("Initial rest food sync skipped because rest_food table already has data.");
-        } catch (RuntimeException e) {
-            log.error("Initial rest food sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void initializeRestThemes() {
-        try {
-            int savedCount = restThemeSyncService.initializeRestThemesIfEmpty();
-            if (savedCount > 0) {
-                log.info("Initial rest theme sync completed. savedCount={}", savedCount);
-                return;
-            }
-
-            log.info("Initial rest theme sync skipped because rest_theme table already has data.");
-        } catch (RuntimeException e) {
-            log.error("Initial rest theme sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void initializeRestEvents() {
-        try {
-            int savedCount = restEventSyncService.initializeRestEventsIfEmpty();
-            if (savedCount > 0) {
-                log.info("Initial rest event sync completed. savedCount={}", savedCount);
-                return;
-            }
-
-            log.info("Initial rest event sync skipped because rest_event table already has data.");
-        } catch (RuntimeException e) {
-            log.error("Initial rest event sync failed. cause={}", e.getMessage(), e);
-        }
     }
 
     private EvChargerSyncResult initializeEvChargers() {
@@ -165,11 +68,7 @@ public class RestStopStartupInitializer implements ApplicationRunner {
     }
 
     private void backfillRestStopServiceAreaCodes() {
-        try {
-            Map<String, Integer> result = restStopServiceAreaCodeBackfillService.backfill();
-            log.info("Rest stop service area code backfill completed. result={}", result);
-        } catch (RuntimeException e) {
-            log.error("Rest stop service area code backfill failed. cause={}", e.getMessage(), e);
-        }
+        SafeSyncRunner.runBackfill(
+                "Rest stop service area code backfill", restStopServiceAreaCodeBackfillService::backfill);
     }
 }
