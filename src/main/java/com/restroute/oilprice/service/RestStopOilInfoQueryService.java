@@ -4,7 +4,7 @@ import com.restroute.oilprice.controller.response.OilInfoResponse;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
+import com.restroute.reststop.service.dto.RestStopOilInfo;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,10 +23,10 @@ public class RestStopOilInfoQueryService {
     }
 
     private Optional<OilInfoResponse> findByRestStop(RestStopEntity restStop) {
-        RestStopRelatedInfo relatedInfo = restStopRelatedInfoQueryService.findByRestStop(restStop);
-        if (relatedInfo.oilServiceAreaCode2().isEmpty()) {
+        RestStopOilInfo oilInfo = restStopRelatedInfoQueryService.findOilInfo(restStop.getServiceAreaCode());
+        if (oilInfo.oilServiceAreaCode2().isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(OilInfoResponse.from(relatedInfo.oilPrice(), relatedInfo.oilStationConveniences()));
+        return Optional.of(OilInfoResponse.from(oilInfo.oilPrice(), oilInfo.oilStationConveniences()));
     }
 }

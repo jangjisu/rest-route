@@ -4,8 +4,7 @@ import static com.restroute.support.RestStopTestFixtures.restStopDetailItem;
 import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static com.restroute.support.RestStopTestFixtures.restThemeItem;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.restroute.evcharger.service.EvChargerQueryService;
@@ -15,7 +14,6 @@ import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststop.service.image.RestStopImageQueryService;
 import com.restroute.reststop.service.usage.dto.RestStopUsageSnapshotRow;
 import com.restroute.reststopcontent.domain.RestThemeEntity;
@@ -68,16 +66,8 @@ class RestStopBasicInfoQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestStopDetailEntity detail = detail("경기 성남시", "02-573-7430", "투썸플레이스");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.of(detail),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.of(detail));
+        when(restStopRelatedInfoQueryService.findThemes("A00001")).thenReturn(List.of());
         when(restStopImageQueryService.findDetailImageUrl("A00001")).thenReturn("/api/rest-stops/A00001/images/detail");
 
         Optional<RestStopBasicInfoResponse> result = restStopBasicInfoQueryService.findByServiceAreaCode("A00001");
@@ -106,16 +96,8 @@ class RestStopBasicInfoQueryServiceTest {
     void findByServiceAreaCode_returnsTopTrafficTier() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "죽전(서울)휴게소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.empty());
+        when(restStopRelatedInfoQueryService.findThemes("A00001")).thenReturn(List.of());
         RestStopUsageSnapshotEntity usageSnapshot = RestStopUsageSnapshotEntity.from(
                 new RestStopUsageSnapshotRow("경부선", "죽전(서울)", "10000", "임대", "1000", "10764"));
         usageSnapshot.updateTopTrafficTier(true);
@@ -134,16 +116,8 @@ class RestStopBasicInfoQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestThemeEntity theme = RestThemeEntity.from(restThemeItem("000001", "4계절 꽃이 있는 휴게소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(theme),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.empty());
+        when(restStopRelatedInfoQueryService.findThemes("A00001")).thenReturn(List.of(theme));
 
         Optional<RestStopBasicInfoResponse> result = restStopBasicInfoQueryService.findByServiceAreaCode("A00001");
 
@@ -161,7 +135,7 @@ class RestStopBasicInfoQueryServiceTest {
         Optional<RestStopBasicInfoResponse> result = restStopBasicInfoQueryService.findByServiceAreaCode("UNKNOWN");
 
         assertThat(result).isEmpty();
-        verify(restStopRelatedInfoQueryService, never()).findByRestStop(org.mockito.ArgumentMatchers.any());
+        verifyNoInteractions(restStopRelatedInfoQueryService);
     }
 
     @Test
@@ -169,16 +143,8 @@ class RestStopBasicInfoQueryServiceTest {
     void findByServiceAreaCode_returnsBasicInfoWithNullDetailFields() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.empty());
+        when(restStopRelatedInfoQueryService.findThemes("A00001")).thenReturn(List.of());
 
         Optional<RestStopBasicInfoResponse> result = restStopBasicInfoQueryService.findByServiceAreaCode("A00001");
 
@@ -194,16 +160,8 @@ class RestStopBasicInfoQueryServiceTest {
     void findByServiceAreaCode_returnsNullDetailImageUrlWhenImageIsMissing() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.empty());
+        when(restStopRelatedInfoQueryService.findThemes("A00001")).thenReturn(List.of());
         when(restStopImageQueryService.findDetailImageUrl("A00001")).thenReturn(null);
 
         Optional<RestStopBasicInfoResponse> result = restStopBasicInfoQueryService.findByServiceAreaCode("A00001");
@@ -218,16 +176,8 @@ class RestStopBasicInfoQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestStopDetailEntity detail = detail("  ", " ", "\t");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.of(detail),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.of(detail));
+        when(restStopRelatedInfoQueryService.findThemes("A00001")).thenReturn(List.of());
 
         Optional<RestStopBasicInfoResponse> result = restStopBasicInfoQueryService.findByServiceAreaCode("A00001");
 

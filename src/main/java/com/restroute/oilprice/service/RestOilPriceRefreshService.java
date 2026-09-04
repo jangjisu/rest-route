@@ -10,7 +10,7 @@ import com.restroute.oilprice.repository.RestOilPriceRepository;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
+import com.restroute.reststop.service.dto.RestStopOilInfo;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -38,14 +38,14 @@ public class RestOilPriceRefreshService {
     }
 
     private Optional<OilInfoResponse> refreshByRestStop(RestStopEntity restStop) {
-        RestStopRelatedInfo relatedInfo = restStopRelatedInfoQueryService.findByRestStop(restStop);
-        List<RestOilEntity> conveniences = relatedInfo.oilStationConveniences();
-        Optional<String> serviceAreaCode2 = relatedInfo.oilServiceAreaCode2();
+        RestStopOilInfo oilInfo = restStopRelatedInfoQueryService.findOilInfo(restStop.getServiceAreaCode());
+        List<RestOilEntity> conveniences = oilInfo.oilStationConveniences();
+        Optional<String> serviceAreaCode2 = oilInfo.oilServiceAreaCode2();
         if (serviceAreaCode2.isEmpty()) {
             return Optional.empty();
         }
 
-        Optional<RestOilPriceEntity> cachedOilPrice = relatedInfo.oilPrice();
+        Optional<RestOilPriceEntity> cachedOilPrice = oilInfo.oilPrice();
         if (cachedOilPrice.filter(this::isFresh).isPresent()) {
             return Optional.of(OilInfoResponse.from(cachedOilPrice, conveniences));
         }

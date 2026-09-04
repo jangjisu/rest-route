@@ -2,13 +2,13 @@ package com.restroute.route.service;
 
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.oilprice.dto.FuelType;
+import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
-import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.dto.FuelType;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
 import java.util.List;
@@ -70,16 +70,9 @@ class RouteRestStopComparisonSummaryService {
     }
 
     private boolean isCheapest(RestOilPriceEntity oilPrice, QueriedOilPriceStats queriedStats) {
-        return matchesPrice(oilPrice.getGasolinePrice(), queriedStats.gasolineMin())
-                || matchesPrice(oilPrice.getDieselPrice(), queriedStats.dieselMin())
-                || matchesPrice(oilPrice.getLpgPrice(), queriedStats.lpgMin());
-    }
-
-    private boolean matchesPrice(String price, Integer target) {
-        if (target == null) {
-            return false;
-        }
-        return RouteRestStopNumberParser.parsePrice(price).map(target::equals).orElse(false);
+        return RouteRestStopNumberParser.matchesMin(oilPrice.getGasolinePrice(), queriedStats.gasolineMin())
+                || RouteRestStopNumberParser.matchesMin(oilPrice.getDieselPrice(), queriedStats.dieselMin())
+                || RouteRestStopNumberParser.matchesMin(oilPrice.getLpgPrice(), queriedStats.lpgMin());
     }
 
     private boolean isBelowNationalAverage(
@@ -91,8 +84,9 @@ class RouteRestStopComparisonSummaryService {
 
     private boolean isBelowAverage(
             String price, FuelType fuelType, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        String averagePrice =
-                nationalOilPriceSummary.map(summary -> summary.getAveragePriceByFuelType(fuelType)).orElse(null);
+        String averagePrice = nationalOilPriceSummary
+                .map(summary -> summary.getAveragePriceByFuelType(fuelType))
+                .orElse(null);
         return RouteRestStopNumberParser.isBelowAverage(price, averagePrice);
     }
 

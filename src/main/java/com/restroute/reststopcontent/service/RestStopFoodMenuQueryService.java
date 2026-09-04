@@ -3,8 +3,9 @@ package com.restroute.reststopcontent.service;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.controller.response.FoodMenuResponse;
+import com.restroute.reststopcontent.domain.RestFoodEntity;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class RestStopFoodMenuQueryService {
     }
 
     private FoodMenuResponse findByRestStop(RestStopEntity restStop) {
-        RestStopRelatedInfo relatedInfo = restStopRelatedInfoQueryService.findByRestStop(restStop);
-        return FoodMenuResponse.from(relatedInfo.foods());
+        List<RestFoodEntity> foods = restStopRelatedInfoQueryService.findFoods(restStop.getServiceAreaCode());
+        return FoodMenuResponse.from(foods);
     }
 }

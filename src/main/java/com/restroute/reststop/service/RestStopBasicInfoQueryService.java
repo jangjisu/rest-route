@@ -2,12 +2,14 @@ package com.restroute.reststop.service;
 
 import com.restroute.evcharger.service.EvChargerQueryService;
 import com.restroute.reststop.controller.response.RestStopBasicInfoResponse;
+import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststop.service.image.RestStopImageQueryService;
+import com.restroute.reststopcontent.domain.RestThemeEntity;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,14 +31,15 @@ public class RestStopBasicInfoQueryService {
     }
 
     private RestStopBasicInfoResponse findByRestStop(RestStopEntity restStop) {
-        RestStopRelatedInfo relatedInfo = restStopRelatedInfoQueryService.findByRestStop(restStop);
-        int evChargerCount = evChargerQueryService.findActiveChargerCount(restStop.getServiceAreaCode());
-        String detailImageUrl = restStopImageQueryService.findDetailImageUrl(restStop.getServiceAreaCode());
+        String serviceAreaCode = restStop.getServiceAreaCode();
+        Optional<RestStopDetailEntity> detail = restStopRelatedInfoQueryService.findDetail(serviceAreaCode);
+        List<RestThemeEntity> themes = restStopRelatedInfoQueryService.findThemes(serviceAreaCode);
+        int evChargerCount = evChargerQueryService.findActiveChargerCount(serviceAreaCode);
+        String detailImageUrl = restStopImageQueryService.findDetailImageUrl(serviceAreaCode);
         boolean topTrafficTier = restStopUsageSnapshotRepository
-                .findByRestStopServiceAreaCode(restStop.getServiceAreaCode())
+                .findByRestStopServiceAreaCode(serviceAreaCode)
                 .map(RestStopUsageSnapshotEntity::isTopTrafficTier)
                 .orElse(false);
-        return RestStopBasicInfoResponse.of(
-                restStop, relatedInfo.detail(), evChargerCount, detailImageUrl, relatedInfo.themes(), topTrafficTier);
+        return RestStopBasicInfoResponse.of(restStop, detail, evChargerCount, detailImageUrl, themes, topTrafficTier);
     }
 }

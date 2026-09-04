@@ -49,4 +49,15 @@ public final class RouteRestStopNumberParser {
         }
         return parsedPrice.get() < parsedAverage.get();
     }
+
+    /**
+     * price가 minPrice와 (숫자로 바꿨을 때) 같을 때만 true. minPrice가 없거나 price를 숫자로
+     * 못 바꾸면 false — "최저가와 같다"고 확신할 근거가 없다는 뜻이라 아닌 것과 같게 취급한다.
+     */
+    public static boolean matchesMin(String price, Integer minPrice) {
+        if (minPrice == null) {
+            return false;
+        }
+        return parsePrice(price).map(minPrice::equals).orElse(false);
+    }
 }
