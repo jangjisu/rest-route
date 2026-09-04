@@ -20,7 +20,7 @@ import com.restroute.oilprice.repository.RestOilPriceRepository;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
+import com.restroute.reststop.service.dto.RestStopOilInfo;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -82,7 +82,7 @@ class RestOilPriceRefreshServiceTest {
         RestOilPriceItem changed = restOilPriceItem("000002", "서울만남(부산)주유소");
         ReflectionTestUtils.setField(changed, "gasolinePrice", "1,888원");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
                 .thenReturn(relatedInfo("000002", List.of(convenience), Optional.of(existing)));
         when(exApiClient.getCurStateStationByServiceAreaCode2("000002"))
                 .thenReturn(restOilPriceResponse("SUCCESS", List.of(changed)));
@@ -106,7 +106,7 @@ class RestOilPriceRefreshServiceTest {
         RestOilPriceEntity cached = RestOilPriceEntity.from(
                 restOilPriceItem("000002", "서울만남(부산)주유소"), LocalDateTime.of(2026, 6, 16, 7, 25));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
                 .thenReturn(relatedInfo("000002", List.of(convenience), Optional.of(cached)));
 
         Optional<OilInfoResponse> result = restOilPriceRefreshService.refreshByServiceAreaCode("A00001");
@@ -124,7 +124,7 @@ class RestOilPriceRefreshServiceTest {
         RestOilEntity convenience = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
         RestOilPriceItem fetched = restOilPriceItem("000002", "서울만남(부산)주유소");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
                 .thenReturn(relatedInfo("000002", List.of(convenience), Optional.empty()));
         when(exApiClient.getCurStateStationByServiceAreaCode2("000002"))
                 .thenReturn(restOilPriceResponse("SUCCESS", List.of(fetched)));
@@ -151,7 +151,7 @@ class RestOilPriceRefreshServiceTest {
         RestOilPriceItem changed = restOilPriceItem("000002", "서울만남(부산)주유소");
         ReflectionTestUtils.setField(changed, "gasolinePrice", "1,777원");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
                 .thenReturn(relatedInfo("000002", List.of(convenience), Optional.of(existing)));
         when(exApiClient.getCurStateStationByServiceAreaCode2("000002"))
                 .thenReturn(restOilPriceResponse("SUCCESS", List.of(changed)));
@@ -179,7 +179,7 @@ class RestOilPriceRefreshServiceTest {
     void refreshRestOilPrice_returnsEmptyWhenOilMappingMissing() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
                 .thenReturn(relatedInfo(null, List.of(), Optional.empty()));
 
         Optional<OilInfoResponse> result = restOilPriceRefreshService.refreshByServiceAreaCode("A00001");
@@ -194,7 +194,7 @@ class RestOilPriceRefreshServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestOilEntity convenience = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
                 .thenReturn(relatedInfo("000002", List.of(convenience), Optional.empty()));
         when(exApiClient.getCurStateStationByServiceAreaCode2("000002"))
                 .thenReturn(restOilPriceResponse("SUCCESS", List.of()));
@@ -213,7 +213,7 @@ class RestOilPriceRefreshServiceTest {
         var response = restOilPriceResponse("SUCCESS", List.of());
         ReflectionTestUtils.setField(response, "list", null);
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
                 .thenReturn(relatedInfo("000002", List.of(convenience), Optional.empty()));
         when(exApiClient.getCurStateStationByServiceAreaCode2("000002")).thenReturn(response);
 
@@ -233,18 +233,10 @@ class RestOilPriceRefreshServiceTest {
                 .execute(any());
     }
 
-    private RestStopRelatedInfo relatedInfo(
+    private RestStopOilInfo relatedInfo(
             String serviceAreaCode2,
             List<RestOilEntity> oilStationConveniences,
             Optional<RestOilPriceEntity> oilPrice) {
-        return RestStopRelatedInfo.of(
-                Optional.empty(),
-                List.of(),
-                oilStationConveniences,
-                Optional.ofNullable(serviceAreaCode2),
-                oilPrice,
-                List.of(),
-                List.of(),
-                List.of());
+        return new RestStopOilInfo(oilStationConveniences, Optional.ofNullable(serviceAreaCode2), oilPrice);
     }
 }

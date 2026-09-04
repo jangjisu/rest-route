@@ -1,6 +1,6 @@
 package com.restroute.route.service.dto;
 
-import com.restroute.route.dto.FuelType;
+import com.restroute.oilprice.dto.FuelType;
 
 /**
  * 이번 요청에서 실제로 조회된(경로에 매칭된) 휴게소들만 대상으로 한 유종별 최저가. "제일 저렴" 배지는

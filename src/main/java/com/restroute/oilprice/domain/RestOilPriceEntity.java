@@ -1,7 +1,7 @@
 package com.restroute.oilprice.domain;
 
 import com.restroute.oilprice.client.response.RestOilPriceItem;
-import com.restroute.route.dto.FuelType;
+import com.restroute.oilprice.dto.FuelType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
