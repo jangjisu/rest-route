@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.stream.IntStream;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -141,6 +140,9 @@ public record FlightSearchRequestDto(
      * 원본 문자열이 아니라 파싱/정규화된 값으로 비교한다 — {@code sort}처럼 생략(=기본값)과
      * 명시적으로 기본값을 보낸 요청이 실제로는 같은 검색인데도 raw 문자열 비교면 다르다고
      * 오판할 수 있고, {@code currency}처럼 대소문자만 다른 경우도 마찬가지다.
+     *
+     * <p>"같은 검색"을 정의하는 필드 목록을 {@link SearchIdentity} 레코드 하나로 뽑아, equals와
+     * hashCode가 그 목록을 각자 손으로 나열하다 서로 어긋나는 일이 구조적으로 불가능하게 한다.
      */
     @Override
     public boolean equals(Object o) {
@@ -150,24 +152,16 @@ public record FlightSearchRequestDto(
         if (!(o instanceof FlightSearchRequestDto other)) {
             return false;
         }
-        return Objects.equals(origin, other.origin)
-                && parsedSearchMode() == other.parsedSearchMode()
-                && Objects.equals(dateFrom, other.dateFrom)
-                && Objects.equals(dateTo, other.dateTo)
-                && Objects.equals(destination, other.destination)
-                && Objects.equals(nights, other.nights)
-                && Objects.equals(sector, other.sector)
-                && isIncludeWeekend() == other.isIncludeWeekend()
-                && isIncludeHoliday() == other.isIncludeHoliday()
-                && isIncludeTransfer() == other.isIncludeTransfer()
-                && parsedSort() == other.parsedSort()
-                && Objects.equals(parsedLocale(), other.parsedLocale())
-                && Objects.equals(parsedCurrency(), other.parsedCurrency());
+        return identity().equals(other.identity());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
+        return identity().hashCode();
+    }
+
+    private SearchIdentity identity() {
+        return new SearchIdentity(
                 origin,
                 parsedSearchMode(),
                 dateFrom,
@@ -182,4 +176,20 @@ public record FlightSearchRequestDto(
                 parsedLocale(),
                 parsedCurrency());
     }
+
+    /** "같은 검색"을 판단할 때 실제로 비교하는 필드만 모은 값 타입 — cursor/limit은 여기 없다. */
+    private record SearchIdentity(
+            String origin,
+            FlightSearchMode searchMode,
+            String dateFrom,
+            String dateTo,
+            String destination,
+            List<String> nights,
+            List<String> sector,
+            boolean includeWeekend,
+            boolean includeHoliday,
+            boolean includeTransfer,
+            FlightDealSort sort,
+            String locale,
+            String currency) {}
 }

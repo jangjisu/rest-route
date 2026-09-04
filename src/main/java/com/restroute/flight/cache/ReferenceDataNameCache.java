@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * 꺼내는 방법만 서브클래스가 정한다.
  *
  * <p>네 캐시 모두 DB 왕복 없이 딜 응답 조립 시 읽기 전용으로 쓰이고, 시작 시
- * {@code ReferenceDataStartupInitializer}가 {@link #refresh()}로 한 번 채운다.
+ * {@code FlightReferenceDataStartupInitializer}가 {@link #refresh()}로 한 번 채운다.
  */
 public class ReferenceDataNameCache<T> {
 
