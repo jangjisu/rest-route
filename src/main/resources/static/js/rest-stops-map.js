@@ -7,6 +7,7 @@ import {
     showGlobalLoading
 } from './utils.js';
 import { formatText } from './rest-stop-detail-formatters.js';
+import { createCandidateListItem } from './candidate-list-item.js';
 import { createRouteRestStopRequest } from './route-rest-stop-request.js';
 import { createNationalOilPriceRequest } from './national-oil-price-request.js';
 import { createPlaceSearchRequest } from './place-search-request.js';
@@ -706,27 +707,15 @@ function renderRestStopSearchCandidates(restStops) {
 }
 
 function createRestStopSearchCandidateItem(restStop) {
-    const item = document.createElement('li');
-    item.className = 'route-result-item route-candidate-item';
-
-    const button = document.createElement('button');
-    button.className = 'route-candidate-button';
-    button.type = 'button';
-
-    const name = document.createElement('p');
-    name.className = 'route-result-name';
-    name.textContent = formatText(restStop?.unitName, '이름 정보 없음');
-    button.appendChild(name);
-
-    const meta = document.createElement('p');
-    meta.className = 'route-result-meta';
-    meta.textContent = formatText(restStop?.routeName, '노선 정보 없음');
-    button.appendChild(meta);
-
-    button.addEventListener('click', () => selectRestStopSearchResult(restStop));
-    item.appendChild(button);
-
-    return item;
+    return createCandidateListItem(document, {
+        itemClassName: 'route-result-item route-candidate-item',
+        buttonClassName: 'route-candidate-button',
+        primaryClassName: 'route-result-name',
+        secondaryClassName: 'route-result-meta',
+        primaryText: formatText(restStop?.unitName, '이름 정보 없음'),
+        secondaryText: formatText(restStop?.routeName, '노선 정보 없음'),
+        onSelect: () => selectRestStopSearchResult(restStop)
+    });
 }
 
 function selectRestStopSearchResult(restStop) {
@@ -1051,27 +1040,15 @@ function renderCandidates(candidates) {
 }
 
 function createCandidateItem(candidate) {
-    const item = document.createElement('li');
-    item.className = 'route-result-item route-candidate-item';
-
-    const button = document.createElement('button');
-    button.className = 'route-candidate-button';
-    button.type = 'button';
-
-    const name = document.createElement('p');
-    name.className = 'route-result-name';
-    name.textContent = formatText(candidate?.name, '이름 정보 없음');
-    button.appendChild(name);
-
-    const meta = document.createElement('p');
-    meta.className = 'route-result-meta';
-    meta.textContent = formatText(candidate?.address, '주소 정보 없음');
-    button.appendChild(meta);
-
-    button.addEventListener('click', () => selectPlaceCandidate(candidate));
-    item.appendChild(button);
-
-    return item;
+    return createCandidateListItem(document, {
+        itemClassName: 'route-result-item route-candidate-item',
+        buttonClassName: 'route-candidate-button',
+        primaryClassName: 'route-result-name',
+        secondaryClassName: 'route-result-meta',
+        primaryText: formatText(candidate?.name, '이름 정보 없음'),
+        secondaryText: formatText(candidate?.address, '주소 정보 없음'),
+        onSelect: () => selectPlaceCandidate(candidate)
+    });
 }
 
 function selectPlaceCandidate(candidate) {
