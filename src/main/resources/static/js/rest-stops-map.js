@@ -16,7 +16,7 @@ import {
     ROUTE_POINT_TARGET,
     createRoutePointSelection
 } from './route-point-selection.js';
-import { createRestStopDetailPopup } from './rest-stop-detail-popup.js';
+import { initRestStopDetailPanel, isMobileDetailSheet } from './rest-stops-detail-panel.js';
 import { createRouteRestStopView, renderNationalOilPriceState } from './route-rest-stop-view.js';
 import { initBottomSheetDrag } from './bottom-sheet.js';
 import { trackScreenView } from './analytics.js';
@@ -30,7 +30,6 @@ const SEOUL_CENTER = {
     longitude: 126.978
 };
 const DEFAULT_ZOOM = 11;
-const MOBILE_DETAIL_SHEET_MEDIA = '(max-width: 991.98px)';
 
 const GEOLOCATION_OPTIONS = {
     enableHighAccuracy: false,
@@ -41,7 +40,7 @@ const GEOLOCATION_OPTIONS = {
 let map;
 let naverMaps;
 let selectedInfoWindow;
-let detailPopup;
+let detailPanel;
 let detailPanelEventController;
 let mapInitializationId = 0;
 let currentLocation;
@@ -61,7 +60,6 @@ let destinationMarker;
 let currentRouteRestStops = [];
 let currentNationalOilPriceSummary;
 let nationalOilPriceRequest;
-let detailOpenedFromRouteResult = false;
 let routePointSelection = createRoutePointSelection();
 let routeMapClickListener;
 let routeMapDraftMarker;
@@ -78,15 +76,13 @@ export async function initRestStopMap() {
     removeRouteMapClickListener();
     clearRouteMapDraftMarker();
     routePointSelection = createRoutePointSelection();
-    detailPopup?.destroy();
+    detailPanel?.destroy();
     detailPanelEventController?.abort();
     detailPanelEventController = new globalThis.AbortController();
-    detailPopup = createRestStopDetailPopup(document, {
+    detailPanel = initRestStopDetailPanel(document, window, {
         mountTarget: document.querySelector('.rest-stop-map-layout'),
         onPopupUpdate: updateSelectedPopup,
-        onPresentationChange: updateDetailSheetPresentation,
-        onCloseRequest: () => closeDetailPanel({ restoreMapFocus: true }),
-        onRouteBack: returnToRouteResultModal
+        onRouteBack: openRouteResultModal
     });
     routeView = createRouteRestStopView({ onSelectRestStop: selectRouteRestStop });
     routeRequest = createRouteRestStopRequest({ onState: renderRouteState });
@@ -398,10 +394,6 @@ export function routeMapSelectionMessage(target, hasDraft) {
         : `지도에서 ${pointName} 위치를 선택하세요.`;
 }
 
-export function shouldShowRouteResultBackButton(openedFromRouteResult, isMobileSheet) {
-    return openedFromRouteResult === true && isMobileSheet === true;
-}
-
 // 상세 팝업 자체의 이벤트(닫기·먹거리 모달·주유 갱신)는 rest-stop-detail-popup.js가 갖고 있다.
 // 여기서는 이 페이지에만 있는 다른 모달들과 함께 있을 때의 Escape 키 우선순위만 다룬다.
 function bindPageLevelDetailEvents() {
@@ -418,7 +410,7 @@ function bindPageLevelDetailEvents() {
             cancelRouteMapSelection();
             return;
         }
-        if (detailPopup?.isFoodModalOpen()) {
+        if (detailPanel?.isFoodModalOpen()) {
             return;
         }
         if (document.getElementById('routeResultModal')?.open) {
@@ -430,7 +422,7 @@ function bindPageLevelDetailEvents() {
         if (document.getElementById('routeOriginModal')?.open) {
             return;
         }
-        if (detailPopup?.isOpen()) {
+        if (detailPanel?.isOpen()) {
             closeDetailPanel({ restoreMapFocus: true });
         }
     }, { signal: detailPanelEventController.signal });
@@ -441,62 +433,22 @@ function bindDetailSheetPresentation() {
         return;
     }
 
-    window.addEventListener('resize', updateDetailSheetPresentation, {
+    window.addEventListener('resize', () => detailPanel?.updatePresentation(), {
         signal: detailPanelEventController.signal
     });
 }
 
-function isMobileDetailSheet() {
-    return window.matchMedia(MOBILE_DETAIL_SHEET_MEDIA).matches;
-}
-
-function updateDetailSheetPresentation() {
-    // 뒷배경 스크림 자체는 rest-stop-detail-popup.js가 갖고 있고(좁은 화면일 때만), 여기선
-    // 화면 폭이 바뀔 수 있어(리사이즈) 다시 계산해달라고 알려주기만 한다.
-    detailPopup?.updatePresentation();
-    updateRouteResultBackButton();
-}
-
 function openDetailPanel(restStop, { fromRouteResult = false } = {}) {
-    if (!detailPopup) {
-        return;
-    }
-
-    detailOpenedFromRouteResult = fromRouteResult;
-    detailPopup.open(restStop);
-    updateDetailSheetPresentation();
+    detailPanel?.open(restStop, { fromRouteResult });
 }
 
 function closeDetailPanel({ restoreMapFocus = false } = {}) {
-    detailPopup?.close();
-    detailOpenedFromRouteResult = false;
-    updateDetailSheetPresentation();
+    detailPanel?.close({ restoreMapFocus });
 
     if (selectedInfoWindow) {
         selectedInfoWindow.close();
         selectedInfoWindow = undefined;
     }
-
-    if (restoreMapFocus) {
-        document.getElementById('restStopMap')?.focus();
-    }
-}
-
-function updateRouteResultBackButton() {
-    const button = document.getElementById('restStopDetailRouteBack');
-    if (!button) {
-        return;
-    }
-
-    button.classList.toggle(
-        'd-none',
-        !shouldShowRouteResultBackButton(detailOpenedFromRouteResult, isMobileDetailSheet())
-    );
-}
-
-function returnToRouteResultModal() {
-    closeDetailPanel();
-    openRouteResultModal();
 }
 
 function bindLocateControl() {
@@ -667,7 +619,7 @@ function selectCurrentLocationAsOrigin() {
 }
 
 function initializeMobileCurrentLocationOrigin() {
-    if (!isMobileDetailSheet() || !currentLocation || routePointSelection.getOrigin()) {
+    if (!isMobileDetailSheet(window) || !currentLocation || routePointSelection.getOrigin()) {
         return;
     }
 
