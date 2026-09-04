@@ -28,11 +28,7 @@ public class RouteRestStopFuelTierCalculator {
         }
         FuelType fuelType = fuelSelection.fuelType();
         String rawPrice = oilPrice.get().getPriceByFuelType(fuelType);
-        Optional<Integer> price = RouteRestStopNumberParser.parsePrice(rawPrice);
-        if (price.isEmpty()) {
-            return null;
-        }
-        if (price.get().equals(queriedStats.minByFuelType(fuelType))) {
+        if (RouteRestStopNumberParser.matchesMin(rawPrice, queriedStats.minByFuelType(fuelType))) {
             return FuelPriceTier.CHEAPEST;
         }
         String averagePrice = nationalOilPriceSummary

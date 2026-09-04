@@ -70,16 +70,9 @@ class RouteRestStopComparisonSummaryService {
     }
 
     private boolean isCheapest(RestOilPriceEntity oilPrice, QueriedOilPriceStats queriedStats) {
-        return matchesPrice(oilPrice.getGasolinePrice(), queriedStats.gasolineMin())
-                || matchesPrice(oilPrice.getDieselPrice(), queriedStats.dieselMin())
-                || matchesPrice(oilPrice.getLpgPrice(), queriedStats.lpgMin());
-    }
-
-    private boolean matchesPrice(String price, Integer target) {
-        if (target == null) {
-            return false;
-        }
-        return RouteRestStopNumberParser.parsePrice(price).map(target::equals).orElse(false);
+        return RouteRestStopNumberParser.matchesMin(oilPrice.getGasolinePrice(), queriedStats.gasolineMin())
+                || RouteRestStopNumberParser.matchesMin(oilPrice.getDieselPrice(), queriedStats.dieselMin())
+                || RouteRestStopNumberParser.matchesMin(oilPrice.getLpgPrice(), queriedStats.lpgMin());
     }
 
     private boolean isBelowNationalAverage(
