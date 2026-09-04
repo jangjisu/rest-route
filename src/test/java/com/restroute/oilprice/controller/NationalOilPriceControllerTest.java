@@ -5,9 +5,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.restroute.oilprice.dto.AverageOilPrice;
+import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.oilprice.service.NationalOilPriceService;
-import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
-import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

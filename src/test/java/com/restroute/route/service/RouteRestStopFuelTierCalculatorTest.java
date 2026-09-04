@@ -4,11 +4,11 @@ import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.oilprice.dto.AverageOilPrice;
+import com.restroute.oilprice.dto.FuelType;
+import com.restroute.oilprice.dto.FuelTypeSelection;
+import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.route.controller.response.FuelPriceTier;
-import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
-import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.dto.FuelType;
-import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;

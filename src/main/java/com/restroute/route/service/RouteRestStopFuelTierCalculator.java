@@ -1,10 +1,10 @@
 package com.restroute.route.service;
 
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.oilprice.dto.FuelType;
+import com.restroute.oilprice.dto.FuelTypeSelection;
+import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.route.controller.response.FuelPriceTier;
-import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.dto.FuelType;
-import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
 import java.util.Optional;
@@ -35,8 +35,9 @@ public class RouteRestStopFuelTierCalculator {
         if (price.get().equals(queriedStats.minByFuelType(fuelType))) {
             return FuelPriceTier.CHEAPEST;
         }
-        String averagePrice =
-                nationalOilPriceSummary.map(summary -> summary.getAveragePriceByFuelType(fuelType)).orElse(null);
+        String averagePrice = nationalOilPriceSummary
+                .map(summary -> summary.getAveragePriceByFuelType(fuelType))
+                .orElse(null);
         if (RouteRestStopNumberParser.isBelowAverage(rawPrice, averagePrice)) {
             return FuelPriceTier.BELOW_AVERAGE;
         }

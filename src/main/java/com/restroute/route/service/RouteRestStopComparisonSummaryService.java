@@ -2,13 +2,13 @@ package com.restroute.route.service;
 
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.oilprice.dto.FuelType;
+import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
-import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
-import com.restroute.route.dto.FuelType;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import com.restroute.route.service.util.RouteRestStopNumberParser;
 import java.util.List;
@@ -91,8 +91,9 @@ class RouteRestStopComparisonSummaryService {
 
     private boolean isBelowAverage(
             String price, FuelType fuelType, Optional<NationalOilPriceSummary> nationalOilPriceSummary) {
-        String averagePrice =
-                nationalOilPriceSummary.map(summary -> summary.getAveragePriceByFuelType(fuelType)).orElse(null);
+        String averagePrice = nationalOilPriceSummary
+                .map(summary -> summary.getAveragePriceByFuelType(fuelType))
+                .orElse(null);
         return RouteRestStopNumberParser.isBelowAverage(price, averagePrice);
     }
 

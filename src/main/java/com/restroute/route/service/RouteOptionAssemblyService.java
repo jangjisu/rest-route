@@ -1,10 +1,10 @@
 package com.restroute.route.service;
 
 import com.restroute.common.client.response.KakaoDirectionsResponse;
+import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.service.RestStopAggregateQueryService;
 import com.restroute.reststop.service.dto.RestStopAggregate;
-import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteSummary;
