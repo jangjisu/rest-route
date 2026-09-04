@@ -4,8 +4,7 @@ import static com.restroute.support.RestStopTestFixtures.highwayServiceAreaInfoI
 import static com.restroute.support.RestStopTestFixtures.restStopDetailItem;
 import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.restroute.reststop.client.response.HighwayServiceAreaInfoItem;
@@ -18,7 +17,6 @@ import com.restroute.reststop.domain.RestStopUsageSnapshotEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopRestroomRepository;
 import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststop.service.restroom.dto.RestStopRestroomRow;
 import com.restroute.reststop.service.usage.dto.RestStopUsageSnapshotRow;
 import java.util.List;
@@ -65,16 +63,9 @@ class RestStopFacilityQueryServiceTest {
         HighwayServiceAreaInfoEntity firstInfo = highwayServiceAreaInfo("10", "20", "1", "하행");
         HighwayServiceAreaInfoEntity secondInfo = highwayServiceAreaInfo("5", "7", "", "하행");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.of(detail),
-                        List.of(firstInfo, secondInfo),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.of(detail));
+        when(restStopRelatedInfoQueryService.findHighwayServiceAreaInfos("A00001"))
+                .thenReturn(List.of(firstInfo, secondInfo));
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
@@ -94,16 +85,9 @@ class RestStopFacilityQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "죽전(서울)휴게소"));
         HighwayServiceAreaInfoEntity info = highwayServiceAreaInfo("133", "67", "204", "상행");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(info),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.empty());
+        when(restStopRelatedInfoQueryService.findHighwayServiceAreaInfos("A00001"))
+                .thenReturn(List.of(info));
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
@@ -121,16 +105,9 @@ class RestStopFacilityQueryServiceTest {
                 RestStopRestroomEntity.from(new RestStopRestroomRow("경부선", "죽전(서울)", "37", "57"));
         restroom.updateRestStopServiceAreaCode("A00001");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.empty());
+        when(restStopRelatedInfoQueryService.findHighwayServiceAreaInfos("A00001"))
+                .thenReturn(List.of());
         when(restStopRestroomRepository.findByRestStopServiceAreaCode("A00001")).thenReturn(Optional.of(restroom));
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
@@ -148,16 +125,9 @@ class RestStopFacilityQueryServiceTest {
                 new RestStopUsageSnapshotRow("경부선", "죽전(서울)", "10000", "임대", "4165", "10764"));
         usageSnapshot.updateRestStopServiceAreaCode("A00001");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.empty());
+        when(restStopRelatedInfoQueryService.findHighwayServiceAreaInfos("A00001"))
+                .thenReturn(List.of());
         when(restStopUsageSnapshotRepository.findByRestStopServiceAreaCode("A00001"))
                 .thenReturn(Optional.of(usageSnapshot));
 
@@ -176,7 +146,7 @@ class RestStopFacilityQueryServiceTest {
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("UNKNOWN");
 
         assertThat(result).isEmpty();
-        verify(restStopRelatedInfoQueryService, never()).findByRestStop(org.mockito.ArgumentMatchers.any());
+        verifyNoInteractions(restStopRelatedInfoQueryService);
     }
 
     @Test
@@ -184,16 +154,9 @@ class RestStopFacilityQueryServiceTest {
     void findByServiceAreaCode_returnsNullFieldsWhenRelatedDataMissing() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.empty());
+        when(restStopRelatedInfoQueryService.findHighwayServiceAreaInfos("A00001"))
+                .thenReturn(List.of());
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
@@ -216,16 +179,9 @@ class RestStopFacilityQueryServiceTest {
         RestStopDetailEntity detail = detail(" ", "\t", "");
         HighwayServiceAreaInfoEntity info = highwayServiceAreaInfo(null, " ", "", null);
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.of(detail),
-                        List.of(info),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.of(detail));
+        when(restStopRelatedInfoQueryService.findHighwayServiceAreaInfos("A00001"))
+                .thenReturn(List.of(info));
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
@@ -245,16 +201,9 @@ class RestStopFacilityQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestStopDetailEntity detail = detail("수유실", "Y", "N");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.of(detail),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findDetail("A00001")).thenReturn(Optional.of(detail));
+        when(restStopRelatedInfoQueryService.findHighwayServiceAreaInfos("A00001"))
+                .thenReturn(List.of());
 
         Optional<RestStopFacilityResponse> result = restStopFacilityQueryService.findByServiceAreaCode("A00001");
 
