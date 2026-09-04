@@ -60,6 +60,8 @@ docs/**
 !docs/domain/**
 !docs/images/
 !docs/images/**
+!docs/agents/
+!docs/agents/**
 
 ### OS metadata ###
 .DS_Store

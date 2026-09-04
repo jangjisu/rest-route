@@ -116,3 +116,17 @@ rules/frontend.md
 
 코드 작성 뒤에는 코드, 테스트와 관련 Markdown 기준 문서의 정합성을 작업 전체에서 한 번만 리뷰한다.
 리뷰 지적을 반영한 뒤 재리뷰나 Compound Engineering 리뷰를 실행하지 않고 자동 검증으로 종료한다.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues를 `gh` CLI로 사용한다. 자세한 내용은 `docs/agents/issue-tracker.md` 참고.
+
+### Triage labels
+
+기본 5개 라벨(`needs-triage`/`needs-info`/`ready-for-agent`/`ready-for-human`/`wontfix`)을 그대로 쓴다. `docs/agents/triage-labels.md` 참고.
+
+### Domain docs
+
+Single-context 구조. 루트 `CONTEXT.md`(프로젝트 전용 용어집)와 `docs/domain/*.md`(실제 도메인 위키 — 흐름·정책·API 계약, `jisu-dev:domain-wiki` 스킬이 갱신)를 함께 쓴다. `docs/agents/domain.md` 참고.
