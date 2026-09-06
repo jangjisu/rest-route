@@ -20,6 +20,7 @@ sources:
   - "e07cb2c refactor: FlightSearchService가 계획 수립·조립 세부사항을 몰라도 되게 정리"
   - "65e47ef refactor: 검색 실행 계획·조립 구조를 플래너/공유 실행기 중심으로 재편"
   - "145bd16 feat: 공휴일 목록 조회 API 추가"
+  - "5d54c2e refactor: jisu-dev 네이밍/구조 감사 18건 수정 (상속 기반 모킹 구조를 FlightDealFetcher 전략 인터페이스로 교체)"
 ---
 
 # flight
@@ -135,11 +136,12 @@ Data API(Aviasales)를 조회해 딜 목록을 최저가순/빠른 날짜순으�
 
 - **검색 세션**: 서버 메모리(`ConcurrentHashMap`)에만 존재, TTL 300초, 만료되면 다음 조회
   시점에 lazy 제거된다. 재시작하면 전부 사라진다 — 영속 저장소가 아니다.
-- **참조 데이터(국가/도시/공항/항공사)**: DB에 영속 저장되고, 각 `Flight*StartupInitializer`
-  (`ApplicationRunner`)가 애플리케이션 시작 시 1회 SQL 파일로 재시딩한다. 이후 반복
-  동기화는 없다(공휴일과 달리 `@Scheduled` 없음 — 정적 참조 데이터로 취급).
-  `flight.{country|city|airline|airport}.sync.startup-enabled` 프로퍼티로 개별 비활성화
-  가능(기본 `true`).
+- **참조 데이터(국가/도시/공항/항공사)**: DB에 영속 저장되고,
+  `FlightReferenceDataStartupInitializer`(`ApplicationRunner` 1개, 4개 도메인 spec 순회)가
+  애플리케이션 시작 시 1회 SQL 파일로 재시딩한다. 이후 반복 동기화는 없다(공휴일과 달리
+  `@Scheduled` 없음 — 정적 참조 데이터로 취급).
+  `flight.{country|city|airline|airport}.sync.startup-enabled` 프로퍼티로 도메인별 개별
+  비활성화 가능(기본 `true`).
 - **인메모리 이름 캐시**: `FlightAirlineNameCache`(및 동종 airport/city/country 캐시)가
   code→이름/저비용여부를 `volatile Map`으로 들고 있다가 시작 시 1회, 시딩 직후 1회
   `refresh()`로 채워진다 — 딜 응답 조립 때 DB 왕복 없이 읽기 전용으로 쓰인다.
@@ -198,18 +200,23 @@ SQL 파일 기반 정적 시딩(`FlightReferenceDataSeeder`)으로 대체되었�
 ## 8. 코드 경계와 진입점
 
 **구성 패턴**: `FlightSearchService`(얇은 오케스트레이터, `@Primary @Service`)는 세션
-분기(첫 요청 vs 후속 페이지)만 판단하고, 실제 계획 수립(`FlightRangeCallPlanner`/
-`FlightFixedCallPlanner`)과 조립(`FlightDealAssembler`)의 세부사항은 전혀 모른다
-(`e07cb2c` 리팩토링 목표 그대로). `FlightSearchMockService`는 `FlightSearchService`를
-**상속**해 `fetchDeals`만 오버라이드하는 방식으로 실 연동과 요청/응답 계약을 강제로
-동일하게 유지한다(`c59e611`).
+분기(첫 요청 vs 후속 페이지)만 판단하고, 실제 딜을 어떻게 구해오는지는 `FlightDealFetcher`
+전략 인터페이스에 위임해서 계획 수립(`FlightRangeCallPlanner`/`FlightFixedCallPlanner`)과
+조립(`FlightDealAssembler`)의 세부사항은 전혀 모른다(`e07cb2c` 리팩토링 목표 그대로). 실
+연동 구현은 `FlightRealDealFetcher`(`@Component`)이고, `FlightSearchMockService`는
+`FlightSearchService`를 상속하지 않는다 — 패키지 전용 정적 팩토리
+`FlightSearchService.create(sessionStore, dealFetcher)`에 고정 픽스처를 반환하는
+`FlightDealFetcher`를 주입해, 상속 없이도 같은 세션/페이지네이션 흐름과 요청/응답 계약을
+그대로 재사용한다(`5d54c2e` — 상속 + null 생성자 인자로 흉내내던 이전 구조를 전략
+인터페이스 + 조합으로 교체).
 
 - `flight.client` — Travelpayouts Feign 클라이언트/설정/rate limiter, 예외.
 - `flight.domain` / `flight.repository` — 참조 데이터 JPA 엔티티/리포지토리(국가/도시/
   공항/항공사).
 - `flight.cache` — 참조 데이터 인메모리 이름 캐시 4종.
-- `flight.scheduler` — 참조 데이터 시작 시 재시딩 러너 4종(`ApplicationRunner`, 반복
-  스케줄 아님).
+- `flight.scheduler` — 참조 데이터 시작 시 재시딩 러너(`FlightReferenceDataStartupInitializer`
+  `ApplicationRunner` 1개가 4개 도메인의 `ReferenceDataSyncSpec` 목록을 순회, 반복 스케줄
+  아님).
 - `flight.service` — 검색 오케스트레이션(`FlightSearchService`/`FlightSearchMockService`),
   계획(`FlightRangeCallPlanner`/`FlightFixedCallPlanner`), 조립(`FlightDealAssembler`,
   `FlightDealResponseMapper`, `FlightDealPostFilter`, `FlightDealHolidayEnricher`), 세션
