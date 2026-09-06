@@ -77,8 +77,9 @@ public class RestStopRelatedInfoQueryService {
     }
 
     /**
-     * findByRestStop을 후보마다 반복 호출하면 후보 수 x 7개의 쿼리가 발생한다(N+1).
-     * 경로 탐색처럼 여러 휴게소를 한 번에 다뤄야 하는 호출부는 이 배치 메서드를 써야 한다.
+     * findDetail/findHighwayServiceAreaInfos 등 이 클래스의 좁은 조회 메서드를 후보마다 반복
+     * 호출하면 후보 수만큼 쿼리가 발생한다(N+1). 경로 탐색처럼 여러 휴게소를 한 번에 다뤄야
+     * 하는 호출부는 이 배치 메서드를 써야 한다.
      *
      * <p>adminOverridden이 null이면 override 여부와 상관없이 전부 조회하고, false를 넘기면
      * 관리자가 override하지 않은 행만 조회한다(각 도메인 테이블 자체의 override 필드 기준).
