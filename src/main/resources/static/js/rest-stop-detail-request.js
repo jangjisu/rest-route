@@ -1,3 +1,5 @@
+import { createRequestTracker } from './request-tracker.js';
+
 const REST_STOPS_ENDPOINT = '/api/rest-stops';
 const DETAIL_SECTION_REQUESTS = [
     { key: 'basicInfo', path: 'basic-info', required: true },
@@ -13,47 +15,37 @@ export function createRestStopDetailRequest({
     fetchImpl = fetch,
     onState = () => {}
 } = {}) {
-    let currentRequestId = 0;
-    let activeRequestController;
-
-    function emitIfCurrent(requestId, state) {
-        if (requestId === currentRequestId) {
-            onState(state);
-        }
-    }
+    const tracker = createRequestTracker({ onState });
 
     async function load(serviceAreaCode) {
-        activeRequestController?.abort();
-        activeRequestController = new globalThis.AbortController();
-
-        const requestId = ++currentRequestId;
+        const request = tracker.begin();
         const normalizedServiceAreaCode = typeof serviceAreaCode === 'string'
             ? serviceAreaCode.trim()
             : '';
 
         if (normalizedServiceAreaCode === '') {
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
             return;
         }
 
-        emitIfCurrent(requestId, { status: 'loading' });
+        request.emit({ status: 'loading' });
 
         try {
             const sectionResults = await Promise.all(DETAIL_SECTION_REQUESTS.map((section) => fetchDetailSection(
                 fetchImpl,
                 normalizedServiceAreaCode,
                 section,
-                activeRequestController.signal
+                request.signal
             )));
             const basicInfoResult = findSectionResult(sectionResults, 'basicInfo');
 
             if (basicInfoResult?.status === 'not-found') {
-                emitIfCurrent(requestId, { status: 'not-found' });
+                request.emit({ status: 'not-found' });
                 return;
             }
 
             if (basicInfoResult?.status === 'external-unavailable') {
-                emitIfCurrent(requestId, { status: 'external-unavailable' });
+                request.emit({ status: 'external-unavailable' });
                 return;
             }
 
@@ -67,17 +59,17 @@ export function createRestStopDetailRequest({
                     state.externalUnavailable = true;
                 }
 
-                emitIfCurrent(requestId, state);
+                request.emit(state);
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         } catch (error) {
-            if (error?.name === 'AbortError') {
+            if (request.isAborted(error)) {
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         }
     }
 
@@ -121,13 +113,7 @@ export function createRestStopDetailRequest({
         }
     }
 
-    function invalidate() {
-        currentRequestId += 1;
-        activeRequestController?.abort();
-        activeRequestController = undefined;
-    }
-
-    return { invalidate, load, refreshOilPrice };
+    return { invalidate: tracker.invalidate, load, refreshOilPrice };
 }
 
 function csrfHeadersFrom(documentRef) {

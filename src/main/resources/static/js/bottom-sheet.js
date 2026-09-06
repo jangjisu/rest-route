@@ -2,6 +2,8 @@
    bottom-sheet.js — 모바일 바텀시트 드래그 리사이즈
    =================================================== */
 
+import { bindVerticalPointerDrag } from './pointer-drag.js';
+
 const MOBILE_SHEET_MEDIA = '(max-width: 575.98px)';
 const SNAP_RATIOS = { peek: 0.4, half: 0.62, full: 0.85 };
 const MIN_HEIGHT_RATIO = 0.18;
@@ -39,8 +41,6 @@ export function initBottomSheetDrag(document, window) {
         return { resetHeight() {} };
     }
 
-    let dragging = false;
-    let startClientY = 0;
     let startHeight = 0;
 
     const isMobile = () => window.matchMedia(MOBILE_SHEET_MEDIA).matches;
@@ -63,37 +63,20 @@ export function initBottomSheetDrag(document, window) {
         dialog.style.transition = '';
     }
 
-    function onPointerDown(event) {
-        if (!isMobile()) {
-            return;
+    bindVerticalPointerDrag(handle, {
+        canStart: isMobile,
+        onStart() {
+            startHeight = dialog.getBoundingClientRect().height;
+            dialog.style.transition = 'none';
+        },
+        onMove(deltaY) {
+            applyHeightPx(startHeight - deltaY);
+        },
+        onEnd() {
+            const finalHeight = dialog.getBoundingClientRect().height;
+            snapTo(nearestSnap(finalHeight, viewportHeight()));
         }
-        dragging = true;
-        startClientY = event.clientY;
-        startHeight = dialog.getBoundingClientRect().height;
-        dialog.style.transition = 'none';
-        handle.setPointerCapture?.(event.pointerId);
-    }
-
-    function onPointerMove(event) {
-        if (!dragging) {
-            return;
-        }
-        applyHeightPx(startHeight + (startClientY - event.clientY));
-    }
-
-    function onPointerUp() {
-        if (!dragging) {
-            return;
-        }
-        dragging = false;
-        const finalHeight = dialog.getBoundingClientRect().height;
-        snapTo(nearestSnap(finalHeight, viewportHeight()));
-    }
-
-    handle.addEventListener('pointerdown', onPointerDown);
-    handle.addEventListener('pointermove', onPointerMove);
-    handle.addEventListener('pointerup', onPointerUp);
-    handle.addEventListener('pointercancel', onPointerUp);
+    });
 
     return { resetHeight, snapTo };
 }

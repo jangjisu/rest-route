@@ -1,3 +1,5 @@
+import { createRequestTracker } from './request-tracker.js';
+
 const NEARBY_ENDPOINT = '/api/rest-stops/nearby';
 
 /**
@@ -6,21 +8,11 @@ const NEARBY_ENDPOINT = '/api/rest-stops/nearby';
  * 응답 필드를 null로 채워주므로 프런트는 그 필드가 없을 때 표시만 안 하면 된다.
  */
 export function createFinderRestStopNearbyRequest({ fetchImpl = fetch, onState = () => {} } = {}) {
-    let currentRequestId = 0;
-    let activeRequestController;
-
-    function emitIfCurrent(requestId, state) {
-        if (requestId === currentRequestId) {
-            onState(state);
-        }
-    }
+    const tracker = createRequestTracker({ onState });
 
     async function load({ originLat, originLng, name, interest } = {}) {
-        activeRequestController?.abort();
-        activeRequestController = new globalThis.AbortController();
-
-        const requestId = ++currentRequestId;
-        emitIfCurrent(requestId, { status: 'loading' });
+        const request = tracker.begin();
+        request.emit({ status: 'loading' });
 
         const params = new globalThis.URLSearchParams();
         if (Number.isFinite(originLat) && Number.isFinite(originLng)) {
@@ -39,30 +31,24 @@ export function createFinderRestStopNearbyRequest({ fetchImpl = fetch, onState =
             const query = params.toString();
             const response = await fetchImpl(
                 query === '' ? NEARBY_ENDPOINT : `${NEARBY_ENDPOINT}?${query}`,
-                { signal: activeRequestController.signal }
+                { signal: request.signal }
             );
             const body = await response.json();
 
             if (response.ok && body?.code === 'SUCCESS' && Array.isArray(body.data)) {
-                emitIfCurrent(requestId, { status: 'success', restStops: body.data });
+                request.emit({ status: 'success', restStops: body.data });
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         } catch (error) {
-            if (error?.name === 'AbortError') {
+            if (request.isAborted(error)) {
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         }
     }
 
-    function invalidate() {
-        currentRequestId += 1;
-        activeRequestController?.abort();
-        activeRequestController = undefined;
-    }
-
-    return { invalidate, load };
+    return { invalidate: tracker.invalidate, load };
 }
