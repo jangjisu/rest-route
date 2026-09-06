@@ -78,7 +78,7 @@ public class FlightReferenceDataStartupInitializer implements ApplicationRunner 
     }
 
     private void runSpec(ReferenceDataSyncSpec spec) {
-        if (!environment.getProperty(spec.enabledPropertyKey(), Boolean.class, true)) {
+        if (!isEnabled(spec)) {
             return;
         }
         try {
@@ -89,5 +89,15 @@ public class FlightReferenceDataStartupInitializer implements ApplicationRunner 
             log.error("Initial flight {} seeding failed. cause={}", spec.label(), e.getMessage(), e);
         }
         spec.refreshCache().run();
+    }
+
+    /**
+     * 예전 @ConditionalOnProperty(havingValue = "true")와 같은 방식으로 판정한다 — "true"가
+     * 아니면(오타·이상한 값 포함) 전부 꺼진 것으로 본다. Environment.getProperty(key,
+     * Boolean.class, true)는 값이 "true"/"false"로 인식되지 않으면 변환 예외를 던져 run()
+     * 전체를 중단시킬 수 있어서 쓰지 않는다.
+     */
+    private boolean isEnabled(ReferenceDataSyncSpec spec) {
+        return Boolean.parseBoolean(environment.getProperty(spec.enabledPropertyKey(), "true"));
     }
 }

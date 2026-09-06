@@ -69,8 +69,8 @@ class FlightReferenceDataStartupInitializerTest {
     private FlightReferenceDataStartupInitializer flightReferenceDataStartupInitializer;
 
     @Test
-    @DisplayName("4종 참조 데이터 모두 SQL 재시딩을 위임하고 결과를 기록한 뒤 캐시를 채운다")
-    void run_seedsAndRefreshesAllFourDomainsWhenEnabled() {
+    @DisplayName("4종 참조 데이터 모두 SQL 재시딩을 위임하고 도메인별 결과를 기록한 뒤 캐시를 채운다")
+    void run_seedsAndRefreshesAllFourDomainsWhenEnabled(CapturedOutput output) {
         allStartupEnabledPropertiesReturn(true);
         when(flightReferenceDataSeeder.reseed(eq("data/flight-airline-seed.sql"), any(), any()))
                 .thenReturn(1159);
@@ -87,6 +87,11 @@ class FlightReferenceDataStartupInitializerTest {
         verify(flightAirportNameCache).refresh();
         verify(flightCityNameCache).refresh();
         verify(flightCountryNameCache).refresh();
+        assertThat(output)
+                .contains("Initial flight airline seeding completed. savedCount=1159")
+                .contains("Initial flight airport seeding completed. savedCount=3673")
+                .contains("Initial flight city seeding completed. savedCount=3522")
+                .contains("Initial flight country seeding completed. savedCount=253");
     }
 
     @Test
@@ -132,14 +137,14 @@ class FlightReferenceDataStartupInitializerTest {
     @Test
     @DisplayName("도메인 프로퍼티가 꺼져 있으면 재시딩도 캐시 refresh도 하지 않는다")
     void run_skipsDomainWhenStartupDisabled() {
-        when(environment.getProperty(eq("flight.airline.sync.startup-enabled"), eq(Boolean.class), eq(true)))
-                .thenReturn(false);
-        when(environment.getProperty(eq("flight.airport.sync.startup-enabled"), eq(Boolean.class), eq(true)))
-                .thenReturn(true);
-        when(environment.getProperty(eq("flight.city.sync.startup-enabled"), eq(Boolean.class), eq(true)))
-                .thenReturn(true);
-        when(environment.getProperty(eq("flight.country.sync.startup-enabled"), eq(Boolean.class), eq(true)))
-                .thenReturn(true);
+        when(environment.getProperty(eq("flight.airline.sync.startup-enabled"), eq("true")))
+                .thenReturn("false");
+        when(environment.getProperty(eq("flight.airport.sync.startup-enabled"), eq("true")))
+                .thenReturn("true");
+        when(environment.getProperty(eq("flight.city.sync.startup-enabled"), eq("true")))
+                .thenReturn("true");
+        when(environment.getProperty(eq("flight.country.sync.startup-enabled"), eq("true")))
+                .thenReturn("true");
         when(flightReferenceDataSeeder.reseed(eq("data/flight-airport-seed.sql"), any(), any()))
                 .thenReturn(3673);
         when(flightReferenceDataSeeder.reseed(eq("data/flight-city-seed.sql"), any(), any()))
@@ -153,8 +158,32 @@ class FlightReferenceDataStartupInitializerTest {
         verifyNoInteractions(flightAirlineNameCache);
     }
 
+    @Test
+    @DisplayName("프로퍼티 값이 true/false로 인식되지 않으면 꺼진 것으로 본다")
+    void run_treatsUnrecognizedPropertyValueAsDisabled() {
+        when(environment.getProperty(eq("flight.airline.sync.startup-enabled"), eq("true")))
+                .thenReturn("여");
+        when(environment.getProperty(eq("flight.airport.sync.startup-enabled"), eq("true")))
+                .thenReturn("true");
+        when(environment.getProperty(eq("flight.city.sync.startup-enabled"), eq("true")))
+                .thenReturn("true");
+        when(environment.getProperty(eq("flight.country.sync.startup-enabled"), eq("true")))
+                .thenReturn("true");
+        when(flightReferenceDataSeeder.reseed(eq("data/flight-airport-seed.sql"), any(), any()))
+                .thenReturn(3673);
+        when(flightReferenceDataSeeder.reseed(eq("data/flight-city-seed.sql"), any(), any()))
+                .thenReturn(3522);
+        when(flightReferenceDataSeeder.reseed(eq("data/flight-country-seed.sql"), any(), any()))
+                .thenReturn(253);
+
+        assertThatCode(() -> flightReferenceDataStartupInitializer.run(applicationArguments))
+                .doesNotThrowAnyException();
+
+        verify(flightReferenceDataSeeder, never()).reseed(eq("data/flight-airline-seed.sql"), any(), any());
+        verifyNoInteractions(flightAirlineNameCache);
+    }
+
     private void allStartupEnabledPropertiesReturn(boolean enabled) {
-        when(environment.getProperty(any(String.class), eq(Boolean.class), eq(true)))
-                .thenReturn(enabled);
+        when(environment.getProperty(any(String.class), eq("true"))).thenReturn(enabled ? "true" : "false");
     }
 }
