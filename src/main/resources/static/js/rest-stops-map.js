@@ -46,7 +46,8 @@ export async function initRestStopMap() {
     detailPanel = initRestStopDetailPanel(document, window, {
         mountTarget: document.querySelector('.rest-stop-map-layout'),
         onPopupUpdate: (restStop, options) => mapView?.updateSelectedPopup(restStop, options),
-        onRouteBack: () => routePlanner?.openRouteResultModal()
+        onRouteBack: () => routePlanner?.openRouteResultModal(),
+        onClose: () => mapView?.closePopup()
     });
 
     // routePlanner가 mapView보다 먼저 만들어져야 해서(둘이 서로를 참조), mapView는 아직 준비되지
@@ -92,9 +93,8 @@ function openDetailPanel(restStop, { fromRouteResult = false } = {}) {
     detailPanel?.open(restStop, { fromRouteResult });
 }
 
-function closeDetailPanel({ restoreMapFocus = false } = {}) {
-    detailPanel?.close({ restoreMapFocus });
-    mapView?.closePopup();
+function closeDetailPanel() {
+    detailPanel?.close({ restoreMapFocus: true });
 }
 
 // 상세 팝업 자체의 이벤트(닫기·먹거리 모달·주유 갱신)는 rest-stop-detail-popup.js가 갖고 있다.
@@ -122,7 +122,7 @@ function bindPageLevelDetailEvents(signal) {
             return;
         }
         if (detailPanel?.isOpen()) {
-            closeDetailPanel({ restoreMapFocus: true });
+            closeDetailPanel();
         }
     }, { signal });
 }

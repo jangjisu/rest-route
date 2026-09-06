@@ -4,9 +4,11 @@
  * 상태, 모바일 바텀시트 vs 데스크톱 옆 패널 프레젠테이션, "경로 결과로 돌아가기" 버튼
  * 노출 여부만 다룬다.
  *
- * 지도의 InfoWindow 팝업을 같이 닫는 것, 다른 모달과 함께 있을 때의 Escape 키 우선순위는
- * 이 모듈이 모르는 페이지 전체 관심사라 호출하는 쪽(rest-stops-map.js)이 이 모듈이 노출하는
- * isOpen()/isFoodModalOpen()/close()를 조합해서 처리한다.
+ * 지도의 InfoWindow 팝업은 이 패널과 항상 쌍으로 열리고 닫힌다 — 닫기 버튼·스와이프·
+ * "경로 결과로 돌아가기" 전부 이 모듈 내부 close()를 거치므로, 그 InfoWindow를 닫는 것도
+ * onClose 콜백으로 함께 위임받아 매 닫기 경로에서 빠짐없이 호출한다. 다른 모달과 함께
+ * 있을 때의 Escape 키 우선순위만 이 모듈이 모르는 페이지 전체 관심사라 호출하는 쪽
+ * (rest-stops-map.js)이 isOpen()/isFoodModalOpen()으로 판단한다.
  */
 import { createRestStopDetailPopup } from './rest-stop-detail-popup.js';
 
@@ -23,7 +25,8 @@ export function shouldShowRouteResultBackButton(openedFromRouteResult, isMobileS
 export function initRestStopDetailPanel(document, window, {
     mountTarget,
     onPopupUpdate,
-    onRouteBack
+    onRouteBack,
+    onClose
 } = {}) {
     let openedFromRouteResult = false;
 
@@ -65,6 +68,7 @@ export function initRestStopDetailPanel(document, window, {
         detailPopup.close();
         openedFromRouteResult = false;
         updatePresentation();
+        onClose?.();
 
         if (restoreMapFocus) {
             document.getElementById('restStopMap')?.focus();
