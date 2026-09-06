@@ -1,4 +1,4 @@
-package com.restroute.route.dto;
+package com.restroute.oilprice.dto;
 
 /**
  * 요청에 실린 유종 선택 — 선택 안 함(null)/EV/가격 있는 유종(GASOLINE·DIESEL·LPG) 세 가지 의미를

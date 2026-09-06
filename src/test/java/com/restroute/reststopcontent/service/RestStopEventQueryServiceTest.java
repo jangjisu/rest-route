@@ -3,14 +3,12 @@ package com.restroute.reststopcontent.service;
 import static com.restroute.support.RestStopTestFixtures.restEventItem;
 import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.controller.response.RestStopEventResponse;
 import com.restroute.reststopcontent.domain.RestEventEntity;
 import com.restroute.reststopcontent.repository.RestEventRepository;
@@ -23,7 +21,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -57,16 +54,7 @@ class RestStopEventQueryServiceTest {
         RestEventEntity ongoing = eventWithPeriod("1", "2026-01-01", "2026-12-31");
         RestEventEntity ended = eventWithPeriod("2", "2020-01-01", "2021-01-01");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of(ongoing, ended)));
+        when(restStopRelatedInfoQueryService.findEvents("A00001")).thenReturn(List.of(ongoing, ended));
 
         Optional<RestStopEventResponse> result = restStopEventQueryService.findByServiceAreaCode("A00001");
 
@@ -81,16 +69,7 @@ class RestStopEventQueryServiceTest {
         RestEventEntity startsToday = eventWithPeriod("1", "2026-07-28", "2026-12-31");
         RestEventEntity endsToday = eventWithPeriod("2", "2026-01-01", "2026-07-28");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of(startsToday, endsToday)));
+        when(restStopRelatedInfoQueryService.findEvents("A00001")).thenReturn(List.of(startsToday, endsToday));
 
         Optional<RestStopEventResponse> result = restStopEventQueryService.findByServiceAreaCode("A00001");
 
@@ -104,16 +83,7 @@ class RestStopEventQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestEventEntity notStartedYet = eventWithPeriod("1", "2026-08-01", "2026-12-31");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of(notStartedYet)));
+        when(restStopRelatedInfoQueryService.findEvents("A00001")).thenReturn(List.of(notStartedYet));
 
         Optional<RestStopEventResponse> result = restStopEventQueryService.findByServiceAreaCode("A00001");
 
@@ -129,7 +99,7 @@ class RestStopEventQueryServiceTest {
         Optional<RestStopEventResponse> result = restStopEventQueryService.findByServiceAreaCode("UNKNOWN");
 
         assertThat(result).isEmpty();
-        verify(restStopRelatedInfoQueryService, never()).findByRestStop(ArgumentMatchers.any());
+        verifyNoInteractions(restStopRelatedInfoQueryService);
     }
 
     @Test
@@ -138,16 +108,7 @@ class RestStopEventQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestEventEntity malformed = eventWithPeriod("1", "not-a-date", "2026-12-31");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of(malformed)));
+        when(restStopRelatedInfoQueryService.findEvents("A00001")).thenReturn(List.of(malformed));
 
         Optional<RestStopEventResponse> result = restStopEventQueryService.findByServiceAreaCode("A00001");
 

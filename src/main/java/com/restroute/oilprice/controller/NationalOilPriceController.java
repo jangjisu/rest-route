@@ -2,8 +2,8 @@ package com.restroute.oilprice.controller;
 
 import com.restroute.common.ApiResponse;
 import com.restroute.common.ResponseCode;
+import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.oilprice.service.NationalOilPriceService;
-import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -5,7 +5,6 @@ import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.repository.RestStopRestroomRepository;
 import com.restroute.reststop.repository.RestStopUsageSnapshotRepository;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,11 +25,11 @@ public class RestStopFacilityQueryService {
     }
 
     private RestStopFacilityResponse findByRestStop(RestStopEntity restStop) {
-        RestStopRelatedInfo relatedInfo = restStopRelatedInfoQueryService.findByRestStop(restStop);
+        String serviceAreaCode = restStop.getServiceAreaCode();
         return RestStopFacilityResponse.of(
-                relatedInfo.detail(),
-                relatedInfo.highwayServiceAreaInfos(),
-                restStopRestroomRepository.findByRestStopServiceAreaCode(restStop.getServiceAreaCode()),
-                restStopUsageSnapshotRepository.findByRestStopServiceAreaCode(restStop.getServiceAreaCode()));
+                restStopRelatedInfoQueryService.findDetail(serviceAreaCode),
+                restStopRelatedInfoQueryService.findHighwayServiceAreaInfos(serviceAreaCode),
+                restStopRestroomRepository.findByRestStopServiceAreaCode(serviceAreaCode),
+                restStopUsageSnapshotRepository.findByRestStopServiceAreaCode(serviceAreaCode));
     }
 }

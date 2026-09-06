@@ -1,10 +1,10 @@
 package com.restroute.route.controller;
 
 import com.restroute.common.ApiResponse;
+import com.restroute.oilprice.dto.FuelType;
+import com.restroute.oilprice.dto.FuelTypeSelection;
 import com.restroute.route.controller.response.RouteRestStopListItemResponse;
 import com.restroute.route.controller.response.RouteRestStopResponse;
-import com.restroute.route.dto.FuelType;
-import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.RouteRestStopListQueryService;
 import com.restroute.route.service.RouteRestStopService;
 import java.util.List;

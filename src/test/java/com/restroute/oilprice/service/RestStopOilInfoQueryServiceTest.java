@@ -4,8 +4,7 @@ import static com.restroute.support.RestStopTestFixtures.restOilItem;
 import static com.restroute.support.RestStopTestFixtures.restOilPriceItem;
 import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.restroute.oilprice.controller.response.OilInfoResponse;
@@ -14,7 +13,7 @@ import com.restroute.oilprice.domain.RestOilPriceEntity;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
+import com.restroute.reststop.service.dto.RestStopOilInfo;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,16 +47,8 @@ class RestStopOilInfoQueryServiceTest {
         RestOilEntity convenience = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
         RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(convenience),
-                        Optional.of("000002"),
-                        Optional.of(oilPrice),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
+                .thenReturn(new RestStopOilInfo(List.of(convenience), Optional.of("000002"), Optional.of(oilPrice)));
 
         Optional<OilInfoResponse> result = restStopOilInfoQueryService.findByServiceAreaCode("A00001");
 
@@ -75,7 +66,7 @@ class RestStopOilInfoQueryServiceTest {
         Optional<OilInfoResponse> result = restStopOilInfoQueryService.findByServiceAreaCode("UNKNOWN");
 
         assertThat(result).isEmpty();
-        verify(restStopRelatedInfoQueryService, never()).findByRestStop(org.mockito.ArgumentMatchers.any());
+        verifyNoInteractions(restStopRelatedInfoQueryService);
     }
 
     @Test
@@ -83,16 +74,8 @@ class RestStopOilInfoQueryServiceTest {
     void findByServiceAreaCode_returnsEmptyWhenOilMappingMissing() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findOilInfo("A00001"))
+                .thenReturn(new RestStopOilInfo(List.of(), Optional.empty(), Optional.empty()));
 
         Optional<OilInfoResponse> result = restStopOilInfoQueryService.findByServiceAreaCode("A00001");
 

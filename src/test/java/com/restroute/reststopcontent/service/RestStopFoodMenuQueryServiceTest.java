@@ -2,15 +2,13 @@ package com.restroute.reststopcontent.service;
 
 import static com.restroute.support.RestStopTestFixtures.restStopItem;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.client.response.RestBestfoodItem;
 import com.restroute.reststopcontent.controller.response.FoodMenuResponse;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
@@ -46,16 +44,7 @@ class RestStopFoodMenuQueryServiceTest {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         RestFoodEntity recommendedFood = foodEntity("농심어묵우동", "Y", "Y", "N", "S");
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(recommendedFood),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findFoods("A00001")).thenReturn(List.of(recommendedFood));
 
         Optional<FoodMenuResponse> result = restStopFoodMenuQueryService.findByServiceAreaCode("A00001");
 
@@ -74,7 +63,7 @@ class RestStopFoodMenuQueryServiceTest {
         Optional<FoodMenuResponse> result = restStopFoodMenuQueryService.findByServiceAreaCode("UNKNOWN");
 
         assertThat(result).isEmpty();
-        verify(restStopRelatedInfoQueryService, never()).findByRestStop(org.mockito.ArgumentMatchers.any());
+        verifyNoInteractions(restStopRelatedInfoQueryService);
     }
 
     @Test
@@ -82,16 +71,7 @@ class RestStopFoodMenuQueryServiceTest {
     void findByServiceAreaCode_returnsEmptyFoodMenuWhenFoodsMissing() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
         when(restStopRepository.findByServiceAreaCode("A00001")).thenReturn(Optional.of(restStop));
-        when(restStopRelatedInfoQueryService.findByRestStop(restStop))
-                .thenReturn(RestStopRelatedInfo.of(
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()));
+        when(restStopRelatedInfoQueryService.findFoods("A00001")).thenReturn(List.of());
 
         Optional<FoodMenuResponse> result = restStopFoodMenuQueryService.findByServiceAreaCode("A00001");
 

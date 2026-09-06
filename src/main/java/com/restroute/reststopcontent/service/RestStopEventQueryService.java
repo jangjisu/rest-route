@@ -3,7 +3,6 @@ package com.restroute.reststopcontent.service;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.RestStopRepository;
 import com.restroute.reststop.service.RestStopRelatedInfoQueryService;
-import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.controller.response.RestStopEventResponse;
 import com.restroute.reststopcontent.domain.RestEventEntity;
 import com.restroute.reststopcontent.repository.RestEventRepository;
@@ -54,11 +53,10 @@ public class RestStopEventQueryService {
     }
 
     private RestStopEventResponse findByRestStop(RestStopEntity restStop) {
-        RestStopRelatedInfo relatedInfo = restStopRelatedInfoQueryService.findByRestStop(restStop);
+        List<RestEventEntity> events = restStopRelatedInfoQueryService.findEvents(restStop.getServiceAreaCode());
         LocalDate today = LocalDate.now(clock);
-        List<RestEventEntity> activeEvents = relatedInfo.events().stream()
-                .filter(event -> isActiveOn(event, today))
-                .toList();
+        List<RestEventEntity> activeEvents =
+                events.stream().filter(event -> isActiveOn(event, today)).toList();
         return RestStopEventResponse.from(activeEvents);
     }
 

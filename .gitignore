@@ -62,6 +62,8 @@ docs/**
 !docs/images/**
 !docs/agents/
 !docs/agents/**
+!docs/adr/
+!docs/adr/**
 
 ### OS metadata ###
 .DS_Store

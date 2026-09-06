@@ -2,13 +2,13 @@ package com.restroute.reststop.controller;
 
 import com.restroute.common.ApiResponse;
 import com.restroute.common.ResponseCode;
+import com.restroute.oilprice.dto.FuelType;
+import com.restroute.oilprice.dto.FuelTypeSelection;
 import com.restroute.reststop.controller.response.RestStopDetailViewResponse;
 import com.restroute.reststop.controller.response.RestStopItemResponse;
 import com.restroute.reststop.controller.response.RestStopNearbyItemResponse;
 import com.restroute.reststop.service.RestStopNearbyQueryService;
 import com.restroute.reststop.service.RestStopQueryService;
-import com.restroute.route.dto.FuelType;
-import com.restroute.route.dto.FuelTypeSelection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

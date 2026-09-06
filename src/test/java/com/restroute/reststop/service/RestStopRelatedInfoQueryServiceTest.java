@@ -24,6 +24,7 @@ import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.HighwayServiceAreaInfoRepository;
 import com.restroute.reststop.repository.RestStopDetailRepository;
+import com.restroute.reststop.service.dto.RestStopOilInfo;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.client.response.RestBestfoodItem;
 import com.restroute.reststopcontent.domain.RestEventEntity;
@@ -82,32 +83,78 @@ class RestStopRelatedInfoQueryServiceTest {
     }
 
     @Test
-    @DisplayName("rest_stop_service_area_code 기준으로 상세, 영업시설, 주유, 가격, 음식 정보를 우선 조회한다")
-    void findByRestStop_returnsRelatedInfo() throws Exception {
-        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
+    @DisplayName("rest_stop_service_area_code 기준으로 상세 정보를 조회한다")
+    void findDetail_returnsDetailByServiceAreaCode() {
         RestStopDetailEntity detail = RestStopDetailEntity.from(restStopDetailItem("A00001", "서울만남(부산)휴게소"));
+        detail.updateRestStopServiceAreaCode("A00001");
+        when(restStopDetailRepository.findByRestStopServiceAreaCode("A00001")).thenReturn(Optional.of(detail));
+
+        Optional<RestStopDetailEntity> result = service.findDetail("A00001");
+
+        assertThat(result).contains(detail);
+        verify(restStopDetailRepository, never()).findByServiceAreaCode(anyString());
+    }
+
+    @Test
+    @DisplayName("rest_stop_service_area_code 기준으로 영업시설 정보를 조회한다")
+    void findHighwayServiceAreaInfos_returnsInfosByServiceAreaCode() {
         HighwayServiceAreaInfoEntity info =
                 HighwayServiceAreaInfoEntity.from(highwayServiceAreaInfoItem("000001", "서울만남주유소"));
-        RestOilEntity oilConvenience = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
-        RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
-        RestFoodEntity food = foodEntity("농심어묵우동");
-        RestThemeEntity theme = RestThemeEntity.from(restThemeItem("000001", "4계절 꽃이 있는 휴게소"));
-        RestEventEntity event = RestEventEntity.from(restEventItem("000001", "1665"));
-        detail.updateRestStopServiceAreaCode("A00001");
         info.updateRestStopServiceAreaCode("A00001");
-        oilConvenience.updateRestStopServiceAreaCode("A00001");
-        oilPrice.updateRestStopServiceAreaCode("A00001");
-        food.updateRestStopServiceAreaCode("A00001");
-        theme.updateRestStopServiceAreaCode("A00001");
-        event.updateRestStopServiceAreaCode("A00001");
-
-        when(restStopDetailRepository.findByRestStopServiceAreaCode("A00001")).thenReturn(Optional.of(detail));
         when(highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCode("A00001"))
                 .thenReturn(List.of(info));
+
+        List<HighwayServiceAreaInfoEntity> result = service.findHighwayServiceAreaInfos("A00001");
+
+        assertThat(result).containsExactly(info);
+        verify(highwayServiceAreaInfoRepository, never()).findAllByBusinessFacilityCode(anyString());
+    }
+
+    @Test
+    @DisplayName("주유 편의시설·가격이 매핑돼 있으면 편의시설·코드·가격을 함께 조회한다")
+    void findOilInfo_returnsConveniencesCode2AndPriceWhenMappingPresent() {
+        RestOilEntity oilConvenience = RestOilEntity.from(restOilItem("000002", "서울만남(부산)주유소"));
+        RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem("000002", "서울만남(부산)주유소"));
+        oilConvenience.updateRestStopServiceAreaCode("A00001");
+        oilPrice.updateRestStopServiceAreaCode("A00001");
         when(restOilRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
                 .thenReturn(List.of(oilConvenience));
         when(restOilPriceRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
                 .thenReturn(List.of(oilPrice));
+
+        RestStopOilInfo result = service.findOilInfo("A00001");
+
+        assertThat(result.oilStationConveniences()).containsExactly(oilConvenience);
+        assertThat(result.oilServiceAreaCode2()).contains("000002");
+        assertThat(result.oilPrice()).contains(oilPrice);
+        verify(restOilRepository, never())
+                .findAllByRouteCodeAndNormalizedStationNameOrderByIdAsc(anyString(), anyString());
+        verify(restOilPriceRepository, never()).findByServiceAreaCode2(anyString());
+    }
+
+    @Test
+    @DisplayName("주유 편의시설 매핑이 없으면 주유 가격을 조회하지 않는다")
+    void findOilInfo_skipsOilPriceWhenOilMappingMissing() {
+        when(restOilRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
+                .thenReturn(List.of());
+
+        RestStopOilInfo result = service.findOilInfo("A00001");
+
+        assertThat(result.oilStationConveniences()).isEmpty();
+        assertThat(result.oilServiceAreaCode2()).isEmpty();
+        assertThat(result.oilPrice()).isEmpty();
+        verify(restOilPriceRepository, never()).findAllByRestStopServiceAreaCodeOrderByIdAsc(anyString());
+    }
+
+    @Test
+    @DisplayName("rest_stop_service_area_code 기준으로 음식/테마/이벤트 정보를 조회한다")
+    void findFoodsThemesEvents_returnByServiceAreaCode() throws Exception {
+        RestFoodEntity food = foodEntity("농심어묵우동");
+        RestThemeEntity theme = RestThemeEntity.from(restThemeItem("000001", "4계절 꽃이 있는 휴게소"));
+        RestEventEntity event = RestEventEntity.from(restEventItem("000001", "1665"));
+        food.updateRestStopServiceAreaCode("A00001");
+        theme.updateRestStopServiceAreaCode("A00001");
+        event.updateRestStopServiceAreaCode("A00001");
         when(restFoodRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
                 .thenReturn(List.of(food));
         when(restThemeRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
@@ -115,90 +162,9 @@ class RestStopRelatedInfoQueryServiceTest {
         when(restEventRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
                 .thenReturn(List.of(event));
 
-        RestStopRelatedInfo relatedInfo = service.findByRestStop(restStop);
-
-        assertThat(relatedInfo.detail()).contains(detail);
-        assertThat(relatedInfo.highwayServiceAreaInfos()).containsExactly(info);
-        assertThat(relatedInfo.oilStationConveniences()).containsExactly(oilConvenience);
-        assertThat(relatedInfo.oilServiceAreaCode2()).contains("000002");
-        assertThat(relatedInfo.oilPrice()).contains(oilPrice);
-        assertThat(relatedInfo.foods()).containsExactly(food);
-        assertThat(relatedInfo.themes()).containsExactly(theme);
-        assertThat(relatedInfo.events()).containsExactly(event);
-        verify(restStopDetailRepository, never()).findByServiceAreaCode(anyString());
-        verify(highwayServiceAreaInfoRepository, never()).findAllByBusinessFacilityCode(anyString());
-        verify(restOilRepository, never())
-                .findAllByRouteCodeAndNormalizedStationNameOrderByIdAsc(anyString(), anyString());
-        verify(restOilPriceRepository, never()).findByServiceAreaCode2(anyString());
-        verify(restFoodRepository, never()).findAllByStdRestCdOrderByIdAsc(anyString());
-    }
-
-    @Test
-    @DisplayName("새 조회 키 결과가 없으면 기존 원본 키로 fallback하지 않고 빈 관련 정보를 반환한다")
-    void findByRestStop_doesNotFallBackToOriginalKeysWhenLookupKeyRowsMissing() {
-        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
-
-        when(restStopDetailRepository.findByRestStopServiceAreaCode("A00001")).thenReturn(Optional.empty());
-        when(highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCode("A00001"))
-                .thenReturn(List.of());
-        when(restOilRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
-                .thenReturn(List.of());
-        when(restFoodRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
-                .thenReturn(List.of());
-        when(restThemeRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
-                .thenReturn(List.of());
-        when(restEventRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
-                .thenReturn(List.of());
-
-        RestStopRelatedInfo relatedInfo = service.findByRestStop(restStop);
-
-        assertThat(relatedInfo.detail()).isEmpty();
-        assertThat(relatedInfo.highwayServiceAreaInfos()).isEmpty();
-        assertThat(relatedInfo.oilStationConveniences()).isEmpty();
-        assertThat(relatedInfo.oilPrice()).isEmpty();
-        assertThat(relatedInfo.foods()).isEmpty();
-        assertThat(relatedInfo.themes()).isEmpty();
-        assertThat(relatedInfo.events()).isEmpty();
-        verify(restStopDetailRepository, never()).findByServiceAreaCode(anyString());
-        verify(highwayServiceAreaInfoRepository, never()).findAllByBusinessFacilityCode(anyString());
-        verify(restOilRepository, never())
-                .findAllByRouteCodeAndNormalizedStationNameOrderByIdAsc(anyString(), anyString());
-        verify(restOilPriceRepository, never()).findByServiceAreaCode2(anyString());
-        verify(restFoodRepository, never()).findAllByStdRestCdOrderByIdAsc(anyString());
-    }
-
-    @Test
-    @DisplayName("주유 편의시설 매핑이 없으면 주유 가격을 조회하지 않는다")
-    void findByRestStop_skipsOilPriceWhenOilMappingMissing() {
-        RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소"));
-
-        when(restStopDetailRepository.findByRestStopServiceAreaCode("A00001")).thenReturn(Optional.empty());
-        when(highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCode("A00001"))
-                .thenReturn(List.of());
-        when(restOilRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
-                .thenReturn(List.of());
-        when(restFoodRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
-                .thenReturn(List.of());
-        when(restThemeRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
-                .thenReturn(List.of());
-        when(restEventRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc("A00001"))
-                .thenReturn(List.of());
-
-        RestStopRelatedInfo relatedInfo = service.findByRestStop(restStop);
-
-        assertThat(relatedInfo.detail()).isEmpty();
-        assertThat(relatedInfo.highwayServiceAreaInfos()).isEmpty();
-        assertThat(relatedInfo.oilStationConveniences()).isEmpty();
-        assertThat(relatedInfo.oilServiceAreaCode2()).isEmpty();
-        assertThat(relatedInfo.oilPrice()).isEmpty();
-        assertThat(relatedInfo.foods()).isEmpty();
-        assertThat(relatedInfo.themes()).isEmpty();
-        assertThat(relatedInfo.events()).isEmpty();
-        verify(restStopDetailRepository, never()).findByServiceAreaCode(anyString());
-        verify(highwayServiceAreaInfoRepository, never()).findAllByBusinessFacilityCode(anyString());
-        verify(restOilRepository, never())
-                .findAllByRouteCodeAndNormalizedStationNameOrderByIdAsc(anyString(), anyString());
-        verify(restOilPriceRepository, never()).findByServiceAreaCode2(org.mockito.ArgumentMatchers.anyString());
+        assertThat(service.findFoods("A00001")).containsExactly(food);
+        assertThat(service.findThemes("A00001")).containsExactly(theme);
+        assertThat(service.findEvents("A00001")).containsExactly(event);
         verify(restFoodRepository, never()).findAllByStdRestCdOrderByIdAsc(anyString());
     }
 

@@ -1,4 +1,4 @@
-package com.restroute.route.dto;
+package com.restroute.oilprice.dto;
 
 import lombok.RequiredArgsConstructor;
 

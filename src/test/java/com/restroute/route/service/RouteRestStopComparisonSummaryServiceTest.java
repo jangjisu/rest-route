@@ -7,14 +7,14 @@ import static org.mockito.Mockito.when;
 
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.domain.RestOilPriceEntity;
+import com.restroute.oilprice.dto.AverageOilPrice;
+import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.reststop.domain.HighwayServiceAreaInfoEntity;
 import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
 import com.restroute.route.controller.response.FuelPriceTier;
-import com.restroute.route.controller.response.RouteRestStopResponse.AverageOilPrice;
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
-import com.restroute.route.controller.response.RouteRestStopResponse.NationalOilPriceSummary;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
 import java.util.List;
 import java.util.Optional;

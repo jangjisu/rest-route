@@ -9,6 +9,7 @@ import com.restroute.reststop.domain.RestStopDetailEntity;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.repository.HighwayServiceAreaInfoRepository;
 import com.restroute.reststop.repository.RestStopDetailRepository;
+import com.restroute.reststop.service.dto.RestStopOilInfo;
 import com.restroute.reststop.service.dto.RestStopRelatedInfo;
 import com.restroute.reststopcontent.domain.RestEventEntity;
 import com.restroute.reststopcontent.domain.RestFoodEntity;
@@ -39,19 +40,40 @@ public class RestStopRelatedInfoQueryService {
     private final RestEventRepository restEventRepository;
 
     @Transactional(readOnly = true)
-    public RestStopRelatedInfo findByRestStop(RestStopEntity restStop) {
-        String serviceAreaCode = restStop.getServiceAreaCode();
-        Optional<RestStopDetailEntity> detail = restStopDetailRepository.findByRestStopServiceAreaCode(serviceAreaCode);
-        List<HighwayServiceAreaInfoEntity> infos = findHighwayServiceAreaInfos(serviceAreaCode);
+    public Optional<RestStopDetailEntity> findDetail(String serviceAreaCode) {
+        return restStopDetailRepository.findByRestStopServiceAreaCode(serviceAreaCode);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HighwayServiceAreaInfoEntity> findHighwayServiceAreaInfos(String serviceAreaCode) {
+        return highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCode(serviceAreaCode);
+    }
+
+    /**
+     * 주유 가격을 조회하려면 편의시설에서 얻은 oilServiceAreaCode2가 있어야 해서 셋이 서로
+     * 의존한다({@link RestStopOilInfo} 참고). 그래서 이 셋만은 나눠서 열지 않고 묶어서 연다.
+     */
+    @Transactional(readOnly = true)
+    public RestStopOilInfo findOilInfo(String serviceAreaCode) {
         List<RestOilEntity> oilConveniences = findOilStationConveniences(serviceAreaCode);
         Optional<String> oilServiceAreaCode2 = firstOilServiceAreaCode2(oilConveniences);
         Optional<RestOilPriceEntity> oilPrice = findOilPrice(serviceAreaCode, oilServiceAreaCode2);
-        List<RestFoodEntity> foods = findFoods(serviceAreaCode);
-        List<RestThemeEntity> themes = findThemes(serviceAreaCode);
-        List<RestEventEntity> events = findEvents(serviceAreaCode);
+        return RestStopOilInfo.of(oilConveniences, oilServiceAreaCode2, oilPrice);
+    }
 
-        return RestStopRelatedInfo.of(
-                detail, infos, oilConveniences, oilServiceAreaCode2, oilPrice, foods, themes, events);
+    @Transactional(readOnly = true)
+    public List<RestFoodEntity> findFoods(String serviceAreaCode) {
+        return restFoodRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc(serviceAreaCode);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RestThemeEntity> findThemes(String serviceAreaCode) {
+        return restThemeRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc(serviceAreaCode);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RestEventEntity> findEvents(String serviceAreaCode) {
+        return restEventRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc(serviceAreaCode);
     }
 
     /**
@@ -124,10 +146,6 @@ public class RestStopRelatedInfoQueryService {
         }));
     }
 
-    private List<HighwayServiceAreaInfoEntity> findHighwayServiceAreaInfos(String serviceAreaCode) {
-        return highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCode(serviceAreaCode);
-    }
-
     private List<RestOilEntity> findOilStationConveniences(String serviceAreaCode) {
         return restOilRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc(serviceAreaCode);
     }
@@ -139,18 +157,6 @@ public class RestStopRelatedInfoQueryService {
 
         return restOilPriceRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc(serviceAreaCode).stream()
                 .findFirst();
-    }
-
-    private List<RestFoodEntity> findFoods(String serviceAreaCode) {
-        return restFoodRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc(serviceAreaCode);
-    }
-
-    private List<RestThemeEntity> findThemes(String serviceAreaCode) {
-        return restThemeRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc(serviceAreaCode);
-    }
-
-    private List<RestEventEntity> findEvents(String serviceAreaCode) {
-        return restEventRepository.findAllByRestStopServiceAreaCodeOrderByIdAsc(serviceAreaCode);
     }
 
     private Optional<String> firstOilServiceAreaCode2(List<RestOilEntity> oilConveniences) {

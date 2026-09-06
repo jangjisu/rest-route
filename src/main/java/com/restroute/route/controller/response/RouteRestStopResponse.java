@@ -1,7 +1,7 @@
 package com.restroute.route.controller.response;
 
+import com.restroute.oilprice.dto.FuelType;
 import com.restroute.reststop.domain.SizeTier;
-import com.restroute.route.dto.FuelType;
 import java.util.List;
 
 public record RouteRestStopResponse(Destination destination, List<RouteOption> routes) {
@@ -396,31 +396,6 @@ public record RouteRestStopResponse(Destination destination, List<RouteOption> r
                 case LPG -> lpgPrice;
                 case EV -> null;
             };
-        }
-    }
-
-    public record NationalOilPriceSummary(
-            String tradeDate, AverageOilPrice gasoline, AverageOilPrice diesel, AverageOilPrice lpg) {
-
-        public static NationalOilPriceSummary of(
-                String tradeDate, AverageOilPrice gasoline, AverageOilPrice diesel, AverageOilPrice lpg) {
-            return new NationalOilPriceSummary(tradeDate, gasoline, diesel, lpg);
-        }
-
-        public String getAveragePriceByFuelType(FuelType fuelType) {
-            return switch (fuelType) {
-                case GASOLINE -> gasoline.price();
-                case DIESEL -> diesel.price();
-                case LPG -> lpg.price();
-                case EV -> null;
-            };
-        }
-    }
-
-    public record AverageOilPrice(String productCode, String productName, String price, String dailyDiff) {
-
-        public static AverageOilPrice of(String productCode, String productName, String price, String dailyDiff) {
-            return new AverageOilPrice(productCode, productName, price, dailyDiff);
         }
     }
 

@@ -140,7 +140,7 @@ class RestStopStartupInitializerTest {
         assertThat(output)
                 .contains("Initial rest stop sync failed.")
                 .contains("location API failed")
-                .contains("Initial rest stop detail sync completed. detailSavedCount=215");
+                .contains("Initial rest stop detail sync completed. savedCount=215");
     }
 
     @Test

@@ -11,7 +11,6 @@ import com.restroute.reststop.service.RestStopSyncService;
 import com.restroute.reststopcontent.service.RestEventSyncService;
 import com.restroute.reststopcontent.service.RestFoodSyncService;
 import com.restroute.reststopcontent.service.RestThemeSyncService;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,93 +34,22 @@ public class RestStopScheduler {
 
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void syncRestStopsDaily() {
-        refreshRestStops();
-        refreshRestStopDetails();
-        refreshHighwayServiceAreaInfos();
-        refreshRestOils();
-        refreshRestFoods();
-        refreshRestThemes();
-        refreshRestEvents();
+        SafeSyncRunner.runScheduled("rest stop", restStopSyncService::refreshRestStops);
+        SafeSyncRunner.runScheduled("rest stop detail", restStopDetailSyncService::refreshRestStopDetails);
+        SafeSyncRunner.runScheduled(
+                "highway service area info", highwayServiceAreaInfoSyncService::refreshHighwayServiceAreaInfos);
+        SafeSyncRunner.runScheduled("rest oil", restOilSyncService::refreshRestOils);
+        SafeSyncRunner.runScheduled("rest food", restFoodSyncService::refreshRestFoods);
+        SafeSyncRunner.runScheduled("rest theme", restThemeSyncService::refreshRestThemes);
+        SafeSyncRunner.runScheduled("rest event", restEventSyncService::refreshRestEvents);
         refreshEvChargers();
         backfillRestStopServiceAreaCodes();
     }
 
     @Scheduled(cron = "0 0 */3 * * *", zone = "Asia/Seoul")
     public void syncRestOilPricesEveryThreeHours() {
-        refreshRestOilPrices();
+        SafeSyncRunner.runScheduled("rest oil price", restOilPriceSyncService::refreshRestOilPrices);
         backfillRestStopServiceAreaCodes();
-    }
-
-    private void refreshRestStops() {
-        try {
-            int savedCount = restStopSyncService.refreshRestStops();
-            log.info("Scheduled rest stop sync completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Scheduled rest stop sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void refreshRestStopDetails() {
-        try {
-            int savedCount = restStopDetailSyncService.refreshRestStopDetails();
-            log.info("Scheduled rest stop detail sync completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Scheduled rest stop detail sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void refreshHighwayServiceAreaInfos() {
-        try {
-            int savedCount = highwayServiceAreaInfoSyncService.refreshHighwayServiceAreaInfos();
-            log.info("Scheduled highway service area info sync completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Scheduled highway service area info sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void refreshRestOils() {
-        try {
-            int savedCount = restOilSyncService.refreshRestOils();
-            log.info("Scheduled rest oil sync completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Scheduled rest oil sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void refreshRestOilPrices() {
-        try {
-            int savedCount = restOilPriceSyncService.refreshRestOilPrices();
-            log.info("Scheduled rest oil price sync completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Scheduled rest oil price sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void refreshRestFoods() {
-        try {
-            int savedCount = restFoodSyncService.refreshRestFoods();
-            log.info("Scheduled rest food sync completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Scheduled rest food sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void refreshRestThemes() {
-        try {
-            int savedCount = restThemeSyncService.refreshRestThemes();
-            log.info("Scheduled rest theme sync completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Scheduled rest theme sync failed. cause={}", e.getMessage(), e);
-        }
-    }
-
-    private void refreshRestEvents() {
-        try {
-            int savedCount = restEventSyncService.refreshRestEvents();
-            log.info("Scheduled rest event sync completed. savedCount={}", savedCount);
-        } catch (RuntimeException e) {
-            log.error("Scheduled rest event sync failed. cause={}", e.getMessage(), e);
-        }
     }
 
     private EvChargerSyncResult refreshEvChargers() {
@@ -136,11 +64,7 @@ public class RestStopScheduler {
     }
 
     private void backfillRestStopServiceAreaCodes() {
-        try {
-            Map<String, Integer> result = restStopServiceAreaCodeBackfillService.backfill();
-            log.info("Scheduled rest stop service area code backfill completed. result={}", result);
-        } catch (RuntimeException e) {
-            log.error("Scheduled rest stop service area code backfill failed. cause={}", e.getMessage(), e);
-        }
+        SafeSyncRunner.runBackfill(
+                "Scheduled rest stop service area code backfill", restStopServiceAreaCodeBackfillService::backfill);
     }
 }

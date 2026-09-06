@@ -6,13 +6,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.restroute.oilprice.dto.FuelType;
+import com.restroute.oilprice.dto.FuelTypeSelection;
 import com.restroute.reststop.controller.response.RestStopDetailViewResponse;
 import com.restroute.reststop.controller.response.RestStopNearbyItemResponse;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.service.RestStopNearbyQueryService;
 import com.restroute.reststop.service.RestStopQueryService;
-import com.restroute.route.dto.FuelType;
-import com.restroute.route.dto.FuelTypeSelection;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

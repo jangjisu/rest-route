@@ -1,8 +1,8 @@
 package com.restroute.route.service;
 
+import com.restroute.oilprice.dto.FuelType;
 import com.restroute.route.controller.response.RouteRestStopResponse.ComparisonSummary;
 import com.restroute.route.controller.response.RouteRestStopResponse.RecommendationTag;
-import com.restroute.route.dto.FuelType;
 import com.restroute.route.service.dto.RouteRestStopComparison;
 import com.restroute.route.service.dto.RouteRestStopRecommendationStandards;
 import com.restroute.route.service.util.RouteRestStopNumberParser;

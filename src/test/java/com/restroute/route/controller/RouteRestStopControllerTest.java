@@ -13,14 +13,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.restroute.common.GlobalExceptionHandler;
 import com.restroute.common.client.exception.KakaoApiException;
+import com.restroute.oilprice.dto.FuelType;
+import com.restroute.oilprice.dto.FuelTypeSelection;
 import com.restroute.route.controller.response.RouteRestStopListItemResponse;
 import com.restroute.route.controller.response.RouteRestStopResponse;
 import com.restroute.route.controller.response.RouteRestStopResponse.Destination;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteOption;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteSummary;
-import com.restroute.route.dto.FuelType;
-import com.restroute.route.dto.FuelTypeSelection;
 import com.restroute.route.service.RouteRestStopListQueryService;
 import com.restroute.route.service.RouteRestStopService;
 import com.restroute.route.service.exception.RouteRestStopNotFoundException;
