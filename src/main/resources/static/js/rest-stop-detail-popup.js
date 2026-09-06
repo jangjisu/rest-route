@@ -16,6 +16,7 @@
  * 정한다.
  */
 
+import { bindVerticalPointerDrag } from './pointer-drag.js';
 import { createRestStopDetailRequest } from './rest-stop-detail-request.js';
 import { createRestStopDetailView } from './rest-stop-detail-view.js';
 
@@ -268,58 +269,23 @@ export function createRestStopDetailPopup(document, {
             return;
         }
 
-        const { signal } = controller;
-        let dragging = false;
-        let startClientY = 0;
-
-        // setPointerCapture/releasePointerCapture는 "지금 이 포인터가 실제로 눌려 있는 상태"가
-        // 아니면 NotFoundError를 던진다(예: pointercancel 이후, 혹은 실제 기기가 아닌 합성
-        // 이벤트) — 있으면 좋은 최적화일 뿐 핵심 로직은 아니라서, 실패해도 드래그 자체는
-        // 그대로 진행되게 무시한다.
-        function safeCapture(fn) {
-            try {
-                fn();
-            } catch {
-                // no-op
+        bindVerticalPointerDrag(header, {
+            signal: controller.signal,
+            canStart: (event) => isSheetMode() && !event.target.closest('button'),
+            onStart() {
+                root.style.transition = 'none';
+            },
+            onMove(deltaY) {
+                root.style.transform = `translateY(${Math.max(0, deltaY)}px)`;
+            },
+            onEnd(deltaY) {
+                root.style.transition = '';
+                root.style.transform = '';
+                if (Math.max(0, deltaY) > SWIPE_DISMISS_THRESHOLD_PX) {
+                    onCloseRequest?.();
+                }
             }
-        }
-
-        function onPointerDown(event) {
-            if (!isSheetMode() || event.target.closest('button')) {
-                return;
-            }
-            dragging = true;
-            startClientY = event.clientY;
-            root.style.transition = 'none';
-            safeCapture(() => header.setPointerCapture?.(event.pointerId));
-        }
-
-        function onPointerMove(event) {
-            if (!dragging) {
-                return;
-            }
-            const delta = Math.max(0, event.clientY - startClientY);
-            root.style.transform = `translateY(${delta}px)`;
-        }
-
-        function onPointerUp(event) {
-            if (!dragging) {
-                return;
-            }
-            dragging = false;
-            const delta = Math.max(0, event.clientY - startClientY);
-            root.style.transition = '';
-            root.style.transform = '';
-            safeCapture(() => header.releasePointerCapture?.(event.pointerId));
-            if (delta > SWIPE_DISMISS_THRESHOLD_PX) {
-                onCloseRequest?.();
-            }
-        }
-
-        header.addEventListener('pointerdown', onPointerDown, { signal });
-        header.addEventListener('pointermove', onPointerMove, { signal });
-        header.addEventListener('pointerup', onPointerUp, { signal });
-        header.addEventListener('pointercancel', onPointerUp, { signal });
+        });
     }
 
     // 좁은 화면(바텀시트로 보일 때)에만 뒷배경 스크림을 켠다 — 넓은 화면(index.html 옆 패널)에선

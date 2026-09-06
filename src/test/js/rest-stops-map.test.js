@@ -5,9 +5,9 @@ import {
     createPopupContent,
     isRouteGlobalLoadingState,
     routeMapSelectionMessage,
-    routePointLabel,
-    shouldShowRouteResultBackButton
+    routePointLabel
 } from '../../main/resources/static/js/rest-stops-map.js';
+import { shouldShowRouteResultBackButton } from '../../main/resources/static/js/rest-stops-detail-panel.js';
 
 test('createPopupContent renders rest stop popup as a small summary card', () => {
     const content = createPopupContent({

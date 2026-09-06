@@ -1,3 +1,5 @@
+import { createRequestTracker } from './request-tracker.js';
+
 const ROUTE_REST_STOP_LIST_ENDPOINT = '/api/route-rest-stops/list';
 
 /**
@@ -7,14 +9,7 @@ const ROUTE_REST_STOP_LIST_ENDPOINT = '/api/route-rest-stops/list';
  * (destinationLat/Lng, place-search 후보 선택 시)로 넘길 수 있다.
  */
 export function createRouteRestStopListRequest({ fetchImpl = fetch, onState = () => {} } = {}) {
-    let currentRequestId = 0;
-    let activeRequestController;
-
-    function emitIfCurrent(requestId, state) {
-        if (requestId === currentRequestId) {
-            onState(state);
-        }
-    }
+    const tracker = createRequestTracker({ onState });
 
     async function load({
         originLat,
@@ -25,20 +20,17 @@ export function createRouteRestStopListRequest({ fetchImpl = fetch, onState = ()
         destinationName,
         fuelType
     } = {}) {
-        activeRequestController?.abort();
-        activeRequestController = new globalThis.AbortController();
-
-        const requestId = ++currentRequestId;
+        const request = tracker.begin();
         const trimmedQuery = typeof destinationQuery === 'string' ? destinationQuery.trim() : '';
         const hasOrigin = Number.isFinite(originLat) && Number.isFinite(originLng);
         const hasDestinationCoordinates = Number.isFinite(destinationLat) && Number.isFinite(destinationLng);
 
         if (!hasOrigin || (trimmedQuery === '' && !hasDestinationCoordinates)) {
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
             return;
         }
 
-        emitIfCurrent(requestId, { status: 'loading' });
+        request.emit({ status: 'loading' });
 
         const params = new globalThis.URLSearchParams();
         params.set('originLat', originLat);
@@ -58,40 +50,34 @@ export function createRouteRestStopListRequest({ fetchImpl = fetch, onState = ()
 
         try {
             const response = await fetchImpl(`${ROUTE_REST_STOP_LIST_ENDPOINT}?${params.toString()}`, {
-                signal: activeRequestController.signal
+                signal: request.signal
             });
             const body = await response.json();
 
             if (response.status === 404 && body?.code === 'NOT_FOUND') {
-                emitIfCurrent(requestId, { status: 'not-found', message: body?.message });
+                request.emit({ status: 'not-found', message: body?.message });
                 return;
             }
 
             if (body?.code === 'EXTERNAL_API_UNAVAILABLE') {
-                emitIfCurrent(requestId, { status: 'external-unavailable' });
+                request.emit({ status: 'external-unavailable' });
                 return;
             }
 
             if (response.ok && body?.code === 'SUCCESS' && Array.isArray(body.data)) {
-                emitIfCurrent(requestId, { status: 'success', restStops: body.data });
+                request.emit({ status: 'success', restStops: body.data });
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         } catch (error) {
-            if (error?.name === 'AbortError') {
+            if (request.isAborted(error)) {
                 return;
             }
 
-            emitIfCurrent(requestId, { status: 'error' });
+            request.emit({ status: 'error' });
         }
     }
 
-    function invalidate() {
-        currentRequestId += 1;
-        activeRequestController?.abort();
-        activeRequestController = undefined;
-    }
-
-    return { invalidate, load };
+    return { invalidate: tracker.invalidate, load };
 }

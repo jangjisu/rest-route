@@ -6,6 +6,7 @@
  */
 
 import { closeDialogById, openDialogById } from './utils.js';
+import { createCandidateListItem } from './candidate-list-item.js';
 import { formatDistance } from './finder-distance.js';
 import { DESTINATION_CHIPS } from './finder-destination-chips.js';
 import { destinationBadgesFor, destinationConditionFilters, destinationFilterItems } from './finder-condition.js';
@@ -189,35 +190,22 @@ export function initializeDestinationRecommendation(document, { openDetail }) {
         }
         setStatus(candidateStatusEl, '');
         candidates.forEach((candidate) => {
-            const li = document.createElement('li');
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'finder-candidate-item';
-
-            const name = document.createElement('p');
-            name.className = 'finder-candidate-item-name';
-            name.textContent = candidate.name || '이름 정보 없음';
-            button.appendChild(name);
-
-            if (candidate.address) {
-                const address = document.createElement('p');
-                address.className = 'finder-candidate-item-address';
-                address.textContent = candidate.address;
-                button.appendChild(address);
-            }
-
-            button.addEventListener('click', () => {
-                closeDialogById('finderDestinationCandidatePopup');
-                loadResults({
-                    destinationLat: candidate.latitude,
-                    destinationLng: candidate.longitude,
-                    destinationName: candidate.name,
-                    displayLabel: candidate.name || '목적지'
-                });
-            });
-
-            li.appendChild(button);
-            candidateListEl.appendChild(li);
+            candidateListEl.appendChild(createCandidateListItem(document, {
+                buttonClassName: 'finder-candidate-item',
+                primaryClassName: 'finder-candidate-item-name',
+                secondaryClassName: 'finder-candidate-item-address',
+                primaryText: candidate.name || '이름 정보 없음',
+                secondaryText: candidate.address,
+                onSelect: () => {
+                    closeDialogById('finderDestinationCandidatePopup');
+                    loadResults({
+                        destinationLat: candidate.latitude,
+                        destinationLng: candidate.longitude,
+                        destinationName: candidate.name,
+                        displayLabel: candidate.name || '목적지'
+                    });
+                }
+            }));
         });
     }
 
