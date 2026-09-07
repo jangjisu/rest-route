@@ -505,6 +505,7 @@
 
 .finder-search-input {
     flex: 1;
+    min-width: 0;
     border: none;
     background: none;
     padding: 0;
@@ -677,7 +678,7 @@
     margin: 0 auto;
     min-height: 0;
     height: auto;
-    max-height: 85vh;
+    max-height: 66vh;
     border: none;
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -8px 24px oklch(30% 0.02 60 / 0.16);
