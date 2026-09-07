@@ -505,6 +505,7 @@
 
 .finder-search-input {
     flex: 1;
+    min-width: 0;
     border: none;
     background: none;
     padding: 0;
