@@ -34,6 +34,14 @@ export function createFinderRestStopNearbyRequest({ fetchImpl = fetch, onState =
                 { signal: request.signal }
             );
 
+            // response.ok부터 확인한다 — HTTP 에러 응답의 본문이 JSON이 아닐 수 있어서(빈 응답,
+            // 게이트웨이 에러 페이지 등), json() 파싱을 먼저 시도하면 실제로는 HTTP 상태 코드
+            // 문제인데 invalid-response로 잘못 분류돼 상태 코드가 화면에 안 뜨는 문제가 있었다.
+            if (!response.ok) {
+                request.emit({ status: 'error', reason: 'http', httpStatus: response.status });
+                return;
+            }
+
             let body;
             try {
                 body = await response.json();
@@ -42,10 +50,6 @@ export function createFinderRestStopNearbyRequest({ fetchImpl = fetch, onState =
                 return;
             }
 
-            if (!response.ok) {
-                request.emit({ status: 'error', reason: 'http', httpStatus: response.status });
-                return;
-            }
             if (body?.code !== 'SUCCESS') {
                 request.emit({ status: 'error', reason: 'api', apiCode: body?.code });
                 return;

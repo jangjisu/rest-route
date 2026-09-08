@@ -118,6 +118,22 @@ test('HTTP 오류 상태면 http 사유와 상태 코드를 낸다', async () =>
     assert.deepEqual(states.at(-1), { status: 'error', reason: 'http', httpStatus: 500 });
 });
 
+test('HTTP 오류인데 본문이 JSON이 아니어도 http 사유와 상태 코드를 낸다', async () => {
+    const { states, onState } = collect();
+    await createFinderRestStopNearbyRequest({
+        fetchImpl: async () => ({
+            status: 502,
+            ok: false,
+            json: async () => {
+                throw new SyntaxError('Unexpected token < in JSON');
+            }
+        }),
+        onState
+    }).load();
+
+    assert.deepEqual(states.at(-1), { status: 'error', reason: 'http', httpStatus: 502 });
+});
+
 test('200이지만 code가 SUCCESS가 아니면 api 사유와 코드를 낸다', async () => {
     const { states, onState } = collect();
     await createFinderRestStopNearbyRequest({
