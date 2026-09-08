@@ -562,6 +562,27 @@
     display: none;
 }
 
+.finder-list-error {
+    margin: 24px 0;
+    text-align: center;
+}
+
+.finder-list-error[hidden] {
+    display: none;
+}
+
+.finder-list-error-message {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: var(--rr-color-text-secondary);
+}
+
+.finder-list-error-retry {
+    flex: none;
+    display: inline-block;
+    min-width: 120px;
+}
+
 /* --- 칩 --- */
 
 .finder-chip-row {

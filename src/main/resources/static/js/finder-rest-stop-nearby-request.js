@@ -33,20 +33,39 @@ export function createFinderRestStopNearbyRequest({ fetchImpl = fetch, onState =
                 query === '' ? NEARBY_ENDPOINT : `${NEARBY_ENDPOINT}?${query}`,
                 { signal: request.signal }
             );
-            const body = await response.json();
 
-            if (response.ok && body?.code === 'SUCCESS' && Array.isArray(body.data)) {
-                request.emit({ status: 'success', restStops: body.data });
+            // response.ok부터 확인한다 — HTTP 에러 응답의 본문이 JSON이 아닐 수 있어서(빈 응답,
+            // 게이트웨이 에러 페이지 등), json() 파싱을 먼저 시도하면 실제로는 HTTP 상태 코드
+            // 문제인데 invalid-response로 잘못 분류돼 상태 코드가 화면에 안 뜨는 문제가 있었다.
+            if (!response.ok) {
+                request.emit({ status: 'error', reason: 'http', httpStatus: response.status });
                 return;
             }
 
-            request.emit({ status: 'error' });
+            let body;
+            try {
+                body = await response.json();
+            } catch {
+                request.emit({ status: 'error', reason: 'invalid-response' });
+                return;
+            }
+
+            if (body?.code !== 'SUCCESS') {
+                request.emit({ status: 'error', reason: 'api', apiCode: body?.code });
+                return;
+            }
+            if (!Array.isArray(body.data)) {
+                request.emit({ status: 'error', reason: 'unexpected-shape' });
+                return;
+            }
+
+            request.emit({ status: 'success', restStops: body.data });
         } catch (error) {
             if (request.isAborted(error)) {
                 return;
             }
 
-            request.emit({ status: 'error' });
+            request.emit({ status: 'error', reason: 'network' });
         }
     }
 
