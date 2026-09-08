@@ -80,7 +80,7 @@ test('성공 응답이면 loading 후 success와 restStops 배열을 낸다', as
     assert.deepEqual(states[1], { status: 'success', restStops });
 });
 
-test('네트워크 실패는 error 상태를 낸다', async () => {
+test('네트워크 실패는 error 상태와 network 사유를 낸다', async () => {
     const { states, onState } = collect();
     await createFinderRestStopNearbyRequest({
         fetchImpl: async () => {
@@ -89,7 +89,53 @@ test('네트워크 실패는 error 상태를 낸다', async () => {
         onState
     }).load();
 
-    assert.equal(states.at(-1).status, 'error');
+    assert.deepEqual(states.at(-1), { status: 'error', reason: 'network' });
+});
+
+test('응답 본문이 JSON이 아니면 invalid-response 사유를 낸다', async () => {
+    const { states, onState } = collect();
+    await createFinderRestStopNearbyRequest({
+        fetchImpl: async () => ({
+            status: 200,
+            ok: true,
+            json: async () => {
+                throw new SyntaxError('Unexpected token');
+            }
+        }),
+        onState
+    }).load();
+
+    assert.deepEqual(states.at(-1), { status: 'error', reason: 'invalid-response' });
+});
+
+test('HTTP 오류 상태면 http 사유와 상태 코드를 낸다', async () => {
+    const { states, onState } = collect();
+    await createFinderRestStopNearbyRequest({
+        fetchImpl: async () => jsonResponse(500, { code: 'INTERNAL_ERROR' }),
+        onState
+    }).load();
+
+    assert.deepEqual(states.at(-1), { status: 'error', reason: 'http', httpStatus: 500 });
+});
+
+test('200이지만 code가 SUCCESS가 아니면 api 사유와 코드를 낸다', async () => {
+    const { states, onState } = collect();
+    await createFinderRestStopNearbyRequest({
+        fetchImpl: async () => jsonResponse(200, { code: 'BAD_REQUEST', message: '잘못된 요청' }),
+        onState
+    }).load();
+
+    assert.deepEqual(states.at(-1), { status: 'error', reason: 'api', apiCode: 'BAD_REQUEST' });
+});
+
+test('data가 배열이 아니면 unexpected-shape 사유를 낸다', async () => {
+    const { states, onState } = collect();
+    await createFinderRestStopNearbyRequest({
+        fetchImpl: async () => jsonResponse(200, { code: 'SUCCESS', data: null }),
+        onState
+    }).load();
+
+    assert.deepEqual(states.at(-1), { status: 'error', reason: 'unexpected-shape' });
 });
 
 test('AbortError는 상태를 내지 않는다', async () => {

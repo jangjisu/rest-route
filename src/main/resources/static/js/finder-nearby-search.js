@@ -20,29 +20,69 @@ const NEARBY_BADGE_COLOR_CLASS_BY_KEY = {
     FUEL_BELOW_AVERAGE: 'finder-badge-savings'
 };
 
+// 실패 지점을 화면 문구만 보고도 구분할 수 있게, 사유별로 다른 안내를 보여준다 — 코드는
+// finder-rest-stop-nearby-request.js가 fetch/파싱/HTTP 상태/API 코드/응답 모양 중 어디서
+// 걸렸는지 reason으로 넘겨준다.
+export function describeNearbyError(state) {
+    if (state.reason === 'http') {
+        return `서버에 문제가 생겼어요. (상태 코드 ${state.httpStatus})`;
+    }
+    if (state.reason === 'api') {
+        return `요청을 처리하지 못했어요. (코드: ${state.apiCode ?? '알 수 없음'})`;
+    }
+    if (state.reason === 'invalid-response') {
+        return '서버 응답을 처리하지 못했어요.';
+    }
+    if (state.reason === 'unexpected-shape') {
+        return '예상과 다른 응답을 받았어요.';
+    }
+    if (state.reason === 'network') {
+        return '네트워크 연결을 확인해주세요.';
+    }
+    return '휴게소 목록을 불러오지 못했어요.';
+}
+
 export function initializeNearbySearch(document, { openDetail }) {
     const emptyStateEl = document.getElementById('finderMode1EmptyState');
     const subHeadingEl = document.getElementById('finderMode1SubHeading');
     const searchInputEl = document.getElementById('finderMode1SearchInput');
     const statusEl = document.getElementById('finderMode1Status');
+    const errorStateEl = document.getElementById('finderMode1ErrorState');
+    const errorMessageEl = document.getElementById('finderMode1ErrorMessage');
+    const retryButtonEl = document.getElementById('finderMode1Retry');
     const listEl = document.getElementById('finderMode1List');
 
     let origin = null;
     let interest = null;
 
+    function hideError() {
+        errorStateEl.hidden = true;
+    }
+
+    function showError(state) {
+        errorMessageEl.textContent = describeNearbyError(state);
+        errorStateEl.hidden = false;
+    }
+
     const nearbyRequest = createFinderRestStopNearbyRequest({
         onState: (state) => {
             if (state.status === 'loading') {
+                hideError();
                 setStatus(statusEl, searchInputEl.value.trim() ? '검색 중...' : '불러오는 중...');
                 return;
             }
             if (state.status === 'error') {
-                setStatus(statusEl, '휴게소 목록을 불러오지 못했어요.');
+                listEl.innerHTML = '';
+                setStatus(statusEl, '');
+                showError(state);
                 return;
             }
+            hideError();
             renderList(state.restStops);
         }
     });
+
+    retryButtonEl?.addEventListener('click', () => runQuery(searchInputEl.value));
 
     function renderList(restStops) {
         listEl.innerHTML = '';
@@ -75,6 +115,7 @@ export function initializeNearbySearch(document, { openDetail }) {
         if (!origin && trimmedName === '') {
             listEl.innerHTML = '';
             setStatus(statusEl, '');
+            hideError();
             return;
         }
         nearbyRequest.load({
