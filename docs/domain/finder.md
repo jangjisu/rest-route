@@ -148,9 +148,11 @@ sources: []
 - **기존 `GET /api/rest-stops`, `/api/rest-stops/search`**: 지도 화면(`rest-stops-map.js`) 전용으로 그대로
   남아 있고, 이 도메인은 쓰지 않는다.
 - **`GET /api/route-rest-stops/list`**(`RouteRestStopController`, [[route]] 도메인 소유, 목적지로
-  추천받기 전용): `originLat`/`originLng` 필수, `destinationQuery` 또는
-  `destinationLat`+`destinationLng`(+`destinationName`) 중 하나, `fuelType`(`GASOLINE`/`DIESEL`/`LPG`)
-  선택. 목적지 해석·경로 매칭은 기존 route 내부 부품(`RouteResolverService`/`RouteCoordinateReducer`/
+  추천받기 전용): `originLat`/`originLng` 필수, `destinationLat`+`destinationLng` 또는
+  `destinationName` 중 하나, `fuelType`(`GASOLINE`/`DIESEL`/`LPG`) 선택. **자유 검색어를 받지
+  않는다** — 좌표로 받거나, 서버가 좌표를 아는 이름(`PopularDestination`)으로만 받으므로 이
+  엔드포인트는 지오코딩을 거치지 않고 외부 호출이 길찾기 1회로 끝난다. 목적지 해석은
+  `DestinationResolver`, 경로 매칭은 기존 route 내부 부품(`RouteCoordinateReducer`/
   `RouteRestStopMatcher`)을 재사용하되 응답 조립은 `RouteRestStopListQueryService`가 직접 하고, 대안
   경로 중 첫 번째만 써서 `RouteRestStopListItemResponse` 평평한 배열(거리 오름차순 정렬)로 응답한다.
   `distanceMeters`는 `CoordinateDistanceCalculator`로 서버가 계산(위치가 항상 있어 `null` 케이스 없음),
@@ -185,8 +187,9 @@ sources: []
 - **요청 모듈**: `finder-rest-stop-nearby-request.js`(이름·거리로 찾기, `/nearby` 전용),
   `finder-route-rest-stop-list-request.js`(목적지로 추천받기, `/route-rest-stops/list` 전용) — 둘 다
   요청 ID/AbortController로 최신 응답만 반영하는 같은 패턴. `finder-destination-chips.js`(인기 목적지
-  칩 4개, 라벨=검색어). 목적지 후보 검색은 지도 화면과 공유하는 `place-search-request.js`를 그대로
-  import한다.
+  칩 4개, 라벨=`destinationName`이고 서버 `PopularDestination`의 표시명과 정확히 같아야 한다 — 어긋나면
+  목적지를 찾지 못한다). 직접 입력한 목적지는 지도 화면과 공유하는 `place-search-request.js`로 후보를
+  받아 고른 뒤, 그 좌표를 `destinationLat`/`destinationLng`로 넘긴다.
 - `finder-rest-stop-detail.js` — `rest-stop-detail-popup.js`(지도 화면과 완전히 공유, 마크업까지 그
   모듈이 직접 만들어 붙인다 — finder.html엔 상세 팝업 마크업이 없다)를 호출하는 얇은 어댑터. finder가
   얹는 건 부트스트랩 토스트(`showApiUnavailableAlert`, 기본값) 자리의 no-op과 Escape 키 처리뿐이다.

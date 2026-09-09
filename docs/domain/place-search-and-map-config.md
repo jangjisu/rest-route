@@ -72,7 +72,7 @@ sources:
 ## 7. 외부 시스템과 계약
 
 - **카카오 로컬 검색 API** (`kakao.local.url`, `kakao.rest-api-key` 설정, 인증 헤더 `Authorization: KakaoAK {key}`): place-search가 사용. 응답의 `x`/`y`는 문자열이며 파싱 실패 시 후보에서 제외.
-- **카카오 내비/길찾기 API** (`kakao.navi.url`): place-search가 아니라 route 도메인(`RouteResolverService`)이 `KakaoMapClient.getDirections`로 호출 — **동일한 `KakaoMapClient` 클래스를 두 도메인이 공유**하며, 이는 place-search 신규 개발 시 "기존 KakaoMapClient 재사용(신규 외부 연동 없음)"이라고 명시적으로 밝힌 설계 결정이다(f990383). 참고로 route 도메인의 `RouteResolverService`는 레거시 `destinationQuery` 파라미터 경로에서 `KakaoMapClient.searchKeyword`를 **직접** 호출하는 지점도 남아있어(place-search와 별개 호출 경로), 목적지 지오코딩 로직이 두 곳에 흩어져 있는 상태다.
+- **카카오 내비/길찾기 API** (`kakao.navi.url`): place-search가 아니라 route 도메인(`RouteResolverService`)이 `KakaoMapClient.getDirections`로 호출 — **동일한 `KakaoMapClient` 클래스를 두 도메인이 공유**하며, 이는 place-search 신규 개발 시 "기존 KakaoMapClient 재사용(신규 외부 연동 없음)"이라고 명시적으로 밝힌 설계 결정이다(f990383). 참고로 route 도메인의 `RouteResolverService`는 지도 화면 진입점(`GET /api/route-rest-stops`)의 `destinationQuery` 경로에서 `KakaoMapClient.searchKeyword`를 **직접** 호출하는 지점이 남아있어(place-search와 별개 호출 경로), 목적지 지오코딩 로직이 두 곳에 흩어져 있는 상태다. finder 목록 진입점(`/list`)은 이 경로를 걷어내 place-search가 준 좌표나 `PopularDestination`만 쓰므로 여기 해당하지 않는다.
 - **네이버 지도(Naver Maps) SDK**: map-config가 클라이언트 키만 내려주고, 실제 지도 렌더링은 프론트에서 네이버가 제공하는 JS SDK를 동적 로드해 수행한다. 백엔드는 네이버 API를 직접 호출하지 않는다.
 - 로컬 개발용 API 키(`naver.maps.ncp-key-id`, `kakao.rest-api-key`)가 `application-local.properties`에 평문으로 커밋되어 있음 — 로컬 전용 값으로 보이나 확인 필요(추정 — 확인 필요, 보안 관점 별도 검토 권장 사항이며 이 문서 범위 밖).
 
