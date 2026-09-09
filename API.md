@@ -956,6 +956,62 @@ JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연
 목적지나 경로를 찾지 못하면 HTTP 404와 `NOT_FOUND`를 반환한다. 카카오 API 호출 자체가 실패하면
 `EXTERNAL_API_UNAVAILABLE`을 반환한다.
 
+### GET /api/route-rest-stops/list
+
+모바일 finder "목적지로 추천받기" 전용. 위 `/api/route-rest-stops`와 같은 경로 매칭 부품을 쓰지만
+대안 경로·이미지·먹거리 비교를 빼고, 출발지 기준 거리순으로 정렬한 평평한 목록만 반환한다.
+
+**이 엔드포인트는 지오코딩을 하지 않는다.** 목적지를 좌표로 받거나, 서버가 좌표를 알고 있는 이름
+(`PopularDestination`)으로만 받는다. 그래서 외부 호출이 카카오 길찾기 1회로 끝나고, 카카오 장소 검색이
+장애일 때도 이 화면은 계속 동작한다. 자유 검색어를 좌표로 바꾸는 일은 `/api/place-search`가 맡고,
+사용자가 후보를 고르면 그 좌표가 이 엔드포인트로 들어온다.
+
+| 위치 | 이름 | 조건 | 설명 |
+|---|---|---|---|
+| Query | `originLat` | 필수 | 출발 위도 |
+| Query | `originLng` | 필수 | 출발 경도 |
+| Query | `destinationLat` | 선택 | 목적지 위도(`/api/place-search`에서 고른 후보의 좌표) |
+| Query | `destinationLng` | 선택 | 목적지 경도 |
+| Query | `destinationName` | 선택 | 좌표와 함께 오면 화면 표시명, 좌표 없이 오면 목적지 이름으로 해석 |
+| Query | `radiusMeters` | 선택 | 경로 포함 반경, 기본값 `1000` |
+| Query | `fuelType` | 선택 | `GASOLINE`, `DIESEL`, `LPG` 중 하나. 유가 등급 계산 대상 유종 |
+
+목적지는 좌표와 이름 중 하나가 반드시 있어야 한다. 좌표가 오면 그대로 쓰고, 위도·경도 중 하나만 오면
+좌표로 인정하지 않고 이름으로 해석한다. 서버가 좌표를 아는 이름은 다음과 같다.
+
+| `destinationName` | 좌표(위도, 경도) |
+|---|---|
+| `부산역` | 35.11520, 129.04137 |
+| `대전역` | 36.331331, 127.433019 |
+| `강릉역` | 37.7637611, 128.8990861 |
+| `광주송정역` | 35.1378444, 126.7902333 |
+
+응답 `data`는 휴게소 배열이며 출발지로부터의 거리 오름차순으로 정렬된다.
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `serviceAreaCode` | string | 휴게소 코드 |
+| `unitName` | string | 휴게소 이름 |
+| `routeName` | string | 노선명 |
+| `distanceMeters` | number | 출발지에서의 직선 거리(m). 서버가 계산하므로 `null`이 없다 |
+| `sizeTier` | string \| null | `LARGE`, `MEDIUM`, `SMALL`. 판정 근거가 없으면 `null` |
+| `topTrafficTier` | boolean | 이용량 상위 10% 여부 |
+| `evChargerCount` | number \| null | 사용 가능한 충전기 대수. 0대이거나 매핑이 없으면 `null` |
+| `fuelPriceTier` | string \| null | `CHEAPEST`(이번 조회 목록 안 최저가) 또는 `BELOW_AVERAGE`(전국 평균보다 저렴). `fuelType`을 안 보내면 항상 `null` |
+
+`fuelPriceTier`는 요청에 실은 유종 하나만 스코프해서 계산한다. 같은 휴게소라도 다른 유종을 요청하면
+결과가 달라진다.
+
+목적지를 찾지 못하거나(좌표도 없고 서버가 모르는 이름) 경로를 찾지 못하면 HTTP 404와 `NOT_FOUND`를
+반환하며, 이때 `message`에 사용자에게 보여줄 안내 문구가 담긴다(출발지 주변 도로 없음, 도착지 주변 도로
+없음, 두 지점이 너무 가까움 등 카카오 결과 코드별로 구분).
+
+카카오 길찾기 호출 자체가 실패하면 `EXTERNAL_API_UNAVAILABLE`을 반환한다. 이 코드는 **HTTP 200**과 함께
+나가고 `data`는 `null`이다(`ResponseCode.EXTERNAL_API_UNAVAILABLE`이 `HttpStatus.OK`로 정의돼 있다).
+서버 장애(5xx)·쿼터 초과(429)·인증 실패(401)·응답 본문이 JSON이 아닌 경우·연결 끊김이 모두 이 하나로
+수렴하므로, 클라이언트는 원인을 구분할 수 없다. 응답이 늦으면 `readTimeout`(기본 10초)에서 끊기며
+재시도는 하지 않는다.
+
 ---
 
 ## 다음 API를 추가할 때 기록할 것
