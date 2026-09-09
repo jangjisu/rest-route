@@ -12,8 +12,12 @@ import java.util.StringJoiner;
 
 /**
  * 가짜 카카오 서버의 응답을 정의한다. 경로와 파라미터는 실제 Feign 인터페이스
- * ({@code KakaoLocalFeignClient}, {@code KakaoNaviFeignClient})에 선언된 값과 같아야 하며,
- * 다르면 WireMock이 404를 돌려주므로 스텁이 어긋난 걸 바로 알 수 있다.
+ * ({@code KakaoNaviFeignClient})에 선언된 값과 같아야 하며, 다르면 WireMock이 404를 돌려주므로
+ * 스텁이 어긋난 걸 바로 알 수 있다.
+ *
+ * <p>지오코딩(카카오 로컬) 스텁은 없다 — {@code /api/route-rest-stops/list}는 목적지를 좌표로만
+ * 받으므로 그쪽을 부르지 않는다. 부르지 않는다는 사실 자체는
+ * {@link #verifyKeywordSearchNotCalled(WireMockServer)}로 확인한다.
  */
 public final class KakaoApiStubs {
 
@@ -24,23 +28,6 @@ public final class KakaoApiStubs {
     private static final int RESULT_CODE_SUCCESS = 0;
 
     private KakaoApiStubs() {}
-
-    /** 지오코딩 — 목적지 검색어 하나를 좌표로 바꿔 돌려준다. */
-    public static void stubKeywordSearch(WireMockServer kakao, String placeName, double longitude, double latitude) {
-        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
-                .willReturn(okJson("""
-                        {
-                          "documents": [
-                            {
-                              "x": "%s",
-                              "y": "%s",
-                              "place_name": "%s",
-                              "address_name": "%s 주소"
-                            }
-                          ]
-                        }
-                        """.formatted(longitude, latitude, placeName, placeName))));
-    }
 
     /**
      * 길찾기 — 정점 하나짜리 도로 구간을 담은 경로 1개를 돌려준다.
@@ -70,41 +57,6 @@ public final class KakaoApiStubs {
                         """.formatted(RESULT_CODE_SUCCESS, distanceMeters, join(vertexes)))));
     }
 
-    /** 지오코딩 — 검색 결과가 하나도 없는 정상 응답(장애가 아니라 "못 찾음"이다). */
-    public static void stubKeywordSearchEmpty(WireMockServer kakao) {
-        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH)).willReturn(okJson("{ \"documents\": [] }")));
-    }
-
-    /** 지오코딩 — 서버가 상태코드로 실패를 알린다(500, 429, 401 등). */
-    public static void stubKeywordSearchStatus(WireMockServer kakao, int status) {
-        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
-                .willReturn(aResponse().withStatus(status).withBody("{\"errorType\":\"stub\"}")));
-    }
-
-    /**
-     * 지오코딩 — 상태코드는 실패인데 본문이 JSON이 아니다. 게이트웨이·프록시가 HTML 오류
-     * 페이지를 돌려주는 실제 상황을 흉내 낸다.
-     */
-    public static void stubKeywordSearchNonJson(WireMockServer kakao, int status) {
-        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
-                .willReturn(aResponse()
-                        .withStatus(status)
-                        .withHeader("Content-Type", "text/html")
-                        .withBody("<html><body>Service Unavailable</body></html>")));
-    }
-
-    /** 지오코딩 — 응답이 늦다. readTimeout(기본 10초)을 넘기면 어떻게 되는지 보기 위한 것. */
-    public static void stubKeywordSearchDelay(WireMockServer kakao, int delayMillis) {
-        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
-                .willReturn(okJson("{ \"documents\": [] }").withFixedDelay(delayMillis)));
-    }
-
-    /** 길찾기 — 서버가 상태코드로 실패를 알린다. */
-    public static void stubDirectionsStatus(WireMockServer kakao, int status) {
-        kakao.stubFor(get(urlPathEqualTo(DIRECTIONS_PATH))
-                .willReturn(aResponse().withStatus(status).withBody("{\"errorType\":\"stub\"}")));
-    }
-
     /**
      * 길찾기 — HTTP는 200인데 result_code가 0이 아니다. 카카오가 "경로를 못 찾았다"를
      * 알리는 방식이라 HTTP 실패와는 갈래가 다르다.
@@ -115,16 +67,40 @@ public final class KakaoApiStubs {
                         """.formatted(resultCode))));
     }
 
-    /**
-     * 지오코딩 — 연결이 끊긴다. 서버가 내려갔거나 중간 네트워크가 끊긴 상황으로, 상태코드조차
-     * 받지 못하는 갈래라 5xx 응답과는 다르다.
-     */
-    public static void stubKeywordSearchConnectionReset(WireMockServer kakao) {
-        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
-                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+    /** 길찾기 — 서버가 상태코드로 실패를 알린다(500, 429, 401 등). */
+    public static void stubDirectionsStatus(WireMockServer kakao, int status) {
+        kakao.stubFor(get(urlPathEqualTo(DIRECTIONS_PATH))
+                .willReturn(aResponse().withStatus(status).withBody("{\"errorType\":\"stub\"}")));
     }
 
-    /** 목적지 좌표를 직접 받은 요청이 지오코딩을 건너뛰었는지 확인한다. */
+    /**
+     * 길찾기 — 상태코드는 실패인데 본문이 JSON이 아니다. 게이트웨이·프록시가 HTML 오류
+     * 페이지를 돌려주는 실제 상황을 흉내 낸다.
+     */
+    public static void stubDirectionsNonJson(WireMockServer kakao, int status) {
+        kakao.stubFor(get(urlPathEqualTo(DIRECTIONS_PATH))
+                .willReturn(aResponse()
+                        .withStatus(status)
+                        .withHeader("Content-Type", "text/html")
+                        .withBody("<html><body>Service Unavailable</body></html>")));
+    }
+
+    /**
+     * 길찾기 — 연결이 끊긴다. 서버가 내려갔거나 중간 네트워크가 끊긴 상황으로, 상태코드조차
+     * 받지 못하는 갈래라 5xx 응답과는 다르다.
+     */
+    public static void stubDirectionsConnectionReset(WireMockServer kakao) {
+        kakao.stubFor(
+                get(urlPathEqualTo(DIRECTIONS_PATH)).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+    }
+
+    /** 길찾기 — 응답이 늦다. readTimeout(기본 10초)을 넘기면 어떻게 되는지 보기 위한 것. */
+    public static void stubDirectionsDelay(WireMockServer kakao, int delayMillis) {
+        kakao.stubFor(get(urlPathEqualTo(DIRECTIONS_PATH))
+                .willReturn(okJson("{ \"routes\": [] }").withFixedDelay(delayMillis)));
+    }
+
+    /** 이 API가 지오코딩을 거치지 않는다는 것을 확인한다. */
     public static void verifyKeywordSearchNotCalled(WireMockServer kakao) {
         kakao.verify(0, getRequestedFor(urlPathEqualTo(KEYWORD_SEARCH_PATH)));
     }

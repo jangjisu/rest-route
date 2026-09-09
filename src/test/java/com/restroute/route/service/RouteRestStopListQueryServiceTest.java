@@ -73,6 +73,7 @@ class RouteRestStopListQueryServiceTest {
         stubAggregates(Map.of());
         service = new RouteRestStopListQueryService(
                 new RouteResolverService(kakaoMapClient),
+                new DestinationResolver(),
                 restStopQueryService,
                 new RouteCoordinateReducer(),
                 new RouteRestStopMatcher(),
@@ -148,7 +149,6 @@ class RouteRestStopListQueryServiceTest {
     @Test
     @DisplayName("경로 반경 안 휴게소를 출발지 기준 거리 오름차순으로 정렬해 반환한다")
     void success_sortsByDistanceFromOrigin() {
-        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역"));
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
         RestStopEntity far = restStop("B", "B휴게소", "경부선", "127.5001", "37.5001");
@@ -156,7 +156,7 @@ class RouteRestStopListQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(far, near));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
 
         assertThat(items)
                 .extracting(RouteRestStopListItemResponse::serviceAreaCode)
@@ -167,14 +167,13 @@ class RouteRestStopListQueryServiceTest {
     @Test
     @DisplayName("반경 안에 매칭된 휴게소가 없으면 빈 목록을 반환한다(NotFound 아님)")
     void success_returnsEmptyListWhenNoRestStopMatched() {
-        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역"));
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
         RestStopEntity far = restStop("A", "A휴게소", "경부선", "130.0", "40.0");
         when(restStopQueryService.findAll()).thenReturn(List.of(far));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
 
         assertThat(items).isEmpty();
         verifyNoInteractions(restStopAggregateQueryService, evChargerQueryService);
@@ -183,7 +182,6 @@ class RouteRestStopListQueryServiceTest {
     @Test
     @DisplayName("규모·이용량 등급은 집계 조회 결과를 그대로 담는다")
     void success_includesSizeTierAndTopTrafficTierFromAggregate() {
-        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역"));
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
@@ -194,7 +192,7 @@ class RouteRestStopListQueryServiceTest {
                         null, emptyRelatedInfo(), false, false, false, false, null, null, true, SizeTier.LARGE)));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
 
         assertThat(items).singleElement().satisfies(item -> {
             assertThat(item.sizeTier()).isEqualTo(SizeTier.LARGE);
@@ -205,7 +203,6 @@ class RouteRestStopListQueryServiceTest {
     @Test
     @DisplayName("EV 충전 대수는 배치 조회 결과에서 가져오고, 0대거나 매핑이 없으면 null이다")
     void success_includesEvChargerCountFromBatchLookup() {
-        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역"));
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
         RestStopEntity hasCharger = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
@@ -214,7 +211,7 @@ class RouteRestStopListQueryServiceTest {
         when(evChargerQueryService.findActiveChargerCounts(any())).thenReturn(Map.of("A", 3, "B", 0));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
 
         assertThat(items)
                 .filteredOn(item -> item.serviceAreaCode().equals("A"))
@@ -231,14 +228,13 @@ class RouteRestStopListQueryServiceTest {
     @Test
     @DisplayName("fuelType이 없으면 전국 평균가를 조회하지 않고 유가 등급은 항상 null이다")
     void success_skipsFuelTierWhenFuelTypeAbsent() {
-        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역"));
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
 
         assertThat(items)
                 .singleElement()
@@ -250,7 +246,6 @@ class RouteRestStopListQueryServiceTest {
     @Test
     @DisplayName("fuelType이 있으면 선택한 유종 하나만 비교해 유가 등급을 계산한다")
     void success_computesFuelTierScopedToSelectedFuelType() {
-        when(kakaoMapClient.searchKeyword("부산")).thenReturn(searchResult("129.0", "35.0", "부산역"));
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
                 .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
         RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
@@ -309,7 +304,7 @@ class RouteRestStopListQueryServiceTest {
                         AverageOilPrice.of("K015", "자동차용부탄", "1,135원", "+0.01"))));
 
         List<RouteRestStopListItemResponse> items = service.findRouteRestStops(
-                37.0, 127.0, "부산", null, null, null, 1000, FuelTypeSelection.of(FuelType.DIESEL));
+                37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.of(FuelType.DIESEL));
 
         assertThat(items)
                 .filteredOn(item -> item.serviceAreaCode().equals("A"))
@@ -318,13 +313,14 @@ class RouteRestStopListQueryServiceTest {
                 .isEqualTo(FuelPriceTier.BELOW_AVERAGE);
     }
 
+    /** 좌표 없이 온 이름은 PopularDestination에서만 찾는다 — 외부 검색으로 넘어가지 않는다. */
     @Test
-    @DisplayName("목적지 검색 결과가 없으면 기존과 동일하게 NotFound다")
-    void destinationNotFound_throwsNotFound() {
-        when(kakaoMapClient.searchKeyword("없는곳")).thenReturn(new KakaoLocalSearchResponse(List.of()));
-
-        assertThatThrownBy(() ->
-                        service.findRouteRestStops(37.0, 127.0, "없는곳", null, null, null, 1000, FuelTypeSelection.NONE))
+    @DisplayName("서버가 좌표를 모르는 목적지 이름이면 카카오를 부르지 않고 NotFound다")
+    void unknownDestinationName_throwsNotFoundWithoutCallingKakao() {
+        assertThatThrownBy(
+                        () -> service.findRouteRestStops(37.0, 127.0, null, null, "없는곳", 1000, FuelTypeSelection.NONE))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
+
+        verifyNoInteractions(kakaoMapClient);
     }
 }

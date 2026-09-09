@@ -163,10 +163,9 @@ class RouteRestStopControllerTest {
         when(routeRestStopListQueryService.findRouteRestStops(
                         eq(37.0),
                         eq(127.0),
-                        eq("부산"),
                         any(),
                         any(),
-                        any(),
+                        eq("부산역"),
                         eq(1000),
                         eq(FuelTypeSelection.of(FuelType.DIESEL))))
                 .thenReturn(response);
@@ -174,7 +173,7 @@ class RouteRestStopControllerTest {
         mockMvc.perform(get("/api/route-rest-stops/list")
                         .param("originLat", "37.0")
                         .param("originLng", "127.0")
-                        .param("destinationQuery", "부산")
+                        .param("destinationName", "부산역")
                         .param("fuelType", "DIESEL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
@@ -187,13 +186,13 @@ class RouteRestStopControllerTest {
     @DisplayName("GET /api/route-rest-stops/list는 fuelType 없이도 동작한다")
     void getRouteRestStopList_worksWithoutFuelType() throws Exception {
         when(routeRestStopListQueryService.findRouteRestStops(
-                        eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000), eq(FuelTypeSelection.NONE)))
+                        eq(37.0), eq(127.0), any(), any(), eq("부산역"), eq(1000), eq(FuelTypeSelection.NONE)))
                 .thenReturn(List.of());
 
         mockMvc.perform(get("/api/route-rest-stops/list")
                         .param("originLat", "37.0")
                         .param("originLng", "127.0")
-                        .param("destinationQuery", "부산"))
+                        .param("destinationName", "부산역"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
     }
