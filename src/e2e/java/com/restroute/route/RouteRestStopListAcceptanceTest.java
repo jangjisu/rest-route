@@ -4,10 +4,12 @@ import static com.restroute.support.KakaoApiStubs.stubDirections;
 import static com.restroute.support.KakaoApiStubs.stubDirectionsResultCode;
 import static com.restroute.support.KakaoApiStubs.stubDirectionsStatus;
 import static com.restroute.support.KakaoApiStubs.stubKeywordSearch;
+import static com.restroute.support.KakaoApiStubs.stubKeywordSearchConnectionReset;
 import static com.restroute.support.KakaoApiStubs.stubKeywordSearchDelay;
 import static com.restroute.support.KakaoApiStubs.stubKeywordSearchEmpty;
 import static com.restroute.support.KakaoApiStubs.stubKeywordSearchNonJson;
 import static com.restroute.support.KakaoApiStubs.stubKeywordSearchStatus;
+import static com.restroute.support.KakaoApiStubs.verifyKeywordSearchNotCalled;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -85,6 +87,46 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
                 .body("data[0].unitName", equalTo(ON_ROUTE_NAME));
     }
 
+    /**
+     * 인기 목적지 칩(부산역·대전역 등)과 검색 결과 선택이 타는 경로. 좌표를 이미 알고 있으니
+     * 지오코딩을 건너뛴다 — 카카오 호출이 2회가 아니라 1회인 다른 실행 경로다.
+     */
+    @Test
+    @DisplayName("목적지 좌표를 직접 주면 지오코딩을 거치지 않는다")
+    void destinationCoordinatesGiven_skipsGeocoding() {
+        saveRestStop(ON_ROUTE_NAME, "126.9880", "37.5565");
+        stubDirections(KAKAO, 1_500L, ROUTE_VERTEXES);
+
+        given().param("originLat", ORIGIN_LATITUDE)
+                .param("originLng", ORIGIN_LONGITUDE)
+                .param("destinationLat", 35.1148)
+                .param("destinationLng", 129.0403)
+                .param("destinationName", "부산역")
+                .when()
+                .get("/api/route-rest-stops/list")
+                .then()
+                .statusCode(SUCCESS_STATUS)
+                .body("data", hasSize(1));
+
+        verifyKeywordSearchNotCalled(KAKAO);
+    }
+
+    /** 휴게소가 없는 지역으로 검색하면 나오는 결과. 실패가 아니라 빈 목록이다. */
+    @Test
+    @DisplayName("경로 반경 안에 휴게소가 없으면 실패가 아니라 빈 목록이 나간다")
+    void noRestStopNearRoute_respondsEmptyList() {
+        saveRestStop(OFF_ROUTE_NAME, "127.5000", "37.9000");
+
+        stubKeywordSearch(KAKAO, "부산역", 129.0403, 35.1148);
+        stubDirections(KAKAO, 1_500L, ROUTE_VERTEXES);
+
+        requestRouteRestStops()
+                .then()
+                .statusCode(SUCCESS_STATUS)
+                .body("code", equalTo("SUCCESS"))
+                .body("data", hasSize(0));
+    }
+
     // --- 비즈니스적 실패: 404 + 구체적 안내 문구 -------------------------------
 
     @Test
@@ -110,6 +152,45 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
                 .statusCode(NOT_FOUND_STATUS)
                 .body("code", equalTo("NOT_FOUND"))
                 .body("message", equalTo("출발지와 도착지가 너무 가까워요. 좀 더 떨어진 위치를 선택해주세요."));
+    }
+
+    /** 산·바다 한가운데서 GPS가 잡히면 실제로 나오는 상황. 사용자는 출발지를 옮겨야 한다. */
+    @Test
+    @DisplayName("출발지 주변에 도로가 없으면 출발지를 바꾸라고 안내한다")
+    void originHasNoNearbyRoad_responds404WithOriginGuidance() {
+        stubKeywordSearch(KAKAO, "부산역", 129.0403, 35.1148);
+        stubDirectionsResultCode(KAKAO, 101);
+
+        requestRouteRestStops()
+                .then()
+                .statusCode(NOT_FOUND_STATUS)
+                .body("message", equalTo("출발지 주변에서 도로를 찾지 못했어요. 출발지를 도로에 가까운 위치로 바꿔주세요."));
+    }
+
+    /** 위와 원인이 갈리는 지점 — 사용자가 고쳐야 할 대상이 출발지가 아니라 도착지다. */
+    @Test
+    @DisplayName("도착지 주변에 도로가 없으면 도착지를 바꾸라고 안내한다")
+    void destinationHasNoNearbyRoad_responds404WithDestinationGuidance() {
+        stubKeywordSearch(KAKAO, "부산역", 129.0403, 35.1148);
+        stubDirectionsResultCode(KAKAO, 102);
+
+        requestRouteRestStops()
+                .then()
+                .statusCode(NOT_FOUND_STATUS)
+                .body("message", equalTo("도착지 주변에서 도로를 찾지 못했어요. 도착지를 도로에 가까운 위치로 바꿔주세요."));
+    }
+
+    /** 카카오가 우리가 모르는 코드를 새로 내보내도 안내 없이 끝나지 않는다. */
+    @Test
+    @DisplayName("모르는 결과 코드가 와도 기본 안내 문구로 떨어진다")
+    void unknownRouteResultCode_respondsDefaultGuidance() {
+        stubKeywordSearch(KAKAO, "부산역", 129.0403, 35.1148);
+        stubDirectionsResultCode(KAKAO, 999);
+
+        requestRouteRestStops()
+                .then()
+                .statusCode(NOT_FOUND_STATUS)
+                .body("message", equalTo("경로를 찾지 못했어요. 출발지와 도착지를 다시 확인해주세요."));
     }
 
     // --- 외부 API 실패: 원인과 무관하게 200 + EXTERNAL_API_UNAVAILABLE ---------
@@ -150,6 +231,18 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
         stubDirectionsStatus(KAKAO, 500);
 
         requestRouteRestStops().then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
+    }
+
+    /** 상태코드조차 못 받는 갈래 — 서버가 내려갔거나 중간 네트워크가 끊긴 상황. */
+    @Test
+    @DisplayName("연결이 끊겨도 상태코드 실패와 같은 응답이 된다")
+    void connectionReset_respondsExternalApiUnavailable() {
+        stubKeywordSearchConnectionReset(KAKAO);
+
+        requestRouteRestStops()
+                .then()
+                .statusCode(SUCCESS_STATUS)
+                .body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
     }
 
     // --- 타임아웃 -----------------------------------------------------------

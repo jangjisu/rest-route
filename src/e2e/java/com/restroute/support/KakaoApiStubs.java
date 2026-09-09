@@ -2,10 +2,12 @@ package com.restroute.support;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.http.Fault;
 import java.util.StringJoiner;
 
 /**
@@ -111,6 +113,20 @@ public final class KakaoApiStubs {
         kakao.stubFor(get(urlPathEqualTo(DIRECTIONS_PATH)).willReturn(okJson("""
                         { "routes": [ { "result_code": %d, "result_msg": "stub" } ] }
                         """.formatted(resultCode))));
+    }
+
+    /**
+     * 지오코딩 — 연결이 끊긴다. 서버가 내려갔거나 중간 네트워크가 끊긴 상황으로, 상태코드조차
+     * 받지 못하는 갈래라 5xx 응답과는 다르다.
+     */
+    public static void stubKeywordSearchConnectionReset(WireMockServer kakao) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
+                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+    }
+
+    /** 목적지 좌표를 직접 받은 요청이 지오코딩을 건너뛰었는지 확인한다. */
+    public static void verifyKeywordSearchNotCalled(WireMockServer kakao) {
+        kakao.verify(0, getRequestedFor(urlPathEqualTo(KEYWORD_SEARCH_PATH)));
     }
 
     private static String join(double... vertexes) {
