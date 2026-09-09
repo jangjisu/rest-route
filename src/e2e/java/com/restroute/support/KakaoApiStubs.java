@@ -1,5 +1,6 @@
 package com.restroute.support;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -65,6 +66,51 @@ public final class KakaoApiStubs {
                           ]
                         }
                         """.formatted(RESULT_CODE_SUCCESS, distanceMeters, join(vertexes)))));
+    }
+
+    /** 지오코딩 — 검색 결과가 하나도 없는 정상 응답(장애가 아니라 "못 찾음"이다). */
+    public static void stubKeywordSearchEmpty(WireMockServer kakao) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH)).willReturn(okJson("{ \"documents\": [] }")));
+    }
+
+    /** 지오코딩 — 서버가 상태코드로 실패를 알린다(500, 429, 401 등). */
+    public static void stubKeywordSearchStatus(WireMockServer kakao, int status) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
+                .willReturn(aResponse().withStatus(status).withBody("{\"errorType\":\"stub\"}")));
+    }
+
+    /**
+     * 지오코딩 — 상태코드는 실패인데 본문이 JSON이 아니다. 게이트웨이·프록시가 HTML 오류
+     * 페이지를 돌려주는 실제 상황을 흉내 낸다.
+     */
+    public static void stubKeywordSearchNonJson(WireMockServer kakao, int status) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
+                .willReturn(aResponse()
+                        .withStatus(status)
+                        .withHeader("Content-Type", "text/html")
+                        .withBody("<html><body>Service Unavailable</body></html>")));
+    }
+
+    /** 지오코딩 — 응답이 늦다. readTimeout(기본 10초)을 넘기면 어떻게 되는지 보기 위한 것. */
+    public static void stubKeywordSearchDelay(WireMockServer kakao, int delayMillis) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
+                .willReturn(okJson("{ \"documents\": [] }").withFixedDelay(delayMillis)));
+    }
+
+    /** 길찾기 — 서버가 상태코드로 실패를 알린다. */
+    public static void stubDirectionsStatus(WireMockServer kakao, int status) {
+        kakao.stubFor(get(urlPathEqualTo(DIRECTIONS_PATH))
+                .willReturn(aResponse().withStatus(status).withBody("{\"errorType\":\"stub\"}")));
+    }
+
+    /**
+     * 길찾기 — HTTP는 200인데 result_code가 0이 아니다. 카카오가 "경로를 못 찾았다"를
+     * 알리는 방식이라 HTTP 실패와는 갈래가 다르다.
+     */
+    public static void stubDirectionsResultCode(WireMockServer kakao, int resultCode) {
+        kakao.stubFor(get(urlPathEqualTo(DIRECTIONS_PATH)).willReturn(okJson("""
+                        { "routes": [ { "result_code": %d, "result_msg": "stub" } ] }
+                        """.formatted(resultCode))));
     }
 
     private static String join(double... vertexes) {
