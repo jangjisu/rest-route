@@ -12,6 +12,7 @@ import com.restroute.reststop.service.RestStopQueryService;
 import com.restroute.reststop.service.dto.RestStopAggregate;
 import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopListItemResponse;
+import com.restroute.route.controller.response.RouteRestStopResponse.Destination;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
 import com.restroute.route.service.RouteResolverService.RawRouteResult;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Service;
 public class RouteRestStopListQueryService {
 
     private final RouteResolverService routeResolverService;
+    private final DestinationResolver destinationResolver;
     private final RestStopQueryService restStopQueryService;
     private final RouteCoordinateReducer routeCoordinateReducer;
     private final RouteRestStopMatcher routeRestStopMatcher;
@@ -50,19 +52,14 @@ public class RouteRestStopListQueryService {
     public List<RouteRestStopListItemResponse> findRouteRestStops(
             double originLatitude,
             double originLongitude,
-            String destinationQuery,
             Double destinationLatitude,
             Double destinationLongitude,
             String destinationName,
             int radiusMeters,
             FuelTypeSelection fuelSelection) {
-        RawRouteResult raw = routeResolverService.resolveDestinationAndRoute(
-                originLatitude,
-                originLongitude,
-                destinationQuery,
-                destinationLatitude,
-                destinationLongitude,
-                destinationName);
+        Destination destination =
+                destinationResolver.resolve(destinationLatitude, destinationLongitude, destinationName);
+        RawRouteResult raw = routeResolverService.resolveRoute(originLatitude, originLongitude, destination);
         RouteGeometry firstRoute = firstReducedRoute(raw.routes());
 
         List<RestStopEntity> allRestStops = restStopQueryService.findAll();

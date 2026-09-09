@@ -25,7 +25,12 @@
 │       ├── rest-stop.md
 │       ├── route.md
 │       ├── ev-charger.md
-│       └── finder.md
+│       └── finder/          ← 200줄을 넘겨 분할한 예
+│           ├── finder.md    ← 진입 문서(목적·범위 + group 라우팅)
+│           ├── concepts/
+│           ├── flows/
+│           ├── policies/
+│           └── contracts/
 └── src/
 ```
 

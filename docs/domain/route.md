@@ -18,15 +18,18 @@ sources: []
 목록으로 돌려주는 기능. 카카오 대안 경로(alternatives)까지 지원하며, 각 휴게소에 이미지·EV
 충전·테마/이벤트·유가 비교·추천 태그 등 부가 정보를 붙여서 응답한다.
 
-포함: 목적지 지오코딩, 카카오 길찾기 호출, 경로 좌표 축소, 반경 기반 휴게소 매칭, 상·하행
-방향 판별, 휴게소 detail 부착.
+포함: 목적지 지오코딩(지도 화면 진입점 한정), 카카오 길찾기 호출, 경로 좌표 축소, 반경 기반
+휴게소 매칭, 상·하행 방향 판별, 휴게소 detail 부착.
 제외: 실제 내비게이션(턴바이턴 안내), 휴게소 마스터 데이터 자체의 편집(→ `rest-stop`/`admin`
 도메인 소관), 지도 렌더링 자체(→ `place-search-and-map-config`).
 
 ## 2. 용어와 핵심 엔티티
 
-- **Destination**: 목적지(name, latitude, longitude). 좌표가 직접 오면 그대로 쓰고, 없으면
-  `destinationQuery`를 카카오 키워드 검색으로 지오코딩해서 만든다.
+- **Destination**: 목적지(name, latitude, longitude). 만드는 방법은 진입점에 따라 다르다 —
+  지도 화면은 좌표가 없으면 `destinationQuery`를 카카오 키워드 검색으로 지오코딩하고, finder
+  목록은 지오코딩 없이 좌표를 그대로 쓰거나 `PopularDestination`에서 이름으로 찾는다.
+- **PopularDestination**: finder 목적지 칩이 가리키는 고정 목적지(표시명 + 좌표) enum. 칩은 손으로
+  고른 소수의 역이라 값이 바뀌지 않으므로, 이름을 받을 때마다 지오코딩하는 대신 좌표를 함께 둔다.
 - **RawRouteResult**: 목적지 해석 + 카카오 길찾기 원본 응답(`List<KakaoDirectionsResponse.Route>`).
   아직 좌표가 축소되지 않은 상태.
 - **RouteGeometry**: `(RoutePath, Summary)`. 축소된 좌표열과 거리/시간/통행료 요약.
@@ -47,6 +50,8 @@ sources: []
    확정하고(좌표 직접 지정 또는 `KakaoMapClient.searchKeyword()` 지오코딩), 카카오
    `getDirections()`를 호출해 원본 경로(들)를 받는다. 길찾기 자체가 실패하면(`result_code`
    비정상) 여기서 바로 `RouteRestStopNotFoundException`으로 끝난다.
+   finder 목록 진입점은 이 단계를 타지 않는다 — `DestinationResolver`가 외부 호출 없이 목적지를
+   정하고, 길찾기만 하는 `RouteResolverService.resolveRoute()`로 넘긴다.
 2. **좌표 개수 줄이기** — `RouteCoordinateReducer.reduce()`가 대안 경로마다 원본 폴리라인을
    200m 간격/최소 300점 기준으로 균등 샘플링(uniform sampling)해 축소한다. 축소 후 폴리라인이
    빈 경로는 그 경로만 제외하고, 전부 비면 예외로 끝낸다.
@@ -75,8 +80,14 @@ sources: []
   근접거리 계산이 매 휴게소마다 전체 정점을 순회하므로 성능을 위한 절충.
 - 길찾기 실패 시 `result_code`별로 안내 메시지를 구분한다: 101/105(출발지 주변 도로 없음),
   102/106(도착지 주변 도로 없음), 104(출발지·도착지가 너무 가까움), 그 외 일반 실패 메시지.
-- 목적지 좌표가 함께 오면 지오코딩을 건너뛴다(좌표 우선). 좌표가 일부만 오면 `destinationQuery`
-  지오코딩으로 폴백한다. 표시명이 비어있으면 `"목적지"` 기본값을 쓴다.
+- 목적지 좌표가 함께 오면 지오코딩을 건너뛴다(좌표 우선). 표시명이 비어있으면 `"목적지"`
+  기본값을 쓴다. 좌표가 일부만 왔을 때의 폴백은 진입점에 따라 갈린다 — 지도 화면은
+  `destinationQuery` 지오코딩으로, finder 목록은 `PopularDestination` 이름 조회로 떨어진다.
+- **finder 목록 진입점은 지오코딩을 하지 않는다.** 목적지를 좌표 또는 서버가 좌표를 아는
+  이름으로만 받으므로 외부 호출이 길찾기 1회로 끝나고, 카카오 장소 검색 장애가 이 화면을
+  막지 못한다. 자유 검색어를 좌표로 바꾸는 일은 [[place-search-and-map-config]]의
+  `/api/place-search`가 맡고, 그 결과 좌표가 이 진입점으로 들어온다. 서버가 모르는 이름이면
+  외부 호출 없이 `RouteRestStopNotFoundException`으로 끝난다.
 - 이미지/EV/테마/이벤트 집계는 대안 경로 전체에 대해 **한 번만** 조회한다(경로마다 반복 조회하지
   않음) — `RouteOptionAssemblyService.aggregatesForCandidates()`.
 
@@ -105,7 +116,8 @@ sources: []
 - **KakaoMapClient**: `searchKeyword(query)`(키워드 장소 검색, 지오코딩용) /
   `getDirections(origin, destination)`(길찾기, 대안 경로 포함) 두 메서드를 호출한다. 좌표
   포맷은 `RouteCoordinateFormat.toParam(lng, lat)`(경도,위도 순서 문자열)를 통해 카카오 API
-  규격에 맞춘다.
+  규격에 맞춘다. `searchKeyword`는 지도 화면 진입점만 쓴다 — finder 목록은 `getDirections`
+  하나만 부른다.
 - 응답의 `result_code`가 0이 아니면 실패로 간주(`KakaoDirectionsResponse.failedToRoute()`).
 
 ## 8. 코드 경계와 진입점
@@ -115,7 +127,8 @@ sources: []
 - **오케스트레이터**: `RouteRestStopService` — 4단계(좌표 얻기 → 좌표 축소 → 방향 매칭 →
   detail 조립)를 이름 붙은 메서드 호출로 그대로 노출한다(각 단계 구현은 아래 협력자에 위임).
 - **협력자(`@Component`, 의존성 없는 순수 알고리즘)**: `RouteCoordinateReducer`(좌표 축소),
-  `RouteRestStopMatcher`(반경/방향 매칭).
+  `RouteRestStopMatcher`(반경/방향 매칭), `DestinationResolver`(외부 호출 없는 목적지 해석).
+- **도메인**: `domain/PopularDestination` — finder 목적지 칩의 표시명과 좌표.
 - **협력자(`@Service`, 외부 자원/다른 서비스 의존)**: `RouteResolverService`(카카오 API 호출),
   `RouteOptionAssemblyService`(집계 조회 + 비교/추천 조립), `RouteRestStopComparisonSummaryService`,
   `RouteRestStopRecommendationTagService`.
@@ -125,10 +138,13 @@ sources: []
 - 이 도메인은 `FlightSearchService`(`flight` 도메인)의 "얇은 오케스트레이터 + 이름 붙은
   단계별 협력자" 구성을 참고해 리팩토링된 것으로, 그 패턴을 따르는 두 번째 사례다.
 - **finder mode2 전용 진입점**([[finder]] 소비, 상세는 그 문서 참고): `RouteRestStopController.
-  getRouteRestStopList()`(`GET /api/route-rest-stops/list`)는 위 1~5단계 중 좌표/경로 관련 부품
-  (`RouteResolverService`/`RouteCoordinateReducer`/`RouteRestStopMatcher`)만 재사용하고,
-  `RouteOptionAssemblyService`는 거치지 않는다 — 대신 `RouteRestStopListQueryService`가 대안 경로 중
-  첫 번째만 골라 거리(서버 계산)·유가(`RouteRestStopFuelTierCalculator`, 요청 유종 1개만 스코프)를 직접
-  조립한다. 기존 `getRouteRestStops()`(지도 화면용, 대안 경로 전체·이미지·먹거리 포함)는 계약을 그대로
-  유지하려고 손대지 않았다 — 계약이 달라져야 할 때는 기존 진입점을 고치지 않고 새 진입점을 추가한다는
-  판단.
+  getRouteRestStopList()`(`GET /api/route-rest-stops/list`, 파라미터: originLat/Lng,
+  destinationLat/Lng, destinationName, radiusMeters, fuelType)는 위 1~5단계 중 좌표/경로 관련 부품
+  (`RouteCoordinateReducer`/`RouteRestStopMatcher`)만 재사용하고, `RouteOptionAssemblyService`는
+  거치지 않는다 — 대신 `RouteRestStopListQueryService`가 대안 경로 중 첫 번째만 골라 거리(서버 계산)·
+  유가(`RouteRestStopFuelTierCalculator`, 요청 유종 1개만 스코프)를 직접 조립한다.
+  목적지 해석은 `RouteResolverService`가 아니라 `DestinationResolver`가 맡고, 길찾기만
+  `RouteResolverService.resolveRoute()`로 넘긴다 — 이 진입점은 `destinationQuery`를 받지 않으며
+  지오코딩을 거치지 않는다(§4 참고). 기존 `getRouteRestStops()`(지도 화면용, 대안 경로 전체·이미지·
+  먹거리 포함)는 자유 검색어를 받아야 해서 지오코딩을 그대로 유지한다 — 계약이 달라져야 할 때는
+  기존 진입점을 고치지 않고 새 진입점을 추가한다는 판단.

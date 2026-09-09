@@ -60,7 +60,7 @@ export function initializeDestinationRecommendation(document, { openDetail }) {
         button.className = 'finder-chip';
         button.textContent = chip.label;
         button.addEventListener('click', () =>
-            loadResults({ destinationQuery: chip.destinationQuery, displayLabel: chip.label })
+            loadResults({ destinationName: chip.destinationName, displayLabel: chip.label })
         );
         destinationChipsEl?.appendChild(button);
     });
@@ -142,7 +142,7 @@ export function initializeDestinationRecommendation(document, { openDetail }) {
         }
     });
 
-    function loadResults({ destinationQuery, destinationLat, destinationLng, destinationName, displayLabel }) {
+    function loadResults({ destinationLat, destinationLng, destinationName, displayLabel }) {
         if (!origin) {
             showScreen(document, 'landing');
             return;
@@ -151,7 +151,6 @@ export function initializeDestinationRecommendation(document, { openDetail }) {
         routeRestStopListRequest.load({
             originLat: origin.latitude,
             originLng: origin.longitude,
-            destinationQuery,
             destinationLat,
             destinationLng,
             destinationName,
