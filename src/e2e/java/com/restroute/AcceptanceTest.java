@@ -39,9 +39,16 @@ public abstract class AcceptanceTest {
     /** 카카오 로컬·모빌리티가 같은 서버 하나를 공유한다 — 경로가 서로 달라 충돌하지 않는다. */
     protected static final WireMockServer KAKAO = new WireMockServer(options().dynamicPort());
 
+    /**
+     * 고속도로 공공 API(ExApi). 카카오와 서버를 나눈 건 경로 충돌 때문이 아니라, 한 요청이 두
+     * 외부를 부를 때 <b>어느 쪽을 죽였는지</b>가 시나리오에서 분명해야 해서다.
+     */
+    protected static final WireMockServer EX_API = new WireMockServer(options().dynamicPort());
+
     static {
         DATABASE.start();
         KAKAO.start();
+        EX_API.start();
     }
 
     @LocalServerPort
@@ -51,15 +58,17 @@ public abstract class AcceptanceTest {
     private DatabaseCleaner databaseCleaner;
 
     @DynamicPropertySource
-    static void kakaoApiUrls(DynamicPropertyRegistry registry) {
+    static void externalApiUrls(DynamicPropertyRegistry registry) {
         registry.add("kakao.local.url", KAKAO::baseUrl);
         registry.add("kakao.navi.url", KAKAO::baseUrl);
+        registry.add("ex.api.url", EX_API::baseUrl);
     }
 
     @BeforeEach
     void setUpAcceptance() {
         RestAssured.port = port;
         KAKAO.resetAll();
+        EX_API.resetAll();
         databaseCleaner.clear();
     }
 }
