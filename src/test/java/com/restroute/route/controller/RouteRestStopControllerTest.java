@@ -3,7 +3,6 @@ package com.restroute.route.controller;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -81,7 +80,7 @@ class RouteRestStopControllerTest {
                                 false,
                                 null,
                                 null)))));
-        when(routeRestStopService.findRouteRestStops(eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000)))
+        when(routeRestStopService.findRouteRestStops(eq(37.0), eq(127.0), eq("부산"), any(), any(), any()))
                 .thenReturn(response);
 
         mockMvc.perform(get("/api/route-rest-stops")
@@ -113,7 +112,7 @@ class RouteRestStopControllerTest {
                         0,
                         new RouteSummary(100L, 200L, 0L, List.of(List.of(127.0, 37.0))),
                         List.of(new RouteRestStopItem("A", "A휴게소", "경부선", 37.0, 127.0, 12L)))));
-        when(routeRestStopService.findRouteRestStops(eq(37.0), eq(127.0), eq("부산"), any(), any(), any(), eq(1000)))
+        when(routeRestStopService.findRouteRestStops(eq(37.0), eq(127.0), eq("부산"), any(), any(), any()))
                 .thenReturn(response);
 
         mockMvc.perform(get("/api/route-rest-stops")
@@ -128,8 +127,7 @@ class RouteRestStopControllerTest {
     @Test
     @DisplayName("목적지를 찾지 못하면 404 NOT_FOUND를 반환한다")
     void notFound_returns404() throws Exception {
-        when(routeRestStopService.findRouteRestStops(
-                        anyDouble(), anyDouble(), anyString(), any(), any(), any(), anyInt()))
+        when(routeRestStopService.findRouteRestStops(anyDouble(), anyDouble(), anyString(), any(), any(), any()))
                 .thenThrow(RouteRestStopNotFoundException.destinationNotFound("없는곳"));
 
         mockMvc.perform(get("/api/route-rest-stops")
@@ -143,8 +141,7 @@ class RouteRestStopControllerTest {
     @Test
     @DisplayName("카카오 호출 실패 시 EXTERNAL_API_UNAVAILABLE를 반환한다")
     void kakaoFailure_returnsExternalUnavailable() throws Exception {
-        when(routeRestStopService.findRouteRestStops(
-                        anyDouble(), anyDouble(), anyString(), any(), any(), any(), anyInt()))
+        when(routeRestStopService.findRouteRestStops(anyDouble(), anyDouble(), anyString(), any(), any(), any()))
                 .thenThrow(new KakaoApiException("directions", "boom"));
 
         mockMvc.perform(get("/api/route-rest-stops")
@@ -161,13 +158,7 @@ class RouteRestStopControllerTest {
         List<RouteRestStopListItemResponse> response =
                 List.of(RouteRestStopListItemResponse.of("A", "A휴게소", "경부선", 850.5, null, true, 3, null));
         when(routeRestStopListQueryService.findRouteRestStops(
-                        eq(37.0),
-                        eq(127.0),
-                        any(),
-                        any(),
-                        eq("부산역"),
-                        eq(1000),
-                        eq(FuelTypeSelection.of(FuelType.DIESEL))))
+                        eq(37.0), eq(127.0), any(), any(), eq("부산역"), eq(FuelTypeSelection.of(FuelType.DIESEL))))
                 .thenReturn(response);
 
         mockMvc.perform(get("/api/route-rest-stops/list")
@@ -186,7 +177,7 @@ class RouteRestStopControllerTest {
     @DisplayName("GET /api/route-rest-stops/list는 fuelType 없이도 동작한다")
     void getRouteRestStopList_worksWithoutFuelType() throws Exception {
         when(routeRestStopListQueryService.findRouteRestStops(
-                        eq(37.0), eq(127.0), any(), any(), eq("부산역"), eq(1000), eq(FuelTypeSelection.NONE)))
+                        eq(37.0), eq(127.0), any(), any(), eq("부산역"), eq(FuelTypeSelection.NONE)))
                 .thenReturn(List.of());
 
         mockMvc.perform(get("/api/route-rest-stops/list")

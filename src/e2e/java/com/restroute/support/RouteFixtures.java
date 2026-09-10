@@ -28,7 +28,7 @@ public final class RouteFixtures {
     public static final String ON_ROUTE_NAME = "경로위휴게소";
     public static final String OFF_ROUTE_NAME = "경로밖휴게소";
 
-    /** 서버가 좌표를 알고 있는 목적지(칩). 이름만 넘겨도 지오코딩 없이 좌표가 나와야 한다. */
+    /** 서버가 좌표를 알고 있는 목적지(칩). 이름만 넘겨도 좌표가 나와야 한다. */
     public static final String KNOWN_DESTINATION_NAME = "부산역";
 
     /** 칩 목록에 없는 이름. 서버가 좌표를 알 방법이 없으므로 실패해야 한다. */

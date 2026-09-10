@@ -7,14 +7,18 @@ import static com.restroute.support.KakaoApiStubs.stubDirectionsNonJson;
 import static com.restroute.support.KakaoApiStubs.stubDirectionsResultCode;
 import static com.restroute.support.KakaoApiStubs.stubDirectionsStatus;
 import static com.restroute.support.KakaoApiStubs.verifyKeywordSearchNotCalled;
+import static com.restroute.support.RouteFixtures.DESTINATION_LATITUDE;
+import static com.restroute.support.RouteFixtures.DESTINATION_LONGITUDE;
+import static com.restroute.support.RouteFixtures.KNOWN_DESTINATION_NAME;
 import static com.restroute.support.RouteFixtures.ON_ROUTE_NAME;
+import static com.restroute.support.RouteFixtures.ORIGIN_LATITUDE;
+import static com.restroute.support.RouteFixtures.ORIGIN_LONGITUDE;
 import static com.restroute.support.RouteFixtures.ROUTE_DISTANCE_METERS;
 import static com.restroute.support.RouteFixtures.ROUTE_VERTEXES;
 import static com.restroute.support.RouteFixtures.UNKNOWN_DESTINATION_NAME;
 import static com.restroute.support.RouteFixtures.saveOffRouteRestStop;
 import static com.restroute.support.RouteFixtures.saveOnRouteRestStop;
-import static com.restroute.support.RouteRestStopListApi.getByDestinationCoordinates;
-import static com.restroute.support.RouteRestStopListApi.getByDestinationName;
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -22,8 +26,10 @@ import static org.hamcrest.Matchers.nullValue;
 
 import com.restroute.AcceptanceTest;
 import com.restroute.reststop.repository.RestStopRepository;
+import io.restassured.response.Response;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +38,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  * finder "목적지로 추천받기"가 쓰는 {@code GET /api/route-rest-stops/list}가 카카오의 응답
  * 형태에 따라 사용자에게 무엇을 돌려주는지를 한자리에 모은다.
  *
- * <p>이 API는 <b>지오코딩을 타지 않는다</b>. 목적지를 이름으로 넘기면 서버가 알고 있는 목적지
- * 목록에서 좌표를 찾고, 좌표로 넘기면 그대로 쓴다. 그래서 외부 호출은 길찾기 <b>1회</b>뿐이고,
- * 카카오 로컬(장소 검색)은 이 경로에 관여하지 않는다 — 그건 별도 엔드포인트
- * {@code /api/place-search}의 몫이다.
+ * <p>목적지를 이름으로 넘기면 서버가 아는 목적지 목록에서 좌표를 찾고, 좌표로 넘기면 그대로 쓴다.
+ * 그래서 이 API가 부르는 외부 호출은 길찾기 <b>1회</b>이며, 그 사실 자체를
+ * {@code verifyKeywordSearchNotCalled}로 확인한다.
  *
  * <p>반경·상하행·좌표축소 같은 <b>규칙</b>은 단위 테스트 23개가 이미 덮고 있다
  * ({@code RouteRestStopMatcherTest}, {@code RouteCoordinateReducerTest},
@@ -47,6 +52,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  * {@code harness/runs/current/external-api-failure-as-is.md} 참고.
  */
 class RouteRestStopListAcceptanceTest extends AcceptanceTest {
+
+    private static final String PATH = "/api/route-rest-stops/list";
 
     private static final String EXTERNAL_API_UNAVAILABLE = "EXTERNAL_API_UNAVAILABLE";
     private static final int SUCCESS_STATUS = 200;
@@ -60,12 +67,38 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     @Autowired
     private RestStopRepository restStopRepository;
 
+    private Response get(Map<String, Object> params) {
+        return given().params(params).when().get(PATH);
+    }
+
+    /** 서버가 좌표를 알고 있는 목적지를 이름으로 지정한다. */
+    private Map<String, Object> destinationNameParams() {
+        return destinationNameParams(KNOWN_DESTINATION_NAME);
+    }
+
+    private Map<String, Object> destinationNameParams(String destinationName) {
+        return Map.of(
+                "originLat", ORIGIN_LATITUDE,
+                "originLng", ORIGIN_LONGITUDE,
+                "destinationName", destinationName);
+    }
+
+    /** 목적지를 좌표로 지정한다. 이름은 화면 표시용으로 함께 보낸다. */
+    private Map<String, Object> destinationCoordinateParams() {
+        return Map.of(
+                "originLat", ORIGIN_LATITUDE,
+                "originLng", ORIGIN_LONGITUDE,
+                "destinationLat", DESTINATION_LATITUDE,
+                "destinationLng", DESTINATION_LONGITUDE,
+                "destinationName", KNOWN_DESTINATION_NAME);
+    }
+
     // --- 정상 ---------------------------------------------------------------
 
-    /** 목적지 칩이 타는 방식. 서버가 이름만으로 좌표를 알아야 하므로 지오코딩이 필요 없다. */
+    /** 목적지 칩이 타는 방식. 서버가 이름만으로 좌표를 안다. */
     @Test
-    @DisplayName("목적지 이름만 줘도 지오코딩 없이 경로 반경 안의 휴게소를 돌려준다")
-    void destinationName_resolvesWithoutGeocoding() {
+    @DisplayName("목적지 이름만 줘도 장소 검색 없이 경로 반경 안의 휴게소를 돌려준다")
+    void destinationName_resolvesWithoutPlaceSearch() {
         saveOnRouteRestStop(restStopRepository);
         // 경로 밖 휴게소가 빠지는 것이 반경 필터가 실제로 돌았다는 증거다.
         // 하나만 두면 필터가 고장나도 통과해버려 아무것도 증명하지 못한다.
@@ -73,7 +106,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
 
         stubDirections(KAKAO, ROUTE_DISTANCE_METERS, ROUTE_VERTEXES);
 
-        getByDestinationName()
+        get(destinationNameParams())
                 .then()
                 .statusCode(SUCCESS_STATUS)
                 .body("code", equalTo("SUCCESS"))
@@ -85,12 +118,12 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
 
     /** 검색창에 직접 입력하고 후보를 골랐을 때 타는 방식. 프론트가 이미 좌표를 들고 있다. */
     @Test
-    @DisplayName("목적지 좌표를 직접 줘도 지오코딩 없이 같은 결과를 돌려준다")
-    void destinationCoordinates_resolveWithoutGeocoding() {
+    @DisplayName("목적지 좌표를 직접 줘도 장소 검색 없이 같은 결과를 돌려준다")
+    void destinationCoordinates_resolveWithoutPlaceSearch() {
         saveOnRouteRestStop(restStopRepository);
         stubDirections(KAKAO, ROUTE_DISTANCE_METERS, ROUTE_VERTEXES);
 
-        getByDestinationCoordinates()
+        get(destinationCoordinateParams())
                 .then()
                 .statusCode(SUCCESS_STATUS)
                 .body("data", hasSize(1))
@@ -106,7 +139,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
         saveOffRouteRestStop(restStopRepository);
         stubDirections(KAKAO, ROUTE_DISTANCE_METERS, ROUTE_VERTEXES);
 
-        getByDestinationName()
+        get(destinationNameParams())
                 .then()
                 .statusCode(SUCCESS_STATUS)
                 .body("code", equalTo("SUCCESS"))
@@ -119,7 +152,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     @Test
     @DisplayName("서버가 좌표를 모르는 목적지 이름이면 404가 나간다")
     void unknownDestinationName_responds404() {
-        getByDestinationName(UNKNOWN_DESTINATION_NAME)
+        get(destinationNameParams(UNKNOWN_DESTINATION_NAME))
                 .then()
                 .statusCode(NOT_FOUND_STATUS)
                 .body("code", equalTo("NOT_FOUND"))
@@ -133,7 +166,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     void routeNotFound_responds404WithGuidance() {
         stubDirectionsResultCode(KAKAO, 104);
 
-        getByDestinationName()
+        get(destinationNameParams())
                 .then()
                 .statusCode(NOT_FOUND_STATUS)
                 .body("code", equalTo("NOT_FOUND"))
@@ -146,7 +179,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     void originHasNoNearbyRoad_responds404WithOriginGuidance() {
         stubDirectionsResultCode(KAKAO, 101);
 
-        getByDestinationName()
+        get(destinationNameParams())
                 .then()
                 .statusCode(NOT_FOUND_STATUS)
                 .body("message", equalTo("출발지 주변에서 도로를 찾지 못했어요. 출발지를 도로에 가까운 위치로 바꿔주세요."));
@@ -158,7 +191,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     void destinationHasNoNearbyRoad_responds404WithDestinationGuidance() {
         stubDirectionsResultCode(KAKAO, 102);
 
-        getByDestinationName()
+        get(destinationNameParams())
                 .then()
                 .statusCode(NOT_FOUND_STATUS)
                 .body("message", equalTo("도착지 주변에서 도로를 찾지 못했어요. 도착지를 도로에 가까운 위치로 바꿔주세요."));
@@ -170,7 +203,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     void unknownRouteResultCode_respondsDefaultGuidance() {
         stubDirectionsResultCode(KAKAO, 999);
 
-        getByDestinationName()
+        get(destinationNameParams())
                 .then()
                 .statusCode(NOT_FOUND_STATUS)
                 .body("message", equalTo("경로를 찾지 못했어요. 출발지와 도착지를 다시 확인해주세요."));
@@ -183,7 +216,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     void directionsServerError_respondsExternalApiUnavailable() {
         stubDirectionsStatus(KAKAO, 500);
 
-        getByDestinationName()
+        get(destinationNameParams())
                 .then()
                 .statusCode(SUCCESS_STATUS)
                 .body("code", equalTo(EXTERNAL_API_UNAVAILABLE))
@@ -196,7 +229,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     void directionsQuotaExceeded_isNotDistinguishedFromServerError() {
         stubDirectionsStatus(KAKAO, 429);
 
-        getByDestinationName().then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
+        get(destinationNameParams()).then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
     }
 
     @Test
@@ -204,7 +237,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     void directionsNonJsonErrorBody_respondsExternalApiUnavailable() {
         stubDirectionsNonJson(KAKAO, 503);
 
-        getByDestinationName().then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
+        get(destinationNameParams()).then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
     }
 
     /** 상태코드조차 못 받는 갈래 — 서버가 내려갔거나 중간 네트워크가 끊긴 상황. */
@@ -213,7 +246,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
     void directionsConnectionReset_respondsExternalApiUnavailable() {
         stubDirectionsConnectionReset(KAKAO);
 
-        getByDestinationName().then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
+        get(destinationNameParams()).then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
     }
 
     // --- 타임아웃 -----------------------------------------------------------
@@ -231,7 +264,7 @@ class RouteRestStopListAcceptanceTest extends AcceptanceTest {
         stubDirectionsDelay(KAKAO, DELAY_OVER_TIMEOUT_MILLIS);
 
         Instant startedAt = Instant.now();
-        getByDestinationName().then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
+        get(destinationNameParams()).then().statusCode(SUCCESS_STATUS).body("code", equalTo(EXTERNAL_API_UNAVAILABLE));
         long elapsedMillis = Duration.between(startedAt, Instant.now()).toMillis();
 
         assertThat(elapsedMillis)

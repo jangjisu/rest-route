@@ -1,6 +1,5 @@
 package com.restroute.route.service;
 
-import com.restroute.common.client.response.KakaoDirectionsResponse;
 import com.restroute.evcharger.service.EvChargerQueryService;
 import com.restroute.evcharger.service.util.CoordinateDistanceCalculator;
 import com.restroute.oilprice.dto.FuelTypeSelection;
@@ -8,16 +7,13 @@ import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.oilprice.service.NationalOilPriceService;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.service.RestStopAggregateQueryService;
-import com.restroute.reststop.service.RestStopQueryService;
 import com.restroute.reststop.service.dto.RestStopAggregate;
 import com.restroute.route.controller.response.FuelPriceTier;
 import com.restroute.route.controller.response.RouteRestStopListItemResponse;
 import com.restroute.route.controller.response.RouteRestStopResponse.Destination;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
-import com.restroute.route.service.RouteResolverService.RawRouteResult;
 import com.restroute.route.service.dto.QueriedOilPriceStats;
-import com.restroute.route.service.dto.ResolvedRoute.RouteGeometry;
-import com.restroute.route.service.exception.RouteRestStopNotFoundException;
+import com.restroute.route.service.dto.RouteCandidates;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -28,21 +24,21 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * finder "목적지로 추천받기" 전용 경로 휴게소 조회. 목적지 해석·경로 매칭은 기존 route 도메인 내부
- * 부품(RouteResolverService/RouteCoordinateReducer/RouteRestStopMatcher)을 그대로 재사용하되, 응답
- * 조립은 {@link RouteOptionAssemblyService}를 거치지 않고 이 서비스가 직접 한다 — 지도 화면과 계약을
- * 공유하지 않기 위해서다(도메인 문서 참고). finder는 첫 번째 경로 후보만 쓰므로 대안 경로는 계산하지
- * 않는다.
+ * finder "목적지로 추천받기" 전용 경로 휴게소 조회. 경로 위 후보는 {@link RouteCandidateFinder}가
+ * 찾고, 이 서비스는 첫 경로의 후보에 거리·유가·EV 충전 정보를 얹어 평평한 목록으로 만든다.
+ *
+ * <p>응답 조립을 {@link RouteOptionAssemblyService}에 맡기지 않는 건 지도 화면과 응답 계약을
+ * 공유하지 않기 위해서다(도메인 문서 참고).
  */
 @Service
 @RequiredArgsConstructor
 public class RouteRestStopListQueryService {
 
-    private final RouteResolverService routeResolverService;
+    /** 집계 조회에서 관리자 재정의 여부로 거르지 않는다는 뜻. */
+    private static final Boolean ANY_ADMIN_OVERRIDDEN = null;
+
     private final DestinationResolver destinationResolver;
-    private final RestStopQueryService restStopQueryService;
-    private final RouteCoordinateReducer routeCoordinateReducer;
-    private final RouteRestStopMatcher routeRestStopMatcher;
+    private final RouteCandidateFinder routeCandidateFinder;
     private final RestStopAggregateQueryService restStopAggregateQueryService;
     private final EvChargerQueryService evChargerQueryService;
     private final NationalOilPriceService nationalOilPriceService;
@@ -55,20 +51,17 @@ public class RouteRestStopListQueryService {
             Double destinationLatitude,
             Double destinationLongitude,
             String destinationName,
-            int radiusMeters,
             FuelTypeSelection fuelSelection) {
         Destination destination =
                 destinationResolver.resolve(destinationLatitude, destinationLongitude, destinationName);
-        RawRouteResult raw = routeResolverService.resolveRoute(originLatitude, originLongitude, destination);
-        RouteGeometry firstRoute = firstReducedRoute(raw.routes());
+        RouteCandidates found = routeCandidateFinder.find(originLatitude, originLongitude, destination);
 
-        List<RestStopEntity> allRestStops = restStopQueryService.findAll();
-        List<RouteRestStopItem> matched = routeRestStopMatcher.match(firstRoute.path(), radiusMeters, allRestStops);
+        List<RouteRestStopItem> matched = found.first().items();
         if (matched.isEmpty()) {
             return List.of();
         }
 
-        Map<String, RestStopAggregate> aggregatesByServiceAreaCode = aggregatesFor(matched, allRestStops);
+        Map<String, RestStopAggregate> aggregatesByServiceAreaCode = aggregatesFor(matched, found.allRestStops());
         Map<String, Integer> evChargerCountsByServiceAreaCode =
                 evChargerQueryService.findActiveChargerCounts(aggregatesByServiceAreaCode.keySet());
         QueriedOilPriceStats queriedOilPriceStats =
@@ -90,18 +83,6 @@ public class RouteRestStopListQueryService {
                 .toList();
     }
 
-    /**
-     * finder는 대안 경로를 쓰지 않으므로 첫 번째 경로만 축소한다. 폴리라인이 비면(축소 후 빈 경로)
-     * 기존과 동일하게 NotFound로 끝낸다.
-     */
-    private RouteGeometry firstReducedRoute(List<KakaoDirectionsResponse.Route> rawRoutes) {
-        return rawRoutes.stream()
-                .map(routeCoordinateReducer::reduce)
-                .filter(geometry -> !geometry.path().isEmpty())
-                .findFirst()
-                .orElseThrow(RouteRestStopNotFoundException::emptyRoutePath);
-    }
-
     private Map<String, RestStopAggregate> aggregatesFor(
             List<RouteRestStopItem> matched, List<RestStopEntity> allRestStops) {
         Set<String> serviceAreaCodes =
@@ -109,7 +90,7 @@ public class RouteRestStopListQueryService {
         List<RestStopEntity> selected = allRestStops.stream()
                 .filter(restStop -> serviceAreaCodes.contains(restStop.getServiceAreaCode()))
                 .toList();
-        return restStopAggregateQueryService.findByRestStopsAndAdminOverridden(selected, null);
+        return restStopAggregateQueryService.findByRestStopsAndAdminOverridden(selected, ANY_ADMIN_OVERRIDDEN);
     }
 
     private RouteRestStopListItemResponse toItem(

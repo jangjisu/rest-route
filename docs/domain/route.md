@@ -46,24 +46,24 @@ sources: []
 
 ## 3. 사용자·시스템 흐름
 
-1. **좌표/검색어 받기** — `RouteResolverService.resolveDestinationAndRoute()`가 목적지를
-   확정하고(좌표 직접 지정 또는 `KakaoMapClient.searchKeyword()` 지오코딩), 카카오
-   `getDirections()`를 호출해 원본 경로(들)를 받는다. 길찾기 자체가 실패하면(`result_code`
-   비정상) 여기서 바로 `RouteRestStopNotFoundException`으로 끝난다.
-   finder 목록 진입점은 이 단계를 타지 않는다 — `DestinationResolver`가 외부 호출 없이 목적지를
-   정하고, 길찾기만 하는 `RouteResolverService.resolveRoute()`로 넘긴다.
-2. **좌표 개수 줄이기** — `RouteCoordinateReducer.reduce()`가 대안 경로마다 원본 폴리라인을
-   200m 간격/최소 300점 기준으로 균등 샘플링(uniform sampling)해 축소한다. 축소 후 폴리라인이
-   빈 경로는 그 경로만 제외하고, 전부 비면 예외로 끝낸다.
-3. **방향 매칭** — `RouteRestStopMatcher.match()`가 대안 경로마다 독립적으로, 전체 휴게소 중
-   경로 반경(`radiusMeters`) 안에 있는 것만 골라 경로 순서대로 정렬하고, 같은 이름의 상·하행
-   페어는 진행방향 기준으로 실제 진입 가능한 쪽만 남긴다(애매하면 `hasDirectionAlternative`만
-   켠다).
-4. **detail 조립** — `RouteOptionAssemblyService.attachDetails()`가 대안 경로 전체의 매칭
-   결과를 모아 이미지 유무/EV충전/테마/이벤트 집계를 한 번만 조회하고(`RestStopAggregateQueryService`),
-   오늘자 전국 평균 유가(`NationalOilPriceService`)와 비교해 가격차이·추천 태그를 계산해 붙인다.
-5. `RouteRestStopService.findRouteRestStops()`가 위 4단계를 순서대로 호출하는 오케스트레이터이며,
-   최종적으로 `RouteRestStopResponse(destination, routes)`를 반환한다.
+1. **목적지 정하기** — 진입점마다 다르다. 지도 화면은 `RouteResolverService.resolveDestination()`이
+   좌표를 직접 받거나 `KakaoMapClient.searchKeyword()`로 검색어를 좌표로 바꾼다. finder 목록은
+   `DestinationResolver`가 외부 호출 없이 좌표나 `PopularDestination` 이름으로 정한다.
+2. **경로 위 후보 찾기** — `RouteCandidateFinder.find()`가 좌표와 목적지를 받아 아래를 한 번에 한다.
+   호출부는 이 인터페이스 뒤를 알지 못한다.
+   - 카카오 `getDirections()`로 원본 경로(들)를 받는다(`RouteResolverService.resolveRoute()`).
+     길찾기 자체가 실패하면(`result_code` 비정상) 여기서 `RouteRestStopNotFoundException`으로 끝난다.
+   - `RouteCoordinateReducer.reduce()`가 경로마다 원본 폴리라인을 200m 간격/최소 300점 기준으로
+     균등 샘플링해 축소한다. 축소 후 빈 경로는 제외하고, 전부 비면 예외로 끝낸다.
+   - `RouteRestStopMatcher.match()`가 경로마다 독립적으로, 전체 휴게소 중 설정된 매칭 반경 안에
+     있는 것만 골라 경로 순서대로 정렬하고, 같은 이름의 상·하행 페어는 진행방향 기준으로 실제
+     진입 가능한 쪽만 남긴다(애매하면 `hasDirectionAlternative`만 켠다).
+   - 결과는 `RouteCandidates`(경로별 후보 + 후보를 찾는 데 쓴 휴게소 전체)다.
+3. **응답 조립** — 진입점마다 다르다. 지도 화면은 `RouteOptionAssemblyService.attachDetails()`가
+   대안 경로 전체의 매칭 결과를 모아 이미지 유무/EV충전/테마/이벤트 집계를 한 번만
+   조회하고(`RestStopAggregateQueryService`), 오늘자 전국 평균 유가(`NationalOilPriceService`)와
+   비교해 가격차이·추천 태그를 붙인다. finder 목록은 `RouteRestStopListQueryService`가 첫 경로의
+   후보만 골라 거리·유가·EV 충전을 직접 얹는다.
 
 프론트엔드: 사용자가 지도에서 목적지를 검색하거나 좌표를 찍으면 `/api/route-rest-stops`를
 호출하고, 결과는 모바일에서 드래그로 리사이즈되는 바텀시트(`bottom-sheet.js`)에 표시된다 —
@@ -109,7 +109,8 @@ sources: []
   좌표 없음이 모두 이 예외로 통일되어 있고, 메시지만 케이스별로 다르다.
 - 별도 인증/권한 검사는 없음 — 공개 API(`/api/route-rest-stops`)로 보임. **추정 — 확인 필요**:
   Spring Security 설정에서 이 경로가 별도로 제한되는지는 config를 따로 확인하지 않음.
-- 반경(`radiusMeters`)은 요청 파라미터로 조절 가능하며 기본값 1000m.
+- 매칭 반경은 요청이 아니라 서버 설정이다(`route.match-radius-meters`, 기본 1000m) —
+  `RouteRestStopMatcher`가 직접 갖는다.
 
 ## 7. 외부 시스템과 계약
 
@@ -123,15 +124,18 @@ sources: []
 ## 8. 코드 경계와 진입점
 
 - **진입점**: `RouteRestStopController.getRouteRestStops()` (`GET /api/route-rest-stops`,
-  파라미터: originLat/Lng, destinationQuery, destinationLat/Lng, destinationName, radiusMeters).
-- **오케스트레이터**: `RouteRestStopService` — 4단계(좌표 얻기 → 좌표 축소 → 방향 매칭 →
-  detail 조립)를 이름 붙은 메서드 호출로 그대로 노출한다(각 단계 구현은 아래 협력자에 위임).
+  파라미터: originLat/Lng, destinationQuery, destinationLat/Lng, destinationName).
+- **오케스트레이터**: `RouteRestStopService` — 목적지 정하기 → 경로 위 후보 찾기 → detail 조립
+  세 단계를 이름 붙은 호출로 노출한다.
+- **경로 위 후보 찾기**: `RouteCandidateFinder` — 좌표와 목적지를 받아 길찾기·좌표 축소·반경/방향
+  매칭까지를 인터페이스 하나 뒤에 감춘다. 두 진입점이 공유하는 유일한 지점이다.
 - **협력자(`@Component`, 의존성 없는 순수 알고리즘)**: `RouteCoordinateReducer`(좌표 축소),
-  `RouteRestStopMatcher`(반경/방향 매칭), `DestinationResolver`(외부 호출 없는 목적지 해석).
+  `RouteRestStopMatcher`(반경/방향 매칭, 반경은 `route.match-radius-meters` 설정),
+  `DestinationResolver`(외부 호출 없는 목적지 해석).
 - **도메인**: `domain/PopularDestination` — finder 목적지 칩의 표시명과 좌표.
-- **협력자(`@Service`, 외부 자원/다른 서비스 의존)**: `RouteResolverService`(카카오 API 호출),
-  `RouteOptionAssemblyService`(집계 조회 + 비교/추천 조립), `RouteRestStopComparisonSummaryService`,
-  `RouteRestStopRecommendationTagService`.
+- **협력자(`@Service`, 외부 자원/다른 서비스 의존)**: `RouteResolverService`(목적지 지오코딩과
+  길찾기 호출), `RouteOptionAssemblyService`(집계 조회 + 비교/추천 조립),
+  `RouteRestStopComparisonSummaryService`, `RouteRestStopRecommendationTagService`.
 - **값객체**: `service/route/dto/*` (RoutePath, PathPoint, Direction, RouteCandidate,
   ResolvedRoute, RouteRestStopComparison, RouteRestStopRecommendationStandards 등).
 - **예외**: `service/route/exception/RouteRestStopNotFoundException`.
@@ -139,12 +143,11 @@ sources: []
   단계별 협력자" 구성을 참고해 리팩토링된 것으로, 그 패턴을 따르는 두 번째 사례다.
 - **finder mode2 전용 진입점**([[finder]] 소비, 상세는 그 문서 참고): `RouteRestStopController.
   getRouteRestStopList()`(`GET /api/route-rest-stops/list`, 파라미터: originLat/Lng,
-  destinationLat/Lng, destinationName, radiusMeters, fuelType)는 위 1~5단계 중 좌표/경로 관련 부품
-  (`RouteCoordinateReducer`/`RouteRestStopMatcher`)만 재사용하고, `RouteOptionAssemblyService`는
-  거치지 않는다 — 대신 `RouteRestStopListQueryService`가 대안 경로 중 첫 번째만 골라 거리(서버 계산)·
-  유가(`RouteRestStopFuelTierCalculator`, 요청 유종 1개만 스코프)를 직접 조립한다.
-  목적지 해석은 `RouteResolverService`가 아니라 `DestinationResolver`가 맡고, 길찾기만
-  `RouteResolverService.resolveRoute()`로 넘긴다 — 이 진입점은 `destinationQuery`를 받지 않으며
-  지오코딩을 거치지 않는다(§4 참고). 기존 `getRouteRestStops()`(지도 화면용, 대안 경로 전체·이미지·
-  먹거리 포함)는 자유 검색어를 받아야 해서 지오코딩을 그대로 유지한다 — 계약이 달라져야 할 때는
-  기존 진입점을 고치지 않고 새 진입점을 추가한다는 판단.
+  destinationLat/Lng, destinationName, fuelType)는 지도 화면과 **2단계(경로 위 후보 찾기)를
+  그대로 공유**하고, 앞뒤만 다르다 — 목적지는 `DestinationResolver`가 정하고,
+  `RouteOptionAssemblyService`를 거치지 않은 채 `RouteRestStopListQueryService`가 첫 경로의 후보만
+  골라 거리(서버 계산)·유가(`RouteRestStopFuelTierCalculator`, 요청 유종 1개만 스코프)를 직접
+  얹는다. 이 진입점은 `destinationQuery`를 받지 않는다(§4 참고).
+  기존 `getRouteRestStops()`(지도 화면용, 대안 경로 전체·이미지·먹거리 포함)는 자유 검색어를
+  받아야 해서 목적지 지오코딩을 그대로 유지한다 — 계약이 달라져야 할 때는 기존 진입점을 고치지
+  않고 새 진입점을 추가한다는 판단.

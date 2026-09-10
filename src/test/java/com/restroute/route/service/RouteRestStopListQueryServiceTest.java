@@ -72,11 +72,12 @@ class RouteRestStopListQueryServiceTest {
         lenient().when(evChargerQueryService.findActiveChargerCounts(any())).thenReturn(Map.of());
         stubAggregates(Map.of());
         service = new RouteRestStopListQueryService(
-                new RouteResolverService(kakaoMapClient),
                 new DestinationResolver(),
-                restStopQueryService,
-                new RouteCoordinateReducer(),
-                new RouteRestStopMatcher(),
+                new RouteCandidateFinder(
+                        new RouteResolverService(kakaoMapClient),
+                        restStopQueryService,
+                        new RouteCoordinateReducer(),
+                        new RouteRestStopMatcher(1000)),
                 restStopAggregateQueryService,
                 evChargerQueryService,
                 nationalOilPriceService,
@@ -156,7 +157,7 @@ class RouteRestStopListQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(far, near));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", FuelTypeSelection.NONE);
 
         assertThat(items)
                 .extracting(RouteRestStopListItemResponse::serviceAreaCode)
@@ -173,7 +174,7 @@ class RouteRestStopListQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(far));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", FuelTypeSelection.NONE);
 
         assertThat(items).isEmpty();
         verifyNoInteractions(restStopAggregateQueryService, evChargerQueryService);
@@ -192,7 +193,7 @@ class RouteRestStopListQueryServiceTest {
                         null, emptyRelatedInfo(), false, false, false, false, null, null, true, SizeTier.LARGE)));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", FuelTypeSelection.NONE);
 
         assertThat(items).singleElement().satisfies(item -> {
             assertThat(item.sizeTier()).isEqualTo(SizeTier.LARGE);
@@ -211,7 +212,7 @@ class RouteRestStopListQueryServiceTest {
         when(evChargerQueryService.findActiveChargerCounts(any())).thenReturn(Map.of("A", 3, "B", 0));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", FuelTypeSelection.NONE);
 
         assertThat(items)
                 .filteredOn(item -> item.serviceAreaCode().equals("A"))
@@ -234,7 +235,7 @@ class RouteRestStopListQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
 
         List<RouteRestStopListItemResponse> items =
-                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.NONE);
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", FuelTypeSelection.NONE);
 
         assertThat(items)
                 .singleElement()
@@ -303,8 +304,8 @@ class RouteRestStopListQueryServiceTest {
                         AverageOilPrice.of("D047", "자동차용경유", "1,900원", "-4.51"),
                         AverageOilPrice.of("K015", "자동차용부탄", "1,135원", "+0.01"))));
 
-        List<RouteRestStopListItemResponse> items = service.findRouteRestStops(
-                37.0, 127.0, 35.0, 129.0, "부산역", 1000, FuelTypeSelection.of(FuelType.DIESEL));
+        List<RouteRestStopListItemResponse> items =
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", FuelTypeSelection.of(FuelType.DIESEL));
 
         assertThat(items)
                 .filteredOn(item -> item.serviceAreaCode().equals("A"))
@@ -317,8 +318,7 @@ class RouteRestStopListQueryServiceTest {
     @Test
     @DisplayName("서버가 좌표를 모르는 목적지 이름이면 카카오를 부르지 않고 NotFound다")
     void unknownDestinationName_throwsNotFoundWithoutCallingKakao() {
-        assertThatThrownBy(
-                        () -> service.findRouteRestStops(37.0, 127.0, null, null, "없는곳", 1000, FuelTypeSelection.NONE))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, null, null, "없는곳", FuelTypeSelection.NONE))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         verifyNoInteractions(kakaoMapClient);
