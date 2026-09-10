@@ -46,8 +46,7 @@ public class RestStopAggregateQueryService {
      * restStops를 어떤 기준으로 걸렀는지는 호출부 책임이고, 여기서는 그대로 신뢰해서 쓴다.
      */
     @Transactional(readOnly = true)
-    public Map<String, RestStopAggregate> findByRestStopsAndAdminOverridden(
-            List<RestStopEntity> restStops, Boolean adminOverridden) {
+    public Map<String, RestStopAggregate> findByRestStops(List<RestStopEntity> restStops) {
         if (restStops.isEmpty()) {
             return Map.of();
         }
@@ -55,7 +54,7 @@ public class RestStopAggregateQueryService {
         List<String> codes =
                 restStops.stream().map(RestStopEntity::getServiceAreaCode).toList();
         Map<String, RestStopRelatedInfo> relatedInfoByCode =
-                restStopRelatedInfoQueryService.findAllByRestStops(restStops, adminOverridden);
+                restStopRelatedInfoQueryService.findAllByRestStops(restStops);
         Set<String> evChargerCodes = Set.copyOf(evChargerQueryService.findChargerMappedServiceAreaCodes(codes));
         Set<String> imageCodes = restStopImageQueryService.findExistingServiceAreaCodes(codes);
         Set<String> themeCodes = Set.copyOf(restThemeQueryService.findThemeMappedServiceAreaCodes(codes));

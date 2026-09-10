@@ -2,7 +2,6 @@ package com.restroute.route.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -88,7 +87,7 @@ class RouteOptionAssemblyServiceTest {
                     return result;
                 })
                 .when(restStopAggregateQueryService)
-                .findByRestStopsAndAdminOverridden(any(), any());
+                .findByRestStops(any());
     }
 
     private RouteGeometry geometry(Summary summary) {
@@ -209,7 +208,7 @@ class RouteOptionAssemblyServiceTest {
         assertThat(routes.get(0).restStops())
                 .extracting(RouteRestStopItem::listImageUrl)
                 .containsExactly("/api/rest-stops/A/images/list", null);
-        verify(restStopAggregateQueryService, times(1)).findByRestStopsAndAdminOverridden(any(), isNull());
+        verify(restStopAggregateQueryService, times(1)).findByRestStops(any());
     }
 
     @Test
@@ -321,6 +320,6 @@ class RouteOptionAssemblyServiceTest {
         assertThat(routes.get(1).restStops())
                 .extracting(RouteRestStopItem::serviceAreaCode)
                 .containsExactly("B");
-        verify(restStopAggregateQueryService, times(1)).findByRestStopsAndAdminOverridden(any(), any());
+        verify(restStopAggregateQueryService, times(1)).findByRestStops(any());
     }
 }

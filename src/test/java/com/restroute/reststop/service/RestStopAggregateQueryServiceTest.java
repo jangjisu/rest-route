@@ -70,7 +70,7 @@ class RestStopAggregateQueryServiceTest {
                 restStopRestroomRepository,
                 restStopUsageSnapshotRepository);
         lenient()
-                .when(restStopRelatedInfoQueryService.findAllByRestStops(any(), any()))
+                .when(restStopRelatedInfoQueryService.findAllByRestStops(any()))
                 .thenReturn(Map.of());
         lenient()
                 .when(evChargerQueryService.findChargerMappedServiceAreaCodes(any()))
@@ -115,7 +115,7 @@ class RestStopAggregateQueryServiceTest {
                 List.of());
         Map<String, RestStopRelatedInfo> relatedInfoByCode = new HashMap<>();
         relatedInfoByCode.put("A00001", relatedInfo);
-        when(restStopRelatedInfoQueryService.findAllByRestStops(any(), any())).thenReturn(relatedInfoByCode);
+        when(restStopRelatedInfoQueryService.findAllByRestStops(any())).thenReturn(relatedInfoByCode);
         when(evChargerQueryService.findChargerMappedServiceAreaCodes(any())).thenReturn(List.of("A00001"));
         when(restStopImageQueryService.findExistingServiceAreaCodes(any())).thenReturn(Set.of("A00001"));
         when(restThemeQueryService.findThemeMappedServiceAreaCodes(any())).thenReturn(List.of("A00001"));
@@ -123,7 +123,7 @@ class RestStopAggregateQueryServiceTest {
                 .thenReturn(List.of("A00001"));
 
         Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(withEverything, withNothing), null);
+                aggregateQueryService.findByRestStops(List.of(withEverything, withNothing));
 
         RestStopAggregate first = result.get("A00001");
         assertThat(first.relatedInfo()).isEqualTo(relatedInfo);
@@ -160,7 +160,7 @@ class RestStopAggregateQueryServiceTest {
                 .thenReturn(List.of(usageSnapshot));
 
         Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(withUsageData, withoutUsageData), null);
+                aggregateQueryService.findByRestStops(List.of(withUsageData, withoutUsageData));
 
         RestStopAggregate first = result.get("A00001");
         assertThat(first.maleToiletCount()).isEqualTo(10);
@@ -187,7 +187,7 @@ class RestStopAggregateQueryServiceTest {
                 .thenReturn(List.of(usageSnapshot));
 
         Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(withUsageData, withoutUsageData), null);
+                aggregateQueryService.findByRestStops(List.of(withUsageData, withoutUsageData));
 
         assertThat(result.get("A00001").sizeTier()).isEqualTo(SizeTier.LARGE);
         assertThat(result.get("A00002").sizeTier()).isNull();
@@ -199,8 +199,7 @@ class RestStopAggregateQueryServiceTest {
         RestStopEntity first = restStop("A00001");
         RestStopEntity duplicate = restStop("A00001");
 
-        Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(first, duplicate), null);
+        Map<String, RestStopAggregate> result = aggregateQueryService.findByRestStops(List.of(first, duplicate));
 
         assertThat(result).containsOnlyKeys("A00001");
         assertThat(result.get("A00001").restStop()).isEqualTo(first);
@@ -211,8 +210,7 @@ class RestStopAggregateQueryServiceTest {
     void findByRestStops_keysAggregatesByServiceAreaCode() {
         RestStopEntity restStop = restStop("A00001");
 
-        Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(restStop), null);
+        Map<String, RestStopAggregate> result = aggregateQueryService.findByRestStops(List.of(restStop));
 
         assertThat(result).containsOnlyKeys("A00001");
         assertThat(result.get("A00001").restStop()).isEqualTo(restStop);
@@ -221,10 +219,9 @@ class RestStopAggregateQueryServiceTest {
     @Test
     @DisplayName("미리 조회해둔 목록이 비어있으면 빈 맵을 반환하고 나머지 조회는 하지 않는다")
     void findByRestStops_returnsEmptyMapWhenGivenListIsEmpty() {
-        Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(), null);
+        Map<String, RestStopAggregate> result = aggregateQueryService.findByRestStops(List.of());
 
         assertThat(result).isEmpty();
-        verify(restStopRelatedInfoQueryService, org.mockito.Mockito.never()).findAllByRestStops(any(), any());
+        verify(restStopRelatedInfoQueryService, org.mockito.Mockito.never()).findAllByRestStops(any());
     }
 }

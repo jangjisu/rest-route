@@ -203,8 +203,7 @@ class RestStopRelatedInfoQueryServiceTest {
         when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(theme));
         when(restEventRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of(event));
 
-        Map<String, RestStopRelatedInfo> relatedInfoByCode =
-                service.findAllByRestStops(List.of(restStop1, restStop2), null);
+        Map<String, RestStopRelatedInfo> relatedInfoByCode = service.findAllByRestStops(List.of(restStop1, restStop2));
 
         RestStopRelatedInfo info1 = relatedInfoByCode.get("A00001");
         assertThat(info1.detail()).contains(detail);
@@ -257,7 +256,7 @@ class RestStopRelatedInfoQueryServiceTest {
         when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
         when(restEventRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
 
-        Map<String, RestStopRelatedInfo> relatedInfoByCode = service.findAllByRestStops(List.of(restStop), null);
+        Map<String, RestStopRelatedInfo> relatedInfoByCode = service.findAllByRestStops(List.of(restStop));
 
         assertThat(relatedInfoByCode.get("A00001").detail()).contains(firstDetail);
     }
@@ -265,7 +264,7 @@ class RestStopRelatedInfoQueryServiceTest {
     @Test
     @DisplayName("휴게소 목록이 비어 있으면 리포지토리를 호출하지 않고 빈 맵을 반환한다")
     void findAllByRestStops_returnsEmptyMapForEmptyInput() {
-        Map<String, RestStopRelatedInfo> result = service.findAllByRestStops(List.of(), null);
+        Map<String, RestStopRelatedInfo> result = service.findAllByRestStops(List.of());
 
         assertThat(result).isEmpty();
         verifyNoInteractions(
@@ -279,28 +278,28 @@ class RestStopRelatedInfoQueryServiceTest {
     }
 
     @Test
-    @DisplayName("adminOverridden=false는 잠금 상태를 소유한 detail/oil/food에만 전달한다")
-    void findAllByRestStops_passesAdminOverriddenFilterToSupportingRepositories() {
+    @DisplayName("관리자 재정의 여부로 거르지 않고, 잠금 상태를 소유한 detail/oil/food에만 그 인자를 전달한다")
+    void findAllByRestStops_passesNoAdminOverriddenFilterToSupportingRepositories() {
         RestStopEntity restStop = RestStopEntity.from(restStopItem("001", "서울만남(부산)휴게소", "A00001"));
         List<String> codes = List.of("A00001");
-        when(restStopDetailRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
+        when(restStopDetailRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
                 .thenReturn(List.of());
         when(highwayServiceAreaInfoRepository.findAllByRestStopServiceAreaCodeIn(codes))
                 .thenReturn(List.of());
-        when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
+        when(restOilRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
                 .thenReturn(List.of());
         when(restOilPriceRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
-        when(restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, false))
+        when(restFoodRepository.findByRestStopServiceAreaCodesAndAdminOverridden(codes, null))
                 .thenReturn(List.of());
         when(restThemeRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
         when(restEventRepository.findAllByRestStopServiceAreaCodeIn(codes)).thenReturn(List.of());
 
-        service.findAllByRestStops(List.of(restStop), false);
+        service.findAllByRestStops(List.of(restStop));
 
-        verify(restStopDetailRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
-        verify(restOilRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
+        verify(restStopDetailRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, null);
+        verify(restOilRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, null);
         verify(restOilPriceRepository).findAllByRestStopServiceAreaCodeIn(codes);
-        verify(restFoodRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, false);
+        verify(restFoodRepository).findByRestStopServiceAreaCodesAndAdminOverridden(codes, null);
         verify(restThemeRepository).findAllByRestStopServiceAreaCodeIn(codes);
         verify(restEventRepository).findAllByRestStopServiceAreaCodeIn(codes);
     }

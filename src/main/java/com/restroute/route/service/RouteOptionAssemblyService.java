@@ -68,7 +68,7 @@ public class RouteOptionAssemblyService {
         List<RestStopEntity> selected = allRestStops.stream()
                 .filter(restStop -> serviceAreaCodes.contains(restStop.getServiceAreaCode()))
                 .toList();
-        return restStopAggregateQueryService.findByRestStopsAndAdminOverridden(selected, null);
+        return restStopAggregateQueryService.findByRestStops(selected);
     }
 
     private RouteOption toRouteOption(
