@@ -107,8 +107,14 @@ sources: []
   상속해 `GlobalExceptionHandler`의 `@ExceptionHandler(BusinessException.class)`가 공통
   포맷으로 응답한다. 목적지 검색 결과 없음, 좌표 해석 실패, 길찾기 실패(result_code별), 경로
   좌표 없음이 모두 이 예외로 통일되어 있고, 메시지만 케이스별로 다르다.
-- 별도 인증/권한 검사는 없음 — 공개 API(`/api/route-rest-stops`)로 보임. **추정 — 확인 필요**:
-  Spring Security 설정에서 이 경로가 별도로 제한되는지는 config를 따로 확인하지 않음.
+- 별도 인증/권한 검사는 없다 — 인수 테스트가 인증 없이 요청해 200을 받는 것으로 확인된다
+  (`RouteRestStopAcceptanceTest`, `RouteRestStopListAcceptanceTest`).
+- 목적지를 지정하는 파라미터가 하나도 없어도 400이 아니다. 빈 검색어로 지오코딩을 시도하고, 카카오가
+  결과를 주면 그 좌표를 목적지로 삼아 성공 응답까지 간다 — 지도 화면 진입점에만 해당하며(`/list`는
+  이름·좌표만 받는다) `RouteRestStopAcceptanceTest`가 이 동작을 고정한다.
+- 외부 호출이 실패하면 장소 검색이 죽었는지 길찾기가 죽었는지 응답에서 구분되지 않는다 — 둘 다
+  `EXTERNAL_API_UNAVAILABLE`(HTTP 200, `data: null`)로 나간다.
+- 국가 유가 조회가 실패해도 경로와 휴게소 응답은 그대로 나간다(유가 비교 값만 `null`).
 - 매칭 반경은 요청이 아니라 서버 설정이다(`route.match-radius-meters`, 기본 1000m) —
   `RouteRestStopMatcher`가 직접 갖는다.
 

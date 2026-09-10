@@ -841,7 +841,17 @@ JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연
 |---|---|---|---|
 | Query | `query` | 필수 | 검색할 장소명 또는 주소 문자열 |
 
-각 후보는 `name`, `address`, `latitude`, `longitude`를 포함한다. 검색 결과가 없으면 빈 배열을 반환한다.
+각 후보는 `name`, `address`, `latitude`, `longitude`를 포함한다. 카카오의 `place_name`이 비어 있으면
+`address_name`을 `name`으로 쓰고, 좌표(`x`/`y`)를 숫자로 읽을 수 없는 후보는 그 후보만 빠진다.
+
+검색 결과가 없으면 빈 배열을 반환한다 — 카카오가 `documents`를 빈 배열로 주든 키 자체를 생략하든 같다.
+
+카카오 호출이 실패하면 `EXTERNAL_API_UNAVAILABLE`을 반환한다. 이 코드는 **HTTP 200**과 함께 나가고
+`data`는 `null`이다. 서버 오류(5xx)·쿼터 초과(429)·연결 끊김·비-JSON 오류 본문이 모두 같은 응답이 되므로
+호출부는 원인을 구분할 수 없다.
+
+`query`가 없으면 `400 Bad Request`(`INVALID_PARAMETER`)다. 다만 **빈 문자열은 걸러지지 않고** 그대로
+카카오로 나간다 — 파라미터가 존재하므로 바인딩을 통과하고 서비스도 검사하지 않는다.
 
 ### GET /api/route-rest-stops
 
@@ -952,8 +962,19 @@ JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연
 
 요청 파라미터와 에러 응답 형식은 변경되지 않는다.
 
-목적지나 경로를 찾지 못하면 HTTP 404와 `NOT_FOUND`를 반환한다. 카카오 API 호출 자체가 실패하면
-`EXTERNAL_API_UNAVAILABLE`을 반환한다.
+목적지나 경로를 찾지 못하면 HTTP 404와 `NOT_FOUND`를 반환한다. 목적지 검색 결과가 없을 때는 길찾기를
+호출하지 않고 그 자리에서 끝난다.
+
+카카오 API 호출이 실패하면 `EXTERNAL_API_UNAVAILABLE`을 반환한다. 이 코드는 **HTTP 200**과 함께 나가고
+`data`는 `null`이다. 이 엔드포인트는 장소 검색과 길찾기 두 번을 부를 수 있는데 **어느 쪽이 실패했는지는
+응답에서 구분되지 않는다** — 둘 다 같은 코드로 나간다.
+
+목적지를 지정하는 파라미터(`destinationQuery`/`destinationLat`/`destinationLng`/`destinationName`)가
+하나도 없어도 `400`이 아니다. 빈 검색어로 지오코딩을 시도하고, 카카오가 결과를 주면 그 좌표를 목적지로
+삼아 성공 응답까지 간다.
+
+국가 유가 조회는 이 엔드포인트 안에서 별도로 이뤄지며, 실패해도 경로와 휴게소 응답은 그대로 나간다
+(유가 비교 값만 `null`이 된다).
 
 ### GET /api/route-rest-stops/list
 

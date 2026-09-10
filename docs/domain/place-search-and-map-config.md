@@ -53,6 +53,9 @@ sources:
 
 - 장소 검색은 좌표가 없는 후보를 절대 반환하지 않는다(좌표 파싱 실패 시 그 후보만 제외, 전체 실패로 처리하지 않음).
 - 검색 결과가 0건이어도 에러가 아니라 빈 리스트 — 프론트가 "결과 없음" UI를 스스로 처리해야 한다는 뜻.
+- 검색어는 비어 있어도 걸러지지 않고 그대로 카카오로 나간다 — `query`가 없으면 스프링 바인딩이 400으로
+  막지만, 빈 문자열은 파라미터가 존재하므로 통과하고 서비스도 검사하지 않는다. 입력 검증이 외부 호출
+  뒤에 있어 쿼터와 지연을 먼저 쓴다(`PlaceSearchAcceptanceTest`가 이 동작을 고정한다).
 - 카카오 API 실패는 `KakaoApiException`(→ 공통 `ExternalApiException` 상속)으로 감싸져 `GlobalExceptionHandler`가 처리한다(`src/main/java/com/restroute/common/GlobalExceptionHandler.java:36`). 즉 place-search는 카카오 응답 형식을 그대로 노출하지 않고 공통 에러 응답 포맷(`ApiResponse.error`)으로 변환해 내려준다.
 - `KakaoMapClient`는 요청/성공/실패를 각각 `log.info`/`log.warn`으로 남긴다(83f8de0에서 정리) — 외부 API 로깅 규약이 이미 정해져 있다는 뜻이므로 새 외부 연동 추가 시 참고할 만한 기존 패턴.
 - 지도 설정 키가 비어 있는 것은 오류가 아니라 정상적으로 다룰 수 있는 상태로 설계됨(빈 문자열 기본값 `@Value("${naver.maps.ncp-key-id:}")`) — 로컬/테스트 환경에서 지도 없이도 동작 가능하게 하려는 의도로 추정(추정 — 확인 필요, 커밋 메시지에 명시적 설명 없음).
