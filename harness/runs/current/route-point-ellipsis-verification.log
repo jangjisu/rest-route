@@ -1,0 +1,10 @@
+Mobile route point ellipsis verification
+
+- Browser CSSOM RED: target mobile ellipsis rule not found before change
+- Browser CSSOM GREEN: min-width 0px, overflow hidden, text-overflow ellipsis, white-space nowrap
+- npm run lint: PASS
+- npm run test:js: PASS (227 tests)
+- harness verify code: PASS
+- harness verify verify: PASS
+- Gradle test: BUILD SUCCESSFUL
+- JaCoCo: 전체 line coverage 95% 기준 충족
