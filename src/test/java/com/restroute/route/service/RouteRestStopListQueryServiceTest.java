@@ -72,11 +72,12 @@ class RouteRestStopListQueryServiceTest {
         lenient().when(evChargerQueryService.findActiveChargerCounts(any())).thenReturn(Map.of());
         stubAggregates(Map.of());
         service = new RouteRestStopListQueryService(
-                new RouteResolverService(kakaoMapClient),
                 new DestinationResolver(),
-                restStopQueryService,
-                new RouteCoordinateReducer(),
-                new RouteRestStopMatcher(1000),
+                new RouteCandidateFinder(
+                        new RouteResolverService(kakaoMapClient),
+                        restStopQueryService,
+                        new RouteCoordinateReducer(),
+                        new RouteRestStopMatcher(1000)),
                 restStopAggregateQueryService,
                 evChargerQueryService,
                 nationalOilPriceService,

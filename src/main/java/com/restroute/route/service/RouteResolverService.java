@@ -11,30 +11,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 목적지를 정하고, 카카오 길찾기를 호출해서 대안 경로까지 포함한 원본 경로 응답을 받아온다.
- * 좌표열 축약(다운샘플링)은 여기서 하지 않는다 — 원본 그대로 RouteRestStopService에 돌려준다.
+ * 검색어를 목적지로 바꾸고, 카카오 길찾기를 호출해서 대안 경로까지 포함한 원본 경로 응답을
+ * 받아온다. 좌표열 축약(다운샘플링)은 여기서 하지 않는다 — 원본 그대로 돌려준다.
  * 길찾기 실패는 여기서 바로 예외로 끝낸다.
- *
- * <p>목적지를 검색어로 받는 {@link #resolveDestinationAndRoute}와 이미 정해진 목적지를 받는
- * {@link #resolveRoute}를 나눠 둔다.
  */
 @Service
 @RequiredArgsConstructor
 public class RouteResolverService {
 
     private final KakaoMapClient kakaoMapClient;
-
-    public RawRouteResult resolveDestinationAndRoute(
-            double originLatitude,
-            double originLongitude,
-            String destinationQuery,
-            Double destinationLatitude,
-            Double destinationLongitude,
-            String destinationName) {
-        Destination destination =
-                resolveDestination(destinationQuery, destinationLatitude, destinationLongitude, destinationName);
-        return resolveRoute(originLatitude, originLongitude, destination);
-    }
 
     /** 이미 정해진 목적지로 길찾기만 부른다. */
     public RawRouteResult resolveRoute(double originLatitude, double originLongitude, Destination destination) {
@@ -62,7 +47,7 @@ public class RouteResolverService {
         };
     }
 
-    private Destination resolveDestination(
+    public Destination resolveDestination(
             String destinationQuery, Double destinationLatitude, Double destinationLongitude, String destinationName) {
         if (destinationLatitude == null || destinationLongitude == null) {
             return destinationFromQuery(destinationQuery);

@@ -79,10 +79,12 @@ class RouteRestStopServiceTest {
         routeRestStopRecommendationTagService = new RouteRestStopRecommendationTagService();
         service = new RouteRestStopService(
                 new RouteResolverService(kakaoMapClient),
-                restStopQueryService,
+                new RouteCandidateFinder(
+                        new RouteResolverService(kakaoMapClient),
+                        restStopQueryService,
+                        new RouteCoordinateReducer(),
+                        new RouteRestStopMatcher(1000)),
                 nationalOilPriceService,
-                new RouteCoordinateReducer(),
-                new RouteRestStopMatcher(1000),
                 new RouteOptionAssemblyService(
                         restStopAggregateQueryService,
                         routeRestStopComparisonSummaryService,

@@ -1,36 +1,26 @@
 package com.restroute.route.service;
 
-import com.restroute.common.client.response.KakaoDirectionsResponse;
 import com.restroute.oilprice.dto.NationalOilPriceSummary;
 import com.restroute.oilprice.service.NationalOilPriceService;
-import com.restroute.reststop.domain.RestStopEntity;
-import com.restroute.reststop.service.RestStopQueryService;
 import com.restroute.route.controller.response.RouteRestStopResponse;
+import com.restroute.route.controller.response.RouteRestStopResponse.Destination;
 import com.restroute.route.controller.response.RouteRestStopResponse.RouteOption;
-import com.restroute.route.controller.response.RouteRestStopResponse.RouteRestStopItem;
-import com.restroute.route.service.RouteResolverService.RawRouteResult;
-import com.restroute.route.service.dto.ResolvedRoute.RouteGeometry;
-import com.restroute.route.service.dto.RouteCandidate;
-import com.restroute.route.service.exception.RouteRestStopNotFoundException;
+import com.restroute.route.service.dto.RouteCandidates;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 경로 휴게소 검색의 전체 흐름을 순서대로 보여주는 오케스트레이터.
- * 1) 좌표 얻기 → 2) 좌표 개수 줄이기 → 3) 방향 매칭 → 4) detail 조립 순으로 진행한다.
+ * 지도 화면의 경로 휴게소 검색. 목적지를 정하고, 경로 위 후보를 찾고, 후보에 상세 정보를 얹는다.
  */
 @Service
 @RequiredArgsConstructor
 public class RouteRestStopService {
 
     private final RouteResolverService routeResolverService;
-    private final RestStopQueryService restStopQueryService;
+    private final RouteCandidateFinder routeCandidateFinder;
     private final NationalOilPriceService nationalOilPriceService;
-    private final RouteCoordinateReducer routeCoordinateReducer;
-    private final RouteRestStopMatcher routeRestStopMatcher;
     private final RouteOptionAssemblyService routeOptionAssemblyService;
 
     public RouteRestStopResponse findRouteRestStops(
@@ -40,53 +30,14 @@ public class RouteRestStopService {
             Double destinationLatitude,
             Double destinationLongitude,
             String destinationName) {
-        RawRouteResult raw = routeResolverService.resolveDestinationAndRoute(
-                originLatitude,
-                originLongitude,
-                destinationQuery,
-                destinationLatitude,
-                destinationLongitude,
-                destinationName); // 1. 출발지/도착지 좌표 얻기
-
-        List<RouteGeometry> routes = reduceCoordinates(raw.routes()); // 2. 좌표 개수 줄이기
-
-        List<RestStopEntity> allRestStops = restStopQueryService.findAll();
-        List<RouteCandidate> candidates = matchRestStopsByDirection(routes, allRestStops); // 3. 방향 매칭
+        Destination destination = routeResolverService.resolveDestination(
+                destinationQuery, destinationLatitude, destinationLongitude, destinationName);
+        RouteCandidates found = routeCandidateFinder.find(originLatitude, originLongitude, destination);
 
         Optional<NationalOilPriceSummary> nationalOilPriceSummary = nationalOilPriceService.getTodaySummary();
         List<RouteOption> routeOptions = routeOptionAssemblyService.attachDetails(
-                candidates, allRestStops, nationalOilPriceSummary); // 4. detail 조립
+                found.candidates(), found.allRestStops(), nationalOilPriceSummary);
 
-        return RouteRestStopResponse.of(raw.destination(), routeOptions);
-    }
-
-    /**
-     * 근접거리 계산 전에 정점 수를 줄인다(축소 기준과 그 이유는 {@link RouteCoordinateReducer}).
-     * 개별 경로의 좌표가 비어있으면 그 경로만 제외하고, 전부 비어있으면 예외로 끝낸다.
-     */
-    private List<RouteGeometry> reduceCoordinates(List<KakaoDirectionsResponse.Route> rawRoutes) {
-        List<RouteGeometry> routes = rawRoutes.stream()
-                .map(routeCoordinateReducer::reduce)
-                .filter(geometry -> !geometry.path().isEmpty())
-                .toList();
-        if (routes.isEmpty()) {
-            throw RouteRestStopNotFoundException.emptyRoutePath();
-        }
-        return routes;
-    }
-
-    /**
-     * 대안 경로마다 독립적으로, 휴게소 전체를 경로 반경 안에서 매칭하고 상·하행 페어의
-     * 진행방향을 판별한다 (RouteRestStopMatcher에 위임).
-     */
-    private List<RouteCandidate> matchRestStopsByDirection(
-            List<RouteGeometry> routes, List<RestStopEntity> allRestStops) {
-        return IntStream.range(0, routes.size())
-                .mapToObj(routeIndex -> {
-                    RouteGeometry geometry = routes.get(routeIndex);
-                    List<RouteRestStopItem> items = routeRestStopMatcher.match(geometry.path(), allRestStops);
-                    return new RouteCandidate(routeIndex, geometry, items);
-                })
-                .toList();
+        return RouteRestStopResponse.of(destination, routeOptions);
     }
 }
