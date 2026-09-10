@@ -4,10 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restroute.oilprice.client.response.RestOilItem;
 import com.restroute.oilprice.domain.RestOilEntity;
 import com.restroute.oilprice.repository.RestOilRepository;
+import com.restroute.reststop.client.response.RestStopItem;
 import com.restroute.reststop.domain.RestStopEntity;
 import com.restroute.reststop.domain.RestStopImageEntity;
 import com.restroute.reststop.repository.RestStopImageRepository;
 import com.restroute.reststop.repository.RestStopRepository;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 
 /**
  * 휴게소 공개 API 인수 테스트가 쓰는 데이터. {@link RouteFixtures}와 합치지 않는다 — 그쪽은
@@ -29,6 +36,27 @@ public final class RestStopFixtures {
 
     private RestStopFixtures() {}
 
+    /**
+     * 업로드에 쓸 실제 PNG 바이트를 만든다. 서버가 {@code ImageIO}로 읽어 webp로 변환하므로
+     * 아무 바이트나 보내면 400이 되고, 그 400은 업로드 경로를 검증한 것이 아니라 픽스처가
+     * 잘못된 것일 뿐이다.
+     *
+     * @param size 한 변의 픽셀 수. 리사이즈 경로를 태우려면 목록용 폭보다 크게 준다
+     */
+    public static byte[] pngBytes(int size) {
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = image.createGraphics();
+        graphics.setColor(Color.GRAY);
+        graphics.fillRect(0, 0, size, size);
+        graphics.dispose();
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", output);
+            return output.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("PNG 픽스처를 만들지 못했다", e);
+        }
+    }
+
     /** @return 저장되며 생성된 서비스지역코드 */
     public static String saveRestStop(
             RestStopRepository repository, String unitName, String longitude, String latitude) {
@@ -40,6 +68,37 @@ public final class RestStopFixtures {
     /** 좌표가 중요하지 않은 시나리오용. */
     public static String saveRestStop(RestStopRepository repository, String unitName) {
         return saveRestStop(repository, unitName, "127.0000", "37.5000");
+    }
+
+    /**
+     * 외부 API 동기화로 들어온 휴게소를 심는다. {@link #saveRestStop}이 쓰는
+     * {@code createByAdmin}은 관리자가 만든 행이라 {@code adminOverridden}이 처음부터 켜져
+     * 있으므로, 잠금이 <b>풀린</b> 상태가 전제인 시나리오는 이쪽을 써야 한다.
+     *
+     * <p>서비스지역코드를 호출부가 정할 수 있다는 것도 차이다 — 관리자 생성은 코드를 스스로
+     * 만들어내지만 동기화는 외부가 준 코드를 그대로 쓴다.
+     */
+    public static void saveSyncedRestStop(RestStopRepository repository, String serviceAreaCode, String unitName) {
+        repository.save(RestStopEntity.from(restStopItem(serviceAreaCode, unitName)));
+    }
+
+    private static RestStopItem restStopItem(String serviceAreaCode, String unitName) {
+        try {
+            return new ObjectMapper().readValue("""
+                            {
+                              "unitCode": "001",
+                              "unitName": "%s",
+                              "routeNo": "0010",
+                              "routeName": "경부선",
+                              "xValue": "127.0425",
+                              "yValue": "37.4599",
+                              "stdRestCd": "000001",
+                              "serviceAreaCode": "%s"
+                            }
+                            """.formatted(unitName, serviceAreaCode), RestStopItem.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("휴게소 픽스처를 만들지 못했다", e);
+        }
     }
 
     public static void saveImages(RestStopImageRepository repository, String serviceAreaCode) {
