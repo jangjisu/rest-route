@@ -26,8 +26,7 @@ import org.springframework.util.StringUtils;
  * 한 번에 조합해 반환한다.
  *
  * <p>여러 QueryService를 각자 호출해 서비스 코드 기준으로 직접 짜맞추는 일은 호출부가 아니라
- * 여기서만 한다 — {@code RouteOptionAssemblyService},
- * {@code RestStopServiceAreaCodeBackfillService}가 이 서비스를 통해 조합한다.
+ * 여기서만 한다.
  */
 @Service
 @RequiredArgsConstructor
