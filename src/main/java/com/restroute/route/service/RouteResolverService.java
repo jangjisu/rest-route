@@ -15,9 +15,8 @@ import org.springframework.stereotype.Service;
  * 좌표열 축약(다운샘플링)은 여기서 하지 않는다 — 원본 그대로 RouteRestStopService에 돌려준다.
  * 길찾기 실패는 여기서 바로 예외로 끝낸다.
  *
- * <p>목적지 해석에 지오코딩이 필요한 건 지도 화면뿐이라, 검색어를 받는
- * {@link #resolveDestinationAndRoute}와 이미 정해진 목적지를 받는 {@link #resolveRoute}를 나눠 둔다.
- * finder는 후자만 쓰므로 외부 호출이 길찾기 한 번으로 끝난다.
+ * <p>목적지를 검색어로 받는 {@link #resolveDestinationAndRoute}와 이미 정해진 목적지를 받는
+ * {@link #resolveRoute}를 나눠 둔다.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,7 +36,7 @@ public class RouteResolverService {
         return resolveRoute(originLatitude, originLongitude, destination);
     }
 
-    /** 목적지가 이미 정해진 경우 — 지오코딩 없이 길찾기만 부른다. */
+    /** 이미 정해진 목적지로 길찾기만 부른다. */
     public RawRouteResult resolveRoute(double originLatitude, double originLongitude, Destination destination) {
         KakaoDirectionsResponse directions = kakaoMapClient.getDirections(
                 RouteCoordinateFormat.toParam(originLongitude, originLatitude),

@@ -15,9 +15,8 @@ import java.util.StringJoiner;
  * ({@code KakaoNaviFeignClient})에 선언된 값과 같아야 하며, 다르면 WireMock이 404를 돌려주므로
  * 스텁이 어긋난 걸 바로 알 수 있다.
  *
- * <p>지오코딩(카카오 로컬) 스텁은 없다 — {@code /api/route-rest-stops/list}는 목적지를 좌표로만
- * 받으므로 그쪽을 부르지 않는다. 부르지 않는다는 사실 자체는
- * {@link #verifyKeywordSearchNotCalled(WireMockServer)}로 확인한다.
+ * <p>길찾기 스텁만 둔다. 장소 검색은 {@link #verifyKeywordSearchNotCalled(WireMockServer)}로
+ * 호출 여부만 확인한다.
  */
 public final class KakaoApiStubs {
 
@@ -100,7 +99,7 @@ public final class KakaoApiStubs {
                 .willReturn(okJson("{ \"routes\": [] }").withFixedDelay(delayMillis)));
     }
 
-    /** 이 API가 지오코딩을 거치지 않는다는 것을 확인한다. */
+    /** 장소 검색이 호출되지 않았음을 확인한다. */
     public static void verifyKeywordSearchNotCalled(WireMockServer kakao) {
         kakao.verify(0, getRequestedFor(urlPathEqualTo(KEYWORD_SEARCH_PATH)));
     }

@@ -53,9 +53,7 @@ public class RouteRestStopController {
      * 대안 경로·이미지 없이 첫 번째 경로의 휴게소만 출발지 기준 거리순으로 반환하고, {@code fuelType}
      * 하나만 스코프해서 유가 등급을 계산한다.
      *
-     * <p>지도 화면과 달리 <b>지오코딩을 거치지 않는다</b> — 목적지는 좌표로 받거나, 서버가 좌표를
-     * 아는 이름({@code PopularDestination})으로만 받는다. 자유 검색어를 좌표로 바꾸는 일은
-     * {@code /api/place-search}가 맡고, 그 결과 좌표가 여기로 들어온다.
+     * <p>목적지는 좌표로 받거나, 서버가 좌표를 아는 이름({@code PopularDestination})으로 받는다.
      *
      * @param originLat 출발지 위도. 예: 37.5665
      * @param originLng 출발지 경도. 예: 126.9780
