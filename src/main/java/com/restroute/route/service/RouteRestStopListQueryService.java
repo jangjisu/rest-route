@@ -34,6 +34,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RouteRestStopListQueryService {
 
+    /** 집계 조회에서 관리자 재정의 여부로 거르지 않는다는 뜻. */
+    private static final Boolean ANY_ADMIN_OVERRIDDEN = null;
+
     private final DestinationResolver destinationResolver;
     private final RouteCandidateFinder routeCandidateFinder;
     private final RestStopAggregateQueryService restStopAggregateQueryService;
@@ -87,7 +90,7 @@ public class RouteRestStopListQueryService {
         List<RestStopEntity> selected = allRestStops.stream()
                 .filter(restStop -> serviceAreaCodes.contains(restStop.getServiceAreaCode()))
                 .toList();
-        return restStopAggregateQueryService.findByRestStopsAndAdminOverridden(selected, null);
+        return restStopAggregateQueryService.findByRestStopsAndAdminOverridden(selected, ANY_ADMIN_OVERRIDDEN);
     }
 
     private RouteRestStopListItemResponse toItem(
