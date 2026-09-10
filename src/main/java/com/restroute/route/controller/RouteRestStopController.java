@@ -20,8 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/route-rest-stops")
 public class RouteRestStopController {
 
-    private static final int DEFAULT_RADIUS_METERS = 1000;
-
     private final RouteRestStopService routeRestStopService;
     private final RouteRestStopListQueryService routeRestStopListQueryService;
 
@@ -32,7 +30,6 @@ public class RouteRestStopController {
      * @param destinationLat 목적지 위도(장소 선택 등으로 좌표를 이미 아는 경우). 예: 35.1148
      * @param destinationLng 목적지 경도. 예: 129.0403
      * @param destinationName 목적지 표시명(좌표와 함께 올 때만 사용, 없으면 "목적지"로 대체). 예: "부산역"
-     * @param radiusMeters 경로에서 휴게소를 포함할 반경(m). 예: 1000
      */
     @GetMapping
     public ResponseEntity<ApiResponse<RouteRestStopResponse>> getRouteRestStops(
@@ -41,10 +38,9 @@ public class RouteRestStopController {
             @RequestParam(required = false) String destinationQuery,
             @RequestParam(required = false) Double destinationLat,
             @RequestParam(required = false) Double destinationLng,
-            @RequestParam(required = false) String destinationName,
-            @RequestParam(required = false, defaultValue = "" + DEFAULT_RADIUS_METERS) int radiusMeters) {
+            @RequestParam(required = false) String destinationName) {
         RouteRestStopResponse response = routeRestStopService.findRouteRestStops(
-                originLat, originLng, destinationQuery, destinationLat, destinationLng, destinationName, radiusMeters);
+                originLat, originLng, destinationQuery, destinationLat, destinationLng, destinationName);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -61,7 +57,6 @@ public class RouteRestStopController {
      * @param destinationLng 목적지 경도. 예: 129.0403
      * @param destinationName 좌표가 함께 오면 표시명(없으면 "목적지"로 대체), 좌표 없이 오면 서버가
      *     좌표를 아는 목적지 이름으로 해석한다. 예: "부산역"
-     * @param radiusMeters 경로에서 휴게소를 포함할 반경(m). 예: 1000
      * @param fuelType 선택. 이 유종 하나만 비교해 유가 등급(제일 저렴/평균보다 저렴)을 계산한다. 없으면 등급은 항상 null.
      */
     @GetMapping("/list")
@@ -71,16 +66,9 @@ public class RouteRestStopController {
             @RequestParam(required = false) Double destinationLat,
             @RequestParam(required = false) Double destinationLng,
             @RequestParam(required = false) String destinationName,
-            @RequestParam(required = false, defaultValue = "" + DEFAULT_RADIUS_METERS) int radiusMeters,
             @RequestParam(required = false) FuelType fuelType) {
         List<RouteRestStopListItemResponse> response = routeRestStopListQueryService.findRouteRestStops(
-                originLat,
-                originLng,
-                destinationLat,
-                destinationLng,
-                destinationName,
-                radiusMeters,
-                FuelTypeSelection.of(fuelType));
+                originLat, originLng, destinationLat, destinationLng, destinationName, FuelTypeSelection.of(fuelType));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

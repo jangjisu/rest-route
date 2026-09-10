@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,15 +31,20 @@ public class RouteRestStopMatcher {
     private static final int AMBIGUITY_CHECK_MIN_GROUP_SIZE = 2;
     private static final int SINGLE_REACHABLE_MATCH_COUNT = 1;
 
-    public List<RouteRestStopItem> match(RoutePath path, int radiusMeters, List<RestStopEntity> allRestStops) {
-        List<RouteRestStopCandidate> matched = matchRestStopsToPath(path, radiusMeters, allRestStops);
+    private final int radiusMeters;
+
+    public RouteRestStopMatcher(@Value("${route.match-radius-meters}") int radiusMeters) {
+        this.radiusMeters = radiusMeters;
+    }
+
+    public List<RouteRestStopItem> match(RoutePath path, List<RestStopEntity> allRestStops) {
+        List<RouteRestStopCandidate> matched = matchRestStopsToPath(path, allRestStops);
         return removeUnreachableSide(matched, path);
     }
 
-    private List<RouteRestStopCandidate> matchRestStopsToPath(
-            RoutePath path, int radiusMeters, List<RestStopEntity> allRestStops) {
+    private List<RouteRestStopCandidate> matchRestStopsToPath(RoutePath path, List<RestStopEntity> allRestStops) {
         Map<Integer, List<MatchedRestStop>> matchesByRouteIndex = allRestStops.stream()
-                .map(restStop -> matchOne(restStop, path, radiusMeters))
+                .map(restStop -> matchOne(restStop, path))
                 .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(
                         IndexedMatch::routeIndex,
@@ -49,7 +55,7 @@ public class RouteRestStopMatcher {
                 .toList();
     }
 
-    private IndexedMatch matchOne(RestStopEntity restStop, RoutePath path, int radiusMeters) {
+    private IndexedMatch matchOne(RestStopEntity restStop, RoutePath path) {
         Double latitude = RouteCoordinateFormat.parse(restStop.getYValue());
         Double longitude = RouteCoordinateFormat.parse(restStop.getXValue());
         if (latitude == null || longitude == null) {

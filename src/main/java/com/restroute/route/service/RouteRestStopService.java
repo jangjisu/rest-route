@@ -39,8 +39,7 @@ public class RouteRestStopService {
             String destinationQuery,
             Double destinationLatitude,
             Double destinationLongitude,
-            String destinationName,
-            int radiusMeters) {
+            String destinationName) {
         RawRouteResult raw = routeResolverService.resolveDestinationAndRoute(
                 originLatitude,
                 originLongitude,
@@ -52,7 +51,7 @@ public class RouteRestStopService {
         List<RouteGeometry> routes = reduceCoordinates(raw.routes()); // 2. 좌표 개수 줄이기
 
         List<RestStopEntity> allRestStops = restStopQueryService.findAll();
-        List<RouteCandidate> candidates = matchRestStopsByDirection(routes, allRestStops, radiusMeters); // 3. 방향 매칭
+        List<RouteCandidate> candidates = matchRestStopsByDirection(routes, allRestStops); // 3. 방향 매칭
 
         Optional<NationalOilPriceSummary> nationalOilPriceSummary = nationalOilPriceService.getTodaySummary();
         List<RouteOption> routeOptions = routeOptionAssemblyService.attachDetails(
@@ -81,12 +80,11 @@ public class RouteRestStopService {
      * 진행방향을 판별한다 (RouteRestStopMatcher에 위임).
      */
     private List<RouteCandidate> matchRestStopsByDirection(
-            List<RouteGeometry> routes, List<RestStopEntity> allRestStops, int radiusMeters) {
+            List<RouteGeometry> routes, List<RestStopEntity> allRestStops) {
         return IntStream.range(0, routes.size())
                 .mapToObj(routeIndex -> {
                     RouteGeometry geometry = routes.get(routeIndex);
-                    List<RouteRestStopItem> items =
-                            routeRestStopMatcher.match(geometry.path(), radiusMeters, allRestStops);
+                    List<RouteRestStopItem> items = routeRestStopMatcher.match(geometry.path(), allRestStops);
                     return new RouteCandidate(routeIndex, geometry, items);
                 })
                 .toList();

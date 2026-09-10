@@ -56,7 +56,7 @@ sources: []
    200m 간격/최소 300점 기준으로 균등 샘플링(uniform sampling)해 축소한다. 축소 후 폴리라인이
    빈 경로는 그 경로만 제외하고, 전부 비면 예외로 끝낸다.
 3. **방향 매칭** — `RouteRestStopMatcher.match()`가 대안 경로마다 독립적으로, 전체 휴게소 중
-   경로 반경(`radiusMeters`) 안에 있는 것만 골라 경로 순서대로 정렬하고, 같은 이름의 상·하행
+   설정된 매칭 반경 안에 있는 것만 골라 경로 순서대로 정렬하고, 같은 이름의 상·하행
    페어는 진행방향 기준으로 실제 진입 가능한 쪽만 남긴다(애매하면 `hasDirectionAlternative`만
    켠다).
 4. **detail 조립** — `RouteOptionAssemblyService.attachDetails()`가 대안 경로 전체의 매칭
@@ -109,7 +109,8 @@ sources: []
   좌표 없음이 모두 이 예외로 통일되어 있고, 메시지만 케이스별로 다르다.
 - 별도 인증/권한 검사는 없음 — 공개 API(`/api/route-rest-stops`)로 보임. **추정 — 확인 필요**:
   Spring Security 설정에서 이 경로가 별도로 제한되는지는 config를 따로 확인하지 않음.
-- 반경(`radiusMeters`)은 요청 파라미터로 조절 가능하며 기본값 1000m.
+- 매칭 반경은 요청이 아니라 서버 설정이다(`route.match-radius-meters`, 기본 1000m) —
+  `RouteRestStopMatcher`가 직접 갖는다.
 
 ## 7. 외부 시스템과 계약
 
@@ -123,7 +124,7 @@ sources: []
 ## 8. 코드 경계와 진입점
 
 - **진입점**: `RouteRestStopController.getRouteRestStops()` (`GET /api/route-rest-stops`,
-  파라미터: originLat/Lng, destinationQuery, destinationLat/Lng, destinationName, radiusMeters).
+  파라미터: originLat/Lng, destinationQuery, destinationLat/Lng, destinationName).
 - **오케스트레이터**: `RouteRestStopService` — 4단계(좌표 얻기 → 좌표 축소 → 방향 매칭 →
   detail 조립)를 이름 붙은 메서드 호출로 그대로 노출한다(각 단계 구현은 아래 협력자에 위임).
 - **협력자(`@Component`, 의존성 없는 순수 알고리즘)**: `RouteCoordinateReducer`(좌표 축소),
@@ -139,7 +140,7 @@ sources: []
   단계별 협력자" 구성을 참고해 리팩토링된 것으로, 그 패턴을 따르는 두 번째 사례다.
 - **finder mode2 전용 진입점**([[finder]] 소비, 상세는 그 문서 참고): `RouteRestStopController.
   getRouteRestStopList()`(`GET /api/route-rest-stops/list`, 파라미터: originLat/Lng,
-  destinationLat/Lng, destinationName, radiusMeters, fuelType)는 위 1~5단계 중 좌표/경로 관련 부품
+  destinationLat/Lng, destinationName, fuelType)는 위 1~5단계 중 좌표/경로 관련 부품
   (`RouteCoordinateReducer`/`RouteRestStopMatcher`)만 재사용하고, `RouteOptionAssemblyService`는
   거치지 않는다 — 대신 `RouteRestStopListQueryService`가 대안 경로 중 첫 번째만 골라 거리(서버 계산)·
   유가(`RouteRestStopFuelTierCalculator`, 요청 유종 1개만 스코프)를 직접 조립한다.

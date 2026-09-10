@@ -55,7 +55,6 @@ public class RouteRestStopListQueryService {
             Double destinationLatitude,
             Double destinationLongitude,
             String destinationName,
-            int radiusMeters,
             FuelTypeSelection fuelSelection) {
         Destination destination =
                 destinationResolver.resolve(destinationLatitude, destinationLongitude, destinationName);
@@ -63,7 +62,7 @@ public class RouteRestStopListQueryService {
         RouteGeometry firstRoute = firstReducedRoute(raw.routes());
 
         List<RestStopEntity> allRestStops = restStopQueryService.findAll();
-        List<RouteRestStopItem> matched = routeRestStopMatcher.match(firstRoute.path(), radiusMeters, allRestStops);
+        List<RouteRestStopItem> matched = routeRestStopMatcher.match(firstRoute.path(), allRestStops);
         if (matched.isEmpty()) {
             return List.of();
         }

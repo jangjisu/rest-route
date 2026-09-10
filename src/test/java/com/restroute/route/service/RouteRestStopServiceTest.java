@@ -82,7 +82,7 @@ class RouteRestStopServiceTest {
                 restStopQueryService,
                 nationalOilPriceService,
                 new RouteCoordinateReducer(),
-                new RouteRestStopMatcher(),
+                new RouteRestStopMatcher(1000),
                 new RouteOptionAssemblyService(
                         restStopAggregateQueryService,
                         routeRestStopComparisonSummaryService,
@@ -192,7 +192,7 @@ class RouteRestStopServiceTest {
         RestStopEntity blank = restStop("D", "D", "x", "127.0", "   ");
         RestStopEntity nonNumeric = restStop("E", "E", "x", "127.0", "abc");
         when(restStopQueryService.findAll()).thenReturn(List.of(near1, near0, near2, far, blank, nonNumeric));
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.destination().name()).isEqualTo("부산역");
         assertThat(response.destination().latitude()).isEqualTo(35.0);
@@ -218,7 +218,7 @@ class RouteRestStopServiceTest {
                 "A",
                 new RestStopAggregate(null, emptyRelatedInfo(), true, false, false, false, null, null, false, null)));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).restStops())
                 .singleElement()
@@ -238,7 +238,7 @@ class RouteRestStopServiceTest {
                 "A",
                 new RestStopAggregate(null, emptyRelatedInfo(), false, false, true, true, null, null, false, null)));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).restStops()).singleElement().satisfies(item -> {
             assertThat(item.hasTheme()).isTrue();
@@ -259,7 +259,7 @@ class RouteRestStopServiceTest {
                 "A",
                 new RestStopAggregate(null, emptyRelatedInfo(), false, true, false, false, null, null, false, null)));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).restStops())
                 .extracting(RouteRestStopResponse.RouteRestStopItem::listImageUrl)
@@ -293,7 +293,7 @@ class RouteRestStopServiceTest {
                 "A",
                 relatedInfo(Optional.empty(), List.of(), List.of(oilConvenience), Optional.of(oilPrice), List.of())));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         RouteRestStopResponse.ComparisonSummary summary =
                 response.routes().get(0).restStops().get(0).comparisonSummary();
@@ -339,7 +339,7 @@ class RouteRestStopServiceTest {
                         Optional.of(secondOilPrice),
                         List.of(secondFood, thirdFood))));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         RouteRestStopResponse.RouteRestStopItem firstItem =
                 response.routes().get(0).restStops().get(0);
@@ -377,7 +377,7 @@ class RouteRestStopServiceTest {
         stubRelatedInfoByCode(
                 Map.of("A", relatedInfo(Optional.of(detail), List.of(), List.of(), Optional.empty(), List.of())));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         RouteRestStopResponse.RouteRestStopItem item =
                 response.routes().get(0).restStops().get(0);
@@ -400,7 +400,7 @@ class RouteRestStopServiceTest {
         stubRelatedInfoByCode(
                 Map.of("A", relatedInfo(Optional.of(detail), List.of(), List.of(), Optional.empty(), List.of())));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         RouteRestStopResponse.RouteRestStopItem item =
                 response.routes().get(0).restStops().get(0);
@@ -431,7 +431,7 @@ class RouteRestStopServiceTest {
                         Optional.of(oilPrice),
                         List.of())));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         RouteRestStopResponse.RouteRestStopItem item =
                 response.routes().get(0).restStops().get(0);
@@ -452,7 +452,7 @@ class RouteRestStopServiceTest {
         RestStopEntity seoul = restStop("B", "화성(서울)휴게소", "서해안선", "127.0002", "37.0002");
         when(restStopQueryService.findAll()).thenReturn(List.of(mokpo, seoul));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "목포", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "목포", null, null, null);
 
         assertThat(response.routes().get(0).restStops())
                 .extracting(RouteRestStopResponse.RouteRestStopItem::unitName)
@@ -474,7 +474,7 @@ class RouteRestStopServiceTest {
         RestStopEntity unnamedFar = restStop("B", null, "서해안선", "127.005", "37.005");
         when(restStopQueryService.findAll()).thenReturn(List.of(blankDirection, unnamedFar, unnamedNear));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "목적지", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "목적지", null, null, null);
 
         assertThat(response.routes().get(0).restStops())
                 .extracting(RouteRestStopResponse.RouteRestStopItem::unitName)
@@ -488,11 +488,11 @@ class RouteRestStopServiceTest {
     @DisplayName("목적지 검색 결과가 없으면 NotFound (빈 리스트/ null 모두)")
     void emptySearch_throwsNotFound() {
         when(kakaoMapClient.searchKeyword("없는곳")).thenReturn(new KakaoLocalSearchResponse(List.of()));
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "없는곳", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "없는곳", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         when(kakaoMapClient.searchKeyword("널")).thenReturn(new KakaoLocalSearchResponse(null));
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "널", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "널", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
     }
 
@@ -500,11 +500,11 @@ class RouteRestStopServiceTest {
     @DisplayName("목적지 좌표를 해석하지 못하면 NotFound")
     void unparsableDestination_throwsNotFound() {
         when(kakaoMapClient.searchKeyword("경도없음")).thenReturn(searchResult(null, "35.0", "곳", null));
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "경도없음", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "경도없음", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         when(kakaoMapClient.searchKeyword("위도없음")).thenReturn(searchResult("129.0", null, "곳", null));
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "위도없음", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "위도없음", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
     }
 
@@ -514,15 +514,15 @@ class RouteRestStopServiceTest {
         when(kakaoMapClient.searchKeyword(anyString())).thenReturn(searchResult("129.0", "35.0", "부산", null));
 
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(104, null, VERTEXES));
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(new KakaoDirectionsResponse(List.of()));
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
 
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(new KakaoDirectionsResponse(null));
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
     }
 
@@ -541,7 +541,7 @@ class RouteRestStopServiceTest {
 
     private void assertFailureMessage(int resultCode, String expectedFragment) {
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(resultCode, null, VERTEXES));
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class)
                 .hasMessageContaining(expectedFragment);
     }
@@ -552,7 +552,7 @@ class RouteRestStopServiceTest {
         when(kakaoMapClient.searchKeyword(anyString())).thenReturn(searchResult("129.0", "35.0", "부산", null));
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, List.of()));
 
-        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000))
+        assertThatThrownBy(() -> service.findRouteRestStops(37.0, 127.0, "부산", null, null, null))
                 .isInstanceOf(RouteRestStopNotFoundException.class);
     }
 
@@ -573,7 +573,7 @@ class RouteRestStopServiceTest {
         RestStopEntity near2 = restStop("C", "C휴게소", "경부선", "128.0001", "38.0001");
         when(restStopQueryService.findAll()).thenReturn(List.of(near0, near1, near2));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         List<RouteRestStopResponse.RouteRestStopItem> items =
                 response.routes().get(0).restStops();
@@ -594,7 +594,7 @@ class RouteRestStopServiceTest {
         RestStopEntity far = restStop("C", "C휴게소", "중부선", "130.0", "40.0");
         when(restStopQueryService.findAll()).thenReturn(List.of(nullLatitude, nullLongitude, far));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).restStops()).isEmpty();
     }
@@ -606,7 +606,7 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(10L, 20L, null), VERTEXES));
         when(restStopQueryService.findAll()).thenReturn(List.of());
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, null, 35.0, 129.0, "부산항", 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, null, 35.0, 129.0, "부산항");
 
         assertThat(response.destination().name()).isEqualTo("부산항");
         assertThat(response.destination().latitude()).isEqualTo(35.0);
@@ -621,7 +621,7 @@ class RouteRestStopServiceTest {
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
         when(restStopQueryService.findAll()).thenReturn(List.of());
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", 35.0, null, "이름", 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", 35.0, null, "이름");
 
         assertThat(response.destination().name()).isEqualTo("부산역");
     }
@@ -632,11 +632,11 @@ class RouteRestStopServiceTest {
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
         when(restStopQueryService.findAll()).thenReturn(List.of());
 
-        assertThat(service.findRouteRestStops(37.0, 127.0, null, 35.0, 129.0, null, 1000)
+        assertThat(service.findRouteRestStops(37.0, 127.0, null, 35.0, 129.0, null)
                         .destination()
                         .name())
                 .isEqualTo("목적지");
-        assertThat(service.findRouteRestStops(37.0, 127.0, null, 35.0, 129.0, "  ", 1000)
+        assertThat(service.findRouteRestStops(37.0, 127.0, null, 35.0, 129.0, "  ")
                         .destination()
                         .name())
                 .isEqualTo("목적지");
@@ -653,7 +653,7 @@ class RouteRestStopServiceTest {
         RestStopEntity seoul = restStop("B", "안성(서울)휴게소", "경부선", "126.999", "37.005");
         when(restStopQueryService.findAll()).thenReturn(List.of(busan, seoul));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).restStops())
                 .extracting(RouteRestStopResponse.RouteRestStopItem::serviceAreaCode)
@@ -672,7 +672,7 @@ class RouteRestStopServiceTest {
         RestStopEntity majang = restStop("C", "마장휴게소", "중부선", "126.999", "37.005");
         when(restStopQueryService.findAll()).thenReturn(List.of(majang));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).restStops())
                 .extracting(RouteRestStopResponse.RouteRestStopItem::serviceAreaCode)
@@ -691,7 +691,7 @@ class RouteRestStopServiceTest {
         RestStopEntity busan = restStop("A", "안성(부산)휴게소", "경부선", "127.001", "37.005");
         when(restStopQueryService.findAll()).thenReturn(List.of(busan));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).restStops())
                 .extracting(RouteRestStopResponse.RouteRestStopItem::serviceAreaCode)
@@ -711,7 +711,7 @@ class RouteRestStopServiceTest {
         RestStopEntity seoul = restStop("B", "죽암(서울)휴게소", "경부선", "126.9999", "37.0001");
         when(restStopQueryService.findAll()).thenReturn(List.of(busan, seoul));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).restStops())
                 .extracting(RouteRestStopResponse.RouteRestStopItem::serviceAreaCode)
@@ -727,7 +727,7 @@ class RouteRestStopServiceTest {
         when(kakaoMapClient.getDirections(anyString(), anyString())).thenReturn(directions(0, null, VERTEXES));
         when(restStopQueryService.findAll()).thenReturn(List.of());
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.destination().name()).isEqualTo("부산 우동");
         assertThat(response.routes().get(0).summary().distanceMeters()).isZero();
@@ -743,7 +743,7 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(null, null, null), VERTEXES));
         when(restStopQueryService.findAll()).thenReturn(List.of());
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).summary().distanceMeters()).isZero();
         assertThat(response.routes().get(0).summary().durationSeconds()).isZero();
@@ -757,7 +757,7 @@ class RouteRestStopServiceTest {
                 .thenReturn(directions(0, new Summary(100L, 200L, new Fare(null)), VERTEXES));
         when(restStopQueryService.findAll()).thenReturn(List.of());
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes().get(0).summary().tollFareWon()).isZero();
     }
@@ -778,7 +778,7 @@ class RouteRestStopServiceTest {
         RestStopEntity nearRouteB = restStop("B", "B휴게소", "동해선", "129.0001", "39.0001");
         when(restStopQueryService.findAll()).thenReturn(List.of(nearRouteA, nearRouteB));
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes()).hasSize(2);
         RouteRestStopResponse.RouteOption first = response.routes().get(0);
@@ -808,7 +808,7 @@ class RouteRestStopServiceTest {
                 .thenReturn(new KakaoDirectionsResponse(List.of(withPath, withoutPath)));
         when(restStopQueryService.findAll()).thenReturn(List.of());
 
-        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null, 1000);
+        RouteRestStopResponse response = service.findRouteRestStops(37.0, 127.0, "부산", null, null, null);
 
         assertThat(response.routes()).hasSize(1);
         assertThat(response.routes().get(0).summary().distanceMeters()).isEqualTo(100L);

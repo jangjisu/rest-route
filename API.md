@@ -855,7 +855,6 @@ JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연
 | Query | `destinationLat` | 선택 | 사용자가 선택한 목적지 위도 |
 | Query | `destinationLng` | 선택 | 사용자가 선택한 목적지 경도 |
 | Query | `destinationName` | 선택 | 화면에 표시할 목적지명 |
-| Query | `radiusMeters` | 선택 | 경로 포함 반경, 기본값 `1000` |
 
 목적지 좌표가 있으면 검색 없이 해당 좌표를 사용한다. 좌표가 없으면 `destinationQuery`로 검색한 첫 결과를
 사용하는 하위 호환 경로가 남아 있다. 현재 화면은 `/api/place-search`에서 사용자가 고른 목적지 좌표를 전달한다.
@@ -973,7 +972,6 @@ JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연
 | Query | `destinationLat` | 선택 | 목적지 위도(`/api/place-search`에서 고른 후보의 좌표) |
 | Query | `destinationLng` | 선택 | 목적지 경도 |
 | Query | `destinationName` | 선택 | 좌표와 함께 오면 화면 표시명, 좌표 없이 오면 목적지 이름으로 해석 |
-| Query | `radiusMeters` | 선택 | 경로 포함 반경, 기본값 `1000` |
 | Query | `fuelType` | 선택 | `GASOLINE`, `DIESEL`, `LPG` 중 하나. 유가 등급 계산 대상 유종 |
 
 목적지는 좌표와 이름 중 하나가 반드시 있어야 한다. 좌표가 오면 그대로 쓰고, 위도·경도 중 하나만 오면
