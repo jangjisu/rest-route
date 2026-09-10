@@ -111,7 +111,7 @@ class RouteRestStopListQueryServiceTest {
                     return result;
                 })
                 .when(restStopAggregateQueryService)
-                .findByRestStopsAndAdminOverridden(any(), any());
+                .findByRestStops(any());
     }
 
     private RestStopRelatedInfo emptyRelatedInfo() {

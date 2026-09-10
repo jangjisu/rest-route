@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -125,7 +124,7 @@ class RouteRestStopServiceTest {
                     return result;
                 })
                 .when(restStopAggregateQueryService)
-                .findByRestStopsAndAdminOverridden(any(), any());
+                .findByRestStops(any());
     }
 
     private KakaoLocalSearchResponse searchResult(String x, String y, String placeName, String addressName) {
@@ -268,7 +267,7 @@ class RouteRestStopServiceTest {
                 .containsExactly("/api/rest-stops/A/images/list", null);
         org.mockito.ArgumentCaptor<List<RestStopEntity>> restStopsCaptor =
                 org.mockito.ArgumentCaptor.forClass(List.class);
-        verify(restStopAggregateQueryService).findByRestStopsAndAdminOverridden(restStopsCaptor.capture(), isNull());
+        verify(restStopAggregateQueryService).findByRestStops(restStopsCaptor.capture());
         assertThat(restStopsCaptor.getValue())
                 .extracting(RestStopEntity::getServiceAreaCode)
                 .containsExactlyInAnyOrder("A", "B");
@@ -796,7 +795,7 @@ class RouteRestStopServiceTest {
                 .extracting(RouteRestStopResponse.RouteRestStopItem::serviceAreaCode)
                 .containsExactly("B");
         verify(restStopQueryService, times(1)).findAll();
-        verify(restStopAggregateQueryService, times(1)).findByRestStopsAndAdminOverridden(any(), any());
+        verify(restStopAggregateQueryService, times(1)).findByRestStops(any());
     }
 
     @Test

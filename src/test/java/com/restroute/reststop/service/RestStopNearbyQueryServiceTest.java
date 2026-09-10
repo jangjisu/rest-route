@@ -52,9 +52,7 @@ class RestStopNearbyQueryServiceTest {
     void setUp() {
         service = new RestStopNearbyQueryService(
                 restStopQueryService, restStopAggregateQueryService, evChargerQueryService, nationalOilPriceService);
-        lenient()
-                .when(restStopAggregateQueryService.findByRestStopsAndAdminOverridden(any(), any()))
-                .thenReturn(Map.of());
+        lenient().when(restStopAggregateQueryService.findByRestStops(any())).thenReturn(Map.of());
     }
 
     private RestStopEntity restStop(String serviceAreaCode, String unitName, String yValue, String xValue) {
@@ -84,7 +82,7 @@ class RestStopNearbyQueryServiceTest {
     void findNearby_returnsAllRestStopsWithoutDistanceOrInterestWhenNoParams() {
         RestStopEntity restStop = restStop("A00001", "서울만남(부산)휴게소", "37.5", "127.0");
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
-        when(restStopAggregateQueryService.findByRestStopsAndAdminOverridden(List.of(restStop), null))
+        when(restStopAggregateQueryService.findByRestStops(List.of(restStop)))
                 .thenReturn(Map.of(
                         "A00001",
                         aggregate(relatedInfoWithOilPrice(Optional.empty()), true, true, false, SizeTier.LARGE)));
@@ -184,7 +182,7 @@ class RestStopNearbyQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem("000001", "테스트주유소"));
         ReflectionTestUtils.setField(oilPrice, "gasolinePrice", "1,700원");
-        when(restStopAggregateQueryService.findByRestStopsAndAdminOverridden(List.of(restStop), null))
+        when(restStopAggregateQueryService.findByRestStops(List.of(restStop)))
                 .thenReturn(Map.of(
                         "A00001",
                         aggregate(relatedInfoWithOilPrice(Optional.of(oilPrice)), false, false, false, null)));
@@ -204,7 +202,7 @@ class RestStopNearbyQueryServiceTest {
         when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
         RestOilPriceEntity oilPrice = RestOilPriceEntity.from(restOilPriceItem("000001", "테스트주유소"));
         ReflectionTestUtils.setField(oilPrice, "gasolinePrice", "2,000원");
-        when(restStopAggregateQueryService.findByRestStopsAndAdminOverridden(List.of(restStop), null))
+        when(restStopAggregateQueryService.findByRestStops(List.of(restStop)))
                 .thenReturn(Map.of(
                         "A00001",
                         aggregate(relatedInfoWithOilPrice(Optional.of(oilPrice)), false, false, false, null)));

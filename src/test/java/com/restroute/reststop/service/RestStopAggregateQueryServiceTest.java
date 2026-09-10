@@ -37,9 +37,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RestStopAggregateQueryServiceTest {
 
     @Mock
-    private RestStopQueryService restStopQueryService;
-
-    @Mock
     private RestStopRelatedInfoQueryService restStopRelatedInfoQueryService;
 
     @Mock
@@ -65,7 +62,6 @@ class RestStopAggregateQueryServiceTest {
     @BeforeEach
     void setUp() {
         aggregateQueryService = new RestStopAggregateQueryService(
-                restStopQueryService,
                 restStopRelatedInfoQueryService,
                 evChargerQueryService,
                 restStopImageQueryService,
@@ -74,7 +70,7 @@ class RestStopAggregateQueryServiceTest {
                 restStopRestroomRepository,
                 restStopUsageSnapshotRepository);
         lenient()
-                .when(restStopRelatedInfoQueryService.findAllByRestStops(any(), any()))
+                .when(restStopRelatedInfoQueryService.findAllByRestStops(any()))
                 .thenReturn(Map.of());
         lenient()
                 .when(evChargerQueryService.findChargerMappedServiceAreaCodes(any()))
@@ -103,39 +99,10 @@ class RestStopAggregateQueryServiceTest {
     }
 
     @Test
-    @DisplayName("코드 목록과 override 조건을 그대로 RestStopQueryService에 위임해 대상 휴게소를 조회한다")
-    void find_delegatesResolutionToRestStopQueryService() {
-        RestStopEntity restStop = restStop("A00001");
-        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(Set.of("A00001"), null))
-                .thenReturn(List.of(restStop));
-
-        Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(Set.of("A00001"), null);
-
-        assertThat(result).containsOnlyKeys("A00001");
-        assertThat(result.get("A00001").restStop()).isEqualTo(restStop);
-    }
-
-    @Test
-    @DisplayName("대상이 없으면 빈 맵을 반환하고 나머지 조회는 하지 않는다")
-    void find_returnsEmptyMapWhenNoRestStops() {
-        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(any(), any()))
-                .thenReturn(List.of());
-
-        Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(Set.of("UNKNOWN"), null);
-
-        assertThat(result).isEmpty();
-        verify(restStopRelatedInfoQueryService, org.mockito.Mockito.never()).findAllByRestStops(any(), any());
-    }
-
-    @Test
     @DisplayName("연관 정보, EV차저/이미지/테마/이벤트 매핑 여부를 코드별로 합쳐서 반환한다")
     void find_combinesRelatedInfoAndMappingFlagsPerCode() {
         RestStopEntity withEverything = restStop("A00001");
         RestStopEntity withNothing = restStop("A00002");
-        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(any(), any()))
-                .thenReturn(List.of(withEverything, withNothing));
 
         RestStopRelatedInfo relatedInfo = RestStopRelatedInfo.of(
                 Optional.empty(),
@@ -148,7 +115,7 @@ class RestStopAggregateQueryServiceTest {
                 List.of());
         Map<String, RestStopRelatedInfo> relatedInfoByCode = new HashMap<>();
         relatedInfoByCode.put("A00001", relatedInfo);
-        when(restStopRelatedInfoQueryService.findAllByRestStops(any(), any())).thenReturn(relatedInfoByCode);
+        when(restStopRelatedInfoQueryService.findAllByRestStops(any())).thenReturn(relatedInfoByCode);
         when(evChargerQueryService.findChargerMappedServiceAreaCodes(any())).thenReturn(List.of("A00001"));
         when(restStopImageQueryService.findExistingServiceAreaCodes(any())).thenReturn(Set.of("A00001"));
         when(restThemeQueryService.findThemeMappedServiceAreaCodes(any())).thenReturn(List.of("A00001"));
@@ -156,7 +123,7 @@ class RestStopAggregateQueryServiceTest {
                 .thenReturn(List.of("A00001"));
 
         Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(null, null);
+                aggregateQueryService.findByRestStops(List.of(withEverything, withNothing));
 
         RestStopAggregate first = result.get("A00001");
         assertThat(first.relatedInfo()).isEqualTo(relatedInfo);
@@ -178,8 +145,6 @@ class RestStopAggregateQueryServiceTest {
     void find_combinesRestroomCountsAndTopTrafficTierPerCode() {
         RestStopEntity withUsageData = restStop("A00001");
         RestStopEntity withoutUsageData = restStop("A00002");
-        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(any(), any()))
-                .thenReturn(List.of(withUsageData, withoutUsageData));
 
         RestStopRestroomEntity restroom =
                 RestStopRestroomEntity.from(new RestStopRestroomRow("경부선", "A휴게소", "10", "8"));
@@ -195,7 +160,7 @@ class RestStopAggregateQueryServiceTest {
                 .thenReturn(List.of(usageSnapshot));
 
         Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(null, null);
+                aggregateQueryService.findByRestStops(List.of(withUsageData, withoutUsageData));
 
         RestStopAggregate first = result.get("A00001");
         assertThat(first.maleToiletCount()).isEqualTo(10);
@@ -213,8 +178,6 @@ class RestStopAggregateQueryServiceTest {
     void find_combinesSizeTierPerCode() {
         RestStopEntity withUsageData = restStop("A00001");
         RestStopEntity withoutUsageData = restStop("A00002");
-        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(any(), any()))
-                .thenReturn(List.of(withUsageData, withoutUsageData));
 
         RestStopUsageSnapshotEntity usageSnapshot = RestStopUsageSnapshotEntity.from(
                 new RestStopUsageSnapshotRow("경부선", "A휴게소", "1000", "휴게소", "500", "3000"));
@@ -224,7 +187,7 @@ class RestStopAggregateQueryServiceTest {
                 .thenReturn(List.of(usageSnapshot));
 
         Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(null, null);
+                aggregateQueryService.findByRestStops(List.of(withUsageData, withoutUsageData));
 
         assertThat(result.get("A00001").sizeTier()).isEqualTo(SizeTier.LARGE);
         assertThat(result.get("A00002").sizeTier()).isNull();
@@ -235,48 +198,30 @@ class RestStopAggregateQueryServiceTest {
     void find_keepsFirstRestStopWhenDuplicateServiceAreaCodeExists() {
         RestStopEntity first = restStop("A00001");
         RestStopEntity duplicate = restStop("A00001");
-        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(any(), any()))
-                .thenReturn(List.of(first, duplicate));
 
-        Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(Set.of("A00001"), null);
+        Map<String, RestStopAggregate> result = aggregateQueryService.findByRestStops(List.of(first, duplicate));
 
         assertThat(result).containsOnlyKeys("A00001");
         assertThat(result.get("A00001").restStop()).isEqualTo(first);
     }
 
     @Test
-    @DisplayName("코드 없이 override=false만 넘기면(backfill 용도) 그대로 RestStopQueryService에 전달한다")
-    void find_passesNullCodesAndOverriddenFalseThroughForBackfillUseCase() {
-        when(restStopQueryService.findByServiceAreaCodesAndAdminOverridden(null, false))
-                .thenReturn(List.of());
-
-        aggregateQueryService.findByServiceAreaCodesAndAdminOverridden(null, false);
-
-        verify(restStopQueryService).findByServiceAreaCodesAndAdminOverridden(null, false);
-    }
-
-    @Test
-    @DisplayName("미리 조회해둔 RestStopEntity 목록을 받으면 RestStopQueryService를 다시 호출하지 않는다")
-    void findByRestStops_doesNotQueryRestStopsAgain() {
+    @DisplayName("건네받은 휴게소를 서비스지역코드로 키를 잡아 집계한다")
+    void findByRestStops_keysAggregatesByServiceAreaCode() {
         RestStopEntity restStop = restStop("A00001");
 
-        Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(restStop), null);
+        Map<String, RestStopAggregate> result = aggregateQueryService.findByRestStops(List.of(restStop));
 
         assertThat(result).containsOnlyKeys("A00001");
         assertThat(result.get("A00001").restStop()).isEqualTo(restStop);
-        verify(restStopQueryService, org.mockito.Mockito.never())
-                .findByServiceAreaCodesAndAdminOverridden(any(), any());
     }
 
     @Test
     @DisplayName("미리 조회해둔 목록이 비어있으면 빈 맵을 반환하고 나머지 조회는 하지 않는다")
     void findByRestStops_returnsEmptyMapWhenGivenListIsEmpty() {
-        Map<String, RestStopAggregate> result =
-                aggregateQueryService.findByRestStopsAndAdminOverridden(List.of(), null);
+        Map<String, RestStopAggregate> result = aggregateQueryService.findByRestStops(List.of());
 
         assertThat(result).isEmpty();
-        verify(restStopRelatedInfoQueryService, org.mockito.Mockito.never()).findAllByRestStops(any(), any());
+        verify(restStopRelatedInfoQueryService, org.mockito.Mockito.never()).findAllByRestStops(any());
     }
 }

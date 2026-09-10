@@ -44,7 +44,7 @@ public class RestStopNearbyQueryService {
         }
 
         Map<String, RestStopAggregate> aggregatesByServiceAreaCode =
-                restStopAggregateQueryService.findByRestStopsAndAdminOverridden(restStops, null);
+                restStopAggregateQueryService.findByRestStops(restStops);
         Map<String, Integer> evChargerCountsByServiceAreaCode = evChargerCountsFor(fuelSelection, restStops);
         Optional<NationalOilPriceSummary> nationalOilPriceSummary =
                 fuelSelection.wantsFuelPriceInfo() ? nationalOilPriceService.getTodaySummary() : Optional.empty();
