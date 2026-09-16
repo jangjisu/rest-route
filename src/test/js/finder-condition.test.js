@@ -65,16 +65,21 @@ function routeItem(overrides = {}) {
     return {
         sizeTier: null,
         topTrafficTier: false,
+        hasTheme: false,
+        hasEvent: false,
         evChargerCount: null,
         fuelPriceTier: null,
         ...overrides
     };
 }
 
-test('destinationBadgesFor shows size/traffic regardless of interest, and hides the last slot when skipped', () => {
-    const badges = destinationBadgesFor(routeItem({ sizeTier: 'LARGE', topTrafficTier: true }), null);
+test('destinationBadgesFor shows size/traffic/theme/event regardless of interest, and hides the last slot when skipped', () => {
+    const badges = destinationBadgesFor(
+        routeItem({ sizeTier: 'LARGE', topTrafficTier: true, hasTheme: true, hasEvent: true }),
+        null
+    );
 
-    assert.deepEqual(badges.map((badge) => badge.key), ['SIZE_LARGE', 'TOP_TRAFFIC']);
+    assert.deepEqual(badges.map((badge) => badge.key), ['SIZE_LARGE', 'TOP_TRAFFIC', 'HAS_THEME', 'HAS_EVENT']);
 });
 
 test('destinationBadgesFor adds an EV badge with the charger count only when interest is EV', () => {

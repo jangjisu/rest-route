@@ -50,8 +50,8 @@ export function nearbyBadgesFor(item, interest) {
 }
 
 /**
- * "목적지로 추천받기" 목록(/api/route-rest-stops/list 응답) 카드에 붙일 배지 목록. 규모·이용량은
- * 항상 계산되고, 마지막 하나(EV 충전 대수 또는 유가 등급)는 고른 관심 항목에 한해서만 붙는다.
+ * "목적지로 추천받기" 목록(/api/route-rest-stops/list 응답) 카드에 붙일 배지 목록. 규모·이용량·볼거리·
+ * 이벤트는 항상 계산되고, 마지막 하나(EV 충전 대수 또는 유가 등급)는 고른 관심 항목에 한해서만 붙는다.
  * 유가 등급은 이미 백엔드가 선택한 유종 하나로 스코프해서 내려주므로 여기서는 CHEAPEST/BELOW_AVERAGE를
  * 그대로 문구로 옮기기만 한다.
  */
@@ -63,6 +63,12 @@ export function destinationBadgesFor(item, interest) {
     }
     if (item.topTrafficTier === true) {
         badges.push({ key: 'TOP_TRAFFIC', label: '이용량 상위 10%' });
+    }
+    if (item.hasTheme === true) {
+        badges.push({ key: 'HAS_THEME', label: '볼거리 있음' });
+    }
+    if (item.hasEvent === true) {
+        badges.push({ key: 'HAS_EVENT', label: '이벤트 진행중' });
     }
     if (interest === 'EV') {
         if (Number.isFinite(item.evChargerCount) && item.evChargerCount > 0) {

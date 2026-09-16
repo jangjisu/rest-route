@@ -202,6 +202,26 @@ class RouteRestStopListQueryServiceTest {
     }
 
     @Test
+    @DisplayName("볼거리·이벤트 여부는 집계 조회 결과를 그대로 담는다")
+    void success_includesHasThemeAndHasEventFromAggregate() {
+        when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))
+                .thenReturn(directions(0, new Summary(100L, 200L, null), VERTEXES));
+        RestStopEntity restStop = restStop("A", "A휴게소", "경부선", "127.0001", "37.0001");
+        when(restStopQueryService.findAll()).thenReturn(List.of(restStop));
+        stubAggregates(Map.of(
+                "A",
+                new RestStopAggregate(null, emptyRelatedInfo(), false, false, true, true, null, null, false, null)));
+
+        List<RouteRestStopListItemResponse> items =
+                service.findRouteRestStops(37.0, 127.0, 35.0, 129.0, "부산역", FuelTypeSelection.NONE);
+
+        assertThat(items).singleElement().satisfies(item -> {
+            assertThat(item.hasTheme()).isTrue();
+            assertThat(item.hasEvent()).isTrue();
+        });
+    }
+
+    @Test
     @DisplayName("EV 충전 대수는 배치 조회 결과에서 가져오고, 0대거나 매핑이 없으면 null이다")
     void success_includesEvChargerCountFromBatchLookup() {
         when(kakaoMapClient.getDirections("127.0,37.0", "129.0,35.0"))

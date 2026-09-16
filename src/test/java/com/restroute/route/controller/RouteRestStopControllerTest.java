@@ -156,7 +156,7 @@ class RouteRestStopControllerTest {
     @DisplayName("GET /api/route-rest-stops/list는 거리·유가 등급이 붙은 목록을 ApiResponse로 반환한다")
     void getRouteRestStopList_returnsListWithParsedFuelType() throws Exception {
         List<RouteRestStopListItemResponse> response =
-                List.of(RouteRestStopListItemResponse.of("A", "A휴게소", "경부선", 850.5, null, true, 3, null));
+                List.of(RouteRestStopListItemResponse.of("A", "A휴게소", "경부선", 850.5, null, true, false, false, 3, null));
         when(routeRestStopListQueryService.findRouteRestStops(
                         eq(37.0), eq(127.0), any(), any(), eq("부산역"), eq(FuelTypeSelection.of(FuelType.DIESEL))))
                 .thenReturn(response);
