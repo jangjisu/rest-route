@@ -1,0 +1,1 @@
+fix: move detail affordance to rest stop cards

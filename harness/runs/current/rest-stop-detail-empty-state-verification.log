@@ -1,0 +1,8 @@
+검증 결과: PASS
+
+- node --test src/test/js/rest-stop-detail-formatters.test.js: 30 tests passed
+- node --test src/test/js/rest-stops-map.test.js: 38 tests passed
+- npm run test:js: 234 tests passed
+- npm run lint: passed
+- harness verify code: passed
+- harness verify verify: Gradle tests passed, JaCoCo 95% line coverage passed

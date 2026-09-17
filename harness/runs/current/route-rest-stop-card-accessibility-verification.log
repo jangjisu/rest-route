@@ -1,0 +1,10 @@
+Route rest stop card accessibility verification
+
+- Focused RED: 2 expected failures
+- Focused GREEN: 2 tests passed
+- npm run lint: PASS
+- npm run test:js: PASS (230 tests)
+- Browser DOM: top route option arrows 0, rest stop card arrows 1
+- Browser accessibility tree: rest stop card exposed as named button
+- ./gradlew test jacocoTestCoverageVerification: BUILD SUCCESSFUL
+- JaCoCo: 전체 line coverage 95% 기준 충족

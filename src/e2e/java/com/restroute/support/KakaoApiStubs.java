@@ -1,6 +1,7 @@
 package com.restroute.support;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
@@ -15,8 +16,8 @@ import java.util.StringJoiner;
  * ({@code KakaoNaviFeignClient})에 선언된 값과 같아야 하며, 다르면 WireMock이 404를 돌려주므로
  * 스텁이 어긋난 걸 바로 알 수 있다.
  *
- * <p>길찾기 스텁만 둔다. 장소 검색은 {@link #verifyKeywordSearchNotCalled(WireMockServer)}로
- * 호출 여부만 확인한다.
+ * <p>길찾기와 장소 검색 두 갈래를 둔다. 어느 엔드포인트가 어느 쪽을 부르는지가 검증 대상이라
+ * 호출 여부를 확인하는 짝({@code verify...Called} / {@code verify...NotCalled})도 함께 둔다.
  */
 public final class KakaoApiStubs {
 
@@ -99,9 +100,72 @@ public final class KakaoApiStubs {
                 .willReturn(okJson("{ \"routes\": [] }").withFixedDelay(delayMillis)));
     }
 
+    // --- 장소 검색 ------------------------------------------------------------
+
+    /**
+     * 장소 검색 결과 문서 하나. 필드명은 카카오 계약({@code place_name}, {@code address_name})
+     * 그대로여야 우리 DTO의 매핑이 실제로 검증된다. {@code x}가 경도, {@code y}가 위도다.
+     */
+    public static String keywordDocument(String placeName, String addressName, String longitude, String latitude) {
+        return """
+                { "place_name": %s, "address_name": %s, "x": %s, "y": %s }
+                """.formatted(quoted(placeName), quoted(addressName), quoted(longitude), quoted(latitude));
+    }
+
+    /** 장소 검색 — 주어진 문서들을 담은 200 응답. 문서를 주지 않으면 빈 결과가 된다. */
+    public static void stubKeywordSearchDocuments(WireMockServer kakao, String... documents) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
+                .willReturn(okJson("{ \"documents\": [%s] }".formatted(String.join(",", documents)))));
+    }
+
+    /** 장소 검색 — documents 키 자체가 없다. 빈 배열과 갈래가 달라 따로 둔다. */
+    public static void stubKeywordSearchWithoutDocuments(WireMockServer kakao) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH)).willReturn(okJson("{}")));
+    }
+
+    /** 장소 검색 — 서버가 상태코드로 실패를 알린다(500, 429, 401 등). */
+    public static void stubKeywordSearchStatus(WireMockServer kakao, int status) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
+                .willReturn(aResponse().withStatus(status).withBody("{\"errorType\":\"stub\"}")));
+    }
+
+    /** 장소 검색 — 상태코드는 실패인데 본문이 JSON이 아니다. */
+    public static void stubKeywordSearchNonJson(WireMockServer kakao, int status) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
+                .willReturn(aResponse()
+                        .withStatus(status)
+                        .withHeader("Content-Type", "text/html")
+                        .withBody("<html><body>Service Unavailable</body></html>")));
+    }
+
+    /** 장소 검색 — 연결이 끊긴다. 상태코드조차 받지 못하는 갈래다. */
+    public static void stubKeywordSearchConnectionReset(WireMockServer kakao) {
+        kakao.stubFor(get(urlPathEqualTo(KEYWORD_SEARCH_PATH))
+                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+    }
+
+    // --- 호출 여부 ------------------------------------------------------------
+
+    /** 장소 검색이 그 검색어로 정확히 한 번 호출됐음을 확인한다. */
+    public static void verifyKeywordSearchCalled(WireMockServer kakao, String query) {
+        kakao.verify(1, getRequestedFor(urlPathEqualTo(KEYWORD_SEARCH_PATH)).withQueryParam("query", equalTo(query)));
+    }
+
     /** 장소 검색이 호출되지 않았음을 확인한다. */
     public static void verifyKeywordSearchNotCalled(WireMockServer kakao) {
         kakao.verify(0, getRequestedFor(urlPathEqualTo(KEYWORD_SEARCH_PATH)));
+    }
+
+    /** 길찾기가 호출되지 않았음을 확인한다 — 목적지 해석 단계에서 끝났다는 뜻. */
+    public static void verifyDirectionsNotCalled(WireMockServer kakao) {
+        kakao.verify(0, getRequestedFor(urlPathEqualTo(DIRECTIONS_PATH)));
+    }
+
+    private static String quoted(String value) {
+        if (value == null) {
+            return "null";
+        }
+        return "\"" + value + "\"";
     }
 
     private static String join(double... vertexes) {

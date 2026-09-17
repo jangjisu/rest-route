@@ -1,0 +1,15 @@
+변경 전 브라우저 계산값
+- overflowX: auto
+- scrollbarWidth: thin
+
+변경 후 브라우저 계산값
+- overflowX: auto
+- scrollbarWidth: none
+
+자동 검증
+- npm run lint: PASS
+- npm run test:js: PASS (227 tests)
+- harness verify code: PASS
+- harness verify verify: PASS
+- Gradle 전체 테스트: PASS
+- JaCoCo 전체 line coverage 95% 기준: PASS

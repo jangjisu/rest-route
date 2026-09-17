@@ -1,0 +1,13 @@
+Route rest stop list improvement verification
+
+- npm run lint: PASS
+- npm run test:js: PASS (227 tests, 0 failures)
+- harness verify code: PASS
+- harness verify verify: PASS
+- Gradle test: BUILD SUCCESSFUL
+- JaCoCo verification: PASS (project line coverage >= 95%)
+- Browser desktop: PASS (toll second line, traffic beside name, filter counts and list updates)
+- Browser mobile 390x844: PASS (filter row remains horizontally navigable and cards remain readable)
+- Browser empty filter: PASS (0-result title and empty state)
+- Browser route switch: PASS (selected filter preserved)
+- Browser console errors: 0
