@@ -22,9 +22,12 @@ function fuelTypeParam(interest) {
 
 // v2부터 이용량 상위 10%는 이름·거리로 찾기와 같은 색(warn)으로 통일했다. 제일 저렴/평균보다 저렴도
 // 결국 같은 "저렴" 태그라 색을 통일했다(savings) — CHEAPEST/BELOW_AVERAGE는 문구만 다르고 색은 같다.
+// 볼거리/이벤트는 이름·거리로 찾기와 같은 색을 그대로 재사용한다(finder.css는 두 화면이 공유).
 const DESTINATION_BADGE_COLOR_CLASS_BY_KEY = {
     SIZE_LARGE: 'finder-badge-size',
     TOP_TRAFFIC: 'finder-badge-warn',
+    HAS_THEME: 'finder-badge-accent',
+    HAS_EVENT: 'finder-badge-event',
     FUEL_CHEAPEST: 'finder-badge-savings',
     FUEL_BELOW_AVERAGE: 'finder-badge-savings',
     EV_CHARGER: 'finder-badge-ev'

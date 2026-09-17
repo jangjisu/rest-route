@@ -29,9 +29,10 @@ sources: []
   `RouteRestStopMatcher`)을 재사용하되 응답 조립은 `RouteRestStopListQueryService`가 직접 하고, 대안
   경로 중 첫 번째만 써서 `RouteRestStopListItemResponse` 평평한 배열(거리 오름차순 정렬)로 응답한다.
   `distanceMeters`는 `CoordinateDistanceCalculator`로 서버가 계산(위치가 항상 있어 `null` 케이스 없음),
-  `evChargerCount`는 `EvChargerQueryService.findActiveChargerCounts` 배치 조회, `fuelPriceTier`는
-  `RouteRestStopFuelTierCalculator`가 `fuelType` 하나만 스코프해서 계산(없으면 항상 `null`). 목적지를
-  못 찾으면 `RouteRestStopNotFoundException` → 404.
+  `sizeTier`/`topTrafficTier`/`hasTheme`/`hasEvent`는 `RestStopAggregateQueryService`([[rest-stop]])
+  조회 결과를 그대로 담아 항상 계산되고, `evChargerCount`는 `EvChargerQueryService.findActiveChargerCounts`
+  배치 조회, `fuelPriceTier`는 `RouteRestStopFuelTierCalculator`가 `fuelType` 하나만 스코프해서 계산(없으면
+  항상 `null`). 목적지를 못 찾으면 `RouteRestStopNotFoundException` → 404.
 - **기존 `GET /api/route-rest-stops`**([[route]] 소관): 지도 화면 전용으로 그대로 남아 있고, 대안 경로·
   이미지·먹거리 비교 등 `/list`에는 없는 필드를 유지한다 — 두 엔드포인트는 같은 route 내부 부품을
   재사용할 뿐 서로 대체하지 않는다. 자유 검색어 지오코딩이 남아 있는 쪽도 이 엔드포인트다.

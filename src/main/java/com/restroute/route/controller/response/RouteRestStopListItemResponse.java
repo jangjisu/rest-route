@@ -14,6 +14,8 @@ public record RouteRestStopListItemResponse(
         double distanceMeters,
         SizeTier sizeTier,
         boolean topTrafficTier,
+        boolean hasTheme,
+        boolean hasEvent,
         Integer evChargerCount,
         FuelPriceTier fuelPriceTier) {
 
@@ -24,6 +26,8 @@ public record RouteRestStopListItemResponse(
             double distanceMeters,
             SizeTier sizeTier,
             boolean topTrafficTier,
+            boolean hasTheme,
+            boolean hasEvent,
             Integer evChargerCount,
             FuelPriceTier fuelPriceTier) {
         return new RouteRestStopListItemResponse(
@@ -33,6 +37,8 @@ public record RouteRestStopListItemResponse(
                 distanceMeters,
                 sizeTier,
                 topTrafficTier,
+                hasTheme,
+                hasEvent,
                 evChargerCount,
                 fuelPriceTier);
     }

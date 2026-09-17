@@ -26,11 +26,11 @@ sources: []
 - **route.service.dto.FuelType**: `GASOLINE`/`DIESEL`/`LPG` 3종(EV 없음). 목적지로 추천받기가 백엔드에
   유가 판정을 요청할 때 쓰는 파라미터 타입 — `RestStopInterest`와 값 이름은 겹치지만 타입은 다르다.
 - **배지(태그)**: 두 화면은 판정 함수(`finder-condition.js`의 `nearbyBadgesFor` / `destinationBadgesFor`)와
-  색상 매핑이 완전히 독립이다. 이름·거리로 찾기는 4개(규모/이용량/볼거리/이벤트) 항상 + 관심 항목 1개,
-  목적지로 추천받기는 2개(규모/이용량) 항상 + 관심 항목 1개(EV충전 또는 유가). "이용량 상위 10%"는 두
-  화면 다 상세 패널 기준 색(`--rr-color-warning-*`)으로 통일돼 있다.
+  색상 매핑이 완전히 독립이다. 두 화면 다 4개(규모/이용량/볼거리/이벤트) 항상 + 관심 항목 1개(EV충전
+  또는 유가) 구조로 같다. "이용량 상위 10%"는 두 화면 다 상세 패널 기준 색(`--rr-color-warning-*`)으로
+  통일돼 있다.
 - **hasTheme vs hasEvent**: 서로 다른 테이블·시간 의미를 가진 독립 신호([[rest-stop-content]] 소관),
-  이름·거리로 찾기 전용(목적지로 추천받기 응답에는 없음). `hasTheme`은 `rest_theme`에 매핑된 행이
+  두 화면 모두 항상 계산되는 배지다(규모/이용량과 같은 자리). `hasTheme`은 `rest_theme`에 매핑된 행이
   하나라도 있으면 true(상시 — 예: "입장 거봉포도 체험장"). `hasEvent`는 `rest_event`에서 오늘 날짜
   (주입된 `Clock` 기준)가 `stime`~`etime` 사이인 행이 있으면 true(기간 한정). 한 휴게소가 둘 다/하나만/
   둘 다 아님 어느 쪽도 가능하다.

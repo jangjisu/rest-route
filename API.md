@@ -994,6 +994,8 @@ JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연
 | `distanceMeters` | number | 출발지에서의 직선 거리(m). 서버가 계산하므로 `null`이 없다 |
 | `sizeTier` | string \| null | `LARGE`, `MEDIUM`, `SMALL`. 판정 근거가 없으면 `null` |
 | `topTrafficTier` | boolean | 이용량 상위 10% 여부 |
+| `hasTheme` | boolean | 테마휴게소 지정 여부 |
+| `hasEvent` | boolean | 오늘 날짜 기준 진행 중인 이벤트 여부 |
 | `evChargerCount` | number \| null | 사용 가능한 충전기 대수. 0대이거나 매핑이 없으면 `null` |
 | `fuelPriceTier` | string \| null | `CHEAPEST`(이번 조회 목록 안 최저가) 또는 `BELOW_AVERAGE`(전국 평균보다 저렴). `fuelType`을 안 보내면 항상 `null` |
 

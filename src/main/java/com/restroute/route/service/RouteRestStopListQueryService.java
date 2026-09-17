@@ -112,6 +112,8 @@ public class RouteRestStopListQueryService {
                 distanceMeters,
                 aggregate.sizeTier(),
                 aggregate.topTrafficTier(),
+                aggregate.hasTheme(),
+                aggregate.hasEvent(),
                 evChargerCount,
                 fuelPriceTier);
     }
