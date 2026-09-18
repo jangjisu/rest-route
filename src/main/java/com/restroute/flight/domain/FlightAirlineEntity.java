@@ -59,4 +59,9 @@ public class FlightAirlineEntity {
     public static FlightAirlineEntity of(String code, String korName, String engName, boolean isLowCost) {
         return new FlightAirlineEntity(code, korName, engName, isLowCost);
     }
+
+    /** 화면에 보여줄 이름 — korName이 없으면(예외적인 경우) engName으로 대체한다. */
+    public String displayName() {
+        return korName != null ? korName : engName;
+    }
 }
