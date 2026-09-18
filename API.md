@@ -1033,6 +1033,48 @@ JSON 바디(`serviceAreaCode`)로 해당 주유소를 지정한 휴게소에 연
 수렴하므로, 클라이언트는 원인을 구분할 수 없다. 응답이 늦으면 `readTimeout`(기본 10초)에서 끊기며
 재시도는 하지 않는다.
 
+### GET /api/national-oil-prices/summary
+
+오늘 날짜의 휴발유·경유·LPG 전국 평균가를 반환한다. 배치 스케줄러가 아니라 **요청을 처리하는 도중에**
+오늘자 데이터가 DB에 없으면 그 자리에서 오피넷을 호출해 저장한 뒤 응답한다 — 그래서 다른 순수 DB 조회
+엔드포인트와 달리 외부 API 실패 갈래가 있다.
+
+파라미터는 없다.
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `tradeDate` | string | `yyyy.MM.dd` 형식의 기준일 |
+| `gasoline`/`diesel`/`lpg` | object | `{productCode, productName, price, dailyDiff}` — `price`는 `NumberFormat`으로 천단위 콤마를 넣고 "원"을 붙인 표시용 문자열(예: `"1,700원"`)이지 숫자가 아니다 |
+
+오피넷 호출이 실패하면(서버 오류·연결 끊김·`RESULT.OIL` 누락 등) `EXTERNAL_API_UNAVAILABLE`을 반환한다.
+카카오·ExApi와 같은 house convention대로 이 코드도 **HTTP 200**과 함께 나가고 `data`는 `null`이다.
+
+### GET /api/flights/search
+
+Travelpayouts(Aviasales Data API)에서 항공권 딜을 실시간으로 조회한다. `searchMode`가 `range`면
+`nights`·개월 수 조합만큼, `fixed`면 destination 단위 수만큼 병렬로 호출한다(상한은
+`FlightSearchDestinations.MAX_FANOUT_CALLS`=20). 세부 팬아웃 규칙과 정렬·중복 제거 기준은
+`docs/domain/flight.md` "정책과 불변 조건" 참고.
+
+| 위치 | 이름 | 조건 | 설명 |
+|---|---|---|---|
+| Query | `origin` | 필수 | 출발지 IATA 3자리 코드 |
+| Query | `searchMode` | 필수 | `fixed`(정확한 출발·귀국일) 또는 `range`(달 단위 범위) |
+| Query | `dateFrom` | 필수 | 출발일(과거 불가, 오늘로부터 3개월 이내) |
+| Query | `dateTo` | 필수 | `dateFrom` 이후, 오늘로부터 3개월 이내 |
+| Query | `destination`/`sector` | 선택, 상호배타 | 목적지 직접 지정 또는 지역 단위(둘 다 없으면 전체 조회) |
+| Query | `nights` | 선택 | `range` 전용 — `fixed`에 실으면 `nights_not_allowed_in_fixed_mode` |
+| Query | `includeWeekend`/`includeHoliday`/`includeTransfer` | 선택, 기본 `false` | 각각 주말 출발·공휴일 출발·경유편을 포함할지. **기본값이 전부 "제외"** — 값을 안 보내면 주말·공휴일 출발과 경유편이 결과에서 빠진다 |
+| Query | `sort` | 선택, 기본 `PRICE` | `FlightDealSort` 값 |
+
+요청 파라미터가 유효성 검증에 걸리면 `400`과 함께 `error.code="validation_failed"`,
+`error.details[]`에 `{field, code}` 목록이 담긴다(house convention의 공용 `code`/`message` 봉투가 아니라
+flight 전용 `{data, meta, error}` 봉투를 쓴다).
+
+Travelpayouts 호출이 실패하면(서버 오류·연결 끊김·`success:false`) **HTTP 200**과 함께
+`error.code="external_api_unavailable"`을 반환한다(`data`는 `null`). 병렬 호출 중 **하나라도** 실패하면
+전체 요청이 이 갈래로 떨어진다 — 부분 성공을 모아서 돌려주지 않는다.
+
 ---
 
 ## 다음 API를 추가할 때 기록할 것
