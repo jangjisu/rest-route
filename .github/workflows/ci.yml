@@ -36,3 +36,33 @@ jobs:
         with:
           name: test-report
           path: build/reports/tests/test/
+
+  e2e:
+    name: E2E Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run e2e tests
+        run: ./gradlew e2e
+        # e2e 프로필(application-e2e.properties)이 외부 API 키·주소를 전부 더미로 고정하고
+        # DB는 AcceptanceTest가 띄우는 Testcontainers MySQL을 쓴다 — 별도 env/서비스 불필요.
+        # ubuntu-latest 러너에는 Docker가 기본 설치돼 있어 Testcontainers가 바로 동작한다.
+
+      - name: Upload e2e test report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-test-report
+          path: build/reports/tests/e2e/
