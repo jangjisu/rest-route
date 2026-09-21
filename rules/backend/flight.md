@@ -61,8 +61,9 @@
 5. 최종 병합 결과를 `INSERT INTO ... VALUES (...);` 문 목록으로 만들어
    `src/main/resources/data/flight-{country,city,airline,airport}-seed.sql`을
    덮어쓴다. 컬럼 순서는 각 Entity의 생성자 인자 순서와 맞춘다.
-6. 로컬에서 앱을 재시작해 `FlightReferenceDataSeeder`가 재시딩하는지, 각
-   `*NameCache`가 정상적으로 채워지는지 확인한다.
+6. 로컬에서 앱을 재시작해 `FlightReferenceDataSeeder`가 재시딩하는지 확인한다.
+   공항·항공사 이름은 캐시 없이 딜 응답을 만들 때 `findByCode`로 조회하므로 별도로
+   채워졌는지 볼 것은 없다.
 
 이 과정을 자동화하는 스크립트는 아직 없다 — 매번 최신 스냅샷을 받아 수작업으로
 병합/검증하면서 진행했다. 반복 빈도가 높아지면 스크립트화를 고려한다.

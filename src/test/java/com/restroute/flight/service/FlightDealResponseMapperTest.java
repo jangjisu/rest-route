@@ -3,11 +3,14 @@ package com.restroute.flight.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.restroute.flight.cache.FlightAirlineNameCache;
-import com.restroute.flight.cache.FlightAirportNameCache;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.response.FlightDealResponse;
+import com.restroute.flight.domain.FlightAirlineEntity;
+import com.restroute.flight.domain.FlightAirportEntity;
+import com.restroute.flight.repository.FlightAirlineRepository;
+import com.restroute.flight.repository.FlightAirportRepository;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,16 +22,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FlightDealResponseMapperTest {
 
     @Mock
-    private FlightAirportNameCache airportNameCache;
+    private FlightAirportRepository airportRepository;
 
     @Mock
-    private FlightAirlineNameCache airlineNameCache;
+    private FlightAirlineRepository airlineRepository;
 
     private FlightDealResponseMapper mapper;
 
     @BeforeEach
     void setUp() {
-        mapper = new FlightDealResponseMapper(airportNameCache, airlineNameCache);
+        mapper = new FlightDealResponseMapper(airportRepository, airlineRepository);
     }
 
     private static TravelpayoutsPriceItem item() {
@@ -74,7 +77,8 @@ class FlightDealResponseMapperTest {
     @Test
     @DisplayName("목적지는 공항코드 기준으로 이름을 채운다")
     void mapAll_fillsDestinationByAirportCode() {
-        when(airportNameCache.findName("KIX")).thenReturn("오사카");
+        when(airportRepository.findByCode("KIX"))
+                .thenReturn(Optional.of(new FlightAirportEntity("KIX", "오사카", "Osaka", "OSA", "JP")));
 
         List<FlightDealResponse> result = mapper.mapAll(List.of(item()));
 
@@ -82,14 +86,34 @@ class FlightDealResponseMapperTest {
     }
 
     @Test
-    @DisplayName("항공사 이름과 저비용 여부를 캐시에서 채운다")
-    void mapAll_fillsAirlineNameAndLowCostFromCache() {
-        when(airlineNameCache.findName("LJ")).thenReturn("진에어");
-        when(airlineNameCache.isLowCost("LJ")).thenReturn(true);
+    @DisplayName("목적지 공항을 DB에서 찾지 못하면 이름은 null로 채운다")
+    void mapAll_leavesDestinationNameNullWhenAirportNotFound() {
+        when(airportRepository.findByCode("KIX")).thenReturn(Optional.empty());
+
+        List<FlightDealResponse> result = mapper.mapAll(List.of(item()));
+
+        assertThat(result.get(0).destination()).isEqualTo(new FlightDealResponse.Destination("KIX", null));
+    }
+
+    @Test
+    @DisplayName("항공사 이름과 저비용 여부를 DB에서 채운다")
+    void mapAll_fillsAirlineNameAndLowCostFromRepository() {
+        when(airlineRepository.findByCode("LJ"))
+                .thenReturn(Optional.of(FlightAirlineEntity.of("LJ", "진에어", "Jin Air", true)));
 
         List<FlightDealResponse> result = mapper.mapAll(List.of(item()));
 
         assertThat(result.get(0).airline()).isEqualTo(new FlightDealResponse.Airline("LJ", "진에어", true));
+    }
+
+    @Test
+    @DisplayName("항공사를 DB에서 찾지 못하면 이름은 null, 저비용 여부는 false로 채운다")
+    void mapAll_fillsAirlineDefaultsWhenNotFound() {
+        when(airlineRepository.findByCode("LJ")).thenReturn(Optional.empty());
+
+        List<FlightDealResponse> result = mapper.mapAll(List.of(item()));
+
+        assertThat(result.get(0).airline()).isEqualTo(new FlightDealResponse.Airline("LJ", null, false));
     }
 
     @Test
