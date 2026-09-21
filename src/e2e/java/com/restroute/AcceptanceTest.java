@@ -45,10 +45,19 @@ public abstract class AcceptanceTest {
      */
     protected static final WireMockServer EX_API = new WireMockServer(options().dynamicPort());
 
+    /** 오피넷(국가 평균 유가) — 요청 시점에 오늘자 캐시가 없으면 그 자리에서 호출된다. */
+    protected static final WireMockServer OPINET = new WireMockServer(options().dynamicPort());
+
+    /** Travelpayouts(항공권 실 검색) — 병렬 팬아웃 호출이 전부 이 서버로 간다. */
+    protected static final WireMockServer TRAVELPAYOUTS =
+            new WireMockServer(options().dynamicPort());
+
     static {
         DATABASE.start();
         KAKAO.start();
         EX_API.start();
+        OPINET.start();
+        TRAVELPAYOUTS.start();
     }
 
     @LocalServerPort
@@ -62,6 +71,8 @@ public abstract class AcceptanceTest {
         registry.add("kakao.local.url", KAKAO::baseUrl);
         registry.add("kakao.navi.url", KAKAO::baseUrl);
         registry.add("ex.api.url", EX_API::baseUrl);
+        registry.add("opinet.api.url", OPINET::baseUrl);
+        registry.add("travelpayouts.api.url", TRAVELPAYOUTS::baseUrl);
     }
 
     @BeforeEach
@@ -69,6 +80,8 @@ public abstract class AcceptanceTest {
         RestAssured.port = port;
         KAKAO.resetAll();
         EX_API.resetAll();
+        OPINET.resetAll();
+        TRAVELPAYOUTS.resetAll();
         databaseCleaner.clear();
     }
 }
