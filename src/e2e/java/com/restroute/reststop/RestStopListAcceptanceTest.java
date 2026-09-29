@@ -1,7 +1,9 @@
 package com.restroute.reststop;
 
+import static com.restroute.support.OpinetApiStubs.stubAverageOilPrices;
 import static com.restroute.support.RestStopFixtures.saveRestStop;
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -10,8 +12,11 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.restroute.AcceptanceTest;
+import com.restroute.oilprice.repository.NationalOilPriceRepository;
 import com.restroute.reststop.repository.RestStopRepository;
 import io.restassured.response.Response;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,6 +53,9 @@ class RestStopListAcceptanceTest extends AcceptanceTest {
 
     @Autowired
     private RestStopRepository restStopRepository;
+
+    @Autowired
+    private NationalOilPriceRepository nationalOilPriceRepository;
 
     private Response searchByName(String name) {
         return given().param("name", name).when().get(SEARCH_PATH);
@@ -198,6 +206,30 @@ class RestStopListAcceptanceTest extends AcceptanceTest {
                 .statusCode(SUCCESS_STATUS)
                 .body("data", hasSize(3))
                 .body("data.unitName", contains("가까운휴게소", "중간휴게소", "먼휴게소"));
+    }
+
+    /**
+     * 회귀: nearby는 readOnly 트랜잭션이라, 그 안에서 오늘자 전국 평균을 저장하면 MySQL이 read-only
+     * 연결의 insert를 거부해 {@code UnexpectedRollbackException}(500)이 났다. H2 통합 테스트로는
+     * 이 거부가 재현되지 않아 MySQL인 이 계층에서 확인한다.
+     */
+    @Test
+    @DisplayName("오늘자 전국 평균 유가가 없을 때 유종을 주면 평균가를 저장하고 200을 돌려준다")
+    void withFuelTypeAndNoTodayNationalPrice_savesItAndResponds() {
+        saveThreeAtIncreasingDistance();
+        LocalDate today = LocalDate.now();
+        stubAverageOilPrices(OPINET, today.format(DateTimeFormatter.BASIC_ISO_DATE), "1700.00", "1550.00", "900.00");
+
+        nearby(Map.of(
+                        "originLat", ORIGIN_LATITUDE,
+                        "originLng", ORIGIN_LONGITUDE,
+                        "fuelType", "GASOLINE"))
+                .then()
+                .statusCode(SUCCESS_STATUS)
+                .body("code", equalTo("SUCCESS"))
+                .body("data", hasSize(3));
+
+        assertThat(nationalOilPriceRepository.findAllByTradeDate(today)).hasSize(3);
     }
 
     @Test
