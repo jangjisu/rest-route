@@ -6,13 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.restroute.flight.cache.FlightAirlineNameCache;
-import com.restroute.flight.cache.FlightAirportNameCache;
-import com.restroute.flight.cache.FlightCityNameCache;
-import com.restroute.flight.cache.FlightCountryNameCache;
 import com.restroute.flight.repository.FlightAirlineRepository;
 import com.restroute.flight.repository.FlightAirportRepository;
 import com.restroute.flight.repository.FlightCityRepository;
@@ -42,25 +37,13 @@ class FlightReferenceDataStartupInitializerTest {
     private FlightAirlineRepository flightAirlineRepository;
 
     @Mock
-    private FlightAirlineNameCache flightAirlineNameCache;
-
-    @Mock
     private FlightAirportRepository flightAirportRepository;
-
-    @Mock
-    private FlightAirportNameCache flightAirportNameCache;
 
     @Mock
     private FlightCityRepository flightCityRepository;
 
     @Mock
-    private FlightCityNameCache flightCityNameCache;
-
-    @Mock
     private FlightCountryRepository flightCountryRepository;
-
-    @Mock
-    private FlightCountryNameCache flightCountryNameCache;
 
     @Mock
     private ApplicationArguments applicationArguments;
@@ -69,8 +52,8 @@ class FlightReferenceDataStartupInitializerTest {
     private FlightReferenceDataStartupInitializer flightReferenceDataStartupInitializer;
 
     @Test
-    @DisplayName("4종 참조 데이터 모두 SQL 재시딩을 위임하고 도메인별 결과를 기록한 뒤 캐시를 채운다")
-    void run_seedsAndRefreshesAllFourDomainsWhenEnabled(CapturedOutput output) {
+    @DisplayName("4종 참조 데이터 모두 SQL 재시딩을 위임하고 도메인별 결과를 기록한다")
+    void run_seedsAllFourDomainsWhenEnabled(CapturedOutput output) {
         allStartupEnabledPropertiesReturn(true);
         when(flightReferenceDataSeeder.reseed(eq("data/flight-airline-seed.sql"), any(), any()))
                 .thenReturn(1159);
@@ -83,10 +66,6 @@ class FlightReferenceDataStartupInitializerTest {
 
         flightReferenceDataStartupInitializer.run(applicationArguments);
 
-        verify(flightAirlineNameCache).refresh();
-        verify(flightAirportNameCache).refresh();
-        verify(flightCityNameCache).refresh();
-        verify(flightCountryNameCache).refresh();
         assertThat(output)
                 .contains("Initial flight airline seeding completed. savedCount=1159")
                 .contains("Initial flight airport seeding completed. savedCount=3673")
@@ -95,7 +74,7 @@ class FlightReferenceDataStartupInitializerTest {
     }
 
     @Test
-    @DisplayName("서버 시작 시 SQL 재시딩을 위임하고 결과를 기록한 뒤 캐시를 채운다")
+    @DisplayName("서버 시작 시 SQL 재시딩을 위임하고 결과를 기록한다")
     void run_logsSeedCountWhenSaved(CapturedOutput output) {
         allStartupEnabledPropertiesReturn(true);
         when(flightReferenceDataSeeder.reseed(eq("data/flight-airline-seed.sql"), any(), any()))
@@ -107,8 +86,8 @@ class FlightReferenceDataStartupInitializerTest {
     }
 
     @Test
-    @DisplayName("한 도메인의 시딩 실패가 앱 시작으로 전파되지 않고, 그 도메인도 캐시는 채운다")
-    void run_doesNotPropagateSeedingFailureAndStillRefreshesThatDomainsCache(CapturedOutput output) {
+    @DisplayName("한 도메인의 시딩 실패가 앱 시작으로 전파되지 않는다")
+    void run_doesNotPropagateSeedingFailure(CapturedOutput output) {
         allStartupEnabledPropertiesReturn(true);
         when(flightReferenceDataSeeder.reseed(eq("data/flight-airline-seed.sql"), any(), any()))
                 .thenThrow(new IllegalStateException("sql error"));
@@ -117,12 +96,11 @@ class FlightReferenceDataStartupInitializerTest {
                 .doesNotThrowAnyException();
 
         assertThat(output).contains("Initial flight airline seeding failed.").contains("sql error");
-        verify(flightAirlineNameCache).refresh();
     }
 
     @Test
     @DisplayName("한 도메인의 시딩 실패가 다른 도메인 처리를 막지 않는다")
-    void run_continuesOtherDomainsAfterOneFails() {
+    void run_continuesOtherDomainsAfterOneFails(CapturedOutput output) {
         allStartupEnabledPropertiesReturn(true);
         when(flightReferenceDataSeeder.reseed(eq("data/flight-airline-seed.sql"), any(), any()))
                 .thenThrow(new IllegalStateException("sql error"));
@@ -131,11 +109,11 @@ class FlightReferenceDataStartupInitializerTest {
 
         flightReferenceDataStartupInitializer.run(applicationArguments);
 
-        verify(flightAirportNameCache).refresh();
+        assertThat(output).contains("Initial flight airport seeding completed. savedCount=3673");
     }
 
     @Test
-    @DisplayName("도메인 프로퍼티가 꺼져 있으면 재시딩도 캐시 refresh도 하지 않는다")
+    @DisplayName("도메인 프로퍼티가 꺼져 있으면 재시딩을 하지 않는다")
     void run_skipsDomainWhenStartupDisabled() {
         when(environment.getProperty(eq("flight.airline.sync.startup-enabled"), eq("true")))
                 .thenReturn("false");
@@ -155,7 +133,6 @@ class FlightReferenceDataStartupInitializerTest {
         flightReferenceDataStartupInitializer.run(applicationArguments);
 
         verify(flightReferenceDataSeeder, never()).reseed(eq("data/flight-airline-seed.sql"), any(), any());
-        verifyNoInteractions(flightAirlineNameCache);
     }
 
     @Test
@@ -180,7 +157,6 @@ class FlightReferenceDataStartupInitializerTest {
                 .doesNotThrowAnyException();
 
         verify(flightReferenceDataSeeder, never()).reseed(eq("data/flight-airline-seed.sql"), any(), any());
-        verifyNoInteractions(flightAirlineNameCache);
     }
 
     private void allStartupEnabledPropertiesReturn(boolean enabled) {

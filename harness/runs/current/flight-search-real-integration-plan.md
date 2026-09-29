@@ -28,8 +28,8 @@
 1. **월 단위 fan-out**: `dateFrom`~`dateTo`가 걸치는 각 달마다 `groupedPrices` 1회씩 호출해서 합친다(최대 3회 — validator가 3개월까지만 허용). 응답엔 그 달 전체가 오므로, `dateFrom`~`dateTo` 범위 밖 날짜는 걸러낸다.
 2. **destination**: 있으면 그대로 전달, 없으면 파라미터 자체를 생략(API가 알아서 목적지를 섞어줌 — mock처럼 별도 순환 로직 불필요).
 3. **nights**: `request.parsedNights()`의 최솟값/최댓값을 `min_trip_duration`/`max_trip_duration`으로 그대로 전달. 응답의 `departure_at`~`return_at` 차이로 실제 nights를 역산해서 `FlightDealResponse.nights`에 채운다.
-4. **destination/origin 표시명**: `destination`(도시코드)로 `FlightCityNameCache` 조회, `destination_airport`로 필요시 `FlightAirportNameCache` 조회. 지금 `FlightDealResponse.Destination`이 공항코드 하나만 들고 있는데, 실제 데이터엔 도시코드도 같이 오니 그대로 공항코드를 채운다(응답 계약은 안 바꿈).
-5. **항공사 한글명**: `item.airline()`(IATA 코드)로 `FlightAirlineNameCache` 조회.
+4. **destination/origin 표시명**: `destination_airport`로 `FlightAirportRepository.findByCode` 조회(이름 캐시는 이후 제거됨). 지금 `FlightDealResponse.Destination`이 공항코드 하나만 들고 있는데, 실제 데이터엔 도시코드도 같이 오니 그대로 공항코드를 채운다(응답 계약은 안 바꿈).
+5. **항공사 한글명**: `item.airline()`(IATA 코드)로 `FlightAirlineRepository.findByCode` 조회.
 6. **id 발급**: mock과 동일하게 세션 토큰 + 인덱스 조합 재사용(이미 `FlightDealSessionStore`가 세션 생성 시점에 부여) — 실제 데이터에 안정적인 id가 없어도 문제없음.
 7. **정렬**: 이미 `FlightSearchService.fetch()`에 붙여둔 `sorted(..., request.parsedSort())`를 그대로 재사용 — mock/real 공통 경로.
 8. **에러 처리**: `TravelpayoutsApiException`을 `FlightExceptionHandler`에 매핑 추가(예: 503 `EXTERNAL_API_ERROR`) — 지금은 처리기가 없어서 그대로 터지면 공용 500으로 샌다.

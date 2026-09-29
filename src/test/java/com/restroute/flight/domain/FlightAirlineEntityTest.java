@@ -28,4 +28,20 @@ class FlightAirlineEntityTest {
         assertThat(entity.getEngName()).isEqualTo("Korean Air");
         assertThat(entity.isLowCost()).isFalse();
     }
+
+    @Test
+    @DisplayName("displayName은 한글명이 있으면 한글명을 돌려준다")
+    void displayName_returnsKorNameWhenPresent() {
+        FlightAirlineEntity entity = FlightAirlineEntity.of("7C", "제주항공", "Jeju Air", true);
+
+        assertThat(entity.displayName()).isEqualTo("제주항공");
+    }
+
+    @Test
+    @DisplayName("displayName은 한글명이 없으면 영문명으로 대체한다")
+    void displayName_fallsBackToEngNameWhenKorNameMissing() {
+        FlightAirlineEntity entity = FlightAirlineEntity.of("7C", null, "Jeju Air", true);
+
+        assertThat(entity.displayName()).isEqualTo("Jeju Air");
+    }
 }

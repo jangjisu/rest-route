@@ -19,4 +19,20 @@ class FlightAirportEntityTest {
         assertThat(entity.getCityCode()).isEqualTo("SEL");
         assertThat(entity.getCountryCode()).isEqualTo("KR");
     }
+
+    @Test
+    @DisplayName("displayName은 한글명이 있으면 한글명을 돌려준다")
+    void displayName_returnsKorNameWhenPresent() {
+        FlightAirportEntity entity = new FlightAirportEntity("ICN", "인천국제공항", "Incheon", "SEL", "KR");
+
+        assertThat(entity.displayName()).isEqualTo("인천국제공항");
+    }
+
+    @Test
+    @DisplayName("displayName은 한글명이 없으면 영문명으로 대체한다")
+    void displayName_fallsBackToEngNameWhenKorNameMissing() {
+        FlightAirportEntity entity = new FlightAirportEntity("ICN", null, "Incheon", "SEL", "KR");
+
+        assertThat(entity.displayName()).isEqualTo("Incheon");
+    }
 }

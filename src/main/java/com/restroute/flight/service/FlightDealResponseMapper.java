@@ -1,13 +1,16 @@
 package com.restroute.flight.service;
 
-import com.restroute.flight.cache.FlightAirlineNameCache;
-import com.restroute.flight.cache.FlightAirportNameCache;
 import com.restroute.flight.client.response.TravelpayoutsPriceItem;
 import com.restroute.flight.controller.response.FlightDealResponse;
+import com.restroute.flight.domain.FlightAirlineEntity;
+import com.restroute.flight.domain.FlightAirportEntity;
+import com.restroute.flight.repository.FlightAirlineRepository;
+import com.restroute.flight.repository.FlightAirportRepository;
 import com.restroute.flight.service.util.FlightDealResponses;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,6 +22,10 @@ import org.springframework.util.StringUtils;
  *
  * <p>{@code id}와 {@code holidays}는 여기서 채우지 않는다 — id는 세션 토큰을 알아야 하고,
  * holidays는 어떤 딜이 최종 응답에 남는지 알아야 해서 둘 다 뒤 단계의 몫이다.
+ *
+ * <p>공항·항공사 이름은 인메모리 캐시 없이 딜 하나당 DB를 직접 조회해서 채운다 — 항공권 검색
+ * 자체가 자주 불리지 않는 기능이라, 참조 테이블 전체(공항만 수천 건)를 상시 메모리에 올려두는
+ * 것보다 그때그때 조회하는 편이 낫다고 판단했다.
  */
 @Slf4j
 @Component
@@ -27,8 +34,8 @@ class FlightDealResponseMapper {
 
     private static final String PENDING_ID = "";
 
-    private final FlightAirportNameCache airportNameCache;
-    private final FlightAirlineNameCache airlineNameCache;
+    private final FlightAirportRepository airportRepository;
+    private final FlightAirlineRepository airlineRepository;
 
     List<FlightDealResponse> mapAll(List<TravelpayoutsPriceItem> items) {
         return items.stream()
@@ -57,24 +64,31 @@ class FlightDealResponseMapper {
         OffsetDateTime departureAt = OffsetDateTime.parse(item.departureAt());
         OffsetDateTime returnAt = OffsetDateTime.parse(item.returnAt());
         int nights = (int) ChronoUnit.DAYS.between(departureAt.toLocalDate(), returnAt.toLocalDate());
+        Optional<FlightAirlineEntity> airline = airlineRepository.findByCode(item.airline());
 
         return new FlightDealResponse(
                 PENDING_ID,
-                new FlightDealResponse.Destination(
-                        item.destinationAirport(), airportNameCache.findName(item.destinationAirport())),
+                new FlightDealResponse.Destination(item.destinationAirport(), destinationNameOf(item)),
                 legOf(departureAt, item.durationTo(), item.transfers()),
                 legOf(returnAt, item.durationBack(), item.returnTransfers()),
                 nights,
                 FlightDealResponses.NO_HOLIDAYS,
                 new FlightDealResponse.Airline(
                         item.airline(),
-                        airlineNameCache.findName(item.airline()),
-                        airlineNameCache.isLowCost(item.airline())),
+                        airline.map(FlightAirlineEntity::displayName).orElse(null),
+                        airline.map(FlightAirlineEntity::isLowCost).orElse(false)),
                 new FlightDealResponse.Price(item.price(), "KRW"),
                 false,
                 item.gate(),
                 item.link(),
                 null);
+    }
+
+    private String destinationNameOf(TravelpayoutsPriceItem item) {
+        return airportRepository
+                .findByCode(item.destinationAirport())
+                .map(FlightAirportEntity::displayName)
+                .orElse(null);
     }
 
     private static FlightDealResponse.Leg legOf(OffsetDateTime departAt, int durationMinutes, int transferCount) {
