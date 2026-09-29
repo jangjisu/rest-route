@@ -22,9 +22,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 
 @ExtendWith(MockitoExtension.class)
 class NationalOilPriceServiceTest {
@@ -39,13 +41,13 @@ class NationalOilPriceServiceTest {
     private NationalOilPriceRepository nationalOilPriceRepository;
 
     @Mock
-    private TransactionTemplate transactionTemplate;
+    private PlatformTransactionManager transactionManager;
 
     private NationalOilPriceService service;
 
     @BeforeEach
     void setUp() {
-        service = new NationalOilPriceService(opinetApiClient, nationalOilPriceRepository, transactionTemplate, CLOCK);
+        service = new NationalOilPriceService(opinetApiClient, nationalOilPriceRepository, transactionManager, CLOCK);
     }
 
     @Test
@@ -77,16 +79,27 @@ class NationalOilPriceServiceTest {
                 .thenReturn(List.of())
                 .thenReturn(List.of(gasoline, diesel, lpg));
         when(opinetApiClient.getAverageOilPrices()).thenReturn(response(gasoline, diesel, lpg));
-        when(transactionTemplate.execute(org.mockito.ArgumentMatchers.any()))
-                .thenAnswer(invocation -> invocation
-                        .<org.springframework.transaction.support.TransactionCallback<Integer>>getArgument(0)
-                        .doInTransaction(null));
 
         Optional<NationalOilPriceSummary> result = service.getTodaySummary();
 
         assertThat(result).isPresent();
         verify(nationalOilPriceRepository).deleteAllByTradeDate(TODAY);
         verify(nationalOilPriceRepository).saveAll(org.mockito.ArgumentMatchers.anyList());
+    }
+
+    @Test
+    @DisplayName("오늘 평균가를 저장할 때 호출자 트랜잭션에 합류하지 않고 새 트랜잭션을 연다")
+    void getTodaySummary_savesInRequiresNewTransaction() throws Exception {
+        NationalOilPriceEntity gasoline = entity("B027", "휘발유", "1892.88", "-4.19");
+        when(nationalOilPriceRepository.findAllByTradeDate(TODAY)).thenReturn(List.of());
+        when(opinetApiClient.getAverageOilPrices()).thenReturn(response(gasoline));
+        ArgumentCaptor<TransactionDefinition> definition = ArgumentCaptor.forClass(TransactionDefinition.class);
+
+        service.getTodaySummary();
+
+        verify(transactionManager).getTransaction(definition.capture());
+        assertThat(definition.getValue().getPropagationBehavior())
+                .isEqualTo(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Test
@@ -97,10 +110,6 @@ class NationalOilPriceServiceTest {
                 .thenReturn(List.of());
         when(opinetApiClient.getAverageOilPrices())
                 .thenReturn(new OpinetAverageOilPriceResponse(new OpinetAverageOilPriceResponse.Result(List.of())));
-        when(transactionTemplate.execute(org.mockito.ArgumentMatchers.any()))
-                .thenAnswer(invocation -> invocation
-                        .<org.springframework.transaction.support.TransactionCallback<Integer>>getArgument(0)
-                        .doInTransaction(null));
 
         Optional<NationalOilPriceSummary> result = service.getTodaySummary();
 
@@ -116,10 +125,6 @@ class NationalOilPriceServiceTest {
                 .thenReturn(List.of())
                 .thenReturn(List.of(gasoline));
         when(opinetApiClient.getAverageOilPrices()).thenReturn(response(gasoline));
-        when(transactionTemplate.execute(org.mockito.ArgumentMatchers.any()))
-                .thenAnswer(invocation -> invocation
-                        .<org.springframework.transaction.support.TransactionCallback<Integer>>getArgument(0)
-                        .doInTransaction(null));
 
         Optional<NationalOilPriceSummary> result = service.getTodaySummary();
 
