@@ -2,25 +2,25 @@
 domain: oil-price
 aliases: ["유가", "주유소 편의시설", "주유소 가격", "전국 평균 유가"]
 paths:
-  - "src/main/java/com/restroute/domain/RestOilEntity.java"
-  - "src/main/java/com/restroute/domain/RestOilPriceEntity.java"
-  - "src/main/java/com/restroute/domain/NationalOilPriceEntity.java"
-  - "src/main/java/com/restroute/service/RestOilSyncService.java"
-  - "src/main/java/com/restroute/service/RestOilPriceSyncService.java"
-  - "src/main/java/com/restroute/service/RestOilPriceRefreshService.java"
-  - "src/main/java/com/restroute/service/RestStopOilInfoQueryService.java"
-  - "src/main/java/com/restroute/service/NationalOilPriceService.java"
-  - "src/main/java/com/restroute/service/admin/AdminRestOilLinkService.java"
-  - "src/main/java/com/restroute/service/backfill/RestOilServiceAreaCodeBackfiller.java"
-  - "src/main/java/com/restroute/service/backfill/RestOilPriceServiceAreaCodeBackfiller.java"
-  - "src/main/java/com/restroute/controller/RestStopOilInfoController.java"
-  - "src/main/java/com/restroute/controller/NationalOilPriceController.java"
-  - "src/main/java/com/restroute/controller/admin/AdminRestOilLinkController.java"
+  - "src/main/java/com/restroute/oilprice/domain/RestOilEntity.java"
+  - "src/main/java/com/restroute/oilprice/domain/RestOilPriceEntity.java"
+  - "src/main/java/com/restroute/oilprice/domain/NationalOilPriceEntity.java"
+  - "src/main/java/com/restroute/oilprice/service/RestOilSyncService.java"
+  - "src/main/java/com/restroute/oilprice/service/RestOilPriceSyncService.java"
+  - "src/main/java/com/restroute/oilprice/service/RestOilPriceRefreshService.java"
+  - "src/main/java/com/restroute/oilprice/service/RestStopOilInfoQueryService.java"
+  - "src/main/java/com/restroute/oilprice/service/NationalOilPriceService.java"
+  - "src/main/java/com/restroute/oilprice/service/admin/AdminRestOilLinkService.java"
+  - "src/main/java/com/restroute/oilprice/service/RestOilServiceAreaCodeBackfiller.java"
+  - "src/main/java/com/restroute/oilprice/service/RestOilPriceServiceAreaCodeBackfiller.java"
+  - "src/main/java/com/restroute/oilprice/controller/RestStopOilInfoController.java"
+  - "src/main/java/com/restroute/oilprice/controller/NationalOilPriceController.java"
+  - "src/main/java/com/restroute/oilprice/controller/admin/AdminRestOilLinkController.java"
 related_domains: ["rest-stop", "rest-stop-content", "route", "admin"]
 sources:
   - "git log --follow -- src/main/java/com/restroute/domain/RestOilEntity.java|RestOilPriceEntity.java|NationalOilPriceEntity.java"
   - "commit cef3d4c (관리자 휴게소-주유소 연결 점검·수정 기능, 상세 설명 포함), 55514bc (keep oil price mappings in sync), ae6c1fc (주유소 가격 갱신 TTL 추가), 29a6fab (오피넷 전국 평균 유가 백엔드 연동)"
-  - "current source under src/main/java/com/restroute/{domain,service,controller}"
+  - "current source under src/main/java/com/restroute/oilprice/{domain,service,controller}"
 ---
 
 # oil-price
@@ -43,7 +43,7 @@ sources:
 **동기화 흐름**
 - `RestOilSyncService`: EX API 편의시설 목록 전체를 자연키 upsert(750d167 이후, 이전엔 전체교체). 매일 자정 배치 + 기동 시 최초 1회.
 - `RestOilPriceSyncService`: EX API 가격 정보를 최대 3페이지(`LAST_PAGE=3`) 수집. **모든 페이지 수집 성공 시에만 `deleteAllInBatch()` 후 전체 재삽입**, 일부 페이지 실패 시에는 `serviceAreaCode2` 기준 upsert로 폴백(부분 실패 시 데이터 유실 방지). 3시간마다(자정 포함) 추가로 도는 `syncRestOilPricesEveryThreeHours` 스케줄도 있음 — 가격은 변동성이 커서 별도로 자주 갱신.
-- `NationalOilPriceService.getTodaySummary()`: 요청 시점에 오늘자 3개 제품 가격이 DB에 모두 있으면 바로 반환, 없으면 오피넷 API를 호출해 오늘자를 통째로 지우고 새로 저장 후 재조회(요청 트리거형 lazy sync, 스케줄러 없음 — 커밋 로그·스케줄러 파일에 관련 등록 없음을 확인).
+- `NationalOilPriceService.getTodaySummary()`: 요청 시점에 오늘자 3개 제품 가격이 DB에 모두 있으면 바로 반환, 없으면 오피넷 API를 호출해 오늘자를 통째로 지우고 새로 저장 후 재조회(요청 트리거형 lazy sync, 스케줄러 없음 — 커밋 로그·스케줄러 파일에 관련 등록 없음을 확인). 오피넷 호출은 트랜잭션 밖이고, 저장은 호출자 트랜잭션에 합류하지 않는 `REQUIRES_NEW` 쓰기 트랜잭션에서 커밋/롤백한다 — 근처 휴게소 조회(`RestStopNearbyQueryService.findNearby`)처럼 readOnly 트랜잭션 안에서 불려도 저장이 성공하고, 저장이 실패해도 호출자 트랜잭션을 rollback-only로 만들지 않는다.
 
 **사용자 조회 흐름**
 - `GET /api/rest-stops/{serviceAreaCode}/oil-info`: `RestStopOilInfoQueryService`가 `RestStopRelatedInfoQueryService`를 통해 편의시설 리스트 + 가격 정보를 모아 반환. `oilServiceAreaCode2`가 없으면(=주유소 매칭이 안 된 휴게소) 빈 결과.
@@ -87,10 +87,10 @@ sources:
 
 ## 8. 코드 경계와 진입점
 
-- **엔티티**: `com.restroute.domain.{RestOilEntity, RestOilPriceEntity, NationalOilPriceEntity}`
-- **동기화**: `com.restroute.service.{RestOilSyncService, RestOilPriceSyncService}` — 스케줄러에서만 호출.
-- **조회/갱신**: `com.restroute.service.{RestStopOilInfoQueryService, RestOilPriceRefreshService, NationalOilPriceService}`
-- **관리자**: `com.restroute.service.admin.AdminRestOilLinkService`, 컨트롤러는 `com.restroute.controller.admin.AdminRestOilLinkController`(파일 존재 확인됨, 내부 라우팅/인가 로직은 미열람 — 확인 필요).
+- **엔티티**: `com.restroute.oilprice.domain.{RestOilEntity, RestOilPriceEntity, NationalOilPriceEntity}`
+- **동기화**: `com.restroute.oilprice.service.{RestOilSyncService, RestOilPriceSyncService}` — 스케줄러에서만 호출.
+- **조회/갱신**: `com.restroute.oilprice.service.{RestStopOilInfoQueryService, RestOilPriceRefreshService, NationalOilPriceService}`
+- **관리자**: `com.restroute.oilprice.service.admin.AdminRestOilLinkService`, 컨트롤러는 `com.restroute.oilprice.controller.admin.AdminRestOilLinkController`(파일 존재 확인됨, 내부 라우팅/인가 로직은 미열람 — 확인 필요).
 - **공개 API**: `RestStopOilInfoController`(`GET /oil-info`, `POST /oil-price/refresh`), `NationalOilPriceController`(`GET /api/national-oil-prices/summary`).
-- **백필**: `com.restroute.service.backfill.{RestOilServiceAreaCodeBackfiller, RestOilPriceServiceAreaCodeBackfiller}`, 오케스트레이터는 `com.restroute.service.RestStopServiceAreaCodeBackfillService`(rest-stop 도메인 소유로 추정 — rest-stop-content, ev-charger 백필도 이 한 곳에서 함께 처리됨).
+- **백필**: `com.restroute.oilprice.service.{RestOilServiceAreaCodeBackfiller, RestOilPriceServiceAreaCodeBackfiller}`, 오케스트레이터는 `com.restroute.reststop.service.RestStopServiceAreaCodeBackfillService`(rest-stop 도메인 소유로 추정 — rest-stop-content, ev-charger 백필도 이 한 곳에서 함께 처리됨).
 - **route 도메인과의 접점**: `RouteRestStopResponse.NationalOilPriceSummary`, `RouteOptionAssemblyService`(경로 옵션에 유가 정보를 얹는 지점 — 확인은 rest-stop-content 조사 중 grep으로만 확인, 상세 로직은 route 도메인 담당 조사자 참고).
